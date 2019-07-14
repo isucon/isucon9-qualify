@@ -59,6 +59,7 @@ func init() {
 		"templates/register.html",
 		"templates/login.html",
 		"templates/sell.html",
+		"templates/buy.html",
 	))
 	store = sessions.NewCookieStore([]byte("abc"))
 }
@@ -107,6 +108,8 @@ func main() {
 	mux := goji.NewMux()
 
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
+	mux.HandleFunc(pat.Get("/buy/:item_id"), getBuyItem)
+	mux.HandleFunc(pat.Post("/buy"), postBuy)
 	mux.HandleFunc(pat.Get("/sell"), getSell)
 	mux.HandleFunc(pat.Post("/sell"), postSell)
 	mux.HandleFunc(pat.Get("/login"), getLogin)
@@ -134,6 +137,60 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 
 	b, _ := json.Marshal(item)
 	w.Write(b)
+}
+
+func getBuyItem(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
+	itemIDStr := pat.Param(r, "item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "id error")
+		return
+	}
+
+	csrfToken := session.Values["csrf_token"].(string)
+
+	templates.ExecuteTemplate(w, "buy.html", struct {
+		CSRFToken string
+		ItemID    int64
+	}{csrfToken, itemID})
+}
+
+func postBuy(w http.ResponseWriter, r *http.Request) {
+	csrfToken := r.FormValue("csrf_token")
+	itemIDStr := r.FormValue("item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
+	if csrfToken != session.Values["csrf_token"].(string) {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
+
+		return
+	}
+
+	sellerID := session.Values["user_id"]
+
+	tx := dbx.MustBegin()
+	log.Println(sellerID, itemID)
+	tx.Commit()
+
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func getSell(w http.ResponseWriter, r *http.Request) {
