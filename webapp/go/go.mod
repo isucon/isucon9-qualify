@@ -1,4 +1,4 @@
-module github.com/catatsuy/isucon9-qualify
+module github.com/isucon/isucon9-qualify
 
 go 1.12
 
