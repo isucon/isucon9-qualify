@@ -2,6 +2,14 @@
 
 **このリポジトリはtransfer repositoryの機能により、そのまま公開されます。オープンソースソフトウェア開発と同様のルールで開発してください。**
 
+## インストール方法
+
+```bash
+$ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isucon/isucon9-qualify
+```
+
+`GOPATH`を上書きしているなら、各自でいい感じにしてください。
+
 ## 方針
 
 * 機能はディレクトリ毎に分かれているので、各ディレクトリの主担当者がディレクトリ内のファイルをいじる分にはmasterに直pushしてよい
