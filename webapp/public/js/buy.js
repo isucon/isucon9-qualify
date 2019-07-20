@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     'use strict';
 
-    const shop_id = '11';
-
     document.getElementById('card_submit').addEventListener('click', (event) => {
+        const el = document.getElementById('data');
+
+        const shop_id = el.dataset.paymentServiceShopId;
         const data = {
             'card_number': document.getElementById('card_number').value,
             'shop_id': shop_id,
@@ -22,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return res.json();
         }).then((json) => {
-            const el = document.getElementById('data');
             fetch('/buy', {
                 method: 'POST',
                 headers: {

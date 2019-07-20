@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -27,6 +28,14 @@ const (
 	ItemStatusSoldOut = "sold_out"
 	ItemStatusStop    = "stop"
 	ItemStatusCancel  = "cancel"
+
+	PaymentServiceIsucariAPIKey = "a15400e46c83635eb181-946abb51ff26a868317c"
+	PaymentServiceIsucariShopID = "11"
+
+	TransactionEvidenceStatusWaitPayment  = "wait_payment"
+	TransactionEvidenceStatusWaitShipping = "wait_shipping"
+	TransactionEvidenceStatusWaitDone     = "wait_done"
+	TransactionEvidenceStatusDone         = "done"
 )
 
 var (
@@ -168,7 +177,19 @@ func getBuyItem(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "buy.html", struct {
 		CSRFToken string
 		ItemID    int64
-	}{csrfToken, itemID})
+
+		PaymentServiceShopID string
+	}{csrfToken, itemID, PaymentServiceIsucariShopID})
+}
+
+type paymentServiceTokenReq struct {
+	Token  string `json:"token"`
+	APIKey string `json:"api_key"`
+	Price  int    `json:"price"`
+}
+
+type paymentServiceTokenRes struct {
+	Status string `json:"status"`
 }
 
 func postBuy(w http.ResponseWriter, r *http.Request) {
@@ -194,10 +215,110 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sellerID := session.Values["user_id"]
+	buyerID := session.Values["user_id"].(int64)
+
+	targetItem := Item{}
+	dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)
+	if targetItem.ID != rb.ItemID {
+		outputErrorMsg(w, http.StatusNotFound, "item not exist")
+		return
+	}
+
+	if targetItem.Status != ItemStatusOnSale {
+		outputErrorMsg(w, http.StatusNotFound, "item is not for sale")
+		return
+	}
 
 	tx := dbx.MustBegin()
-	log.Println(sellerID, rb)
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", rb.ItemID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		tx.Rollback()
+		return
+	}
+	_, err = tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		targetItem.SellerID,
+		buyerID,
+		TransactionEvidenceStatusWaitShipping,
+		targetItem.ID,
+		targetItem.Name,
+		targetItem.Price,
+		targetItem.Description,
+	)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		tx.Rollback()
+		return
+	}
+	_, err = tx.Exec("UPDATE `items` SET buyer_id = ?, status = ?, updated_at = ? WHERE id = ?",
+		buyerID,
+		ItemStatusTrading,
+		time.Now(),
+		targetItem.ID,
+	)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		tx.Rollback()
+		return
+	}
+
+	body := &paymentServiceTokenReq{
+		Token:  rb.Token,
+		APIKey: PaymentServiceIsucariAPIKey,
+		Price:  100,
+	}
+	b, _ := json.Marshal(body)
+	resp, err := http.Post("http://localhost:5555/token", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to payment service")
+		tx.Rollback()
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Println("payment service's status is %d", resp.StatusCode)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "payment service is failed")
+		tx.Rollback()
+		return
+	}
+
+	pstr := &paymentServiceTokenRes{}
+	err = json.NewDecoder(resp.Body).Decode(&pstr)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		tx.Rollback()
+		return
+	}
+
+	if pstr.Status == "invalid" {
+		outputErrorMsg(w, http.StatusBadRequest, "カード情報に誤りがあります")
+		tx.Rollback()
+		return
+	}
+
+	if pstr.Status == "fail" {
+		outputErrorMsg(w, http.StatusBadRequest, "カードの残高が足りません")
+		tx.Rollback()
+		return
+	}
+
+	if pstr.Status != "ok" {
+		outputErrorMsg(w, http.StatusBadRequest, "想定外のエラー")
+		tx.Rollback()
+		return
+	}
+
 	tx.Commit()
 }
 

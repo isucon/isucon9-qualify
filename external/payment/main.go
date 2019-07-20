@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -13,6 +15,10 @@ import (
 const (
 	IsucariAPIKey = "a15400e46c83635eb181-946abb51ff26a868317c"
 	IsucariShopID = "11"
+)
+
+var (
+	regex = regexp.MustCompile("^[0-9A-F]{8}$")
 )
 
 type cardReq struct {
@@ -125,8 +131,19 @@ func tokenHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_, ok := CardTokens.Get(tr.Token)
+	ct, ok := CardTokens.Get(tr.Token)
 	if !ok {
+		result := tokenRes{
+			Status: "invalid",
+		}
+
+		b, _ := json.Marshal(result)
+
+		w.Write(b)
+		return
+	}
+
+	if strings.Contains(ct.number, "FA10") {
 		result := tokenRes{
 			Status: "fail",
 		}
@@ -177,6 +194,15 @@ func cardHandler(w http.ResponseWriter, req *http.Request) {
 
 	if cr.ShopID != IsucariShopID {
 		b, _ := json.Marshal(errorRes{Error: "wrong shop id"})
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(b)
+
+		return
+	}
+
+	if !regex.MatchString(cr.CardNumber) {
+		b, _ := json.Marshal(errorRes{Error: "card number is wrong"})
 
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(b)
