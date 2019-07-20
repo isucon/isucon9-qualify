@@ -54,6 +54,12 @@ type Item struct {
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
 }
 
+type reqBuy struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+	Token     string `json:"token"`
+}
+
 func init() {
 	templates = template.Must(template.ParseFiles(
 		"templates/register.html",
@@ -166,9 +172,13 @@ func getBuyItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func postBuy(w http.ResponseWriter, r *http.Request) {
-	csrfToken := r.FormValue("csrf_token")
-	itemIDStr := r.FormValue("item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	rb := reqBuy{}
+
+	err := json.NewDecoder(r.Body).Decode(&rb)
+	if err != nil {
+		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		return
+	}
 
 	session, err := store.Get(r, sessionName)
 	if err != nil {
@@ -178,7 +188,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if csrfToken != session.Values["csrf_token"].(string) {
+	if rb.CSRFToken != session.Values["csrf_token"].(string) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 
 		return
@@ -187,10 +197,8 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	sellerID := session.Values["user_id"]
 
 	tx := dbx.MustBegin()
-	log.Println(sellerID, itemID)
+	log.Println(sellerID, rb)
 	tx.Commit()
-
-	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func getSell(w http.ResponseWriter, r *http.Request) {

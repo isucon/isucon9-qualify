@@ -8,14 +8,11 @@
     <div class="container">
       <h1>Sell</h1>
       <div>
-        <form method="post" action="/buy">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-          <input type="hidden" name="item_id" value="{{.ItemID}}">
-          <div>
-            <input type="submit" name="submit" value="購入する">
-          </div>
-        </form>
+        <span id="data" data-csrf-token="{{.CSRFToken}}" data-item-id="{{.ItemID}}">
+        <input type="text" id="card_number">
+        <button id="card_submit">送信</button>
       </div>
     </div>
+    <script src="/js/buy.js"></script>
   </body>
 </html>
