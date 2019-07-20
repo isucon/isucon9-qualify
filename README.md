@@ -17,3 +17,12 @@ $ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isuc
   * PRを作ってもよいがレビューなしにmergeしてもよい
   * もちろんレビューを求めてもよい
 * 主担当ではないものや他の人に影響を与える変更は必ずPRを作り、他の人に確認を取ること
+
+## ディレクトリ構成
+
+```
+├── bench        # ベンチマーカーのソースコード
+├── external     # 外部サービスのソースコード
+├── provisioning # セットアップ用ansible
+└── webapp       # 各言語の参考実装
+```

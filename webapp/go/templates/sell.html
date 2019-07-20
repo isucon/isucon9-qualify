@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>sell</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Sell</h1>
+      <div>
+        <form method="post" action="/sell">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <div>
+            <span>商品名</span>
+            <input type="text" name="name">
+          </div>
+          <div>
+            <span>値段</span>
+            <input type="number" name="price" min="100">
+          </div>
+          <div>
+            <span>商品説明</span>
+            <textarea name="description"></textarea>
+          </div>
+          <div>
+            <input type="submit" name="submit" value="submit">
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
