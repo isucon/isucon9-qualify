@@ -116,7 +116,7 @@ func tokenHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		b, _ := json.Marshal(errorRes{Error: "json decode error"})
 
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		w.Write(b)
 
 		return
@@ -158,9 +158,7 @@ func tokenHandler(w http.ResponseWriter, req *http.Request) {
 		Status: "ok",
 	}
 
-	b, _ := json.Marshal(result)
-
-	w.Write(b)
+	json.NewEncoder(w).Encode(result)
 }
 
 func isValidOrigin(origin string) bool {
@@ -186,7 +184,7 @@ func cardHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		b, _ := json.Marshal(errorRes{Error: "json decode error"})
 
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		w.Write(b)
 
 		return
@@ -216,7 +214,5 @@ func cardHandler(w http.ResponseWriter, req *http.Request) {
 		Token: token,
 	}
 
-	b, _ := json.Marshal(res)
-
-	w.Write(b)
+	json.NewEncoder(w).Encode(res)
 }
