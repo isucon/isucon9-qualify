@@ -45,6 +45,10 @@ type shipmentStatusRes struct {
 	ReserveTime int64  `json:"reserve_time"`
 }
 
+type shipmentStatusReq struct {
+	ID string `json:"id"`
+}
+
 type shipmentStore struct {
 	sync.Mutex
 	items map[string]shipment
@@ -264,10 +268,25 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := r.URL.Query()
-	id := query.Get("id")
+	req := shipmentStatusReq{}
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		b, _ := json.Marshal(errorRes{Error: "json decode error"})
 
-	ship, ok := shipmentCache.Get(id)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(b)
+
+		return
+	}
+
+	if req.ID == "" {
+		b, _ := json.Marshal(errorRes{Error: "required parameter was not passed"})
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(b)
+	}
+
+	ship, ok := shipmentCache.Get(req.ID)
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
