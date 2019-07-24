@@ -170,7 +170,8 @@ func cardHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.Header().Add("Access-Control-Allow-Origin", "http://localhost:8000")
+	// Originはちゃんとチェックしている前提のコード。コピペしないこと。
+	w.Header().Add("Access-Control-Allow-Origin", req.Header.Get("Origin"))
 	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
 
 	if req.Method == http.MethodOptions {
