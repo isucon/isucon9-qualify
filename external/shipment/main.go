@@ -26,6 +26,8 @@ const (
 	StatusWaitPickup = "wait_pickup"
 	StatusShipping   = "shipping"
 	StatusDone       = "done"
+
+	IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0"
 )
 
 type shipment struct {
@@ -125,6 +127,11 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Header.Get("Authorization") != IsucariAPIToken {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	ship := shipment{}
 	err := json.NewDecoder(r.Body).Decode(&ship)
 	if err != nil {
@@ -166,6 +173,11 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Header.Get("Authorization") != IsucariAPIToken {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	req := requestReq{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -197,8 +209,8 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := &url.URL{
-		Scheme: "http",
-		Host:   "localhost:7000",
+		Scheme: "https",
+		Host:   r.Host,
 		Path:   "/accept",
 	}
 	q := u.Query()
@@ -247,6 +259,11 @@ func acceptHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Authorization") != IsucariAPIToken {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	query := r.URL.Query()
 	id := query.Get("id")
 
