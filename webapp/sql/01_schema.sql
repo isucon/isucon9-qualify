@@ -3,8 +3,9 @@ use `isucari`;
 DROP TABLE `users`;
 CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `account_name` VARCHAR(128) NOT NULL UNIQUE,
-  `hashed_password` VARBINARY(191) NOT NULL,
+  `account_name` varchar(128) NOT NULL UNIQUE,
+  `hashed_password` varbinary(191) NOT NULL,
+  `address` varchar(191) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
 

@@ -48,6 +48,7 @@ type User struct {
 	ID             int64     `json:"id" db:"id"`
 	AccountName    string    `json:"account_name" db:"account_name"`
 	HashedPassword []byte    `json:"-" db:"hashed_password"`
+	Address        string    `json:"address,omitempty" db:"address"`
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
@@ -77,6 +78,8 @@ func init() {
 		"templates/buy.html",
 	))
 	store = sessions.NewCookieStore([]byte("abc"))
+
+	log.SetFlags(log.Lshortfile)
 }
 
 func main() {
@@ -197,6 +200,8 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&rb)
 	if err != nil {
+		log.Println(err)
+
 		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
 		return
 	}
@@ -229,6 +234,11 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if targetItem.SellerID == buyerID {
+		outputErrorMsg(w, http.StatusNotFound, "自分の商品は買えません")
+		return
+	}
+
 	tx := dbx.MustBegin()
 	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", rb.ItemID)
 	if err != nil {
@@ -238,6 +248,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		return
 	}
+
 	_, err = tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		targetItem.SellerID,
 		buyerID,
@@ -250,7 +261,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
@@ -263,7 +274,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
@@ -450,8 +461,9 @@ func getRegister(w http.ResponseWriter, r *http.Request) {
 func postRegister(w http.ResponseWriter, r *http.Request) {
 	accountName := r.FormValue("account_name")
 	password := r.FormValue("password")
+	address := r.FormValue("address")
 
-	if accountName == "" || password == "" {
+	if accountName == "" || password == "" || address == "" {
 		outputErrorMsg(w, http.StatusInternalServerError, "all parameters are required")
 
 		return
@@ -465,7 +477,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`) VALUES (?, ?)", accountName, hashedPassword)
+	_, err = dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)", accountName, hashedPassword, address)
 	if err != nil {
 		log.Println(err)
 
