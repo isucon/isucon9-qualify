@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/isucon/isucon9-qualify/webapp/go/api"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -22,8 +24,6 @@ import (
 
 const (
 	sessionName = "session_isucari"
-
-	IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0"
 
 	ItemStatusOnSale  = "on_sale"
 	ItemStatusTrading = "trading"
@@ -318,7 +318,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Println("payment service's status is %d", resp.StatusCode)
+		log.Printf("payment service's status is %d\n", resp.StatusCode)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "payment service is failed")
 		tx.Rollback()
@@ -380,18 +380,6 @@ func getApprove(w http.ResponseWriter, r *http.Request) {
 	}{csrfToken, itemID})
 }
 
-type shipmentCreateReq struct {
-	ToAddress   string `json:"to_address"`
-	ToName      string `json:"to_name"`
-	FromAddress string `json:"from_address"`
-	FromName    string `json:"from_name"`
-}
-
-type shipmentCreateRes struct {
-	ReserveID   string `json:"reserve_id"`
-	ReserveTime int64  `json:"reserve_time"`
-}
-
 func postApprove(w http.ResponseWriter, r *http.Request) {
 	csrfToken := r.FormValue("csrf_token")
 	itemIDStr := r.FormValue("item_id")
@@ -425,7 +413,7 @@ func postApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.BuyerID != userID {
+	if transactionEvidence.SellerID != userID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
@@ -460,51 +448,17 @@ func postApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body := &shipmentCreateReq{
+	scr, err := api.ShipmentCreate("http://localhost:7000", &api.ShipmentCreateReq{
 		ToAddress:   buyer.Address,
 		ToName:      buyer.AccountName,
 		FromAddress: seller.Address,
 		FromName:    seller.AccountName,
-	}
-	b, _ := json.Marshal(body)
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:7000/create", bytes.NewBuffer(b))
+	})
 	if err != nil {
 		log.Println(err)
-
 		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
 		tx.Rollback()
 
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", IsucariAPIToken)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
-		tx.Rollback()
-
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Println("shipment service's status is %d", resp.StatusCode)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "shipment service is failed")
-		tx.Rollback()
-		return
-	}
-
-	scr := &shipmentCreateRes{}
-	err = json.NewDecoder(resp.Body).Decode(&scr)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
-		tx.Rollback()
 		return
 	}
 
