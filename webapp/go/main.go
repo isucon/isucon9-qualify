@@ -23,6 +23,8 @@ import (
 const (
 	sessionName = "session_isucari"
 
+	IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0"
+
 	ItemStatusOnSale  = "on_sale"
 	ItemStatusTrading = "trading"
 	ItemStatusSoldOut = "sold_out"
@@ -32,10 +34,15 @@ const (
 	PaymentServiceIsucariAPIKey = "a15400e46c83635eb181-946abb51ff26a868317c"
 	PaymentServiceIsucariShopID = "11"
 
-	TransactionEvidenceStatusWaitPayment  = "wait_payment"
+	TransactionEvidenceStatusInitial      = "initial"
 	TransactionEvidenceStatusWaitShipping = "wait_shipping"
 	TransactionEvidenceStatusWaitDone     = "wait_done"
 	TransactionEvidenceStatusDone         = "done"
+
+	ShippingsStatusInitial    = "initial"
+	ShippingsStatusWaitPickup = "wait_pickup"
+	ShippingsStatusShipping   = "shipping"
+	ShippingsStatusDone       = "done"
 )
 
 var (
@@ -64,6 +71,19 @@ type Item struct {
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
 }
 
+type TransactionEvidence struct {
+	ID              int64     `json:"id" db:"id"`
+	SellerID        int64     `json:"seller_id" db:"seller_id"`
+	BuyerID         int64     `json:"buyer_id" db:"buyer_id"`
+	Status          string    `json:"status" db:"status"`
+	ItemID          int64     `json:"item_id" db:"item_id"`
+	ItemName        string    `json:"item_name" db:"item_name"`
+	ItemPrice       int       `json:"item_price" db:"item_price"`
+	ItemDescription string    `json:"item_description" db:"item_description"`
+	CreatedAt       time.Time `json:"-" db:"created_at"`
+	UpdatedAt       time.Time `json:"-" db:"updated_at"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -76,6 +96,7 @@ func init() {
 		"templates/login.html",
 		"templates/sell.html",
 		"templates/buy.html",
+		"templates/approve.html",
 	))
 	store = sessions.NewCookieStore([]byte("abc"))
 
@@ -130,6 +151,8 @@ func main() {
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
 	mux.HandleFunc(pat.Get("/sell"), getSell)
 	mux.HandleFunc(pat.Post("/sell"), postSell)
+	mux.HandleFunc(pat.Get("/approve/:item_id"), getApprove)
+	mux.HandleFunc(pat.Post("/approve"), postApprove)
 	mux.HandleFunc(pat.Get("/login"), getLogin)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Get("/register"), getRegister)
@@ -252,7 +275,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	_, err = tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		targetItem.SellerID,
 		buyerID,
-		TransactionEvidenceStatusWaitShipping,
+		TransactionEvidenceStatusInitial,
 		targetItem.ID,
 		targetItem.Name,
 		targetItem.Price,
@@ -326,6 +349,199 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	if pstr.Status != "ok" {
 		outputErrorMsg(w, http.StatusBadRequest, "想定外のエラー")
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+}
+
+func getApprove(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
+	csrfToken := session.Values["csrf_token"].(string)
+
+	itemIDStr := pat.Param(r, "item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		return
+	}
+
+	templates.ExecuteTemplate(w, "approve.html", struct {
+		CSRFToken string
+		ItemID    int64
+	}{csrfToken, itemID})
+}
+
+type shipmentCreateReq struct {
+	ToAddress   string `json:"to_address"`
+	ToName      string `json:"to_name"`
+	FromAddress string `json:"from_address"`
+	FromName    string `json:"from_name"`
+}
+
+type shipmentCreateRes struct {
+	ReserveID   string `json:"reserve_id"`
+	ReserveTime int64  `json:"reserve_time"`
+}
+
+func postApprove(w http.ResponseWriter, r *http.Request) {
+	csrfToken := r.FormValue("csrf_token")
+	itemIDStr := r.FormValue("item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		return
+	}
+
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
+	if csrfToken != session.Values["csrf_token"].(string) {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
+
+		return
+	}
+
+	userID := session.Values["user_id"].(int64)
+	transactionEvidence := TransactionEvidence{}
+	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+
+		return
+	}
+
+	if transactionEvidence.BuyerID != userID {
+		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
+		return
+	}
+
+	if transactionEvidence.Status != TransactionEvidenceStatusInitial {
+		outputErrorMsg(w, http.StatusForbidden, "承認済みか購入されていません")
+		return
+	}
+
+	tx := dbx.MustBegin()
+	tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if transactionEvidence.Status != TransactionEvidenceStatusInitial {
+		outputErrorMsg(w, http.StatusForbidden, "承認済みか購入されていません")
+		tx.Rollback()
+		return
+	}
+	item := Item{}
+	tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+
+	buyer := User{}
+	seller := User{}
+	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", item.BuyerID)
+	if err != nil {
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", item.SellerID)
+	if err != nil {
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	body := &shipmentCreateReq{
+		ToAddress:   buyer.Address,
+		ToName:      buyer.AccountName,
+		FromAddress: seller.Address,
+		FromName:    seller.AccountName,
+	}
+	b, _ := json.Marshal(body)
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:7000/create", bytes.NewBuffer(b))
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+		tx.Rollback()
+
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", IsucariAPIToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+		tx.Rollback()
+
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Println("shipment service's status is %d", resp.StatusCode)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "shipment service is failed")
+		tx.Rollback()
+		return
+	}
+
+	scr := &shipmentCreateRes{}
+	err = json.NewDecoder(resp.Body).Decode(&scr)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`) VALUES (?,?,?,?,?,?,?,?,?,?)",
+		transactionEvidence.ID,
+		ShippingsStatusInitial,
+		item.Name,
+		item.ID,
+		scr.ReserveID,
+		scr.ReserveTime,
+		buyer.Address,
+		buyer.AccountName,
+		seller.Address,
+		seller.AccountName,
+	)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `items` SET status = ?, updated_at = ? WHERE id = ?", ItemStatusSoldOut, time.Now(), item.ID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `transaction_evidences` SET status = ?, updated_at = ? WHERE id = ?", TransactionEvidenceStatusWaitShipping, time.Now(), transactionEvidence.ID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
