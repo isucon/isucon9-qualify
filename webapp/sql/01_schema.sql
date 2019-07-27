@@ -27,11 +27,27 @@ CREATE TABLE `transaction_evidences` (
   `id` bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `seller_id` bigint NOT NULL,
   `buyer_id` bigint NOT NULL,
-  `status` enum('wait_payment', 'wait_shipping', 'wait_done', 'done') NOT NULL,
+  `status` enum('initial', 'wait_shipping', 'wait_done', 'done') NOT NULL,
   `item_id` bigint NOT NULL UNIQUE,
   `item_name` varchar(191) NOT NULL,
   `item_price` int unsigned NOT NULL,
   `item_description` text NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
+
+DROP TABLE `shippings`;
+CREATE TABLE `shippings` (
+  `transaction_evidence_id` bigint NOT NULL PRIMARY KEY,
+  `status` enum('initial', 'wait_pickup', 'shipping', 'done') NOT NULL,
+  `item_name` varchar(191) NOT NULL,
+  `item_id` varchar(191) NOT NULL,
+  `reserve_id` varchar(191) NOT NULL,
+  `reserve_time` bigint NOT NULL,
+  `to_address` varchar(191) NOT NULL,
+  `to_name` varchar(191) NOT NULL,
+  `from_address` varchar(191) NOT NULL,
+  `from_name` varchar(191) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
