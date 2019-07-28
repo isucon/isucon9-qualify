@@ -1,7 +1,10 @@
 import React from 'react';
 
-import { Avatar, Typography, TextField, Button } from '@material-ui/core';
+import { Avatar, Typography, TextField, Button, Grid } from '@material-ui/core';
 import { LockOutlined } from '@material-ui/icons';
+import { Link as RouteLink } from 'react-router-dom';
+
+
 
 const SignInPage: React.FC = () => (
     <div>
@@ -41,6 +44,11 @@ const SignInPage: React.FC = () => (
             >
                 ログイン
             </Button>
+            <Grid container>
+                <Grid item xs>
+                    <RouteLink to="/signup">新規登録はこちら</RouteLink>
+                </Grid>
+            </Grid>
         </form>
     </div>
 );
