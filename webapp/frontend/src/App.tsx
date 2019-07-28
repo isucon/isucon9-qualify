@@ -12,6 +12,7 @@ import { SellPage } from "./pages/SellPage";
 import { TransactionPage } from "./pages/TransactionPage";
 import { UserPage } from "./pages/UserPage";
 import { UserSettingPage } from "./pages/UserSettingPage";
+import { BasePageComponent } from "./components/BasePageComponent";
 
 const routes: Array<{
     path: string,
@@ -88,8 +89,13 @@ const getRoutes: () => any[] = () => {
     const routeComponents: any[] = []; // TODO
 
     for (const route of routes) {
+        const component: React.FC = () => (
+            <BasePageComponent>
+                {route.component()}
+            </BasePageComponent>
+        );
         routeComponents.push(
-            <Route exact path={route.path} component={route.component} />
+            <Route exact path={route.path} component={component} />
         );
     }
 
