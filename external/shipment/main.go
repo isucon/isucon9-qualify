@@ -46,7 +46,7 @@ type shipmentStatusRes struct {
 }
 
 type shipmentStatusReq struct {
-	ID string `json:"id"`
+	ReserveID string `json:"reserve_id"`
 }
 
 type shipmentStore struct {
@@ -279,14 +279,14 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ID == "" {
+	if req.ReserveID == "" {
 		b, _ := json.Marshal(errorRes{Error: "required parameter was not passed"})
 
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(b)
 	}
 
-	ship, ok := shipmentCache.Get(req.ID)
+	ship, ok := shipmentCache.Get(req.ReserveID)
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
