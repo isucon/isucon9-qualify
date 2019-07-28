@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -84,6 +85,22 @@ type TransactionEvidence struct {
 	UpdatedAt       time.Time `json:"-" db:"updated_at"`
 }
 
+type Shipping struct {
+	TransactionEvidenceID int64     `json:"transaction_evidence_id" db:"transaction_evidence_id"`
+	Status                string    `json:"status" db:"status"`
+	ItemName              string    `json:"item_name" db:"item_name"`
+	ItemID                int64     `json:"item_id" db:"item_id"`
+	ReserveID             string    `json:"reserve_id" db:"reserve_id"`
+	ReserveTime           int64     `json:"reserve_time" db:"reserve_time"`
+	ToAddress             string    `json:"to_address" db:"to_address"`
+	ToName                string    `json:"to_name" db:"to_name"`
+	FromAddress           string    `json:"from_address" db:"from_address"`
+	FromName              string    `json:"from_name" db:"from_name"`
+	ImgName               string    `json:"img_name" db:"img_name"`
+	CreatedAt             time.Time `json:"-" db:"created_at"`
+	UpdatedAt             time.Time `json:"-" db:"updated_at"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -97,6 +114,7 @@ func init() {
 		"templates/sell.html",
 		"templates/buy.html",
 		"templates/approve.html",
+		"templates/ship.html",
 	))
 	store = sessions.NewCookieStore([]byte("abc"))
 
@@ -153,6 +171,8 @@ func main() {
 	mux.HandleFunc(pat.Post("/sell"), postSell)
 	mux.HandleFunc(pat.Get("/approve/:item_id"), getApprove)
 	mux.HandleFunc(pat.Post("/approve"), postApprove)
+	mux.HandleFunc(pat.Get("/ship/:item_id"), getShip)
+	mux.HandleFunc(pat.Post("/ship"), postShip)
 	mux.HandleFunc(pat.Get("/login"), getLogin)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Get("/register"), getRegister)
@@ -462,7 +482,7 @@ func postApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`) VALUES (?,?,?,?,?,?,?,?,?,?)",
+	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_name`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
 		transactionEvidence.ID,
 		ShippingsStatusInitial,
 		item.Name,
@@ -473,6 +493,7 @@ func postApprove(w http.ResponseWriter, r *http.Request) {
 		buyer.AccountName,
 		seller.Address,
 		seller.AccountName,
+		"",
 	)
 	if err != nil {
 		log.Println(err)
@@ -492,6 +513,125 @@ func postApprove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = tx.Exec("UPDATE `transaction_evidences` SET status = ?, updated_at = ? WHERE id = ?", TransactionEvidenceStatusWaitShipping, time.Now(), transactionEvidence.ID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+}
+
+func getShip(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
+	csrfToken := session.Values["csrf_token"].(string)
+
+	itemIDStr := pat.Param(r, "item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		return
+	}
+
+	templates.ExecuteTemplate(w, "ship.html", struct {
+		CSRFToken string
+		ItemID    int64
+	}{csrfToken, itemID})
+}
+
+func postShip(w http.ResponseWriter, r *http.Request) {
+	csrfToken := r.FormValue("csrf_token")
+	itemIDStr := r.FormValue("item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		return
+	}
+
+	session, err := store.Get(r, sessionName)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
+	if csrfToken != session.Values["csrf_token"].(string) {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
+
+		return
+	}
+
+	userID := session.Values["user_id"].(int64)
+	transactionEvidence := TransactionEvidence{}
+	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+
+		return
+	}
+
+	if transactionEvidence.SellerID != userID {
+		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
+		return
+	}
+
+	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
+		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
+		return
+	}
+
+	tx := dbx.MustBegin()
+	tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
+		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
+		tx.Rollback()
+		return
+	}
+	item := Item{}
+	tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+
+	shipping := Shipping{}
+	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	img, err := api.ShipmentRequest("http://localhost:7000", &api.ShipmentRequestReq{
+		ReserveID: shipping.ReserveID,
+	})
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+		tx.Rollback()
+
+		return
+	}
+
+	imgName := secureRandomStr(16)
+
+	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s.png", imgName), img, 0644)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "failed to save the file")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `shippings` SET status = ?, img_name = ?, updated_at = ? WHERE transaction_evidence_id = ?", ShippingsStatusWaitPickup, imgName, time.Now(), transactionEvidence.ID)
 	if err != nil {
 		log.Println(err)
 
