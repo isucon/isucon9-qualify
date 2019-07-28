@@ -11,7 +11,7 @@ items
 on_sale
 ↓ /buy （buyerによる購入）
 trading
-↓ /ship_done （sellerによる配送完了）
+↓ /complete （buyerによる受け取り完了）
 sold_out
 ```
 
