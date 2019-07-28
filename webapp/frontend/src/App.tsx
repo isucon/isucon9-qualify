@@ -12,7 +12,7 @@ import { SellPage } from "./pages/SellPage";
 import { TransactionPage } from "./pages/TransactionPage";
 import { UserPage } from "./pages/UserPage";
 import { UserSettingPage } from "./pages/UserSettingPage";
-import {BasePageComponent} from "./components/BasePageComponent";
+import { BasePageComponent } from "./components/BasePageComponent";
 
 const routes: Array<{
     path: string,
