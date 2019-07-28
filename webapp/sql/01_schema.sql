@@ -27,7 +27,7 @@ CREATE TABLE `transaction_evidences` (
   `id` bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `seller_id` bigint NOT NULL,
   `buyer_id` bigint NOT NULL,
-  `status` enum('initial', 'wait_shipping', 'wait_done', 'done') NOT NULL,
+  `status` enum('wait_shipping', 'wait_done', 'done') NOT NULL,
   `item_id` bigint NOT NULL UNIQUE,
   `item_name` varchar(191) NOT NULL,
   `item_price` int unsigned NOT NULL,

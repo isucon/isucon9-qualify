@@ -35,7 +35,6 @@ const (
 	PaymentServiceIsucariAPIKey = "a15400e46c83635eb181-946abb51ff26a868317c"
 	PaymentServiceIsucariShopID = "11"
 
-	TransactionEvidenceStatusInitial      = "initial"
 	TransactionEvidenceStatusWaitShipping = "wait_shipping"
 	TransactionEvidenceStatusWaitDone     = "wait_done"
 	TransactionEvidenceStatusDone         = "done"
@@ -113,7 +112,6 @@ func init() {
 		"templates/login.html",
 		"templates/sell.html",
 		"templates/buy.html",
-		"templates/approve.html",
 		"templates/ship.html",
 		"templates/ship_done.html",
 		"templates/complete.html",
@@ -171,8 +169,6 @@ func main() {
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
 	mux.HandleFunc(pat.Get("/sell"), getSell)
 	mux.HandleFunc(pat.Post("/sell"), postSell)
-	mux.HandleFunc(pat.Get("/approve/:item_id"), getApprove)
-	mux.HandleFunc(pat.Post("/approve"), postApprove)
 	mux.HandleFunc(pat.Get("/ship/:item_id"), getShip)
 	mux.HandleFunc(pat.Post("/ship"), postShip)
 	mux.HandleFunc(pat.Get("/ship_done/:item_id"), getShipDone)
@@ -298,10 +294,29 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	buyer := User{}
+	seller := User{}
+	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", buyerID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", targetItem.SellerID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	result, err := tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		targetItem.SellerID,
 		buyerID,
-		TransactionEvidenceStatusInitial,
+		TransactionEvidenceStatusWaitShipping,
 		targetItem.ID,
 		targetItem.Name,
 		targetItem.Price,
@@ -314,6 +329,16 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		return
 	}
+
+	transactionEvidenceID, err := result.LastInsertId()
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	_, err = tx.Exec("UPDATE `items` SET buyer_id = ?, status = ?, updated_at = ? WHERE id = ?",
 		buyerID,
 		ItemStatusTrading,
@@ -379,101 +404,6 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx.Commit()
-}
-
-func getApprove(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	csrfToken := session.Values["csrf_token"].(string)
-
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
-		return
-	}
-
-	templates.ExecuteTemplate(w, "approve.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
-}
-
-func postApprove(w http.ResponseWriter, r *http.Request) {
-	csrfToken := r.FormValue("csrf_token")
-	itemIDStr := r.FormValue("item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
-		return
-	}
-
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	if csrfToken != session.Values["csrf_token"].(string) {
-		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
-
-		return
-	}
-
-	userID := session.Values["user_id"].(int64)
-	transactionEvidence := TransactionEvidence{}
-	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
-	if err != nil {
-		log.Println(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-
-		return
-	}
-
-	if transactionEvidence.SellerID != userID {
-		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
-		return
-	}
-
-	if transactionEvidence.Status != TransactionEvidenceStatusInitial {
-		outputErrorMsg(w, http.StatusForbidden, "承認済みか購入されていません")
-		return
-	}
-
-	tx := dbx.MustBegin()
-	tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
-	if transactionEvidence.Status != TransactionEvidenceStatusInitial {
-		outputErrorMsg(w, http.StatusForbidden, "承認済みか購入されていません")
-		tx.Rollback()
-		return
-	}
-	item := Item{}
-	tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
-
-	buyer := User{}
-	seller := User{}
-	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", item.BuyerID)
-	if err != nil {
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", item.SellerID)
-	if err != nil {
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-
 	scr, err := api.ShipmentCreate("http://localhost:7000", &api.ShipmentCreateReq{
 		ToAddress:   buyer.Address,
 		ToName:      buyer.AccountName,
@@ -489,10 +419,10 @@ func postApprove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_name`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-		transactionEvidence.ID,
+		transactionEvidenceID,
 		ShippingsStatusInitial,
-		item.Name,
-		item.ID,
+		targetItem.Name,
+		targetItem.ID,
 		scr.ReserveID,
 		scr.ReserveTime,
 		buyer.Address,
@@ -501,24 +431,6 @@ func postApprove(w http.ResponseWriter, r *http.Request) {
 		seller.AccountName,
 		"",
 	)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-
-	_, err = tx.Exec("UPDATE `items` SET status = ?, updated_at = ? WHERE id = ?", ItemStatusSoldOut, time.Now(), item.ID)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-
-	_, err = tx.Exec("UPDATE `transaction_evidences` SET status = ?, updated_at = ? WHERE id = ?", TransactionEvidenceStatusWaitShipping, time.Now(), transactionEvidence.ID)
 	if err != nil {
 		log.Println(err)
 
