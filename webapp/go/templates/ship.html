@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>ship</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Ship</h1>
+      <div>
+        <form method="post" action="/ship">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <input type="hidden" name="item_id" value="{{.ItemID}}">
+          <div>
+            <input type="submit" name="submit" value="submit">
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

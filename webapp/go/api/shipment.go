@@ -24,6 +24,10 @@ type ShipmentCreateRes struct {
 	ReserveTime int64  `json:"reserve_time"`
 }
 
+type ShipmentRequestReq struct {
+	ReserveID string `json:"reserve_id"`
+}
+
 func ShipmentCreate(shipmentURL string, param *ShipmentCreateReq) (*ShipmentCreateRes, error) {
 	b, _ := json.Marshal(param)
 
@@ -56,4 +60,32 @@ func ShipmentCreate(shipmentURL string, param *ShipmentCreateReq) (*ShipmentCrea
 	}
 
 	return scr, nil
+}
+
+func ShipmentRequest(shipmentURL string, param *ShipmentRequestReq) ([]byte, error) {
+	b, _ := json.Marshal(param)
+
+	req, err := http.NewRequest(http.MethodPost, shipmentURL+"/request", bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", IsucariAPIToken)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read res.Body and the status code of the response from shipment service was not 200: %v", err)
+		}
+		return nil, fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
+	}
+
+	return ioutil.ReadAll(res.Body)
 }
