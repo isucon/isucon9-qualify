@@ -1,7 +1,14 @@
 import React from 'react';
+import {ItemData} from "../dataObjects/item";
 
-const ItemListPage: React.FC = () => (
-    <div>Item list Page</div>
-);
+interface ItemListPageProps {
+    items: ItemData[],
+}
+
+const ItemListPage: React.FC<ItemListPageProps> = ({ items }: ItemListPageProps) => {
+    return (
+        <div>Item list Page</div>
+    );
+};
 
 export { ItemListPage }
