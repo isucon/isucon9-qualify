@@ -1,4 +1,4 @@
-interface ItemData {
+export interface ItemData {
     id: number,
     name: string,
     price: number,
@@ -6,5 +6,3 @@ interface ItemData {
     description: string,
     createdAt: string,
 }
-
-export { ItemData }
