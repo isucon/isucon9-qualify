@@ -12,7 +12,7 @@ const themeInstance = createMuiTheme({
 
 const BasePageComponent: React.FC = ({children}) => (
     <MuiThemeProvider theme={themeInstance}>
-        <Container maxWidth="xs" children={children} />
+        <Container maxWidth="lg" children={children} />
     </MuiThemeProvider>
 );
 
