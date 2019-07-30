@@ -108,7 +108,11 @@ type reqBuy struct {
 }
 
 type resSell struct {
-	ID int64 `json:"id" db:"id"`
+	ID int64 `json:"id"`
+}
+
+type resPostShip struct {
+	URL string `json:"url"`
 }
 
 func init() {
@@ -279,12 +283,12 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if targetItem.Status != ItemStatusOnSale {
-		outputErrorMsg(w, http.StatusNotFound, "item is not for sale")
+		outputErrorMsg(w, http.StatusForbidden, "item is not for sale")
 		return
 	}
 
 	if targetItem.SellerID == buyerID {
-		outputErrorMsg(w, http.StatusNotFound, "自分の商品は買えません")
+		outputErrorMsg(w, http.StatusForbidden, "自分の商品は買えません")
 		return
 	}
 
@@ -475,7 +479,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := r.FormValue("item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
 		return
 	}
 
@@ -563,6 +567,11 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	rps := resPostShip{
+		URL: fmt.Sprintf("http://%s/upload/%s.png", r.Host, imgName),
+	}
+	json.NewEncoder(w).Encode(rps)
 }
 
 func getShipDone(w http.ResponseWriter, r *http.Request) {
@@ -718,7 +727,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := r.FormValue("item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
 		return
 	}
 

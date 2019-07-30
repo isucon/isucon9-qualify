@@ -38,6 +38,7 @@ type shipment struct {
 
 	Status          string    `json:"-"`
 	ReserveDatetime time.Time `json:"-"`
+	DoneDatetime    time.Time `json:"-"`
 }
 
 type shipmentStatusRes struct {
@@ -85,6 +86,10 @@ func (c *shipmentStore) SetStatus(key string, status string) (shipment, bool) {
 		return shipment{}, false
 	}
 	value.Status = status
+	if status == StatusShipping {
+		value.DoneDatetime = time.Now().Add(5 * time.Second)
+	}
+
 	c.items[key] = value
 
 	return value, true
@@ -95,6 +100,10 @@ func (c *shipmentStore) Get(key string) (shipment, bool) {
 	defer c.Unlock()
 
 	v, found := c.items[key]
+	if v.Status == StatusShipping && time.Now().After(v.DoneDatetime) {
+		v.Status = StatusDone
+	}
+
 	return v, found
 }
 
@@ -213,7 +222,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := &url.URL{
-		Scheme: "https",
+		Scheme: "http",
 		Host:   r.Host,
 		Path:   "/accept",
 	}
