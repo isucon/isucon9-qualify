@@ -361,6 +361,20 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	scr, err := api.ShipmentCreate("http://localhost:7000", &api.ShipmentCreateReq{
+		ToAddress:   buyer.Address,
+		ToName:      buyer.AccountName,
+		FromAddress: seller.Address,
+		FromName:    seller.AccountName,
+	})
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+		tx.Rollback()
+
+		return
+	}
+
 	body := &paymentServiceTokenReq{
 		Token:  rb.Token,
 		APIKey: PaymentServiceIsucariAPIKey,
@@ -409,20 +423,6 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	if pstr.Status != "ok" {
 		outputErrorMsg(w, http.StatusBadRequest, "想定外のエラー")
 		tx.Rollback()
-		return
-	}
-
-	scr, err := api.ShipmentCreate("http://localhost:7000", &api.ShipmentCreateReq{
-		ToAddress:   buyer.Address,
-		ToName:      buyer.AccountName,
-		FromAddress: seller.Address,
-		FromName:    seller.AccountName,
-	})
-	if err != nil {
-		log.Println(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
-		tx.Rollback()
-
 		return
 	}
 
