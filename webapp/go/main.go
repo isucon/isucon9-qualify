@@ -192,7 +192,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
 
