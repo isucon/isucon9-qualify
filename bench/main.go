@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/tuotoo/qrcode"
 )
 
 const (
@@ -172,6 +175,84 @@ func main() {
 	res, err = s2.SendRequest(req)
 	if res.StatusCode != http.StatusOK {
 		log.Fatal("failed to buy")
+	}
+
+	formData = url.Values{}
+	formData.Set("csrf_token", csrfToken1)
+	formData.Set("item_id", fmt.Sprintf("%d", targetItemID))
+	req, err = http.NewRequest(http.MethodPost, "http://localhost:8000/ship", bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err = s1.SendRequest(req)
+	if res.StatusCode != http.StatusOK {
+		log.Fatal("failed to ship")
+	}
+
+	shipRes := make(map[string]string)
+	err = json.NewDecoder(res.Body).Decode(&shipRes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if shipRes["url"] == "" {
+		log.Fatal("url is empty")
+	}
+
+	res, err = http.Get(shipRes["url"])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer res.Body.Close()
+	qrmatrix, err := qrcode.Decode(res.Body)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	_, err = http.Get(qrmatrix.Content)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	formData = url.Values{}
+	formData.Set("csrf_token", csrfToken1)
+	formData.Set("item_id", fmt.Sprintf("%d", targetItemID))
+	req, err = http.NewRequest(http.MethodPost, "http://localhost:8000/ship_done", bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err = s1.SendRequest(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		log.Fatal("failed to ship_done")
+	}
+
+	time.Sleep(6 * time.Second)
+
+	formData = url.Values{}
+	formData.Set("csrf_token", csrfToken2)
+	formData.Set("item_id", fmt.Sprintf("%d", targetItemID))
+	req, err = http.NewRequest(http.MethodPost, "http://localhost:8000/complete", bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err = s2.SendRequest(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		b, _ := ioutil.ReadAll(res.Body)
+		fmt.Println(string(b))
+		log.Fatal("failed to complete")
 	}
 }
 
