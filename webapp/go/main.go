@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	crand "crypto/rand"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -106,6 +107,10 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
+type resSell struct {
+	ID int64 `json:"id" db:"id"`
+}
+
 func init() {
 	templates = template.Must(template.ParseFiles(
 		"templates/register.html",
@@ -198,8 +203,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
-	b, _ := json.Marshal(item)
-	w.Write(b)
+	json.NewEncoder(w).Encode(item)
 }
 
 func getBuyItem(w http.ResponseWriter, r *http.Request) {
@@ -878,7 +882,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/items/%d.json", itemID), http.StatusFound)
+	json.NewEncoder(w).Encode(resSell{ID: itemID})
 }
 
 func getLogin(w http.ResponseWriter, r *http.Request) {
@@ -898,13 +902,17 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if accountName == "" || password == "" {
-		outputErrorMsg(w, http.StatusInternalServerError, "all parameters are required")
+		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
 
 		return
 	}
 
 	u := User{}
 	err := dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusUnauthorized, "user not found")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 
@@ -935,8 +943,6 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 
 		outputErrorMsg(w, http.StatusInternalServerError, "session error")
 	}
-
-	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func getRegister(w http.ResponseWriter, r *http.Request) {
@@ -976,10 +982,9 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
-	b, _ := json.Marshal(struct {
+	w.WriteHeader(status)
+
+	json.NewEncoder(w).Encode(struct {
 		Error string `json:"error"`
 	}{Error: msg})
-
-	w.WriteHeader(status)
-	w.Write(b)
 }
