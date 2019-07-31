@@ -5,17 +5,23 @@ import Card from "@material-ui/core/Card";
 import GridList from "@material-ui/core/GridList";
 import GridListTile from "@material-ui/core/GridListTile";
 import GridListTileBar from "@material-ui/core/GridListTileBar";
+import { Link as RouteLink } from 'react-router-dom'
 
 const useStyles = makeStyles(theme => ({
-    paper: {
-        marginTop: theme.spacing(1),
+    root: {
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        flexWrap: 'wrap',
+        marginTop: theme.spacing(1),
+        justifyContent: 'space-around',
+        overflow: 'hidden',
     },
     itemImage: {
         height: '100%',
     },
+    grid: {
+        width: '300px',
+        height: '300px',
+    }
 }));
 
 interface ItemListPageProps {
@@ -66,9 +72,11 @@ const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPage
 
     for (const item of items) {
         itemComponents.push(
-            <GridListTile key={item.id}>
+            <GridListTile className={classes.grid} key={item.id}>
                 <Card>
-                    <img className={classes.itemImage} src={item.thumbnailUrl} alt={item.name} />
+                    <RouteLink to={`/items/${item.id}`}>
+                        <img className={classes.itemImage} src={item.thumbnailUrl} alt={item.name} />
+                    </RouteLink>
                     <GridListTileBar
                         title={item.name}
                         subtitle={`¥${item.price}`}
@@ -79,7 +87,7 @@ const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPage
     }
 
     return (
-        <div className={classes.paper}>
+        <div className={classes.root}>
             <GridList cols={3}>
                 {itemComponents}
             </GridList>
