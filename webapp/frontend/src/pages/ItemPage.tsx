@@ -6,6 +6,8 @@ import Grid from "@material-ui/core/Grid";
 import Divider from "@material-ui/core/Divider";
 import Avatar from "@material-ui/core/Avatar";
 import { Link as RouteLink } from 'react-router-dom';
+import AppBar from "@material-ui/core/AppBar";
+import Button from "@material-ui/core/Button";
 
 const useStyles = makeStyles(theme => ({
     title: {
@@ -30,6 +32,13 @@ const useStyles = makeStyles(theme => ({
     link: {
         textDecoration: 'none',
     },
+    appBar: {
+        top: 'auto',
+        bottom: 0,
+    },
+    buyButton: {
+        margin: theme.spacing(1),
+    }
 }));
 
 interface ItemPageProps {
@@ -92,6 +101,21 @@ const ItemPage: React.FC/*<ItemPageProps>*/ = (/*{ item }*/) => {
                     </Grid>
                 </Grid>
             </Grid>
+            <AppBar color="primary" position="fixed" className={classes.appBar}>
+                <Grid
+                    container
+                    spacing={2}
+                    direction="row"
+                    alignItems="center"
+                >
+                    <Grid item>
+                        <Typography variant="h5">¥{item.price}</Typography>
+                    </Grid>
+                    <Grid item>
+                        <Button variant="contained" className={classes.buyButton}>購入</Button>
+                    </Grid>
+                </Grid>
+            </AppBar>
         </div>
     );
 };
