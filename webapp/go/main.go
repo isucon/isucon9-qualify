@@ -193,11 +193,43 @@ func main() {
 	http.ListenAndServe("localhost:8000", mux)
 }
 
+func getSession(r *http.Request) *sessions.Session {
+	session, _ := store.Get(r, sessionName)
+
+	return session
+}
+
+func getCSRFToken(r *http.Request) string {
+	session := getSession(r)
+
+	csrfToken, ok := session.Values["csrf_token"]
+	if !ok {
+		return ""
+	}
+
+	return csrfToken.(string)
+}
+
+func getUserID(r *http.Request) int64 {
+	session := getSession(r)
+
+	userID, ok := session.Values["user_id"]
+	if !ok {
+		return 0
+	}
+
+	return userID.(int64)
+}
+
 func getItem(w http.ResponseWriter, r *http.Request) {
 	itemID := pat.Param(r, "item_id")
 
 	item := Item{}
 	err := dbx.Get(&item, "SELECT * FROM `items` WHERE `id` = ?", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 
@@ -211,14 +243,6 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBuyItem(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
 	itemIDStr := pat.Param(r, "item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
@@ -228,7 +252,7 @@ func getBuyItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	csrfToken := session.Values["csrf_token"].(string)
+	csrfToken := getCSRFToken(r)
 
 	templates.ExecuteTemplate(w, "buy.html", struct {
 		CSRFToken string
@@ -259,26 +283,24 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	if rb.CSRFToken != session.Values["csrf_token"].(string) {
+	if rb.CSRFToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 
 		return
 	}
 
-	buyerID := session.Values["user_id"].(int64)
+	buyerID := getUserID(r)
 
 	targetItem := Item{}
-	dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)
-	if targetItem.ID != rb.ItemID {
-		outputErrorMsg(w, http.StatusNotFound, "item not exist")
+	err = dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
 
@@ -305,6 +327,11 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	buyer := User{}
 	seller := User{}
 	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", buyerID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		tx.Rollback()
+		return
+	}
 	if err != nil {
 		log.Println(err)
 
@@ -312,7 +339,13 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		return
 	}
+
 	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", targetItem.SellerID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		tx.Rollback()
+		return
+	}
 	if err != nil {
 		log.Println(err)
 
@@ -451,20 +484,12 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 }
 
 func getShip(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	csrfToken := session.Values["csrf_token"].(string)
+	csrfToken := getCSRFToken(r)
 
 	itemIDStr := pat.Param(r, "item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
 		return
 	}
 
@@ -483,23 +508,19 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	if csrfToken != session.Values["csrf_token"].(string) {
+	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 
 		return
 	}
 
-	userID := session.Values["user_id"].(int64)
+	userID := getUserID(r)
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
@@ -518,17 +539,44 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx := dbx.MustBegin()
-	tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
 	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
 		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
 		tx.Rollback()
 		return
 	}
 	item := Item{}
-	tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
 
 	shipping := Shipping{}
 	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "shippings not found")
+		tx.Rollback()
+		return
+	}
 	if err != nil {
 		log.Println(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
@@ -575,20 +623,12 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 }
 
 func getShipDone(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	csrfToken := session.Values["csrf_token"].(string)
+	csrfToken := getCSRFToken(r)
 
 	itemIDStr := pat.Param(r, "item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
 		return
 	}
 
@@ -603,27 +643,23 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := r.FormValue("item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
 		return
 	}
 
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	if csrfToken != session.Values["csrf_token"].(string) {
+	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 
 		return
 	}
 
-	userID := session.Values["user_id"].(int64)
+	userID := getUserID(r)
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusBadRequest, "transaction_evidence not found")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
@@ -699,20 +735,12 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 }
 
 func getComplete(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	csrfToken := session.Values["csrf_token"].(string)
+	csrfToken := getCSRFToken(r)
 
 	itemIDStr := pat.Param(r, "item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
-		outputErrorMsg(w, http.StatusNotFound, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
 		return
 	}
 
@@ -731,21 +759,13 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	if csrfToken != session.Values["csrf_token"].(string) {
+	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 
 		return
 	}
 
-	userID := session.Values["user_id"].(int64)
+	userID := getUserID(r)
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
 	if err != nil {
@@ -832,15 +852,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSell(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	csrfToken := session.Values["csrf_token"].(string)
+	csrfToken := getCSRFToken(r)
 
 	templates.ExecuteTemplate(w, "sell.html", struct {
 		CSRFToken string
@@ -853,21 +865,13 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	price := r.FormValue("price")
 	description := r.FormValue("description")
 
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
-
-	if csrfToken != session.Values["csrf_token"].(string) {
+	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 
 		return
 	}
 
-	sellerID := session.Values["user_id"]
+	sellerID := getUserID(r)
 
 	result, err := dbx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",
 		sellerID,
@@ -925,7 +929,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
 
@@ -937,13 +941,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := store.Get(r, sessionName)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
-		return
-	}
+	session := getSession(r)
 
 	session.Values["user_id"] = u.ID
 	session.Values["csrf_token"] = secureRandomStr(20)
@@ -951,6 +949,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
 	}
 }
 
