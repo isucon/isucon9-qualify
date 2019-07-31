@@ -1,9 +1,7 @@
 import React from 'react';
 import {ItemData} from "../dataObjects/item";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import GridList from "@material-ui/core/GridList";
-import { ItemComponent } from '../components/ItemComponent';
-import GridListTile from "@material-ui/core/GridListTile";
+import { ItemListComponent } from '../components/ItemListComponent';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -12,10 +10,6 @@ const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing(1),
         justifyContent: 'space-around',
         overflow: 'hidden',
-    },
-    grid: {
-        width: '300px',
-        height: '300px',
     },
 }));
 
@@ -60,24 +54,11 @@ const mockItems: ItemData[] = [
 
 const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPageProps*/) => {
     const classes = useStyles();
-
-    const itemComponents = [];
-
     const items = mockItems;
-
-    for (const item of items) {
-        itemComponents.push(
-            <GridListTile className={classes.grid} key={item.id}>
-                <ItemComponent itemId={item.id} imageUrl={item.thumbnailUrl} title={item.name} price={item.price}/>
-            </GridListTile>
-        )
-    }
 
     return (
         <div className={classes.root}>
-            <GridList cols={3}>
-                {itemComponents}
-            </GridList>
+            <ItemListComponent items={items}/>
         </div>
     );
 };
