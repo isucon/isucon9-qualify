@@ -1,11 +1,9 @@
 import React from 'react';
 import {ItemData} from "../dataObjects/item";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import Card from "@material-ui/core/Card";
 import GridList from "@material-ui/core/GridList";
+import { ItemComponent } from '../components/ItemComponent';
 import GridListTile from "@material-ui/core/GridListTile";
-import GridListTileBar from "@material-ui/core/GridListTileBar";
-import { Link as RouteLink } from 'react-router-dom'
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -15,13 +13,10 @@ const useStyles = makeStyles(theme => ({
         justifyContent: 'space-around',
         overflow: 'hidden',
     },
-    itemImage: {
-        height: '100%',
-    },
     grid: {
         width: '300px',
         height: '300px',
-    }
+    },
 }));
 
 interface ItemListPageProps {
@@ -73,15 +68,7 @@ const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPage
     for (const item of items) {
         itemComponents.push(
             <GridListTile className={classes.grid} key={item.id}>
-                <Card>
-                    <RouteLink to={`/items/${item.id}`}>
-                        <img className={classes.itemImage} src={item.thumbnailUrl} alt={item.name} />
-                    </RouteLink>
-                    <GridListTileBar
-                        title={item.name}
-                        subtitle={`¥${item.price}`}
-                    />
-                </Card>
+                <ItemComponent itemId={item.id} imageUrl={item.thumbnailUrl} title={item.name} price={item.price}/>
             </GridListTile>
         )
     }
