@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	crand "crypto/rand"
 	"database/sql"
 	"encoding/json"
@@ -498,35 +497,15 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body := &paymentServiceTokenReq{
+	pstr, err := api.PaymentToken("http://localhost:5555", &api.PaymentServiceTokenReq{
 		Token:  rb.Token,
 		APIKey: PaymentServiceIsucariAPIKey,
-		Price:  100,
-	}
-	b, _ := json.Marshal(body)
-	resp, err := http.Post("http://localhost:5555/token", "application/json", bytes.NewBuffer(b))
+		Price:  targetItem.Price,
+	})
 	if err != nil {
 		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to payment service")
-		tx.Rollback()
-		return
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("payment service's status is %d\n", resp.StatusCode)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "payment service is failed")
-		tx.Rollback()
-		return
-	}
-
-	pstr := &paymentServiceTokenRes{}
-	err = json.NewDecoder(resp.Body).Decode(&pstr)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
 		tx.Rollback()
 		return
 	}
