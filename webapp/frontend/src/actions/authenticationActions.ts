@@ -22,7 +22,7 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
 
                 dispatch(loginFailAction())
             })
-    }
+    };
 }
 
 export interface LoginSuccessAction {

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { makeStyles } from '@material-ui/core';
-import {SignInPageFormComponent} from "../components/SignInFormComponent";
+import SignInFormContainer from "../containers/SignInFormContainer";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -17,7 +17,7 @@ const SignInPage: React.FC = () => {
 
     return (
         <div className={classes.paper}>
-            <SignInPageFormComponent userId={"1235"} password={"password"}/>
+            <SignInFormContainer />
         </div>
     );
 };
