@@ -119,6 +119,7 @@ func init() {
 	templates = template.Must(template.ParseFiles(
 		"templates/register.html",
 		"templates/login.html",
+		"templates/item_edit.html",
 		"templates/sell.html",
 		"templates/buy.html",
 		"templates/ship.html",
@@ -174,6 +175,8 @@ func main() {
 	mux := goji.NewMux()
 
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
+	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getItemEdit)
+	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
 	mux.HandleFunc(pat.Get("/buy/:item_id"), getBuyItem)
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
 	mux.HandleFunc(pat.Get("/sell"), getSell)
@@ -242,13 +245,100 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(item)
 }
 
+func getItemEdit(w http.ResponseWriter, r *http.Request) {
+	itemIDStr := pat.Param(r, "item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusBadRequest, "id error")
+		return
+	}
+
+	csrfToken := getCSRFToken(r)
+
+	templates.ExecuteTemplate(w, "item_edit.html", struct {
+		CSRFToken string
+		ItemID    int64
+	}{csrfToken, itemID})
+}
+
+func postItemEdit(w http.ResponseWriter, r *http.Request) {
+	csrfToken := r.FormValue("csrf_token")
+	itemIDStr := r.FormValue("item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
+		return
+	}
+
+	priceStr := r.FormValue("item_price")
+	price, err := strconv.Atoi(priceStr)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
+		return
+	}
+
+	if csrfToken != getCSRFToken(r) {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
+
+		return
+	}
+
+	userID := getUserID(r)
+
+	targetItem := Item{}
+	err = dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	if targetItem.SellerID != userID {
+		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
+		return
+	}
+
+	if targetItem.Status != ItemStatusOnSale {
+		outputErrorMsg(w, http.StatusForbidden, "販売中の商品以外編集できません")
+		return
+	}
+
+	tx := dbx.MustBegin()
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?", price, time.Now(), itemID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+}
+
 func getBuyItem(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := pat.Param(r, "item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil {
 		log.Println(err)
 
-		outputErrorMsg(w, http.StatusInternalServerError, "id error")
+		outputErrorMsg(w, http.StatusBadRequest, "id error")
 		return
 	}
 
@@ -319,7 +409,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 
-		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
