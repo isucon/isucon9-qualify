@@ -1064,7 +1064,11 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)", accountName, hashedPassword, address)
+	_, err = dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)",
+		accountName,
+		hashedPassword,
+		address,
+	)
 	if err != nil {
 		log.Println(err)
 
