@@ -319,7 +319,11 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?", price, time.Now(), itemID)
+	_, err = tx.Exec("UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?",
+		price,
+		time.Now(),
+		itemID,
+	)
 	if err != nil {
 		log.Println(err)
 
@@ -459,7 +463,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `items` SET buyer_id = ?, status = ?, updated_at = ? WHERE id = ?",
+	_, err = tx.Exec("UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?",
 		buyerID,
 		ItemStatusTrading,
 		time.Now(),
@@ -664,7 +668,12 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `shippings` SET status = ?, img_name = ?, updated_at = ? WHERE transaction_evidence_id = ?", ShippingsStatusWaitPickup, imgName, time.Now(), transactionEvidence.ID)
+	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `img_name` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
+		ShippingsStatusWaitPickup,
+		imgName,
+		time.Now(),
+		transactionEvidence.ID,
+	)
 	if err != nil {
 		log.Println(err)
 
@@ -772,7 +781,11 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `shippings` SET status = ?, updated_at = ? WHERE transaction_evidence_id = ?", ssr.Status, time.Now(), transactionEvidence.ID)
+	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
+		ssr.Status,
+		time.Now(),
+		transactionEvidence.ID,
+	)
 	if err != nil {
 		log.Println(err)
 
@@ -781,7 +794,11 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `transaction_evidences` SET status = ?, updated_at = ? WHERE id = ?", TransactionEvidenceStatusWaitDone, time.Now(), transactionEvidence.ID)
+	_, err = tx.Exec("UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
+		TransactionEvidenceStatusWaitDone,
+		time.Now(),
+		transactionEvidence.ID,
+	)
 	if err != nil {
 		log.Println(err)
 
@@ -880,7 +897,11 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `items` SET status = ?, updated_at = ? WHERE id = ?", ItemStatusSoldOut, time.Now(), itemID)
+	_, err = tx.Exec("UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
+		ItemStatusSoldOut,
+		time.Now(),
+		itemID,
+	)
 	if err != nil {
 		log.Println(err)
 
@@ -889,7 +910,11 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `shippings` SET status = ?, updated_at = ? WHERE transaction_evidence_id = ?", ShippingsStatusDone, time.Now(), transactionEvidence.ID)
+	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
+		ShippingsStatusDone,
+		time.Now(),
+		transactionEvidence.ID,
+	)
 	if err != nil {
 		log.Println(err)
 
@@ -898,7 +923,11 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `transaction_evidences` SET status = ?, updated_at = ? WHERE id = ?", TransactionEvidenceStatusDone, time.Now(), transactionEvidence.ID)
+	_, err = tx.Exec("UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
+		TransactionEvidenceStatusDone,
+		time.Now(),
+		transactionEvidence.ID,
+	)
 	if err != nil {
 		log.Println(err)
 
