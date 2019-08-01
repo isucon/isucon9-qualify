@@ -351,16 +351,6 @@ func getBuyItem(w http.ResponseWriter, r *http.Request) {
 	}{csrfToken, itemID, PaymentServiceIsucariShopID})
 }
 
-type paymentServiceTokenReq struct {
-	Token  string `json:"token"`
-	APIKey string `json:"api_key"`
-	Price  int    `json:"price"`
-}
-
-type paymentServiceTokenRes struct {
-	Status string `json:"status"`
-}
-
 func postBuy(w http.ResponseWriter, r *http.Request) {
 	rb := reqBuy{}
 
