@@ -47,8 +47,8 @@ func main() {
 	s2 := NewSession()
 
 	formData := url.Values{}
-	formData.Set("account_name", "aaaa")
-	formData.Set("password", "aaaa")
+	formData.Set("account_name", "aaa")
+	formData.Set("password", "aaa")
 	req, err := http.NewRequest(http.MethodPost, "http://localhost:8000/login", bytes.NewBufferString(formData.Encode()))
 	if err != nil {
 		log.Fatal(err)
@@ -112,7 +112,7 @@ func main() {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		log.Fatal("failed to login")
+		log.Fatal("failed to sell")
 	}
 
 	rs := resSell{}
