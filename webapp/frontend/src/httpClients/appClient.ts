@@ -3,7 +3,7 @@ import config from '../config';
 /**
  * HTTP client for main app
  */
-export default class AppClient {
+class AppClient {
     private baseUrl: string = config.apiUrl;
     private defaultHeaders: HeadersInit = {};
 
@@ -22,3 +22,5 @@ export default class AppClient {
         });
     }
 }
+
+export default new AppClient();

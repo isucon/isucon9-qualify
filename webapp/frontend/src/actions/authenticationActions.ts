@@ -1,16 +1,28 @@
-import {AuthStatusState} from "../reducers/authStatusReducer";
+import { AuthStatusState } from "../reducers/authStatusReducer";
+import AppClient from '../httpClients/appClient';
+import {ThunkAction, ThunkDispatch} from "redux-thunk";
 
-export const POST_LOGIN = 'POST_LOGIN';
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
+export const LOGIN_FAIL = 'LOGIN_FAIL';
 
-export interface PostLoginAction {
-    type: typeof POST_LOGIN,
-    accountName: string,
-    password: string,
-}
+type State = void | AuthStatusState;
+type ActionTypes = LoginSuccessAction | LoginFailAction;
+type ThunkResult<R> = ThunkAction<R, State, undefined, ActionTypes>
 
-export function postLoginAction(accountName: string, password: string): PostLoginAction {
-    return { type: POST_LOGIN, accountName, password };
+export function postLoginAction(accountName: string, password: string): ThunkResult<void> {
+    return (dispatch: ThunkDispatch<any, any, ActionTypes>, getState: () => any) => {
+        AppClient.post('/login')
+            .then((response: Response) => {
+                if (response.status === 200) {
+                    dispatch(loginSuccessAction({
+                        userId: 1235, // TODO
+                        accountName: 'sota1235', // TODO
+                    }));
+                }
+
+                dispatch(loginFailAction())
+            })
+    }
 }
 
 export interface LoginSuccessAction {
@@ -22,5 +34,15 @@ export function loginSuccessAction(newAuthState: AuthStatusState): LoginSuccessA
     return {
         type: LOGIN_SUCCESS,
         payload: newAuthState,
+    };
+}
+
+export interface LoginFailAction {
+    type: typeof LOGIN_FAIL,
+}
+
+export function loginFailAction(): LoginFailAction {
+    return {
+        type: LOGIN_FAIL,
     };
 }
