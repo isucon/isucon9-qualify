@@ -1,8 +1,9 @@
-import {combineReducers, compose} from 'redux';
+import { combineReducers } from 'redux';
 import authStatus from './authStatusReducer';
+import { connectRouter } from 'connected-react-router';
+import { History } from 'history';
 
-const reducers = combineReducers({
+export default (history: History) => combineReducers({
+    router: connectRouter(history),
     authStatus,
 });
-
-export default reducers;

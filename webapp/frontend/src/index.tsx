@@ -3,15 +3,28 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-import { createStore } from 'redux';
-import reducers from './reducers';
+import { applyMiddleware, compose, createStore } from 'redux';
+import createRootReducer from './reducers';
 import { Provider } from 'react-redux';
+import createBrowserHistory from 'history/createBrowserHistory';
+import {ConnectedRouter, routerMiddleware} from "connected-react-router";
 
-const store = createStore(reducers);
+const history = createBrowserHistory();
+
+const store = createStore(
+    createRootReducer(history),
+    compose(
+        applyMiddleware(
+            routerMiddleware(history),
+        ),
+    ),
+);
 
 ReactDOM.render(
     <Provider store={store}>
-        <App />
+        <ConnectedRouter history={history}>
+            <App />
+        </ConnectedRouter>
     </Provider>,
     document.getElementById('root')
 );
