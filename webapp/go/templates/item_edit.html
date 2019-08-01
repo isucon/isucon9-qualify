@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>item edit</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>item edit</h1>
+      <div>
+        <form method="post" action="/items/edit">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <input type="hidden" name="item_id" value="{{.ItemID}}">
+          <input type="number" name="item_price" min="100">
+          <div>
+            <input type="submit" name="submit" value="submit">
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
