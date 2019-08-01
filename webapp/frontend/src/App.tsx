@@ -33,8 +33,7 @@ const routes: Array<{
         path: '/signup',
         component: SignUpPage,
         pageName: 'Sign up page',
-    },
-    {
+    }, {
         path: '/items',
         component: ItemListPage,
         pageName: 'Item list page',
