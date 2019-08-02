@@ -1,0 +1,35 @@
+- name: Install Package
+  apt:
+    pkg: "{{ item }}"
+    state: installed
+  with_items:
+    - mysql-server
+
+- name: Enable and start mysql service
+  systemd:
+    name: mysql
+    state: started
+    daemon_reload: yes
+    enabled: yes
+
+- name: Create MySQL isucari@localhost user
+  command: >
+    mysql -e "
+    DROP USER IF EXISTS isucon@'localhost';
+    CREATE USER isucon@'localhost' IDENTIFIED BY 'isucon';
+    GRANT ALL on *.* TO isucon@'localhost';
+    "
+  args:
+    chdir: /home/isucon/isucari/db/
+  become: yes
+
+- name: Create MySQL isucari@% user
+  command: >
+    mysql -e "
+    DROP USER IF EXISTS isucon@'%';
+    CREATE USER isucon@'%' IDENTIFIED BY 'isucon';
+    GRANT ALL on *.* TO isucon@'%';
+    "
+  args:
+    chdir: /home/isucon/isucari/db/
+  become: yes
