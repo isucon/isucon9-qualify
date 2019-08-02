@@ -1,0 +1,16 @@
+[Unit]
+Description = isucon9 qualifier external payment application
+
+[Service]
+WorkingDirectory=/home/isucon/isucari/external/payment
+#EnvironmentFile=/home/isucon/env.sh
+
+ExecStart = /home/isucon/isucari/external/payment/payment
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target

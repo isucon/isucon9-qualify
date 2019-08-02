@@ -1,0 +1,17 @@
+- name: Copy isucari Nginx config
+  copy:
+    src: etc/nginx/sites-available/{{ item }}
+    dest: /etc/nginx/sites-available/{{ item }}
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - isucari.conf
+
+- name: Enable isucari config
+  file:
+    path: /etc/nginx/sites-enabled/isucari.conf
+    src: /etc/nginx/sites-available/isucari.conf
+    state: link
+  notify:
+    - reload nginx

@@ -1,0 +1,14 @@
+- hosts: localhost
+  user: root
+  gather_facts: yes
+
+  roles:
+    - bootstrap
+
+    - vagrant-specific
+
+    - nginx
+    - mysql
+    - golang
+    - webapp.nginx
+    - webapp.golang

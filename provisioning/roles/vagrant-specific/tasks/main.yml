@@ -1,0 +1,14 @@
+- name: Symlink webapp
+  file:
+    path: /home/isucon/isucari/webapp
+    src: /tmp/ansible/webapp
+  state: link
+
+- name: Chown isucon
+  file:
+    path: /tmp/ansible/webapp
+    owner: isucon
+    group: isucon
+    recurse: yes
+  state: link
+  become: yes

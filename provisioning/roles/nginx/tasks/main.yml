@@ -1,0 +1,17 @@
+- name: Install Package
+  apt:
+    pkg: ['nginx']
+    state: present
+
+- name: Disable default config
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Copy Nginx config
+  copy:
+    src: etc/nginx/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: 0644

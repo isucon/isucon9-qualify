@@ -1,0 +1,61 @@
+---
+- name: Create isucon group
+  group:
+    name: isucon
+    gid: 1001
+    state: present
+    system: no
+
+- name: Create isucon user
+  user:
+    name: isucon
+    uid: 1001
+    group: isucon
+    password: isucon
+    home: /home/isucon
+    shell: /bin/bash
+    state: present
+    system: no
+
+- name: Add sudoers
+  copy:
+    content: "isucon  ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/90-isucon-user
+    owner: root
+    group: root
+    mode: 0440
+
+- name: Install Dependencies
+  apt:
+    pkg: ['build-essential']
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+
+- name: Setup xbuild
+  git:
+    repo: https://github.com/tagomoris/xbuild.git
+    dest: /home/isucon/xbuild
+    version: master
+  become: yes
+  become_user: isucon
+
+- name: Copy env.sh
+  copy:
+    src: home/isucon/env.sh
+    dest: /home/isucon/env.sh
+    owner: isucon
+    group: isucon
+    mode: 0755
+
+- name: Create directories
+  become: yes
+  file:
+    path: "{{ item.path }}"
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    state: directory
+  with_items:
+    - { path: /home/isucon/isucari, mode: "0755", owner: isucon, group: isucon }
