@@ -100,6 +100,11 @@ type Shipping struct {
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
 }
 
+type reqLogin struct {
+	AccountName string `json:"account_name"`
+	Password    string `json:"password"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -999,8 +1004,20 @@ func secureRandomStr(b int) string {
 }
 
 func postLogin(w http.ResponseWriter, r *http.Request) {
-	accountName := r.FormValue("account_name")
-	password := r.FormValue("password")
+	// TODO remove it later
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+
+	rl := reqLogin{}
+	err := json.NewDecoder(r.Body).Decode(&rl)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		return
+	}
+
+	accountName := rl.AccountName
+	password := rl.Password
 
 	if accountName == "" || password == "" {
 		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
@@ -1009,7 +1026,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := User{}
-	err := dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
+	err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusUnauthorized, "user not found")
 		return
