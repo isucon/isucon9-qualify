@@ -7,8 +7,7 @@ import Grid from "@material-ui/core/Grid";
 import { Link as RouteLink } from 'react-router-dom';
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
-import {RegisterReqParams} from "../types/appApiTypes";
-import {FormErrorState} from "../reducers/formErrorReducer";
+import {RegisterReq} from "../types/appApiTypes";
 import {ErrorMessageComponent} from "./ErrorMessageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
@@ -32,7 +31,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 });
 
 interface SignUpFormComponentProps extends WithStyles<typeof styles> {
-    register: (params: RegisterReqParams) => void
+    register: (params: RegisterReq) => void
     errors: string[]
 }
 
