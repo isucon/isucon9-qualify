@@ -23,7 +23,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "watch": "npm-watch"
+  },
+  "watch": {
+    "build": "src/"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -46,6 +50,7 @@
     "@types/react-router-dom": "^4.3.4",
     "@types/redux": "^3.6.0",
     "@types/redux-thunk": "^2.1.0",
+    "npm-watch": "^0.6.0",
     "redux-devtools-extension": "^2.13.8"
   }
 }
