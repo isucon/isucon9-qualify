@@ -111,6 +111,12 @@ type reqLogin struct {
 	Password    string `json:"password"`
 }
 
+type reqItemEdit struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+	ItemPrice int    `json:"item_price"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -292,20 +298,16 @@ func getItemEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func postItemEdit(w http.ResponseWriter, r *http.Request) {
-	csrfToken := r.FormValue("csrf_token")
-	itemIDStr := r.FormValue("item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	rie := reqItemEdit{}
+	err := json.NewDecoder(r.Body).Decode(&rie)
 	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
 
-	priceStr := r.FormValue("item_price")
-	price, err := strconv.Atoi(priceStr)
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
-		return
-	}
+	csrfToken := rie.CSRFToken
+	itemID := rie.ItemID
+	price := rie.ItemPrice
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
@@ -389,9 +391,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&rb)
 	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
 
@@ -973,9 +973,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&rs)
 	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
 
@@ -1050,9 +1048,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	rl := reqLogin{}
 	err := json.NewDecoder(r.Body).Decode(&rl)
 	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
 
@@ -1104,9 +1100,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 	rr := reqRegister{}
 	err := json.NewDecoder(r.Body).Decode(&rr)
 	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
 
