@@ -1140,7 +1140,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := result.LastInsertId()
+	userID, err := result.LastInsertId()
 
 	if err != nil {
 		log.Println(err)
@@ -1150,7 +1150,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := User{
-		ID:          userId,
+		ID:          userID,
 		AccountName: accountName,
 		Address:     address,
 	}
