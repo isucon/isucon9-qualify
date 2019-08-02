@@ -9,6 +9,11 @@ import withStyles from "@material-ui/core/styles/withStyles";
 import {ErrorMessageComponent} from "./ErrorMessageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
+    paper: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+    },
     avatar: {
         margin: theme.spacing(1),
         backgroundColor: theme.palette.secondary.main,
@@ -69,7 +74,7 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
         const { classes } = this.props;
 
         return (
-            <div>
+            <div className={classes.paper}>
                 <Avatar className={classes.avatar}>
                     <LockOutlined/>
                 </Avatar>
