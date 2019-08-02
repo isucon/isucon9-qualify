@@ -117,6 +117,13 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
+type reqSell struct {
+	CSRFToken 	string `json:"csrf_token"`
+	Name      	string `json:"name"`
+	Description string `json:"description"`
+	Price       int	   `json:"price"`
+}
+
 type resSell struct {
 	ID int64 `json:"id"`
 }
@@ -132,7 +139,6 @@ type resSetting struct {
 func init() {
 	templates = template.Must(template.ParseFiles(
 		"templates/item_edit.html",
-		"templates/sell.html",
 		"templates/buy.html",
 		"templates/ship.html",
 		"templates/ship_done.html",
@@ -198,7 +204,6 @@ func main() {
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
 	mux.HandleFunc(pat.Get("/buy/:item_id"), getBuyItem)
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
-	mux.HandleFunc(pat.Get("/sell"), getSell)
 	mux.HandleFunc(pat.Post("/sell"), postSell)
 	mux.HandleFunc(pat.Get("/ship/:item_id"), getShip)
 	mux.HandleFunc(pat.Post("/ship"), postShip)
@@ -963,25 +968,28 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 }
 
-func getSell(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
-
-	templates.ExecuteTemplate(w, "sell.html", struct {
-		CSRFToken string
-	}{csrfToken})
-}
-
 func postSell(w http.ResponseWriter, r *http.Request) {
-	csrfToken := r.FormValue("csrf_token")
-	name := r.FormValue("name")
-	price := r.FormValue("price")
-	description := r.FormValue("description")
+	rs := reqSell{}
+
+	err := json.NewDecoder(r.Body).Decode(&rs)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		return
+	}
+
+	csrfToken := rs.CSRFToken
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 
 		return
 	}
+
+	name := rs.Name
+	price := rs.Price
+	description := rs.Description
 
 	sellerID := getUserID(r)
 
