@@ -1,0 +1,14 @@
+# -*- mode: Yaml; -*-
+# vi: set ts=2 sw=2 sts=0 et:
+
+---
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded
+    daemon_reload: yes
+
