@@ -6,12 +6,12 @@
     group: root
     mode: 0644
   with_items:
-    - nginx.conf
+    - isucari.conf
 
 - name: Enable isucari config
   file:
-    path: /etc/nginx/sites-enabled/nginx.conf
-    src: /etc/nginx/sites-available/nginx.conf
+    path: /etc/nginx/sites-enabled/isucari.conf
+    src: /etc/nginx/sites-available/isucari.conf
     state: link
   notify:
     - reload nginx

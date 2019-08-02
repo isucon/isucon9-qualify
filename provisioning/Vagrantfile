@@ -28,6 +28,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision :shell, inline: $disable_unattended_upgrades
   config.vm.provision :shell, inline: $setup_quarifier_environment
   config.vm.provision :file,  source: "./roles/", destination: "/tmp/ansible/roles"
-  config.vm.provision :file,  source: "./site.yml", destination: "/tmp/ansible/site.yml"
+  config.vm.provision :file,  source: "./webapp.yml", destination: "/tmp/ansible/webapp.yml"
+  config.vm.provision :file,  source: "./external.yml", destination: "/tmp/ansible/external.yml"
   config.vm.provision :file,  source: "../webapp", destination: "/tmp/ansible/webapp"
 end
