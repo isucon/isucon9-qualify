@@ -25,8 +25,8 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
             })
             .then((body) => {
                 dispatch(loginSuccessAction({
-                    userId: body.userId,
-                    accountName: body.accountName,
+                    userId: body.id,
+                    accountName: body.account_name,
                     address: body.address,
                 }));
             })
