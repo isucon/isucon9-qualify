@@ -1,17 +1,18 @@
 import { AuthStatusState } from "../reducers/authStatusReducer";
 import AppClient from '../httpClients/appClient';
-import {ThunkAction, ThunkDispatch} from "redux-thunk";
-import {FormErrorState} from "../reducers/formErrorReducer";
+import { ThunkAction, ThunkDispatch } from "redux-thunk";
+import { FormErrorState } from "../reducers/formErrorReducer";
+import { push } from 'connected-react-router';
+import {AnyAction} from "redux";
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const LOGIN_FAIL = 'LOGIN_FAIL';
 
 type State = void | AuthStatusState;
-type ActionTypes = LoginSuccessAction | LoginFailAction;
-type ThunkResult<R> = ThunkAction<R, State, undefined, ActionTypes>
+type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
 
 export function postLoginAction(accountName: string, password: string): ThunkResult<void> {
-    return (dispatch: ThunkDispatch<any, any, ActionTypes>, getState: () => any) => {
+    return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
         AppClient.post('/login', {
             account_name: accountName,
             password: password,
@@ -29,6 +30,7 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
                     accountName: body.account_name,
                     address: body.address,
                 }));
+                dispatch(push('/items'))
             })
             .catch((err: Error) => {
                 dispatch(loginFailAction({

@@ -16,7 +16,7 @@ const authStatus = (state: AuthStatusState = {}, action: LoginSuccessAction): Au
             }
         }
         default:
-            return {};
+            return state;
     }
 };
 
