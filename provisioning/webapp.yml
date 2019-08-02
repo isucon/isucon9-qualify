@@ -7,4 +7,5 @@
     - nginx
     - mysql
     - golang
+    - webapp.nginx
     - webapp.golang
