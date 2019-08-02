@@ -11,7 +11,10 @@ type ThunkResult<R> = ThunkAction<R, State, undefined, ActionTypes>
 
 export function postLoginAction(accountName: string, password: string): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, ActionTypes>, getState: () => any) => {
-        AppClient.post('/login')
+        AppClient.post('/login', {
+            account_name: accountName,
+            password: password,
+        })
             .then((response: Response) => {
                 if (response.status === 200) {
                     dispatch(loginSuccessAction({

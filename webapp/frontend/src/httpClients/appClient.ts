@@ -14,12 +14,22 @@ class AppClient {
         });
     }
 
-    async post(path: string): Promise<Response> {
-        return await fetch(`${this.baseUrl}${path}`, {
+    async post(path: string, params?: Object): Promise<Response> {
+        let requestOption: RequestInit = {
             method: 'POST',
-            mode: 'cors',
-            headers: this.defaultHeaders,
-        });
+            mode: 'no-cors',
+            headers: Object.assign({}, this.defaultHeaders, {
+                'Content-Type': 'application/json',
+            }),
+        };
+
+        if (params) {
+            const body = JSON.stringify(params);
+            requestOption.body = body;
+        }
+
+
+        return await fetch(`${this.baseUrl}${path}`, requestOption);
     }
 }
 
