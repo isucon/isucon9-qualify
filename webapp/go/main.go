@@ -119,6 +119,10 @@ type resPostShip struct {
 	URL string `json:"url"`
 }
 
+type resSetting struct {
+	CSRFToken string `json:"csrf_token"`
+}
+
 func init() {
 	templates = template.Must(template.ParseFiles(
 		"templates/register.html",
@@ -197,12 +201,13 @@ func main() {
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
 	mux.HandleFunc(pat.Get("/complete/:item_id"), getComplete)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
+	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Get("/register"), getRegister)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 
-	http.ListenAndServe("localhost:8000", mux)
+	log.Fatal(http.ListenAndServe("localhost:8000", mux))
 }
 
 func getSession(r *http.Request) *sessions.Session {
@@ -1007,6 +1012,14 @@ func secureRandomStr(b int) string {
 		panic(err)
 	}
 	return fmt.Sprintf("%x", k)
+}
+
+func getSettings(w http.ResponseWriter, r *http.Request) {
+	csrfToken := getCSRFToken(r)
+
+	json.NewEncoder(w).Encode(resSetting{
+		CSRFToken: csrfToken,
+	})
 }
 
 func postLogin(w http.ResponseWriter, r *http.Request) {
