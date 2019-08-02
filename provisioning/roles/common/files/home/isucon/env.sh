@@ -1,0 +1,3 @@
+ISUCARI_DB_HOST=localhost
+ISUCARI_DB_USER=isucon
+ISUCARI_DB_PASSWORD=isucon
