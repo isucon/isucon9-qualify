@@ -1,24 +1,34 @@
 import React from 'react';
 import Fab from "@material-ui/core/Fab/Fab";
-import Icon from "@material-ui/core/Icon/Icon";
 import makeStyles from "@material-ui/core/styles/makeStyles";
+import {Edit} from "@material-ui/icons";
 
 const useStyles = makeStyles(theme => ({
     fab: {
         margin: theme.spacing(1),
+        position: 'fixed',
+        top: 'auto',
+        bottom: '30px',
+        right: '30px',
+        width: '100px',
+        height: '100px',
     },
 }));
 
 interface ListingButtonComponentProps {
-    onClick: Function
+    onClick: (e: React.MouseEvent) => void
 }
 
 const ListingButtonComponent: React.FC<ListingButtonComponentProps> = ({ onClick }) => {
     const classes = useStyles();
 
     return (
-        <Fab className={classes.fab} size="medium" color="secondary">
-            <Icon>edit_icon</Icon>
+        <Fab
+            className={classes.fab}
+            color="secondary"
+            onClick={onClick}
+        >
+            <Edit fontSize="large" />
         </Fab>
     );
 };
