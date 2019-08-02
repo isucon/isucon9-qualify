@@ -18,6 +18,7 @@ const (
 )
 
 type Session struct {
+	csrfToken  string
 	httpClient *http.Client
 }
 
@@ -28,10 +29,20 @@ type TargetURLs struct {
 }
 
 var (
-	ShareTargetURLs TargetURLs
+	ShareTargetURLs *TargetURLs
 )
 
-func NewTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) {
+func SetShareTargetURLs(appURL, paymentURL, shipmentURL string) error {
+	var err error
+	ShareTargetURLs, err = newTargetURLs(appURL, paymentURL, shipmentURL)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) {
 	if len(appURL) == 0 {
 		return nil, fmt.Errorf("client: missing url")
 	}
