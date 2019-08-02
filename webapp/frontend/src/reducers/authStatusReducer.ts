@@ -1,4 +1,6 @@
-import { LOGIN_SUCCESS, LoginSuccessAction } from "../actions/authenticationActions";
+import {LOGIN_SUCCESS} from "../actions/authenticationActions";
+import {REGISTER_SUCCESS} from "../actions/registerAction";
+import {AnyAction} from "redux";
 
 
 export interface AuthStatusState {
@@ -7,9 +9,10 @@ export interface AuthStatusState {
     address?: string,
 }
 
-const authStatus = (state: AuthStatusState = {}, action: LoginSuccessAction): AuthStatusState => {
+const authStatus = (state: AuthStatusState = {}, action: AnyAction): AuthStatusState => {
     switch (action.type) {
-        case LOGIN_SUCCESS: {
+        case LOGIN_SUCCESS:
+        case REGISTER_SUCCESS: {
             return {
                 ...state,
                 ...action.payload,

@@ -1095,7 +1095,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)",
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)",
 		accountName,
 		hashedPassword,
 		address,
@@ -1107,8 +1107,17 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userId, err := result.LastInsertId()
+
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
 	u := User{
-		ID: 111, // TODO
+		ID: userId,
 		AccountName: accountName,
 		Address: address,
 	}
