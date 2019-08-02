@@ -4,24 +4,6 @@ import { connect } from 'react-redux';
 import {postRegisterAction} from "../actions/registerAction";
 import {RegisterReq} from "../types/appApiTypes";
 
-interface SignUpFormContainerProps {
-    register: (params: RegisterReq) => void
-    errors: string[],
-}
-
-interface SignUpFormContainerState {
-}
-
-class SignUpFormContainer extends React.Component<SignUpFormContainerProps, SignUpFormContainerState> {
-    render() {
-        return (
-            <SignUpPageFormComponent
-                {...this.props}
-            />
-        );
-    }
-}
-
 const mapStateToProps = (state: any) => ({
     errors: state.formError.errorMsg,
 });
@@ -31,4 +13,4 @@ const mapDispatchToProps = (dispatch: any) => ({
     },
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(SignUpFormContainer)
+export default connect(mapStateToProps, mapDispatchToProps)(SignUpPageFormComponent)
