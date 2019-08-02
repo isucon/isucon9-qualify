@@ -1,15 +1,19 @@
 import React from 'react';
-
-import {Avatar, Typography, TextField, Button, Grid, createStyles, WithStyles} from '@material-ui/core';
-import { Theme } from '@material-ui/core/styles/createMuiTheme';
-import { LockOutlined } from '@material-ui/icons';
+import {Avatar, createStyles, Theme, Typography, WithStyles} from "@material-ui/core";
+import { LockOutlined } from "@material-ui/icons";
+import TextField from "@material-ui/core/TextField";
+import Button from "@material-ui/core/Button";
+import Grid from "@material-ui/core/Grid";
 import { Link as RouteLink } from 'react-router-dom';
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
+import {RegisterReqParams} from "../types/appApiTypes";
+import {FormErrorState} from "../reducers/formErrorReducer";
 import {ErrorMessageComponent} from "./ErrorMessageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     paper: {
+        marginTop: theme.spacing(1),
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -27,39 +31,51 @@ const styles = (theme: Theme): StyleRules => createStyles({
     },
 });
 
-interface SignInFormComponentProps extends WithStyles<typeof styles> {
-    onSubmit: (accountName: string, password: string) => void
+interface SignUpFormComponentProps extends WithStyles<typeof styles> {
+    register: (params: RegisterReqParams) => void
     errors: string[]
 }
 
-interface SignInFormComponentState {
+interface SignUpFormComponentState {
     accountName: string,
+    address: string,
     password: string,
 }
 
-class SignInPageFormComponent extends React.Component<SignInFormComponentProps, SignInFormComponentState> {
-    constructor(props: SignInFormComponentProps) {
+class SignUpFormComponent extends React.Component<SignUpFormComponentProps, SignUpFormComponentState> {
+    constructor(props: SignUpFormComponentProps) {
         super(props);
 
         this.state = {
             accountName: '',
+            address: '',
             password: '',
         };
 
         this._onSubmit = this._onSubmit.bind(this);
         this._onChangeAccountName = this._onChangeAccountName.bind(this);
+        this._onChangeAddress = this._onChangeAddress.bind(this);
         this._onChangePassword = this._onChangePassword.bind(this);
     }
 
     _onSubmit(e: React.MouseEvent) {
         e.preventDefault();
-        const { accountName, password } = this.state;
-        this.props.onSubmit(accountName, password);
+        this.props.register({
+            account_name: this.state.accountName,
+            address: this.state.address,
+            password: this.state.password,
+        });
     }
 
     _onChangeAccountName(e: React.ChangeEvent<HTMLInputElement>) {
         this.setState({
             accountName: e.target.value
+        })
+    }
+
+    _onChangeAddress(e: React.ChangeEvent<HTMLInputElement>) {
+        this.setState({
+            address: e.target.value
         })
     }
 
@@ -70,8 +86,8 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
     }
 
     render() {
-        const { accountName, password } = this.state;
         const { classes } = this.props;
+        const { accountName, address, password } = this.state;
 
         return (
             <div className={classes.paper}>
@@ -79,7 +95,7 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                     <LockOutlined/>
                 </Avatar>
                 <Typography component="h1" variant="h5">
-                    ログインページ
+                    新規登録
                 </Typography>
                 <form className={classes.form} noValidate>
                     <TextField
@@ -87,12 +103,23 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                         margin="normal"
                         required
                         fullWidth
-                        id="accountName"
+                        id="name"
                         label="ユーザ名"
-                        name="accountName"
-                        autoFocus
+                        name="name"
                         value={accountName}
                         onChange={this._onChangeAccountName}
+                        autoFocus
+                    />
+                    <TextField
+                        variant="outlined"
+                        margin="normal"
+                        required
+                        fullWidth
+                        id="address"
+                        label="住所"
+                        name="address"
+                        value={address}
+                        onChange={this._onChangeAddress}
                     />
                     <TextField
                         variant="outlined"
@@ -103,7 +130,6 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                         label="パスワード"
                         name="password"
                         type="password"
-                        autoComplete="current-password"
                         value={password}
                         onChange={this._onChangePassword}
                     />
@@ -116,14 +142,14 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                         fullWidth
                         variant="contained"
                         color="primary"
-                        onClick={this._onSubmit}
                         className={classes.submit}
+                        onClick={this._onSubmit}
                     >
-                        ログイン
+                        新規登録
                     </Button>
                     <Grid container>
                         <Grid item xs>
-                            <RouteLink to="/signup">新規登録はこちら</RouteLink>
+                            <RouteLink to="/signin">すでにアカウントをお持ちの方はこちら</RouteLink>
                         </Grid>
                     </Grid>
                 </form>
@@ -132,4 +158,4 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
     }
 }
 
-export default withStyles(styles)(SignInPageFormComponent);
+export default withStyles(styles)(SignUpFormComponent);
