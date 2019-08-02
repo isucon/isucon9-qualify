@@ -1,6 +1,6 @@
 use `isucari`;
 
-DROP TABLE `users`;
+DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `account_name` varchar(128) NOT NULL UNIQUE,
@@ -9,7 +9,7 @@ CREATE TABLE `users` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
 
-DROP TABLE `items`;
+DROP TABLE IF EXISTS `items`;
 CREATE TABLE `items` (
   `id` bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `seller_id` bigint NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE `items` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
 
-DROP TABLE `transaction_evidences`;
+DROP TABLE IF EXISTS `transaction_evidences`;
 CREATE TABLE `transaction_evidences` (
   `id` bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `seller_id` bigint NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE `transaction_evidences` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
 
-DROP TABLE `shippings`;
+DROP TABLE IF EXISTS `shippings`;
 CREATE TABLE `shippings` (
   `transaction_evidence_id` bigint NOT NULL PRIMARY KEY,
   `status` enum('initial', 'wait_pickup', 'shipping', 'done') NOT NULL,
