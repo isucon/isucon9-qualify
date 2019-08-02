@@ -1,0 +1,18 @@
+- name: Install webapps
+  command: /home/isucon/local/go/bin/go build -v isucari
+  args:
+    chdir: /home/isucon/isucari/webapp/go/
+  environment:
+    GOPATH: /home/isucon/isucari/webapp/go/
+  become: yes
+  become_user: isucon
+
+- name: Copy isucari.golang unit file
+  copy:
+    src: etc/systemd/system/isucari.golang.service
+    dest: /etc/systemd/system/isucari.golang.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - daemon-reload
