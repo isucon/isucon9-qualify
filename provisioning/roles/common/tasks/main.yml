@@ -27,13 +27,11 @@
 
 - name: Install Dependencies
   apt:
-    pkg: "{{ item }}"
-    state: installed
+    pkg: ['git']
+    state: present
     update_cache: yes
     cache_valid_time: 3600
   become: yes
-  with_items:
-    - git
 
 - name: Setup xbuild
   git:

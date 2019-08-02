@@ -1,9 +1,7 @@
 - name: Install Package
   apt:
-    pkg: "{{ item }}"
-    state: installed
-  with_items:
-    - nginx
+    pkg: ['nginx']
+    state: present
 
 - name: Disable default config
   file:
