@@ -134,8 +134,23 @@ type resSell struct {
 	ID int64 `json:"id"`
 }
 
+type reqPostShip struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+}
+
 type resPostShip struct {
 	URL string `json:"url"`
+}
+
+type reqPostShipDone struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+}
+
+type reqPostComplete struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
 }
 
 type resSetting struct {
@@ -592,13 +607,16 @@ func getShip(w http.ResponseWriter, r *http.Request) {
 }
 
 func postShip(w http.ResponseWriter, r *http.Request) {
-	csrfToken := r.FormValue("csrf_token")
-	itemIDStr := r.FormValue("item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	reqps := reqPostShip{}
+
+	err := json.NewDecoder(r.Body).Decode(&reqps)
 	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
+
+	csrfToken := reqps.CSRFToken
+	itemID := reqps.ItemID
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
@@ -736,13 +754,16 @@ func getShipDone(w http.ResponseWriter, r *http.Request) {
 }
 
 func postShipDone(w http.ResponseWriter, r *http.Request) {
-	csrfToken := r.FormValue("csrf_token")
-	itemIDStr := r.FormValue("item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	reqpsd := reqPostShipDone{}
+
+	err := json.NewDecoder(r.Body).Decode(&reqpsd)
 	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
+
+	csrfToken := reqpsd.CSRFToken
+	itemID := reqpsd.ItemID
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
@@ -856,13 +877,16 @@ func getComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func postComplete(w http.ResponseWriter, r *http.Request) {
-	csrfToken := r.FormValue("csrf_token")
-	itemIDStr := r.FormValue("item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	reqpc := reqPostComplete{}
+
+	err := json.NewDecoder(r.Body).Decode(&reqpc)
 	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
+
+	csrfToken := reqpc.CSRFToken
+	itemID := reqpc.ItemID
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
