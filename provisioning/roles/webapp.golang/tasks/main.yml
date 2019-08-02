@@ -1,9 +1,9 @@
 - name: Install webapps
-  command: GO111MODULE=on /home/isucon/local/go/bin/go build -v isucari
+  command: /home/isucon/local/go/bin/go build -o isucari
   args:
     chdir: /home/isucon/isucari/webapp/go/
   environment:
-    GOPATH: /home/isucon/isucari/webapp/go/
+    GO111MODULE: "on"
   become: yes
   become_user: isucon
 
