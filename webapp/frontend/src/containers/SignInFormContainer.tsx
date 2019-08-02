@@ -2,7 +2,6 @@ import React from 'react';
 import SignInPageFormComponent from "../components/SignInFormComponent";
 import { connect } from 'react-redux';
 import { postLoginAction } from "../actions/authenticationActions";
-import { Dispatch } from "redux";
 
 interface SignInFormContainerProps {
     onSubmit: (userId: string, password: string) => void

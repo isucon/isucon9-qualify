@@ -1,6 +1,7 @@
 import { AuthStatusState } from "../reducers/authStatusReducer";
 import AppClient from '../httpClients/appClient';
 import {ThunkAction, ThunkDispatch} from "redux-thunk";
+import {FormErrorState} from "../reducers/formErrorReducer";
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const LOGIN_FAIL = 'LOGIN_FAIL';
@@ -29,8 +30,10 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
                     address: body.address,
                 }));
             })
-            .catch(err => {
-                dispatch(loginFailAction())
+            .catch((err: Error) => {
+                dispatch(loginFailAction({
+                    errorMsg: [err.message]
+                }))
             })
     };
 }
@@ -49,10 +52,12 @@ export function loginSuccessAction(newAuthState: AuthStatusState): LoginSuccessA
 
 export interface LoginFailAction {
     type: typeof LOGIN_FAIL,
+    payload: FormErrorState,
 }
 
-export function loginFailAction(): LoginFailAction {
+export function loginFailAction(newErros: FormErrorState): LoginFailAction {
     return {
         type: LOGIN_FAIL,
+        payload: newErros,
     };
 }
