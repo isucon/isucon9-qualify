@@ -3,7 +3,7 @@ import SellFormComponent from "../components/SellFormComponent";
 import {listItemAction} from "../actions/sellingItemAction";
 
 const mapStateToProps = (state: any) => ({
-    // errors: state.formError.errorMsg,
+    errors: state.formError.errorMsg,
 });
 const mapDispatchToProps = (dispatch: any) => ({
     sellItem: (name: string, description: string, price: number) => {

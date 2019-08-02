@@ -991,6 +991,18 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	price := rs.Price
 	description := rs.Description
 
+	if name == "" || description == "" || price == 0 {
+		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
+
+		return
+	}
+
+	if price < 100 || price > 1000000 {
+		outputErrorMsg(w, http.StatusBadRequest, "商品価格は100円以上、1,000,000円以下にしてください")
+
+		return
+	}
+
 	sellerID := getUserID(r)
 
 	result, err := dbx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",

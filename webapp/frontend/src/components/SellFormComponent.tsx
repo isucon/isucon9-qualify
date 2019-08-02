@@ -5,6 +5,7 @@ import ItemImageUploadComponent from "../components/ItemImageUploadComponent";
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import validator from 'validator';
+import {ErrorMessageComponent} from "./ErrorMessageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     form: {
@@ -18,6 +19,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface SellFormComponentProps extends WithStyles<typeof styles> {
     sellItem: (name: string, description: string, price: number) => void
+    errors: string[]
 }
 
 interface SellFormComponentState {
@@ -122,6 +124,10 @@ class SellFormComponent extends React.Component<SellFormComponentProps, SellForm
                         value={price}
                         onChange={this._onChangePrice}
                     />
+                    {
+                        this.props.errors.length !== 0 &&
+                        <ErrorMessageComponent errMsg={this.props.errors}/>
+                    }
                     <Button
                         type="submit"
                         fullWidth

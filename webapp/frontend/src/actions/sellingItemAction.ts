@@ -28,10 +28,9 @@ export function listItemAction(name: string, description: string, price: number)
                 return AppClient.post('/sell', payload);
             })
             .then((response: Response) => {
-                if (response.status !== 200) {
+                if (!response.ok) {
                     throw new Error('HTTP status not 200');
                 }
-
                 return response.json();
             })
             .then((body: SellRes) => {
