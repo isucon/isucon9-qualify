@@ -45,6 +45,7 @@
     "@types/react-redux": "^7.1.1",
     "@types/react-router-dom": "^4.3.4",
     "@types/redux": "^3.6.0",
-    "@types/redux-thunk": "^2.1.0"
+    "@types/redux-thunk": "^2.1.0",
+    "redux-devtools-extension": "^2.13.8"
   }
 }
