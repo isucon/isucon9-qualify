@@ -16,13 +16,20 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
             password: password,
         })
             .then((response: Response) => {
-                if (response.status === 200) {
-                    dispatch(loginSuccessAction({
-                        userId: 1235, // TODO
-                        accountName: 'sota1235', // TODO
-                    }));
+                if (response.status !== 200) {
+                    throw new Error('HTTP status not 200');
                 }
 
+                return response.json();
+            })
+            .then((body) => {
+                dispatch(loginSuccessAction({
+                    userId: body.userId,
+                    accountName: body.accountName,
+                    address: body.address,
+                }));
+            })
+            .catch(err => {
                 dispatch(loginFailAction())
             })
     };
