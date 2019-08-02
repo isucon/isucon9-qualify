@@ -1004,9 +1004,6 @@ func secureRandomStr(b int) string {
 }
 
 func postLogin(w http.ResponseWriter, r *http.Request) {
-	// TODO remove it later
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-
 	rl := reqLogin{}
 	err := json.NewDecoder(r.Body).Decode(&rl)
 	if err != nil {
