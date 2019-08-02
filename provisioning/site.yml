@@ -1,0 +1,9 @@
+- hosts: all
+  user: root
+  gather_facts: yes
+
+  roles:
+    - common
+    - nginx
+    - mysql
+    - golang
