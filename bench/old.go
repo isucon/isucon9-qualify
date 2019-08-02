@@ -42,7 +42,7 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
-func main() {
+func _main() {
 	s1 := NewSession()
 	s2 := NewSession()
 
