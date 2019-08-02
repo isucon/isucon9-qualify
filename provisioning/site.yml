@@ -6,4 +6,4 @@
     - common
     - nginx
     - mysql
-    - golang
+    - webapp.golang
