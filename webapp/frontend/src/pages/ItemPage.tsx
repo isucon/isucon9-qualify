@@ -65,7 +65,7 @@ const ItemPage: React.FC/*<ItemPageProps>*/ = (/*{ item }*/) => {
             <Typography className={classes.title} variant="h3">{item.name}</Typography>
             <Grid container spacing={2}>
                 <Grid item>
-                    <img className={classes.itemImage} src={item.thumbnailUrl} />
+                    <img className={classes.itemImage} alt={item.name} src={item.thumbnailUrl} />
                 </Grid>
                 <Grid item xs={12} sm container>
                     <Grid item xs container direction="column" spacing={2}>
