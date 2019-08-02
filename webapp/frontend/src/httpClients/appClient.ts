@@ -17,7 +17,7 @@ class AppClient {
     async post(path: string, params?: Object): Promise<Response> {
         let requestOption: RequestInit = {
             method: 'POST',
-            mode: 'no-cors',
+            mode: 'same-origin',
             headers: Object.assign({}, this.defaultHeaders, {
                 'Content-Type': 'application/json',
             }),
