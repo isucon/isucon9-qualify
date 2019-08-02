@@ -1,5 +1,5 @@
 - name: Install webapps
-  command: /home/isucon/local/go/bin/go build -v isucari
+  command: GO111MODULE=on /home/isucon/local/go/bin/go build -v isucari
   args:
     chdir: /home/isucon/isucari/webapp/go/
   environment:
