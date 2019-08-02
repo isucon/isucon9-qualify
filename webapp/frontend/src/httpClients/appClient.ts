@@ -21,6 +21,7 @@ class AppClient {
             headers: Object.assign({}, this.defaultHeaders, {
                 'Content-Type': 'application/json',
             }),
+            credentials: 'same-origin',
         };
 
         if (params) {

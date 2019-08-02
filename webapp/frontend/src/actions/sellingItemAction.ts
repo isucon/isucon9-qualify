@@ -3,7 +3,7 @@ import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { FormErrorState } from "../reducers/formErrorReducer";
 import { push } from 'connected-react-router';
 import {AnyAction} from "redux";
-import {SellReq, SellRes} from "../types/appApiTypes";
+import {SellReq, SellRes, SettingsRes} from "../types/appApiTypes";
 
 export const SELLING_ITEM_SUCCESS = 'SELLING_ITEM_SUCCESS';
 export const SELLING_ITEM_FAIL = 'SELLING_ITEM_FAIL';
@@ -11,9 +11,22 @@ export const SELLING_ITEM_FAIL = 'SELLING_ITEM_FAIL';
 type State = void;
 type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
 
-export function listItemAction(payload: SellReq): ThunkResult<void> {
+export function listItemAction(name: string, description: string, price: number): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-        AppClient.post('/sell', payload)
+        AppClient.get('/settings')
+            .then((response: Response) => {
+                if (!response.ok) {
+                    throw new Error('CSRF tokenの取得に失敗しました');
+                }
+                return response.json();
+            })
+            .then((body: SettingsRes) => {
+                const payload: SellReq = {
+                    name, description, price,
+                    csrf_token: body.csrf_token,
+                };
+                return AppClient.post('/sell', payload);
+            })
             .then((response: Response) => {
                 if (response.status !== 200) {
                     throw new Error('HTTP status not 200');

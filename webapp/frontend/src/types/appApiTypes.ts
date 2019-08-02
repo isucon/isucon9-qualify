@@ -31,3 +31,11 @@ export interface SellReq extends CsrfRequiredReq{
 export interface SellRes extends Response {
     id: number,
 }
+
+/**
+ * GET /settings
+ */
+// Response
+export interface SettingsRes {
+    csrf_token: string,
+}
