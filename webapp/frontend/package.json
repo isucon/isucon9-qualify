@@ -22,6 +22,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "deploy": "npm run build && cp -r build/* ../public/",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "watch": "npm-watch"
