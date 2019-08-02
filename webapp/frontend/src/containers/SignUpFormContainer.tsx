@@ -2,10 +2,10 @@ import React from 'react';
 import SignUpPageFormComponent from "../components/SignUpFormComponent";
 import { connect } from 'react-redux';
 import {postRegisterAction} from "../actions/registerAction";
-import {RegisterReqParams} from "../types/appApiTypes";
+import {RegisterReq} from "../types/appApiTypes";
 
 interface SignUpFormContainerProps {
-    register: (params: RegisterReqParams) => void
+    register: (params: RegisterReq) => void
     errors: string[],
 }
 
@@ -26,7 +26,7 @@ const mapStateToProps = (state: any) => ({
     errors: state.formError.errorMsg,
 });
 const mapDispatchToProps = (dispatch: any) => ({
-    register: (params: RegisterReqParams) => {
+    register: (params: RegisterReq) => {
         dispatch(postRegisterAction(params));
     },
 });

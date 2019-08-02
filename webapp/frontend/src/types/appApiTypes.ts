@@ -6,13 +6,13 @@ interface CsrfRequiredReq {
  * POST /register
  */
 // Request
-export interface RegisterReqParams {
+export interface RegisterReq {
     account_name: string
     address: string
     password: string
 }
 // Response
-export interface RegisterResParams extends Response{
+export interface RegisterRes extends Response{
     id: number
     account_name: string
     address: string
@@ -28,6 +28,6 @@ export interface SellReq extends CsrfRequiredReq{
     description: string,
 }
 // Response
-export interface SellRes {
+export interface SellRes extends Response {
     id: number,
 }

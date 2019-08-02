@@ -4,7 +4,7 @@ import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { FormErrorState } from "../reducers/formErrorReducer";
 import { push } from 'connected-react-router';
 import {AnyAction} from "redux";
-import {RegisterReqParams, RegisterResParams} from "../types/appApiTypes";
+import {RegisterReq, RegisterRes} from "../types/appApiTypes";
 
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAIL = 'REGISTER_FAIL';
@@ -12,7 +12,7 @@ export const REGISTER_FAIL = 'REGISTER_FAIL';
 type State = void | AuthStatusState;
 type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
 
-export function postRegisterAction(payload: RegisterReqParams): ThunkResult<void> {
+export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
         AppClient.post('/register', payload)
             .then((response: Response) => {
@@ -22,7 +22,7 @@ export function postRegisterAction(payload: RegisterReqParams): ThunkResult<void
 
                 return response.json();
             })
-            .then((body: RegisterResParams) => {
+            .then((body: RegisterRes) => {
                 dispatch(registerSuccessAction({
                     userId: body.id,
                     accountName: body.account_name,
