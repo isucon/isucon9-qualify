@@ -3,7 +3,7 @@
   gather_facts: yes
 
   roles:
-    - common
+    - bootstrap
     - nginx
     - mysql
     - golang
