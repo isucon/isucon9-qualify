@@ -1,4 +1,3 @@
-import React from 'react';
 import { push } from 'connected-react-router';
 import {SellingButonComponent} from "../components/SellingButtonComponent";
 import {connect} from "react-redux";

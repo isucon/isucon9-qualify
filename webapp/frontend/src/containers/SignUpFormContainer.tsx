@@ -1,4 +1,3 @@
-import React from 'react';
 import SignUpPageFormComponent from "../components/SignUpFormComponent";
 import { connect } from 'react-redux';
 import {postRegisterAction} from "../actions/registerAction";

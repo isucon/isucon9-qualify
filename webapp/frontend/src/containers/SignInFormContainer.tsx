@@ -1,4 +1,3 @@
-import React from 'react';
 import SignInPageFormComponent from "../components/SignInFormComponent";
 import { connect } from 'react-redux';
 import { postLoginAction } from "../actions/authenticationActions";
