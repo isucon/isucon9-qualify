@@ -122,7 +122,6 @@ type resPostShip struct {
 func init() {
 	templates = template.Must(template.ParseFiles(
 		"templates/register.html",
-		"templates/login.html",
 		"templates/item_edit.html",
 		"templates/sell.html",
 		"templates/buy.html",
@@ -133,6 +132,12 @@ func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
 	log.SetFlags(log.Lshortfile)
+}
+
+func readTopTemplate() {
+	templates = template.Must(template.ParseFiles(
+		"../public/index.html",
+	))
 }
 
 func main() {
@@ -178,6 +183,7 @@ func main() {
 
 	mux := goji.NewMux()
 
+	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
 	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getItemEdit)
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
@@ -191,7 +197,6 @@ func main() {
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
 	mux.HandleFunc(pat.Get("/complete/:item_id"), getComplete)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
-	mux.HandleFunc(pat.Get("/login"), getLogin)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Get("/register"), getRegister)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
@@ -226,6 +231,11 @@ func getUserID(r *http.Request) int64 {
 	}
 
 	return userID.(int64)
+}
+
+func getTop(w http.ResponseWriter, r *http.Request) {
+	readTopTemplate()
+	templates.ExecuteTemplate(w, "index.html", struct{}{})
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
@@ -989,10 +999,6 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(resSell{ID: itemID})
-}
-
-func getLogin(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "login.html", struct{}{})
 }
 
 func secureRandomStr(b int) string {
