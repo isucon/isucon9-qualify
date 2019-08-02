@@ -2,7 +2,7 @@ import React from 'react';
 import {ItemData} from "../dataObjects/item";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 import { ItemListComponent } from '../components/ItemListComponent';
-import ListingButtonContainer from "../containers/ListingButtonContainer";
+import SellingButtonContainer from "../containers/SellingButtonContainer";
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -60,7 +60,7 @@ const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPage
     return (
         <div className={classes.root}>
             <ItemListComponent items={items}/>
-            <ListingButtonContainer />
+            <SellingButtonContainer />
         </div>
     );
 };

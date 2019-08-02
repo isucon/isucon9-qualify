@@ -7,7 +7,7 @@ import makeStyles from "@material-ui/core/styles/makeStyles";
 import {Grid} from "@material-ui/core";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
-import ListingButtonContainer from "../containers/ListingButtonContainer";
+import SellingButtonContainer from "../containers/SellingButtonContainer";
 
 const useStyles = makeStyles(theme => ({
     avatar: {
@@ -93,7 +93,7 @@ const UserPage: React.FC/*<UserPageProps>*/ = (/*{ items, user }*/) => {
             <div className={classes.itemList}>
                 <ItemListComponent items={items}/>
             </div>
-            <ListingButtonContainer />
+            <SellingButtonContainer />
         </div>
     );
 };

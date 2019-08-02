@@ -15,11 +15,11 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-interface ListingButtonComponentProps {
+interface SellingButtomComponentProps {
     onClick: (e: React.MouseEvent) => void
 }
 
-const ListingButtonComponent: React.FC<ListingButtonComponentProps> = ({ onClick }) => {
+const SellingButonComponent: React.FC<SellingButtomComponentProps> = ({ onClick }) => {
     const classes = useStyles();
 
     return (
@@ -33,4 +33,4 @@ const ListingButtonComponent: React.FC<ListingButtonComponentProps> = ({ onClick
     );
 };
 
-export { ListingButtonComponent }
+export { SellingButonComponent }
