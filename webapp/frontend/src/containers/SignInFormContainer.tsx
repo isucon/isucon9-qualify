@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { postLoginAction } from "../actions/authenticationActions";
 
 interface SignInFormContainerProps {
-    onSubmit: (userId: string, password: string) => void
+    onSubmit: (accountName: string, password: string) => void
     errors: string[],
 }
 
@@ -25,8 +25,8 @@ const mapStateToProps = (state: any) => ({
     errors: state.formError.errorMsg,
 });
 const mapDispatchToProps = (dispatch: any) => ({
-    onSubmit: (userId: string, password: string) => {
-        dispatch(postLoginAction(userId, password));
+    onSubmit: (accountName: string, password: string) => {
+        dispatch(postLoginAction(accountName, password));
     },
 });
 

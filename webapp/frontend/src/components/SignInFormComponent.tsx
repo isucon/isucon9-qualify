@@ -28,12 +28,12 @@ const styles = (theme: Theme): StyleRules => createStyles({
 });
 
 interface SignInFormComponentProps extends WithStyles<typeof styles> {
-    onSubmit: (userId: string, password: string) => void
+    onSubmit: (accountName: string, password: string) => void
     errors: string[]
 }
 
 interface SignInFormComponentState {
-    userId: string,
+    accountName: string,
     password: string,
 }
 
@@ -42,24 +42,24 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
         super(props);
 
         this.state = {
-            userId: '',
+            accountName: '',
             password: '',
         };
 
         this._onSubmit = this._onSubmit.bind(this);
-        this._onChangeUserId = this._onChangeUserId.bind(this);
+        this._onChangeAccountName = this._onChangeAccountName.bind(this);
         this._onChangePassword = this._onChangePassword.bind(this);
     }
 
     _onSubmit(e: React.MouseEvent) {
         e.preventDefault();
-        const { userId, password } = this.state;
-        this.props.onSubmit(userId, password);
+        const { accountName, password } = this.state;
+        this.props.onSubmit(accountName, password);
     }
 
-    _onChangeUserId(e: React.ChangeEvent<HTMLInputElement>) {
+    _onChangeAccountName(e: React.ChangeEvent<HTMLInputElement>) {
         this.setState({
-            userId: e.target.value
+            accountName: e.target.value
         })
     }
 
@@ -70,7 +70,7 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
     }
 
     render() {
-        const { userId, password } = this.state;
+        const { accountName, password } = this.state;
         const { classes } = this.props;
 
         return (
@@ -87,12 +87,12 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                         margin="normal"
                         required
                         fullWidth
-                        id="id"
-                        label="ログインID"
-                        name="id"
+                        id="accountName"
+                        label="ユーザ名"
+                        name="accountName"
                         autoFocus
-                        value={userId}
-                        onChange={this._onChangeUserId}
+                        value={accountName}
+                        onChange={this._onChangeAccountName}
                     />
                     <TextField
                         variant="outlined"

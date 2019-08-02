@@ -3,7 +3,7 @@
  */
 // Request
 export interface RegisterReqParams {
-    accountName: string
+    account_name: string
     address: string
     password: string
 }

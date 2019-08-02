@@ -1,6 +1,6 @@
 import React from 'react';
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import SignUpFormComponent from "../components/SignUpFormComponent";
+import SignUpFormContainer from "../containers/SignUpFormContainer";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -16,11 +16,7 @@ const SignUpPage: React.FC = () => {
 
     return (
         <div className={classes.paper}>
-            <SignUpFormComponent register={
-                (accountName: string, address: string, password: string) => {
-                    // todo
-                }
-            }/>
+            <SignUpFormContainer />
         </div>
     );
 };

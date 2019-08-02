@@ -7,6 +7,9 @@ import Grid from "@material-ui/core/Grid";
 import { Link as RouteLink } from 'react-router-dom';
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
+import {RegisterReqParams} from "../types/appApiTypes";
+import {FormErrorState} from "../reducers/formErrorReducer";
+import {ErrorMessageComponent} from "./ErrorMessageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     paper: {
@@ -29,7 +32,8 @@ const styles = (theme: Theme): StyleRules => createStyles({
 });
 
 interface SignUpFormComponentProps extends WithStyles<typeof styles> {
-    register: (accountName: string, address: string, password: string) => void
+    register: (params: RegisterReqParams) => void
+    errors: string[]
 }
 
 interface SignUpFormComponentState {
@@ -56,8 +60,11 @@ class SignUpFormComponent extends React.Component<SignUpFormComponentProps, Sign
 
     _onSubmit(e: React.MouseEvent) {
         e.preventDefault();
-        const { accountName, address, password } = this.state;
-        this.props.register(accountName, address, password);
+        this.props.register({
+            account_name: this.state.accountName,
+            address: this.state.address,
+            password: this.state.password,
+        });
     }
 
     _onChangeAccountName(e: React.ChangeEvent<HTMLInputElement>) {
@@ -126,12 +133,17 @@ class SignUpFormComponent extends React.Component<SignUpFormComponentProps, Sign
                         value={password}
                         onChange={this._onChangePassword}
                     />
+                    {
+                        this.props.errors.length !== 0 &&
+                        <ErrorMessageComponent errMsg={this.props.errors}/>
+                    }
                     <Button
                         type="submit"
                         fullWidth
                         variant="contained"
                         color="primary"
                         className={classes.submit}
+                        onClick={this._onSubmit}
                     >
                         新規登録
                     </Button>

@@ -100,6 +100,12 @@ type Shipping struct {
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
 }
 
+type reqRegister struct {
+	AccountName string `json:"account_name"`
+	Address     string `json:"address"`
+	Password    string `json:"password"`
+}
+
 type reqLogin struct {
 	AccountName string `json:"account_name"`
 	Password    string `json:"password"`
@@ -121,7 +127,6 @@ type resPostShip struct {
 
 func init() {
 	templates = template.Must(template.ParseFiles(
-		"templates/register.html",
 		"templates/item_edit.html",
 		"templates/sell.html",
 		"templates/buy.html",
@@ -198,7 +203,6 @@ func main() {
 	mux.HandleFunc(pat.Get("/complete/:item_id"), getComplete)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
-	mux.HandleFunc(pat.Get("/register"), getRegister)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 
@@ -1063,14 +1067,19 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(u)
 }
 
-func getRegister(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "register.html", struct{}{})
-}
-
 func postRegister(w http.ResponseWriter, r *http.Request) {
-	accountName := r.FormValue("account_name")
-	password := r.FormValue("password")
-	address := r.FormValue("address")
+	rr := reqRegister{}
+	err := json.NewDecoder(r.Body).Decode(&rr)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		return
+	}
+
+	accountName := rr.AccountName
+	address := rr.Address
+	password := rr.Password
 
 	if accountName == "" || password == "" || address == "" {
 		outputErrorMsg(w, http.StatusInternalServerError, "all parameters are required")
@@ -1098,7 +1107,12 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	u := User{
+		ID: 111, // TODO
+		AccountName: accountName,
+		Address: address,
+	}
+	json.NewEncoder(w).Encode(u)
 }
 
 func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
