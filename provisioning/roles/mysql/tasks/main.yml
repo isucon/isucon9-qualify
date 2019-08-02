@@ -19,8 +19,6 @@
     CREATE USER isucon@'localhost' IDENTIFIED BY 'isucon';
     GRANT ALL on *.* TO isucon@'localhost';
     "
-  args:
-    chdir: /home/isucon/isucari/db/
   become: yes
 
 - name: Create MySQL isucari@% user
@@ -30,6 +28,9 @@
     CREATE USER isucon@'%' IDENTIFIED BY 'isucon';
     GRANT ALL on *.* TO isucon@'%';
     "
-  args:
-    chdir: /home/isucon/isucari/db/
+  become: yes
+
+- name: Create MySQL Database for ISUCON9
+  command: >
+    mysql -e "CREATE DATABASE isucari;"
   become: yes
