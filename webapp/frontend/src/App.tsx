@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Link } from 'react-router-dom';
+import {BrowserRouter as Router, Route, Link, Switch} from 'react-router-dom';
 
 import './App.css';
 import { TopPage } from "./pages/TopPage";
@@ -103,7 +103,7 @@ const getRoutes: () => any[] = () => {
 
 const App: React.FC = () => {
     return (
-        <Router>
+        <div>
             <div>
                 <ul>
                     {getLinks()}
@@ -112,8 +112,10 @@ const App: React.FC = () => {
 
             <hr />
 
-            {getRoutes()}
-        </Router>
+            <Switch>
+                {getRoutes()}
+            </Switch>
+        </div>
   );
 };
 

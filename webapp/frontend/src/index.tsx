@@ -3,18 +3,21 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-import { applyMiddleware, compose, createStore } from 'redux';
-import createRootReducer from './reducers';
+import { applyMiddleware, createStore } from 'redux';
+import createRootReducer from './reducers/index';
 import { Provider } from 'react-redux';
-import createBrowserHistory from 'history/createBrowserHistory';
-import {ConnectedRouter, routerMiddleware} from "connected-react-router";
+import { createBrowserHistory } from 'history';
+import { ConnectedRouter, routerMiddleware } from "connected-react-router";
+import thunk from 'redux-thunk';
+import { composeWithDevTools } from 'redux-devtools-extension';
 
 const history = createBrowserHistory();
 
 const store = createStore(
     createRootReducer(history),
-    compose(
+    composeWithDevTools(
         applyMiddleware(
+            thunk,
             routerMiddleware(history),
         ),
     ),

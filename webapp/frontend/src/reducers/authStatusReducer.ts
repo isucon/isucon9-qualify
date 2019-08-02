@@ -4,6 +4,7 @@ import { LOGIN_SUCCESS, LoginSuccessAction } from "../actions/authenticationActi
 export interface AuthStatusState {
     userId?: number
     accountName?: string
+    address?: string,
 }
 
 const authStatus = (state: AuthStatusState = {}, action: LoginSuccessAction): AuthStatusState => {
@@ -15,7 +16,7 @@ const authStatus = (state: AuthStatusState = {}, action: LoginSuccessAction): Au
             }
         }
         default:
-            return {};
+            return state;
     }
 };
 

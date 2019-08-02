@@ -70,7 +70,7 @@ class ItemImageUploadComponent extends React.Component<ItemImageUploadComponentP
         console.log(imagePreviewUrl);
 
         if (imagePreviewUrl) {
-            imagePreview = (<img src={imagePreviewUrl} />);
+            imagePreview = (<img alt="プレビュー" src={imagePreviewUrl} />);
         } else {
             imagePreview = (
                 <Paper>

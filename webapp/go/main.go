@@ -100,6 +100,11 @@ type Shipping struct {
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
 }
 
+type reqLogin struct {
+	AccountName string `json:"account_name"`
+	Password    string `json:"password"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -117,7 +122,6 @@ type resPostShip struct {
 func init() {
 	templates = template.Must(template.ParseFiles(
 		"templates/register.html",
-		"templates/login.html",
 		"templates/item_edit.html",
 		"templates/sell.html",
 		"templates/buy.html",
@@ -128,6 +132,12 @@ func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
 	log.SetFlags(log.Lshortfile)
+}
+
+func readTopTemplate() {
+	templates = template.Must(template.ParseFiles(
+		"../public/index.html",
+	))
 }
 
 func main() {
@@ -173,6 +183,7 @@ func main() {
 
 	mux := goji.NewMux()
 
+	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
 	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getItemEdit)
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
@@ -186,7 +197,6 @@ func main() {
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
 	mux.HandleFunc(pat.Get("/complete/:item_id"), getComplete)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
-	mux.HandleFunc(pat.Get("/login"), getLogin)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Get("/register"), getRegister)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
@@ -221,6 +231,11 @@ func getUserID(r *http.Request) int64 {
 	}
 
 	return userID.(int64)
+}
+
+func getTop(w http.ResponseWriter, r *http.Request) {
+	readTopTemplate()
+	templates.ExecuteTemplate(w, "index.html", struct{}{})
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
@@ -986,10 +1001,6 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resSell{ID: itemID})
 }
 
-func getLogin(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "login.html", struct{}{})
-}
-
 func secureRandomStr(b int) string {
 	k := make([]byte, b)
 	if _, err := crand.Read(k); err != nil {
@@ -999,8 +1010,17 @@ func secureRandomStr(b int) string {
 }
 
 func postLogin(w http.ResponseWriter, r *http.Request) {
-	accountName := r.FormValue("account_name")
-	password := r.FormValue("password")
+	rl := reqLogin{}
+	err := json.NewDecoder(r.Body).Decode(&rl)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "json decode error")
+		return
+	}
+
+	accountName := rl.AccountName
+	password := rl.Password
 
 	if accountName == "" || password == "" {
 		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
@@ -1009,7 +1029,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := User{}
-	err := dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
+	err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusUnauthorized, "user not found")
 		return

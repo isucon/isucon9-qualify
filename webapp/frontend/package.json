@@ -16,13 +16,19 @@
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
     "redux": "^4.0.4",
+    "redux-thunk": "^2.3.0",
     "typescript": "3.5.3"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "deploy": "npm run build && cp -r build/* ../public/",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "watch": "npm-watch"
+  },
+  "watch": {
+    "build": "src/**/*"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -43,6 +49,9 @@
     "@types/material-ui": "^0.21.6",
     "@types/react-redux": "^7.1.1",
     "@types/react-router-dom": "^4.3.4",
-    "@types/redux": "^3.6.0"
+    "@types/redux": "^3.6.0",
+    "@types/redux-thunk": "^2.1.0",
+    "npm-watch": "^0.6.0",
+    "redux-devtools-extension": "^2.13.8"
   }
 }
