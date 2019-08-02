@@ -1,0 +1,21 @@
+- name: Copy external Nginx config
+  copy:
+    src: etc/nginx/sites-available/{{ item }}
+    dest: /etc/nginx/sites-available/{{ item }}
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - external-shipment.conf
+    - external-payment.conf
+
+- name: Enable external config
+  file:
+    path: /etc/nginx/sites-enabled/{{ item }}
+    src: /etc/nginx/sites-available/{{ item }}
+    state: link
+  with_items:
+    - external-shipment.conf
+    - external-payment.conf
+  notify:
+    - reload nginx

@@ -59,10 +59,3 @@
     state: directory
   with_items:
     - { path: /home/isucon/isucari, mode: "0755", owner: isucon, group: isucon }
-
-# TODO: eliminate Vagrant dependency
-- name: Symlink webapp
-  file:
-    path: /home/isucon/isucari/webapp
-    src: /tmp/ansible/webapp
-    state: link

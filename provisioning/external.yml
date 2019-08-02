@@ -8,7 +8,7 @@
     - vagrant-specific
 
     - nginx
-    - mysql
     - golang
-    - webapp.nginx
-    - webapp.golang
+    - external.nginx
+    - external.shipment
+    - external.payment
