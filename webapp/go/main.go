@@ -118,10 +118,10 @@ type reqBuy struct {
 }
 
 type reqSell struct {
-	CSRFToken 	string `json:"csrf_token"`
-	Name      	string `json:"name"`
+	CSRFToken   string `json:"csrf_token"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
-	Price       int	   `json:"price"`
+	Price       int    `json:"price"`
 }
 
 type resSell struct {
@@ -1150,9 +1150,9 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := User{
-		ID: userId,
+		ID:          userId,
 		AccountName: accountName,
-		Address: address,
+		Address:     address,
 	}
 	json.NewEncoder(w).Encode(u)
 }
