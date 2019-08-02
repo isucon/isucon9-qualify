@@ -1,4 +1,4 @@
-import { LOGIN_FAIL } from "../actions/authenticationActions";
+import {LOGIN_FAIL, LOGIN_SUCCESS} from "../actions/authenticationActions";
 import { AnyAction } from "redux";
 
 

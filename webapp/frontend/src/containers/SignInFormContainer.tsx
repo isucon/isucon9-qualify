@@ -5,6 +5,7 @@ import { postLoginAction } from "../actions/authenticationActions";
 
 interface SignInFormContainerProps {
     onSubmit: (userId: string, password: string) => void
+    errors: string[],
 }
 
 interface SignInFormContainerState {
@@ -13,12 +14,16 @@ interface SignInFormContainerState {
 class SignInFormContainer extends React.Component<SignInFormContainerProps, SignInFormContainerState> {
     render() {
         return (
-            <SignInPageFormComponent onSubmit={this.props.onSubmit} />
+            <SignInPageFormComponent
+                {...this.props}
+            />
         );
     }
 }
 
-const mapStateToProps = (state: any) => ({});
+const mapStateToProps = (state: any) => ({
+    errors: state.formError.errorMsg,
+});
 const mapDispatchToProps = (dispatch: any) => ({
     onSubmit: (userId: string, password: string) => {
         dispatch(postLoginAction(userId, password));

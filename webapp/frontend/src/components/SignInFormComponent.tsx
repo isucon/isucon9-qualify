@@ -6,6 +6,7 @@ import { LockOutlined } from '@material-ui/icons';
 import { Link as RouteLink } from 'react-router-dom';
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
+import {ErrorMessageComponent} from "./ErrorMessageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     avatar: {
@@ -23,6 +24,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface SignInFormComponentProps extends WithStyles<typeof styles> {
     onSubmit: (userId: string, password: string) => void
+    errors: string[]
 }
 
 interface SignInFormComponentState {
@@ -100,6 +102,10 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                         value={password}
                         onChange={this._onChangePassword}
                     />
+                    {
+                        this.props.errors.length !== 0 &&
+                        <ErrorMessageComponent errMsg={this.props.errors}/>
+                    }
                     <Button
                         type="submit"
                         fullWidth
