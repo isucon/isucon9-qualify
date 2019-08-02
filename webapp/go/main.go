@@ -1039,6 +1039,8 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		outputErrorMsg(w, http.StatusInternalServerError, "session error")
 		return
 	}
+
+	json.NewEncoder(w).Encode(u)
 }
 
 func getRegister(w http.ResponseWriter, r *http.Request) {
