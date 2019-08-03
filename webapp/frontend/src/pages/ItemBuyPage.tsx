@@ -1,7 +1,6 @@
 import React from 'react';
 import {withBaseComponent} from "../hoc/withBaseComponent";
 import {ItemData} from "../dataObjects/item";
-import {BuyFormErrorState} from "../reducers/formErrorReducer";
 import ItemBuyFormComponent from "../components/ItemBuyFormComponent";
 
 interface ItemBuyPageProps {
@@ -10,8 +9,8 @@ interface ItemBuyPageProps {
 
 const ItemBuyPage: React.FC/*<ItemBuyPageProps>*/ = (/*{ item }*/) => {
     const errors = {
-        cardError: [],
-        buyError: [],
+        cardError: '不正なカードです',
+        buyError: '買えないよ',
     };
     const item = {
         id: 1,

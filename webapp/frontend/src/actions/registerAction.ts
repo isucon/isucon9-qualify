@@ -33,7 +33,7 @@ export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
             })
             .catch((err: Error) => {
                 dispatch(registerFailAction({
-                    errorMsg: [err.message]
+                    error: err.message,
                 }))
             })
     };

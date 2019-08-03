@@ -14,13 +14,14 @@ const styles = (theme: Theme): StyleRules => createStyles({
         width: '100%',
         maxWidth: '500px',
         height: 'auto',
+        textAlign: 'center',
     },
     form: {
         width: '100%',
-        marginTop: theme.spacing(1),
+        marginTop: theme.spacing(3,0, 1),
     },
     submit: {
-        margin: theme.spacing(3, 0, 2),
+        margin: theme.spacing(3, 0, 1),
     },
 });
 
@@ -62,8 +63,8 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
 
     render() {
         const { item, errors, classes } = this.props;
-        const hasCardError = errors.cardError.length > 0;
-        const hasAppError = errors.buyError.length > 0;
+        const cardError = errors.cardError;
+        const appError = errors.buyError;
 
         return (
             <React.Fragment>
@@ -80,19 +81,17 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
                         label="カード番号"
                         name="cardNumber"
                         helperText="16進数大文字で入力してください"
+                        error={!!cardError}
                         value={this.state.cardNumber}
                         onChange={this._onChangeCardNumber}
                         autoFocus
-                        FormHelperTextProps={{
-                            id: 'cardNumber',
-                            error: hasCardError,
-                        }}
                     />
                     {
-                        hasAppError &&
-                        <ErrorMessageComponent errMsg={errors.buyError}/>
+                        cardError &&
+                        <ErrorMessageComponent id="cardNumber" error={cardError} />
                     }
                     <Button
+                        id="buyButton"
                         type="submit"
                         fullWidth
                         variant="contained"
@@ -101,6 +100,10 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
                     >
                         購入
                     </Button>
+                    {
+                        appError &&
+                        <ErrorMessageComponent id="buyButton" error={appError}/>
+                    }
                 </form>
             </React.Fragment>
         );

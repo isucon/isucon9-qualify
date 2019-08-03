@@ -35,7 +35,7 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
             })
             .catch((err: Error) => {
                 dispatch(loginFailAction({
-                    errorMsg: [err.message]
+                    error: err.message,
                 }))
             })
     };

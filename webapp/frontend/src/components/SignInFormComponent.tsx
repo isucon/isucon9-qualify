@@ -30,7 +30,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface SignInFormComponentProps extends WithStyles<typeof styles> {
     onSubmit: (accountName: string, password: string) => void
-    errors: string[]
+    error?: string,
 }
 
 interface SignInFormComponentState {
@@ -109,10 +109,11 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                         onChange={this._onChangePassword}
                     />
                     {
-                        this.props.errors.length !== 0 &&
-                        <ErrorMessageComponent errMsg={this.props.errors}/>
+                        this.props.error &&
+                        <ErrorMessageComponent id="signInButton" error={this.props.error}/>
                     }
                     <Button
+                        id="signInButton"
                         type="submit"
                         fullWidth
                         variant="contained"

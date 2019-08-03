@@ -4,7 +4,7 @@ import {postRegisterAction} from "../actions/registerAction";
 import {RegisterReq} from "../types/appApiTypes";
 
 const mapStateToProps = (state: any) => ({
-    errors: state.formError.errorMsg,
+    error: state.formError.error,
 });
 const mapDispatchToProps = (dispatch: any) => ({
     register: (params: RegisterReq) => {

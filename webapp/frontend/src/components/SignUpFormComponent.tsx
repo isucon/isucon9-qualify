@@ -33,7 +33,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface SignUpFormComponentProps extends WithStyles<typeof styles> {
     register: (params: RegisterReq) => void
-    errors: string[]
+    error: string,
 }
 
 interface SignUpFormComponentState {
@@ -134,10 +134,11 @@ class SignUpFormComponent extends React.Component<SignUpFormComponentProps, Sign
                         onChange={this._onChangePassword}
                     />
                     {
-                        this.props.errors.length !== 0 &&
-                        <ErrorMessageComponent errMsg={this.props.errors}/>
+                        this.props.error &&
+                        <ErrorMessageComponent id="signUpButton" error={this.props.error}/>
                     }
                     <Button
+                        id="signUpButton"
                         type="submit"
                         fullWidth
                         variant="contained"

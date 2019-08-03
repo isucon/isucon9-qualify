@@ -40,7 +40,7 @@ export function listItemAction(name: string, description: string, price: number)
             })
             .catch((err: Error) => {
                 dispatch(sellingFailAction({
-                    errorMsg: [err.message]
+                    error: err.message,
                 }))
             })
     };
