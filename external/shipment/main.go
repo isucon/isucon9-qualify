@@ -1,4 +1,4 @@
-package main
+package shipment
 
 import (
 	"crypto/sha1"
@@ -116,15 +116,6 @@ func init() {
 	shipmentHash.Write(SecretSeed)
 }
 
-func main() {
-	http.HandleFunc("/create", createHandler)
-	http.HandleFunc("/request", requestHandler)
-	http.HandleFunc("/accept", acceptHandler)
-	http.HandleFunc("/status", statusHandler)
-
-	http.ListenAndServe(":7000", nil)
-}
-
 type errorRes struct {
 	Error string `json:"error"`
 }
@@ -134,7 +125,7 @@ type createRes struct {
 	ReserveTime int64  `json:"reserve_time"`
 }
 
-func createHandler(w http.ResponseWriter, r *http.Request) {
+func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -180,7 +171,7 @@ type requestReq struct {
 	ReserveID string `json:"reserve_id"`
 }
 
-func requestHandler(w http.ResponseWriter, r *http.Request) {
+func RequestHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -246,7 +237,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	png.Encode(w, qrCode)
 }
 
-func acceptHandler(w http.ResponseWriter, r *http.Request) {
+func AcceptHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	id := query.Get("id")
 	token := query.Get("token")
@@ -276,7 +267,7 @@ func acceptHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func statusHandler(w http.ResponseWriter, r *http.Request) {
+func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Authorization") != IsucariAPIToken {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
