@@ -13,8 +13,6 @@
     - external.nginx
     - external.shipment
     - external.payment
-    # TODO
-    # - benchmark-worker
 
   tasks:
     - name: Start default daemons
