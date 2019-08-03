@@ -1,10 +1,10 @@
 import config from '../config';
 
 /**
- * HTTP client for main app
+ * HTTP client for payment service
  */
-class AppClient {
-    private baseUrl: string = config.apiUrl;
+class PaymentClient {
+    private baseUrl: string = config.paymentUrl;
     private defaultHeaders: HeadersInit = {};
 
     async get(path: string): Promise<Response> {
@@ -17,7 +17,7 @@ class AppClient {
     async post(path: string, params?: Object): Promise<Response> {
         let requestOption: RequestInit = {
             method: 'POST',
-            mode: 'same-origin',
+            mode: 'cors',
             headers: Object.assign({}, this.defaultHeaders, {
                 'Content-Type': 'application/json',
             }),
@@ -28,8 +28,9 @@ class AppClient {
             requestOption.body = JSON.stringify(params);
         }
 
+
         return await fetch(`${this.baseUrl}${path}`, requestOption);
     }
 }
 
-export default new AppClient();
+export default new PaymentClient();
