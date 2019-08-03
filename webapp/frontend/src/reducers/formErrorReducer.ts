@@ -5,10 +5,20 @@ import {SELLING_ITEM_FAIL} from "../actions/sellingItemAction";
 
 export interface FormErrorState {
     errorMsg: string[],
+    buyFormError?: BuyFormErrorState,
+}
+
+export interface BuyFormErrorState {
+    cardError: string[], // Error from payment service
+    buyError: string[], // Error from app
 }
 
 const initialState: FormErrorState = {
-    errorMsg: []
+    errorMsg: [],
+    buyFormError: {
+        cardError: [],
+        buyError: [],
+    }
 };
 
 const formError = (state: FormErrorState = initialState, action: AnyAction): FormErrorState => {
