@@ -2,14 +2,66 @@ package main
 
 import (
 	"log"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/session"
+	"github.com/isucon/isucon9-qualify/external/payment"
+	"github.com/isucon/isucon9-qualify/external/shipment"
 	"github.com/k0kubun/pp"
 )
 
 func main() {
+	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 5555})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 7000})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	muxPayment := http.NewServeMux()
+	muxPayment.HandleFunc("/card", payment.CardHandler)
+	muxPayment.HandleFunc("/token", payment.TokenHandler)
+
+	muxShipment := http.NewServeMux()
+	muxShipment.HandleFunc("/create", shipment.CreateHandler)
+	muxShipment.HandleFunc("/request", shipment.RequestHandler)
+	muxShipment.HandleFunc("/accept", shipment.AcceptHandler)
+	muxShipment.HandleFunc("/status", shipment.StatusHandler)
+
+	serverPayment := &http.Server{
+		Handler: &Server{
+			mux: muxPayment,
+		},
+	}
+
+	serverShipment := &http.Server{
+		Handler: &Server{
+			mux: muxShipment,
+		},
+	}
+
+	go func() {
+		log.Println(serverPayment.Serve(liPayment))
+	}()
+
+	go func() {
+		log.Println(serverShipment.Serve(liShipment))
+	}()
+
 	run()
+}
+
+type Server struct {
+	mux *http.ServeMux
+}
+
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
 }
 
 func run() int {
