@@ -12,3 +12,17 @@
     - golang
     - webapp.nginx
     - webapp.golang
+
+  tasks:
+    - name: Start default daemons
+      become: yes
+      become_user: root
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+      with_items:
+        - nginx.service
+        - mysql.service
+        - isucari.golang.service
