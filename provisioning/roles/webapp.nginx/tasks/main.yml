@@ -1,3 +1,11 @@
+- name: Copy Nginx config
+  copy:
+    src: etc/nginx/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: 0644
+
 - name: Copy isucari Nginx config
   copy:
     src: etc/nginx/sites-available/{{ item }}
