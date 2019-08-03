@@ -26,6 +26,10 @@ import (
 const (
 	sessionName = "session_isucari"
 
+	ItemMinPrice    = 100
+	ItemMaxPrice    = 1000000
+	ItemPriceErrMsg = "商品価格は100円以上、1,000,000円以下にしてください"
+
 	ItemStatusOnSale  = "on_sale"
 	ItemStatusTrading = "trading"
 	ItemStatusSoldOut = "sold_out"
@@ -300,7 +304,26 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if price < ItemMinPrice || price > ItemMaxPrice {
+		outputErrorMsg(w, http.StatusBadRequest, ItemPriceErrMsg)
+
+		return
+	}
+
 	userID := getUserID(r)
+	seller := User{}
+
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", userID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
 
 	targetItem := Item{}
 	err = dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
@@ -315,13 +338,8 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if targetItem.SellerID != userID {
+	if targetItem.SellerID != seller.ID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
-		return
-	}
-
-	if targetItem.Status != ItemStatusOnSale {
-		outputErrorMsg(w, http.StatusForbidden, "販売中の商品以外編集できません")
 		return
 	}
 
@@ -332,6 +350,11 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
+		return
+	}
+
+	if targetItem.Status != ItemStatusOnSale {
+		outputErrorMsg(w, http.StatusForbidden, "販売中の商品以外編集できません")
 		return
 	}
 
@@ -921,8 +944,8 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if price < 100 || price > 1000000 {
-		outputErrorMsg(w, http.StatusBadRequest, "商品価格は100円以上、1,000,000円以下にしてください")
+	if price < ItemMinPrice || price > ItemMaxPrice {
+		outputErrorMsg(w, http.StatusBadRequest, ItemPriceErrMsg)
 
 		return
 	}
