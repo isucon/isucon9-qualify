@@ -1,9 +1,9 @@
 - name: Install payment
   command: /home/isucon/local/go/bin/go build -o payment
   args:
-    chdir: /home/isucon/isucari/webapp/external/payment
+    chdir: /home/isucon/isucari/external/payment
   environment:
-    GO111MODULE: "on"
+    GO111MODULE: "auto"
   become: yes
   become_user: isucon
 
