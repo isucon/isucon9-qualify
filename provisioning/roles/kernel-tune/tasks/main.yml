@@ -1,0 +1,12 @@
+- name: Increase file limits for sysctl
+  copy:
+    dest: /etc/sysctl.d/50-fs.conf
+    content: |
+      fs.file-max=655360
+
+- name: Increase file limit for soft and hard nofile limit
+  copy:
+    dest: /etc/sysctl.d/91-nofiles.conf
+    content: |
+      *     soft nofile 655360
+      *     hard nofile 655360
