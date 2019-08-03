@@ -1,7 +1,7 @@
 import React from 'react';
 import {withBaseComponent} from "../hoc/withBaseComponent";
 import {ItemData} from "../dataObjects/item";
-import ItemBuyFormComponent from "../components/ItemBuyFormComponent";
+import ItemBuyFormContainer from "../containers/ItemBuyFormContainer";
 
 interface ItemBuyPageProps {
     item: ItemData,
@@ -23,7 +23,7 @@ const ItemBuyPage: React.FC/*<ItemBuyPageProps>*/ = (/*{ item }*/) => {
 
     return (
         <React.Fragment>
-            <ItemBuyFormComponent item={item} errors={errors}/>
+            <ItemBuyFormContainer />
         </React.Fragment>
     );
 };

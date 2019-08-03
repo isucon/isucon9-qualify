@@ -27,6 +27,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface ItemBuyFormProps extends WithStyles<typeof styles> {
     item: ItemData,
+    onBuyAction: (itemId: number, cardNumber: string) => void,
     errors: BuyFormErrorState,
 }
 
@@ -43,6 +44,7 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
         };
 
         this._onChangeCardNumber = this._onChangeCardNumber.bind(this);
+        this._onClickBuyButton = this._onClickBuyButton.bind(this);
     }
 
     _onChangeCardNumber(e: React.ChangeEvent<HTMLInputElement>) {
@@ -59,6 +61,12 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
         this.setState({
             cardNumber: cardNumber.toUpperCase(),
         });
+    }
+
+    _onClickBuyButton(e: React.MouseEvent) {
+        const { item: { id } } = this.props;
+        const { cardNumber } = this.state;
+        this.props.onBuyAction(id, cardNumber);
     }
 
     render() {
@@ -96,6 +104,7 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
                         fullWidth
                         variant="contained"
                         color="primary"
+                        onClick={this._onClickBuyButton}
                         className={classes.submit}
                     >
                         購入
