@@ -642,6 +642,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		return
 	}
+
 	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
 		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
 		tx.Rollback()
@@ -724,6 +725,20 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := getUserID(r)
+	seller := User{}
+
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", userID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
 	if err == sql.ErrNoRows {
@@ -742,23 +757,54 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
-		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
+	tx := dbx.MustBegin()
+
+	item := Item{}
+	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusBadRequest, "items not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
 		return
 	}
 
-	tx := dbx.MustBegin()
-	tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if item.Status != ItemStatusTrading {
+		outputErrorMsg(w, http.StatusForbidden, "商品が取引中ではありません")
+		tx.Rollback()
+		return
+	}
+
+	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE", transactionEvidence.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
 		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
 		tx.Rollback()
 		return
 	}
-	item := Item{}
-	tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 
 	shipping := Shipping{}
 	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		tx.Rollback()
+		return
+	}
 	if err != nil {
 		log.Println(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
