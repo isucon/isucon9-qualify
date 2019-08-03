@@ -8,7 +8,7 @@ export interface ViewingItemState {
 }
 
 const initialState: ViewingItemState = {
-    isFetching: false,
+    isFetching: true,
 };
 
 const viewingItem = (state: ViewingItemState = initialState, action: AnyAction): ViewingItemState => {

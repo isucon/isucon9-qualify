@@ -1,13 +1,13 @@
 import React from 'react';
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 
 /**
  * @deprecated
  */
 export const withBaseComponent = (WrappedComponent: React.ComponentType<any>): React.FC<any> => {
     return () => (
-        <BasePageComponent>
+        <BasePageContainer>
             <WrappedComponent />
-        </BasePageComponent>
+        </BasePageContainer>
     );
 };

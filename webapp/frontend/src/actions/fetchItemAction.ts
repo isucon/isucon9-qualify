@@ -1,6 +1,6 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from "redux-thunk";
-import {Action} from "redux";
+import {Action, AnyAction} from "redux";
 import {GetItemRes} from "../types/appApiTypes";
 import {AppResponseError} from "../errors/AppResponseError";
 import {ViewingItemState} from "../reducers/viewingItemReducer";
@@ -11,18 +11,17 @@ export const FETCH_ITEM_SUCCESS = 'FETCH_ITEM_SUCCESS';
 export const FETCH_ITEM_FAIL = 'FETCH_ITEM_FAIL';
 
 type State = void | ViewingItemState;
-type FetchItemActions = FetchItemStartAction | FetchItemSuccessAction | FetchItemFailAction;
-type ThunkResult<R> = ThunkAction<R, State, undefined, FetchItemActions>
+type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
 
 export function fetchItemAction(itemId: string): ThunkResult<void> {
-    return (dispatch: ThunkDispatch<any, any, FetchItemActions>) => {
+    return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
         dispatch(fetchItemStartAction());
         AppClient.get(`/items/${itemId}.json`)
             .then((response: Response) => {
+                console.log(response);
                 if (!response.ok) {
                     if (response.status === 404) {
                         dispatch(fetchItemFailAction());
-                        // TODO 404表示
                     }
 
                     throw new AppResponseError('Request for getting item data was failed', response);
@@ -44,7 +43,6 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
             })
             .catch((err: Error) => {
                 dispatch(fetchItemFailAction());
-                // TODO handling error
             });
     };
 }

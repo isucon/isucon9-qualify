@@ -5,6 +5,7 @@ import {
     NotFoundErrorAction
 } from "../actions/errorAction";
 import {AnyAction} from "redux";
+import {FETCH_ITEM_FAIL} from "../actions/fetchItemAction";
 
 export const NoError = 'NO_ERROR';
 export const NotFoundError = 'NOT_FOUND';
@@ -27,6 +28,7 @@ const error = (state: ErrorState = initialState, action: errorActions): ErrorSta
         case NOT_FOUND_ERROR:
             return { errorType: NotFoundError, errorCode: 404 };
         case INTERNAL_SERVER_ERROR:
+        case FETCH_ITEM_FAIL:
             return { errorType: InternalServerError, errorCode: 500 };
         default:
             return { errorType: NoError };

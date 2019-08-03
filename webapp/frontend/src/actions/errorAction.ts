@@ -5,7 +5,7 @@ export const INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR';
 
 export interface NotFoundErrorAction extends Action<typeof NOT_FOUND_ERROR>{}
 
-export function NotFoundError(): NotFoundErrorAction {
+export function notFoundError(): NotFoundErrorAction {
     return { type: NOT_FOUND_ERROR };
 }
 

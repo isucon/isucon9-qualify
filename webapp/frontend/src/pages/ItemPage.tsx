@@ -11,7 +11,7 @@ import {routes} from "../routes/Route";
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import LoadingComponent from "../components/LoadingComponent";
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     title: {
@@ -66,7 +66,7 @@ class ItemPage extends React.Component<Props> {
         const { classes, item, isFetchingItem } = this.props;
 
         return (
-            <BasePageComponent>
+            <BasePageContainer>
                 { isFetchingItem ? (
                     <LoadingComponent/>
                 ) : (
@@ -129,7 +129,7 @@ class ItemPage extends React.Component<Props> {
                     </React.Fragment>
                     )
                 }
-            </BasePageComponent>
+            </BasePageContainer>
         );
     }
 }
