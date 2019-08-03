@@ -7,6 +7,7 @@
 
     - vagrant-specific
 
+    - kernel-tune
     - nginx
     - nginx.log-format
     - golang
