@@ -8,6 +8,8 @@ import Avatar from "@material-ui/core/Avatar";
 import { Link as RouteLink } from 'react-router-dom';
 import AppBar from "@material-ui/core/AppBar";
 import Button from "@material-ui/core/Button";
+import {withBaseComponent} from "../hoc/withBaseComponent";
+import {routes} from "../routes/Route";
 
 const useStyles = makeStyles(theme => ({
     title: {
@@ -88,7 +90,8 @@ const ItemPage: React.FC/*<ItemPageProps>*/ = (/*{ item }*/) => {
                                     spacing={2}
                                 >
                                     <Grid item>
-                                        <RouteLink className={classes.link} to={`/users/${1}`}>
+                                        {/* TODO: 固定でないuserId渡す */}
+                                        <RouteLink className={classes.link} to={routes.user.getPath(1)}>
                                             <Avatar className={classes.avatar}>"T"</Avatar>
                                         </RouteLink>
                                     </Grid>
@@ -120,4 +123,4 @@ const ItemPage: React.FC/*<ItemPageProps>*/ = (/*{ item }*/) => {
     );
 };
 
-export { ItemPage }
+export default withBaseComponent(ItemPage);

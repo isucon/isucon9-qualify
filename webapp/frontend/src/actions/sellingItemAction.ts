@@ -4,6 +4,7 @@ import { FormErrorState } from "../reducers/formErrorReducer";
 import { push } from 'connected-react-router';
 import {AnyAction} from "redux";
 import {SellReq, SellRes, SettingsRes} from "../types/appApiTypes";
+import {routes} from "../routes/Route";
 
 export const SELLING_ITEM_SUCCESS = 'SELLING_ITEM_SUCCESS';
 export const SELLING_ITEM_FAIL = 'SELLING_ITEM_FAIL';
@@ -35,7 +36,7 @@ export function listItemAction(name: string, description: string, price: number)
             })
             .then((body: SellRes) => {
                 dispatch(sellingSuccessAction(body.id));
-                dispatch(push('/items')); // TODO
+                dispatch(push(routes.top.path)); // TODO
             })
             .catch((err: Error) => {
                 dispatch(sellingFailAction({

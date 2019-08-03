@@ -8,6 +8,7 @@ import {Grid} from "@material-ui/core";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import SellingButtonContainer from "../containers/SellingButtonContainer";
+import {withBaseComponent} from "../hoc/withBaseComponent";
 
 const useStyles = makeStyles(theme => ({
     avatar: {
@@ -98,4 +99,4 @@ const UserPage: React.FC/*<UserPageProps>*/ = (/*{ items, user }*/) => {
     );
 };
 
-export { UserPage }
+export default withBaseComponent(UserPage);

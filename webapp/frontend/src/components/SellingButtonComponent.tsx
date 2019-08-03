@@ -15,11 +15,11 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-interface SellingButtomComponentProps {
+interface SellingButtonComponentProps {
     onClick: (e: React.MouseEvent) => void
 }
 
-const SellingButonComponent: React.FC<SellingButtomComponentProps> = ({ onClick }) => {
+const SellingButonComponent: React.FC<SellingButtonComponentProps> = ({ onClick }) => {
     const classes = useStyles();
 
     return (

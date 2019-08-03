@@ -1,6 +1,7 @@
 import React from 'react';
 import makeStyles from "@material-ui/core/styles/makeStyles";
 import SignUpFormContainer from "../containers/SignUpFormContainer";
+import {withBaseComponent} from "../hoc/withBaseComponent";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -21,4 +22,4 @@ const SignUpPage: React.FC = () => {
     );
 };
 
-export { SignUpPage }
+export default withBaseComponent(SignUpPage);

@@ -2,6 +2,7 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core';
 import SellFormContainer from "../containers/SellFormContainer";
+import {withBaseComponent} from "../hoc/withBaseComponent";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -22,4 +23,4 @@ const SellPage: React.FC = () => {
     );
 };
 
-export { SellPage }
+export default withBaseComponent(SellPage);

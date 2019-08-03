@@ -3,6 +3,7 @@ import {ItemData} from "../dataObjects/item";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 import { ItemListComponent } from '../components/ItemListComponent';
 import SellingButtonContainer from "../containers/SellingButtonContainer";
+import {withBaseComponent} from "../hoc/withBaseComponent";
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -65,4 +66,4 @@ const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPage
     );
 };
 
-export { ItemListPage }
+export default withBaseComponent(ItemListPage);

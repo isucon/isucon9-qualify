@@ -9,6 +9,7 @@ import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import {RegisterReq} from "../types/appApiTypes";
 import {ErrorMessageComponent} from "./ErrorMessageComponent";
+import {routes} from "../routes/Route";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     paper: {
@@ -148,7 +149,7 @@ class SignUpFormComponent extends React.Component<SignUpFormComponentProps, Sign
                     </Button>
                     <Grid container>
                         <Grid item xs>
-                            <RouteLink to="/signin">すでにアカウントをお持ちの方はこちら</RouteLink>
+                            <RouteLink to={routes.login.path}>すでにアカウントをお持ちの方はこちら</RouteLink>
                         </Grid>
                     </Grid>
                 </form>

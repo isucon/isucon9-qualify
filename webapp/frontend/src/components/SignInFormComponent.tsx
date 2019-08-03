@@ -7,6 +7,7 @@ import { Link as RouteLink } from 'react-router-dom';
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import {ErrorMessageComponent} from "./ErrorMessageComponent";
+import {routes} from "../routes/Route";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     paper: {
@@ -123,7 +124,7 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                     </Button>
                     <Grid container>
                         <Grid item xs>
-                            <RouteLink to="/signup">新規登録はこちら</RouteLink>
+                            <RouteLink to={routes.register.path}>新規登録はこちら</RouteLink>
                         </Grid>
                     </Grid>
                 </form>
