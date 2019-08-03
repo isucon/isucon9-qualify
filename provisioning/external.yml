@@ -12,3 +12,17 @@
     - external.nginx
     - external.shipment
     - external.payment
+
+  tasks:
+    - name: Start default daemons
+      become: yes
+      become_user: root
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+      with_items:
+        - nginx.service
+        - shipment.service
+        - payment.service
