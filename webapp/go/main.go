@@ -391,58 +391,52 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	buyerID := getUserID(r)
 
-	targetItem := Item{}
-	err = dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)
+	buyer := User{}
+	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", buyerID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		outputErrorMsg(w, http.StatusNotFound, "buyer not found")
 		return
 	}
 	if err != nil {
 		log.Println(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	tx := dbx.MustBegin()
+
+	targetItem := Item{}
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", rb.ItemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
 		return
 	}
 
 	if targetItem.Status != ItemStatusOnSale {
 		outputErrorMsg(w, http.StatusForbidden, "item is not for sale")
+		tx.Rollback()
 		return
 	}
 
-	if targetItem.SellerID == buyerID {
+	if targetItem.SellerID == buyer.ID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品は買えません")
-		return
-	}
-
-	tx := dbx.MustBegin()
-	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", rb.ItemID)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
 
-	buyer := User{}
 	seller := User{}
-	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", buyerID)
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", targetItem.SellerID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
-		tx.Rollback()
-		return
-	}
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", targetItem.SellerID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		outputErrorMsg(w, http.StatusNotFound, "seller not found")
 		tx.Rollback()
 		return
 	}
