@@ -2,7 +2,7 @@
   file:
     path: /home/isucon/isucari/webapp
     src: /tmp/ansible/webapp
-  state: link
+    state: link
 
 - name: Chown isucon
   file:
@@ -10,5 +10,4 @@
     owner: isucon
     group: isucon
     recurse: yes
-  state: link
   become: yes
