@@ -9,8 +9,8 @@
 
 - name: Copy shipment.golang unit file
   copy:
-    src: etc/systemd/system/shipment.golang.service
-    dest: /etc/systemd/system/shipment.golang.service
+    src: etc/systemd/system/shipment.service
+    dest: /etc/systemd/system/shipment.service
     owner: root
     group: root
     mode: 0644

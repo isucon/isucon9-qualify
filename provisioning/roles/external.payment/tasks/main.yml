@@ -9,8 +9,8 @@
 
 - name: Copy payment.golang unit file
   copy:
-    src: etc/systemd/system/payment.golang.service
-    dest: /etc/systemd/system/payment.golang.service
+    src: etc/systemd/system/payment.service
+    dest: /etc/systemd/system/payment.service
     owner: root
     group: root
     mode: 0644
