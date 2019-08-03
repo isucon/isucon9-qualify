@@ -9,6 +9,7 @@ import { createBrowserHistory } from 'history';
 import { ConnectedRouter, routerMiddleware } from "connected-react-router";
 import thunk from 'redux-thunk';
 import { composeWithDevTools } from 'redux-devtools-extension';
+import middlewares from './middlewares';
 
 const history = createBrowserHistory();
 
@@ -18,6 +19,7 @@ const store = createStore(
         applyMiddleware(
             thunk,
             routerMiddleware(history),
+            ...middlewares,
         ),
     ),
 );
