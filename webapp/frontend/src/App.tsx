@@ -29,7 +29,7 @@ const routes: Array<{
     },
     {
         path: '/items/:item_id/buy',
-        pageName: 'Item edit page',
+        pageName: 'Item buy page',
     },
     {
         path: '/buy/complete',
