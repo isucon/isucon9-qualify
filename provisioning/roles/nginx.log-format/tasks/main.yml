@@ -1,4 +1,5 @@
 - name: nginx log format with ltsv
+  become: yes
   copy:
     dest: /etc/nginx/conf.d/log_format_ltsv.conf
     mode: 0644
