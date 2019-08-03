@@ -1,10 +1,9 @@
-package main
+package payment
 
 import (
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -98,14 +97,7 @@ func (c *cardTokenStore) Get(token string) (cardToken, bool) {
 
 var CardTokens = newCardToken()
 
-func main() {
-	http.HandleFunc("/card", cardHandler)
-	http.HandleFunc("/token", tokenHandler)
-
-	log.Fatal(http.ListenAndServe(":5555", nil))
-}
-
-func tokenHandler(w http.ResponseWriter, req *http.Request) {
+func TokenHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -165,7 +157,7 @@ func isValidOrigin(origin string) bool {
 	return true
 }
 
-func cardHandler(w http.ResponseWriter, req *http.Request) {
+func CardHandler(w http.ResponseWriter, req *http.Request) {
 	if !isValidOrigin(req.Header.Get("Origin")) {
 		return
 	}
