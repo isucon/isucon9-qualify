@@ -221,8 +221,13 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	scheme := "http"
+	if r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+
 	u := &url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   r.Host,
 		Path:   "/accept",
 	}
