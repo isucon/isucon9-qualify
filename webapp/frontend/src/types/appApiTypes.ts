@@ -1,3 +1,5 @@
+import {ItemStatus} from "../dataObjects/item";
+
 interface CsrfRequiredReq {
     csrf_token: string
 }
@@ -16,6 +18,22 @@ export interface RegisterRes extends Response{
     id: number
     account_name: string
     address: string
+}
+
+/**
+ * GET /item
+ */
+export interface GetItemReq {
+    item_id: number,
+}
+export interface GetItemRes {
+    id: number,
+    seller_id: number,
+    buyer_id: number, // will remove later
+    status: ItemStatus,
+    name: string,
+    price: number,
+    description: string,
 }
 
 /**
