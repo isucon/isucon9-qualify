@@ -158,13 +158,6 @@ type resSetting struct {
 }
 
 func init() {
-	templates = template.Must(template.ParseFiles(
-		"templates/item_edit.html",
-		"templates/buy.html",
-		"templates/ship.html",
-		"templates/ship_done.html",
-		"templates/complete.html",
-	))
 	store = sessions.NewCookieStore([]byte("abc"))
 
 	log.SetFlags(log.Lshortfile)
@@ -221,16 +214,11 @@ func main() {
 
 	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
-	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getItemEdit)
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
-	mux.HandleFunc(pat.Get("/buy/:item_id"), getBuyItem)
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
 	mux.HandleFunc(pat.Post("/sell"), postSell)
-	mux.HandleFunc(pat.Get("/ship/:item_id"), getShip)
 	mux.HandleFunc(pat.Post("/ship"), postShip)
-	mux.HandleFunc(pat.Get("/ship_done/:item_id"), getShipDone)
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
-	mux.HandleFunc(pat.Get("/complete/:item_id"), getComplete)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
@@ -292,24 +280,6 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
 	json.NewEncoder(w).Encode(item)
-}
-
-func getItemEdit(w http.ResponseWriter, r *http.Request) {
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusBadRequest, "id error")
-		return
-	}
-
-	csrfToken := getCSRFToken(r)
-
-	templates.ExecuteTemplate(w, "item_edit.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
 }
 
 func postItemEdit(w http.ResponseWriter, r *http.Request) {
@@ -379,26 +349,6 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
-}
-
-func getBuyItem(w http.ResponseWriter, r *http.Request) {
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusBadRequest, "id error")
-		return
-	}
-
-	csrfToken := getCSRFToken(r)
-
-	templates.ExecuteTemplate(w, "buy.html", struct {
-		CSRFToken string
-		ItemID    int64
-
-		PaymentServiceShopID string
-	}{csrfToken, itemID, PaymentServiceIsucariShopID})
 }
 
 func postBuy(w http.ResponseWriter, r *http.Request) {
@@ -590,22 +540,6 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 }
 
-func getShip(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
-
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
-		return
-	}
-
-	templates.ExecuteTemplate(w, "ship.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
-}
-
 func postShip(w http.ResponseWriter, r *http.Request) {
 	reqps := reqPostShip{}
 
@@ -737,22 +671,6 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rps)
 }
 
-func getShipDone(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
-
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
-		return
-	}
-
-	templates.ExecuteTemplate(w, "ship_done.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
-}
-
 func postShipDone(w http.ResponseWriter, r *http.Request) {
 	reqpsd := reqPostShipDone{}
 
@@ -858,22 +776,6 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
-}
-
-func getComplete(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
-
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
-		return
-	}
-
-	templates.ExecuteTemplate(w, "complete.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
 }
 
 func postComplete(w http.ResponseWriter, r *http.Request) {
