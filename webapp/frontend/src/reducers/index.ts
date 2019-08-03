@@ -1,7 +1,7 @@
 import { combineReducers } from 'redux';
 import authStatus from './authStatusReducer';
 import formError from './formErrorReducer';
-import viewingItem from "./viewingItemReducer";
+import viewingItem from './viewingItemReducer';
 import { connectRouter } from 'connected-react-router';
 import { History } from 'history';
 

@@ -13,6 +13,7 @@ export default function LoadingComponent() {
 
     return (
         <React.Fragment>
-            <CircularProgress className={classes.progress} />
+            <CircularProgress className={classes.progress}/>
         </React.Fragment>
-);
+    );
+};

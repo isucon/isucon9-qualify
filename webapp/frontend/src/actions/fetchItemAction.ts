@@ -1,23 +1,28 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from "redux-thunk";
-import {AnyAction} from "redux";
+import {Action} from "redux";
 import {GetItemRes} from "../types/appApiTypes";
 import {AppResponseError} from "../errors/AppResponseError";
 import {ViewingItemState} from "../reducers/viewingItemReducer";
 import {ItemData} from "../dataObjects/item";
 
-export const GET_ITEM_SUCCESS = 'GET_ITEM_SUCCESS';
+export const FETCH_ITEM_START = 'FETCH_ITEM_START';
+export const FETCH_ITEM_SUCCESS = 'FETCH_ITEM_SUCCESS';
+export const FETCH_ITEM_FAIL = 'FETCH_ITEM_FAIL';
 
 type State = void | ViewingItemState;
-type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
+type FetchItemActions = FetchItemStartAction | FetchItemSuccessAction | FetchItemFailAction;
+type ThunkResult<R> = ThunkAction<R, State, undefined, FetchItemActions>
 
-export function fetchItemAction(itemId: number): ThunkResult<void> {
-    return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+export function fetchItemAction(itemId: string): ThunkResult<void> {
+    return (dispatch: ThunkDispatch<any, any, FetchItemActions>) => {
+        dispatch(fetchItemStartAction());
         AppClient.get(`/items/${itemId}.json`)
             .then((response: Response) => {
                 if (!response.ok) {
                     if (response.status === 404) {
-                        // TODO handle as not found
+                        dispatch(fetchItemFailAction());
+                        // TODO 404表示
                     }
 
                     throw new AppResponseError('Request for getting item data was failed', response);
@@ -26,7 +31,7 @@ export function fetchItemAction(itemId: number): ThunkResult<void> {
                 return response.json();
             })
             .then((body: GetItemRes) => {
-                dispatch(getItemSuccessAction({
+                dispatch(fetchItemSuccessAction({
                     id: body.id,
                     status: body.status,
                     sellerId: body.seller_id,
@@ -38,21 +43,40 @@ export function fetchItemAction(itemId: number): ThunkResult<void> {
                 }));
             })
             .catch((err: Error) => {
+                dispatch(fetchItemFailAction());
                 // TODO handling error
             });
     };
 }
 
-export interface GetItemSuccessAction extends AnyAction {
-    type: typeof GET_ITEM_SUCCESS,
+export interface FetchItemStartAction extends Action<typeof FETCH_ITEM_START> {}
+
+const fetchItemStartAction = (): FetchItemStartAction => {
+    return {
+        type: FETCH_ITEM_START,
+    };
+};
+
+export interface FetchItemSuccessAction extends Action<typeof FETCH_ITEM_SUCCESS > {
     payload: {
         item: ItemData,
     },
 }
 
-const getItemSuccessAction = (item: ItemData): GetItemSuccessAction => {
+const fetchItemSuccessAction = (item: ItemData): FetchItemSuccessAction => {
     return {
-        type: GET_ITEM_SUCCESS,
-        payload: { item },
+        type: FETCH_ITEM_SUCCESS ,
+        payload: {
+            item
+        },
     };
 };
+
+export interface FetchItemFailAction extends Action<typeof FETCH_ITEM_FAIL > {}
+
+const fetchItemFailAction = (): FetchItemFailAction => {
+    return {
+        type: FETCH_ITEM_FAIL ,
+    };
+};
+

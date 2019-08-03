@@ -3,7 +3,6 @@ import {Route, Switch} from "react-router-dom";
 import SignInPage from "../pages/SignInPage";
 import SignUpPage from "../pages/SignUpPage";
 import SellPage from "../pages/SellPage";
-import ItemPage from "../pages/ItemPage";
 import ItemEditPage from "../pages/ItemEditPage";
 import ItemBuyPage from "../pages/ItemBuyPage";
 import TransactionPage from "../pages/TransactionPage";
@@ -11,6 +10,7 @@ import UserPage from "../pages/UserPage";
 import UserSettingPage from "../pages/UserSettingPage";
 import BuyCompletePage from "../pages/BuyComplete";
 import ItemListPage from "../pages/ItemListPage";
+import ItemPageContainer from "../containers/ItemPageContainer";
 
 interface route {
     [name: string]: {
@@ -73,7 +73,7 @@ export const AppRoute: React.FC = () => {
             <Route exact path={routes.login.path}       component={SignInPage} />
             <Route exact path={routes.register.path}    component={SignUpPage}/>
             <Route exact path={routes.sell.path}        component={SellPage} />
-            <Route exact path={routes.item.path}        component={ItemPage} />
+            <Route exact path={routes.item.path}        component={ItemPageContainer} />
             <Route exact path={routes.itemEdit.path}    component={ItemEditPage} />
             <Route exact path={routes.buy.path}         component={ItemBuyPage} />
             <Route exact path={routes.buyComplete.path} component={BuyCompletePage} />

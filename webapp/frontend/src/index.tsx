@@ -6,9 +6,13 @@ import { Provider } from 'react-redux';
 import { createBrowserHistory } from 'history';
 import { ConnectedRouter } from "connected-react-router";
 import { getStore } from "./configureStore";
+import createRootReducer from './reducers/index';
 
 const history = createBrowserHistory();
-const store = getStore(history);
+const rootReducers = createRootReducer(history);
+const store = getStore(rootReducers, history);
+
+export type AppState = ReturnType<typeof rootReducers>;
 
 ReactDOM.render(
     <Provider store={store}>
