@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/k0kubun/pp"
@@ -64,11 +65,38 @@ func run() int {
 		log.Fatal(err)
 	}
 
-	surl, err := s1.Ship(targetItemID)
+	aurl, err := s1.Ship(targetItemID)
 	if err != nil {
 		log.Fatal(err)
 	}
-	pp.Println(surl)
+	pp.Println(aurl)
+
+	s3, err := session.NewSession()
+	if err != nil {
+		log.Fatal(err)
+	}
+	surl, err := s3.DecodeQRURL(aurl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pp.Println(surl.String())
+
+	err = s3.ShipmentAccept(surl)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = s1.ShipDone(targetItemID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	time.Sleep(6 * time.Second)
+
+	err = s2.Complete(targetItemID)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return 0
 }
