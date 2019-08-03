@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strconv"
 
 	"golang.org/x/xerrors"
 )
@@ -35,6 +33,18 @@ type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
 	Token     string `json:"token"`
+}
+
+type reqSell struct {
+	CSRFToken   string `json:"csrf_token"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Price       int    `json:"price"`
+}
+
+type reqShip struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
 }
 
 type resShip struct {
@@ -109,13 +119,13 @@ func (s *Session) SetSettings() error {
 }
 
 func (s *Session) Sell(name string, price int, description string) (int64, error) {
-	formData := url.Values{}
-	formData.Set("csrf_token", s.csrfToken)
-	formData.Set("name", name)
-	formData.Set("price", strconv.Itoa(price))
-	formData.Set("description", description)
-
-	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/x-www-form-urlencoded", bytes.NewBufferString(formData.Encode()))
+	b, _ := json.Marshal(reqSell{
+		CSRFToken:   s.csrfToken,
+		Name:        name,
+		Price:       price,
+		Description: description,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/json", bytes.NewBuffer(b))
 	if err != nil {
 		return 0, err
 	}
@@ -177,11 +187,11 @@ func (s *Session) Buy(itemID int64, token string) error {
 }
 
 func (s *Session) Ship(itemID int64) (surl string, err error) {
-	formData := url.Values{}
-	formData.Set("csrf_token", s.csrfToken)
-	formData.Set("item_id", fmt.Sprintf("%d", itemID))
-
-	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/x-www-form-urlencoded", bytes.NewBufferString(formData.Encode()))
+	b, _ := json.Marshal(reqShip{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
 	if err != nil {
 		return "", err
 	}
