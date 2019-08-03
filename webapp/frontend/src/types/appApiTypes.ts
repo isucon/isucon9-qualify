@@ -39,3 +39,12 @@ export interface SellRes extends Response {
 export interface SettingsRes {
     csrf_token: string,
 }
+
+/**
+ * POST /buy
+ */
+// Request
+export interface BuyReq extends CsrfRequiredReq {
+    item_id: number,
+    token: string,
+}
