@@ -249,15 +249,25 @@ func getCSRFToken(r *http.Request) string {
 	return csrfToken.(string)
 }
 
-func getUserID(r *http.Request) int64 {
-	session := getSession(r)
+func getUser(r *http.Request) (User, int, string) {
+	user := User{}
 
+	session := getSession(r)
 	userID, ok := session.Values["user_id"]
 	if !ok {
-		return 0
+		return user, http.StatusNotFound, "no session"
 	}
 
-	return userID.(int64)
+	err := dbx.Get(&user, "SELECT * FROM `users` WHERE `id` = ?", userID)
+	if err == sql.ErrNoRows {
+		return user, http.StatusNotFound, "user not found"
+	}
+	if err != nil {
+		log.Println(err)
+		return user, http.StatusInternalServerError, "db error"
+	}
+
+	return user, http.StatusOK, ""
 }
 
 func getTop(w http.ResponseWriter, r *http.Request) {
@@ -306,22 +316,12 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 
 	if price < ItemMinPrice || price > ItemMaxPrice {
 		outputErrorMsg(w, http.StatusBadRequest, ItemPriceErrMsg)
-
 		return
 	}
 
-	userID := getUserID(r)
-	seller := User{}
-
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", userID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
-		return
-	}
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
 		return
 	}
 
@@ -389,18 +389,9 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	buyerID := getUserID(r)
-
-	buyer := User{}
-	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", buyerID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "buyer not found")
-		return
-	}
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+	buyer, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
 		return
 	}
 
@@ -450,7 +441,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	result, err := tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		targetItem.SellerID,
-		buyerID,
+		buyer.ID,
 		TransactionEvidenceStatusWaitShipping,
 		targetItem.ID,
 		targetItem.Name,
@@ -475,7 +466,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = tx.Exec("UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?",
-		buyerID,
+		buyer.ID,
 		ItemStatusTrading,
 		time.Now(),
 		targetItem.ID,
@@ -575,18 +566,9 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := getUserID(r)
-	seller := User{}
-
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", userID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
-		return
-	}
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
 		return
 	}
 
@@ -724,18 +706,9 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := getUserID(r)
-	seller := User{}
-
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", userID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
-		return
-	}
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
 		return
 	}
 
@@ -752,7 +725,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.SellerID != userID {
+	if transactionEvidence.SellerID != seller.ID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
@@ -876,17 +849,9 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := getUserID(r)
-	buyer := User{}
-	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", userID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "user not found")
-		return
-	}
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+	buyer, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
 		return
 	}
 
@@ -1049,10 +1014,14 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sellerID := getUserID(r)
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
 
 	result, err := dbx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",
-		sellerID,
+		seller.ID,
 		ItemStatusOnSale,
 		name,
 		price,
