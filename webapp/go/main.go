@@ -60,8 +60,8 @@ type User struct {
 	AccountName    string    `json:"account_name" db:"account_name"`
 	HashedPassword []byte    `json:"-" db:"hashed_password"`
 	Address        string    `json:"address,omitempty" db:"address"`
-	CreatedAt      time.Time `json:"-" db:"created_at"`
 	NumSellItems   int       `json:"num_sell_items" db:"num_sell_items"`
+	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
 type Item struct {
