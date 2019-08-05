@@ -60,6 +60,7 @@ type User struct {
 	AccountName    string    `json:"account_name" db:"account_name"`
 	HashedPassword []byte    `json:"-" db:"hashed_password"`
 	Address        string    `json:"address,omitempty" db:"address"`
+	NumSellItems   int       `json:"num_sell_items" db:"num_sell_items"`
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
@@ -1012,13 +1013,29 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	seller, errCode, errMsg := getUser(r)
+	user, errCode, errMsg := getUser(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",
+	tx := dbx.MustBegin()
+
+	seller := User{}
+	err = tx.Get(&seller, "SELECT * FROM `user` WHERE `id` = ? FOR UPDATE", user.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
@@ -1039,6 +1056,18 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
+
+	result, err = tx.Exec("UPDATE `user` SET `num_sell_items`=? WHERE `id`=?",
+		seller.NumSellItems+1,
+		seller.ID,
+	)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	tx.Commit()
 
 	json.NewEncoder(w).Encode(resSell{ID: itemID})
 }
@@ -1137,10 +1166,11 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)",
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?)",
 		accountName,
 		hashedPassword,
 		address,
+		0,
 	)
 	if err != nil {
 		log.Println(err)
