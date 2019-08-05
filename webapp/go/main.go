@@ -67,7 +67,9 @@ type User struct {
 type Item struct {
 	ID          int64     `json:"id" db:"id"`
 	SellerID    int64     `json:"seller_id" db:"seller_id"`
+	Seller      *User     `json:"seller" db:"-"`
 	BuyerID     int64     `json:"buyer_id" db:"buyer_id"`
+	Buyer       *User     `json:"buyer,omitempty" db:"-"`
 	Status      string    `json:"status" db:"status"`
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
@@ -230,7 +232,7 @@ func main() {
 	mux.HandleFunc(pat.Post("/register"), postRegister)
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 
-	log.Fatal(http.ListenAndServe("localhost:8000", mux))
+	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 
 func getSession(r *http.Request) *sessions.Session {
@@ -277,6 +279,12 @@ func getTop(w http.ResponseWriter, r *http.Request) {
 func getItem(w http.ResponseWriter, r *http.Request) {
 	itemID := pat.Param(r, "item_id")
 
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
 	item := Item{}
 	err := dbx.Get(&item, "SELECT * FROM `items` WHERE `id` = ?", itemID)
 	if err == sql.ErrNoRows {
@@ -285,9 +293,38 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		log.Println(err)
-
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
+	}
+
+	seller := User{}
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", item.SellerID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "seller not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	seller.Address = ""
+	item.Seller = &seller
+
+	if (user.ID == item.Seller.ID || user.ID == item.BuyerID) && item.BuyerID != 0 {
+		buyer := User{}
+		err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", item.BuyerID)
+		if err == sql.ErrNoRows {
+			outputErrorMsg(w, http.StatusNotFound, "buyer not found")
+			return
+		}
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+		buyer.Address = ""
+		item.Buyer = &buyer
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
