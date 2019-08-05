@@ -14,10 +14,11 @@ type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>
 
 export function fetchItemPageAction(itemId: string): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-        dispatch(fetchItemPageStartAction());
-        AppClient.get(`/items/${itemId}.json`)
+        Promise.resolve(() => {
+            dispatch(fetchItemPageStartAction());
+        })
+            .then(() => AppClient.get(`/items/${itemId}.json`))
             .then((response: Response) => {
-                console.log(response);
                 if (!response.ok) {
                     if (response.status === 404) {
                         throw new NotFoundError('Item not found');

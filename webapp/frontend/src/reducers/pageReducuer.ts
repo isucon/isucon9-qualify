@@ -12,10 +12,10 @@ const initialState: PageState = {
 const page = (state: PageState = initialState, action: AnyAction): PageState => {
     switch (action.type) {
         case FETCH_ITEM_PAGE_START:
-            return { isLoading: true };
+            return { ...state, isLoading: true };
         case FETCH_ITEM_PAGE_SUCCESS:
         case FETCH_ITEM_PAGE_FAIL:
-            return { isLoading: false };
+            return { ...state, isLoading: false };
         default:
             return {...state};
     }

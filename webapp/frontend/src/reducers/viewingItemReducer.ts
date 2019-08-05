@@ -1,6 +1,6 @@
 import { AnyAction } from "redux";
 import {ItemData} from "../dataObjects/item";
-import {FETCH_ITEM_PAGE_SUCCESS} from "../actions/fetchItemPageAction";
+import {FETCH_ITEM_PAGE_SUCCESS, FetchItemPageSuccessAction} from "../actions/fetchItemPageAction";
 
 export interface ViewingItemState {
     item?: ItemData
@@ -9,12 +9,14 @@ export interface ViewingItemState {
 const initialState: ViewingItemState = {
 };
 
-const viewingItem = (state: ViewingItemState = initialState, action: AnyAction): ViewingItemState => {
+type actions = AnyAction | FetchItemPageSuccessAction;
+
+const viewingItem = (state: ViewingItemState = initialState, action: actions): ViewingItemState => {
     switch (action.type) {
         case FETCH_ITEM_PAGE_SUCCESS:
-            return {...state};
+            return {...state, item: action.payload.item };
         default:
-            return initialState;
+            return state;
     }
 };
 
