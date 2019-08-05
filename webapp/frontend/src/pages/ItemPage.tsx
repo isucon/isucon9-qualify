@@ -10,8 +10,8 @@ import Button from "@material-ui/core/Button";
 import {routes} from "../routes/Route";
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
+import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
 import LoadingComponent from "../components/LoadingComponent";
-import BasePageContainer from "../containers/BasePageContainer";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     title: {
@@ -47,11 +47,11 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface ItemPageProps extends WithStyles<typeof styles> {
     item: ItemData
-    load: (itemId: string) => void;
-    isFetchingItem: boolean,
+    load: (itemId: string) => void
+    isLoading: boolean
 }
 
-type Props = ItemPageProps & RouteComponentProps<{ item_id: string }>
+type Props = ItemPageProps & RouteComponentProps<{ item_id: string }> & ErrorProps
 
 class ItemPage extends React.Component<Props> {
     constructor(props: Props) {
@@ -63,75 +63,78 @@ class ItemPage extends React.Component<Props> {
     }
 
     render() {
-        const { classes, item, isFetchingItem } = this.props;
+        const { classes, item, isLoading } = this.props;
 
         return (
-            <BasePageContainer>
-                { isFetchingItem ? (
-                    <LoadingComponent/>
-                ) : (
-                    <React.Fragment>
-                        Item Page
-                        <Typography className={classes.title} variant="h3">{item.name}</Typography>
-                        <Grid container spacing={2}>
-                            <Grid item>
-                                <img className={classes.itemImage} alt={item.name} src={item.thumbnailUrl}/>
-                            </Grid>
-                            <Grid item xs={12} sm container>
-                                <Grid item xs container direction="column" spacing={2}>
-                                    <Grid item xs>
-                                        <div className={classes.descSection}>
-                                            <Typography variant="h4">商品説明</Typography>
-                                            <Divider className={classes.divider} variant="middle"/>
-                                            <Typography variant="body1">{item.description}</Typography>
-                                        </div>
+            <React.Fragment>
+                {
+                    isLoading ? (
+                        <LoadingComponent/>
+                    ) : (
+                        <React.Fragment>
+                            Item Page
+                            <Typography className={classes.title} variant="h3">{item.name}</Typography>
+                            <Grid container spacing={2}>
+                                <Grid item>
+                                    <img className={classes.itemImage} alt={item.name} src={item.thumbnailUrl}/>
+                                </Grid>
+                                <Grid item xs={12} sm container>
+                                    <Grid item xs container direction="column" spacing={2}>
+                                        <Grid item xs>
+                                            <div className={classes.descSection}>
+                                                <Typography variant="h4">商品説明</Typography>
+                                                <Divider className={classes.divider} variant="middle"/>
+                                                <Typography variant="body1">{item.description}</Typography>
+                                            </div>
 
-                                        <div className={classes.descSection}>
-                                            <Typography variant="h4">出品者</Typography>
-                                            <Divider className={classes.divider} variant="middle"/>
-                                            <Grid
-                                                container
-                                                direction="row"
-                                                justify="center"
-                                                alignItems="center"
-                                                wrap="nowrap"
-                                                spacing={2}
-                                            >
-                                                <Grid item>
-                                                    <RouteLink className={classes.link} to={routes.user.getPath(item.sellerId)}>
-                                                        <Avatar className={classes.avatar}>"T"</Avatar>
-                                                    </RouteLink>
+                                            <div className={classes.descSection}>
+                                                <Typography variant="h4">出品者</Typography>
+                                                <Divider className={classes.divider} variant="middle"/>
+                                                <Grid
+                                                    container
+                                                    direction="row"
+                                                    justify="center"
+                                                    alignItems="center"
+                                                    wrap="nowrap"
+                                                    spacing={2}
+                                                >
+                                                    <Grid item>
+                                                        <RouteLink className={classes.link}
+                                                                   to={routes.user.getPath(item.sellerId)}>
+                                                            <Avatar className={classes.avatar}>"T"</Avatar>
+                                                        </RouteLink>
+                                                    </Grid>
+                                                    <Grid item xs>
+                                                        <Typography variant="body1">"TODO"</Typography>
+                                                    </Grid>
                                                 </Grid>
-                                                <Grid item xs>
-                                                    <Typography variant="body1">"TODO"</Typography>
-                                                </Grid>
-                                            </Grid>
-                                        </div>
+                                            </div>
+                                        </Grid>
                                     </Grid>
                                 </Grid>
                             </Grid>
-                        </Grid>
-                        <AppBar color="primary" position="fixed" className={classes.appBar}>
-                            <Grid
-                                container
-                                spacing={2}
-                                direction="row"
-                                alignItems="center"
-                            >
-                                <Grid item>
-                                    <Typography variant="h5">¥{item.price}</Typography>
+                            <AppBar color="primary" position="fixed" className={classes.appBar}>
+                                <Grid
+                                    container
+                                    spacing={2}
+                                    direction="row"
+                                    alignItems="center"
+                                >
+                                    <Grid item>
+                                        <Typography variant="h5">¥{item.price}</Typography>
+                                    </Grid>
+                                    <Grid item>
+                                        <Button variant="contained" className={classes.buyButton}>購入</Button>
+                                    </Grid>
                                 </Grid>
-                                <Grid item>
-                                    <Button variant="contained" className={classes.buyButton}>購入</Button>
-                                </Grid>
-                            </Grid>
-                        </AppBar>
-                    </React.Fragment>
+                            </AppBar>
+                        </React.Fragment>
                     )
                 }
-            </BasePageContainer>
+            </React.Fragment>
         );
     }
 }
 
-export default withStyles(styles)(ItemPage);
+export default PageComponentWithError<any>()(withStyles(styles)(ItemPage));
+

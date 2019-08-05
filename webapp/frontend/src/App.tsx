@@ -58,7 +58,7 @@ const getLinks: () => any[] = () => {
 
     for (const route of routes) {
         routeComponents.push(
-            <li>
+            <li key={route.pageName}>
                 <Link to={route.path}>{route.pageName}</Link>
             </li>
         );

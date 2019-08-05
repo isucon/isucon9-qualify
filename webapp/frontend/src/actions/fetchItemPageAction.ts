@@ -3,25 +3,24 @@ import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import {Action, AnyAction} from "redux";
 import {GetItemRes} from "../types/appApiTypes";
 import {AppResponseError} from "../errors/AppResponseError";
-import {ViewingItemState} from "../reducers/viewingItemReducer";
 import {ItemData} from "../dataObjects/item";
+import {NotFoundError} from "../errors/NotFoundError";
 
-export const FETCH_ITEM_START = 'FETCH_ITEM_START';
-export const FETCH_ITEM_SUCCESS = 'FETCH_ITEM_SUCCESS';
-export const FETCH_ITEM_FAIL = 'FETCH_ITEM_FAIL';
+export const FETCH_ITEM_PAGE_START = 'FETCH_ITEM_PAGE_START';
+export const FETCH_ITEM_PAGE_SUCCESS = 'FETCH_ITEM_PAGE_SUCCESS';
+export const FETCH_ITEM_PAGE_FAIL = 'FETCH_ITEM_PAGE_FAIL';
 
-type State = void | ViewingItemState;
-type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
+type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>
 
-export function fetchItemAction(itemId: string): ThunkResult<void> {
+export function fetchItemPageAction(itemId: string): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-        dispatch(fetchItemStartAction());
+        dispatch(fetchItemPageStartAction());
         AppClient.get(`/items/${itemId}.json`)
             .then((response: Response) => {
                 console.log(response);
                 if (!response.ok) {
                     if (response.status === 404) {
-                        dispatch(fetchItemFailAction());
+                        throw new NotFoundError('Item not found');
                     }
 
                     throw new AppResponseError('Request for getting item data was failed', response);
@@ -30,7 +29,7 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
                 return response.json();
             })
             .then((body: GetItemRes) => {
-                dispatch(fetchItemSuccessAction({
+                dispatch(fetchItemPageSuccessAction({
                     id: body.id,
                     status: body.status,
                     sellerId: body.seller_id,
@@ -42,39 +41,39 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
                 }));
             })
             .catch((err: Error) => {
-                dispatch(fetchItemFailAction());
+                dispatch(fetchItemPageFailAction());
             });
     };
 }
 
-export interface FetchItemStartAction extends Action<typeof FETCH_ITEM_START> {}
+export interface FetchItemPageStartAction extends Action<typeof FETCH_ITEM_PAGE_START> {}
 
-const fetchItemStartAction = (): FetchItemStartAction => {
+const fetchItemPageStartAction = (): FetchItemPageStartAction => {
     return {
-        type: FETCH_ITEM_START,
+        type: FETCH_ITEM_PAGE_START,
     };
 };
 
-export interface FetchItemSuccessAction extends Action<typeof FETCH_ITEM_SUCCESS > {
+export interface FetchItemPageSuccessAction extends Action<typeof FETCH_ITEM_PAGE_SUCCESS > {
     payload: {
         item: ItemData,
     },
 }
 
-const fetchItemSuccessAction = (item: ItemData): FetchItemSuccessAction => {
+const fetchItemPageSuccessAction = (item: ItemData): FetchItemPageSuccessAction => {
     return {
-        type: FETCH_ITEM_SUCCESS ,
+        type: FETCH_ITEM_PAGE_SUCCESS ,
         payload: {
             item
         },
     };
 };
 
-export interface FetchItemFailAction extends Action<typeof FETCH_ITEM_FAIL > {}
+export interface FetchItemPageFailAction extends Action<typeof FETCH_ITEM_PAGE_FAIL > {}
 
-const fetchItemFailAction = (): FetchItemFailAction => {
+const fetchItemPageFailAction = (): FetchItemPageFailAction => {
     return {
-        type: FETCH_ITEM_FAIL ,
+        type: FETCH_ITEM_PAGE_FAIL ,
     };
 };
 

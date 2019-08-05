@@ -1,14 +1,15 @@
 import {connect} from "react-redux";
 import ItemPage from "../pages/ItemPage";
-import {fetchItemAction} from "../actions/fetchItemAction";
+import {fetchItemPageAction} from "../actions/fetchItemPageAction";
 import {AppState} from "../index";
 
 const mapStateToProps = (state: AppState) => ({
-    isFetchingItem: state.viewingItem.isFetching,
+    errorType: state.error.errorType,
+    isLoading: state.page.isLoading,
 });
 const mapDispatchToProps = (dispatch: any) => ({
     load: (itemId: string) => {
-        dispatch(fetchItemAction(itemId))
+        dispatch(fetchItemPageAction(itemId))
     },
 });
 
