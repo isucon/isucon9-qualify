@@ -3,7 +3,7 @@ import {ItemData} from "../dataObjects/item";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 import { ItemListComponent } from '../components/ItemListComponent';
 import SellingButtonContainer from "../containers/SellingButtonContainer";
-import {withBaseComponent} from "../hoc/withBaseComponent";
+import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -15,13 +15,15 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-interface ItemListPageProps {
+type ItemListPageProps = {
     items: ItemData[],
-}
+} & ErrorProps
 
 const mockItems: ItemData[] = [
     {
         id: 1,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',
@@ -30,6 +32,8 @@ const mockItems: ItemData[] = [
     },
     {
         id: 2,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',
@@ -38,6 +42,8 @@ const mockItems: ItemData[] = [
     },
     {
         id: 3,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',
@@ -46,6 +52,8 @@ const mockItems: ItemData[] = [
     },
     {
         id: 4,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',
@@ -66,4 +74,4 @@ const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPage
     );
 };
 
-export default withBaseComponent(ItemListPage);
+export default PageComponentWithError<ItemListPageProps>()(ItemListPage);

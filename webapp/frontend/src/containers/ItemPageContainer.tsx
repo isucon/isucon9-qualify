@@ -4,6 +4,7 @@ import {fetchItemPageAction} from "../actions/fetchItemPageAction";
 import {AppState} from "../index";
 
 const mapStateToProps = (state: AppState) => ({
+    item: state.viewingItem.item,
     errorType: state.error.errorType,
     isLoading: state.page.isLoading,
 });

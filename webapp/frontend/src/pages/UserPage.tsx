@@ -29,6 +29,8 @@ interface UserPageProps {
 const mockItems: ItemData[] = [
     {
         id: 1,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',
@@ -37,6 +39,8 @@ const mockItems: ItemData[] = [
     },
     {
         id: 2,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',
@@ -45,6 +49,8 @@ const mockItems: ItemData[] = [
     },
     {
         id: 3,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',
@@ -53,6 +59,8 @@ const mockItems: ItemData[] = [
     },
     {
         id: 4,
+        status: 'on_sale',
+        sellerId: 1111,
         name: 'いす',
         price: 10000,
         description: 'いすです',

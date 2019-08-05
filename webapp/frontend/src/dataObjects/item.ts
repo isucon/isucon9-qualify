@@ -1,7 +1,7 @@
 export interface ItemData {
     id: number,
-    status?: ItemStatus,
-    sellerId?: number,
+    status: ItemStatus,
+    sellerId: number,
     name: string,
     price: number,
     thumbnailUrl: string,
