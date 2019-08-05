@@ -243,7 +243,7 @@ func main() {
 	mux.HandleFunc(pat.Post("/register"), postRegister)
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 
-	log.Fatal(http.ListenAndServe(":8001", mux))
+	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 
 func getSession(r *http.Request) *sessions.Session {
