@@ -8,7 +8,7 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-export default function LoadingComponent() {
+const LoadingComponent: React.FC = () => {
     const classes = useStyles();
 
     return (
@@ -17,3 +17,5 @@ export default function LoadingComponent() {
         </React.Fragment>
     );
 };
+
+export default LoadingComponent;

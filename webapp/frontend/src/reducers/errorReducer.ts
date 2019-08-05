@@ -4,8 +4,7 @@ import {
     NOT_FOUND_ERROR,
     NotFoundErrorAction
 } from "../actions/errorAction";
-import {AnyAction} from "redux";
-import {FETCH_ITEM_FAIL} from "../actions/fetchItemAction";
+import {FETCH_ITEM_FAIL, FetchItemFailAction} from "../actions/fetchItemAction";
 
 export const NoError = 'NO_ERROR';
 export const NotFoundError = 'NOT_FOUND';
@@ -21,7 +20,7 @@ const initialState: ErrorState = {
     errorType: NoError,
 };
 
-type errorActions = NotFoundErrorAction | InternalServerErrorAction | AnyAction;
+type errorActions = NotFoundErrorAction | InternalServerErrorAction | FetchItemFailAction;
 
 const error = (state: ErrorState = initialState, action: errorActions): ErrorState => {
     switch (action.type) {

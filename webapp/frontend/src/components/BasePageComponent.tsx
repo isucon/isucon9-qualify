@@ -4,6 +4,7 @@ import { Container, MuiThemeProvider, createMuiTheme } from '@material-ui/core';
 import {ErrorType} from "../reducers/errorReducer";
 import NotFoundPage from "../pages/error/NotFoundPage";
 import InternalServerErrorPage from "../pages/error/InternalServerErrorPage";
+import LoadingComponent from "./LoadingComponent";
 
 const themeInstance = createMuiTheme({
     palette: {
@@ -16,21 +17,26 @@ const themeInstance = createMuiTheme({
 type Props = {
     errorType: ErrorType
     children: ReactNode
+    isLoading: boolean
 }
 
 class BasePageComponent extends React.Component<Props> {
-    private getProperComponent() {
+    private getProperComponent(): ReactNode {
+        if (this.props.isLoading) {
+            return <LoadingComponent />;
+        }
+
         const error: ErrorType = this.props.errorType;
 
         switch (error) {
             case "NO_ERROR":
                 return this.props.children;
             case "NOT_FOUND":
-                return NotFoundPage;
+                return <NotFoundPage />;
             case "INTERNAL_SERVER_ERROR":
-                return InternalServerErrorPage;
+                return <InternalServerErrorPage />;
             default:
-                return InternalServerErrorPage;
+                return <InternalServerErrorPage />;
         }
     }
 
