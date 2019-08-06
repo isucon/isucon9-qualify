@@ -297,7 +297,7 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 }
 
 func getCategoryByID(categoryID int) (category Category, err error) {
-	err = dbx.Get(&category, "SELECT * FROM `category` WHERE `id` = ?", categoryID)
+	err = dbx.Get(&category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
 	return category, err
 }
 
@@ -522,7 +522,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		targetItem.SellerID,
 		buyer.ID,
 		TransactionEvidenceStatusWaitShipping,
@@ -1092,14 +1092,14 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	name := rs.Name
 	price := rs.Price
 	description := rs.Description
-	category_id := rs.CategoryID
+	categoryID := rs.CategoryID
 
 	// For test purpose, use 13 as default category
-	if category_id == 0 {
-		category_id = 13
+	if categoryID == 0 {
+		categoryID = 13
 	}
 
-	if name == "" || description == "" || price == 0 || category_id == 0 {
+	if name == "" || description == "" || price == 0 || categoryID == 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
 
 		return
@@ -1111,8 +1111,9 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := getCategoryByID(category_id)
+	category, err := getCategoryByID(categoryID)
 	if err != nil || category.ParentID == 0 {
+		log.Println(categoryID, category)
 		outputErrorMsg(w, http.StatusBadRequest, "Incorrect category ID")
 		return
 	}
@@ -1139,7 +1140,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
