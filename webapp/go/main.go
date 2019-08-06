@@ -47,6 +47,8 @@ const (
 	ShippingsStatusWaitPickup = "wait_pickup"
 	ShippingsStatusShipping   = "shipping"
 	ShippingsStatusDone       = "done"
+
+	BumpChargeSeconds = 3
 )
 
 var (
@@ -61,6 +63,7 @@ type User struct {
 	HashedPassword []byte    `json:"-" db:"hashed_password"`
 	Address        string    `json:"address,omitempty" db:"address"`
 	NumSellItems   int       `json:"num_sell_items" db:"num_sell_items"`
+	LastBump       int       `json:"-" db:"last_bump"`
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
@@ -160,6 +163,11 @@ type reqPostComplete struct {
 	ItemID    int64  `json:"item_id"`
 }
 
+type reqBump struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+}
+
 type resSetting struct {
 	CSRFToken string `json:"csrf_token"`
 }
@@ -227,6 +235,7 @@ func main() {
 	mux.HandleFunc(pat.Post("/ship"), postShip)
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
+	mux.HandleFunc(pat.Post("/bump"), postBump)
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
@@ -1094,8 +1103,10 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err = tx.Exec("UPDATE `user` SET `num_sell_items`=? WHERE `id`=?",
+	now := time.Now().Unix()
+	result, err = tx.Exec("UPDATE `user` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
 		seller.NumSellItems+1,
+		now,
 		seller.ID,
 	)
 	if err != nil {
@@ -1115,6 +1126,92 @@ func secureRandomStr(b int) string {
 		panic(err)
 	}
 	return fmt.Sprintf("%x", k)
+}
+
+func postBump(w http.ResponseWriter, r *http.Request) {
+	rb := reqBump{}
+	err := json.NewDecoder(r.Body).Decode(&rb)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
+		return
+	}
+
+	csrfToken := rb.CSRFToken
+	itemID := rb.ItemID
+
+	if csrfToken != getCSRFToken(r) {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
+		return
+	}
+
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	tx := dbx.MustBegin()
+
+	item := Item{}
+	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	if item.SellerID != user.ID {
+		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
+		tx.Rollback()
+		return
+	}
+
+	seller := User{}
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	now := time.Now().Unix()
+	if int64(seller.LastBump+BumpChargeSeconds) <= now {
+		outputErrorMsg(w, http.StatusBadRequest, "Bump not allowed")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `items` SET `created`=NOW() WHERE id=?",
+		item.ID,
+	)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `users` SET `last_bump`=? WHERE id=?",
+		seller.ID,
+	)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	tx.Commit()
 }
 
 func getSettings(w http.ResponseWriter, r *http.Request) {
@@ -1203,7 +1300,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?)",
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`,`last_bump`) VALUES (?, ?, ?, 0)",
 		accountName,
 		hashedPassword,
 		address,
