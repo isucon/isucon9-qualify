@@ -1216,6 +1216,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = tx.Exec("UPDATE `users` SET `last_bump`=? WHERE id=?",
+		now,
 		seller.ID,
 	)
 	if err != nil {
