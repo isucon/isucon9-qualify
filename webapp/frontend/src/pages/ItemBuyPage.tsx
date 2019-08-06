@@ -10,4 +10,4 @@ const ItemBuyPage: React.FC = () => {
     );
 };
 
-export default withBaseComponent(ItemBuyPage);
+export default ItemBuyPage;

@@ -46,7 +46,7 @@ export const routes: route = {
     },
     buy: {
         path: '/items/:item_id/buy',
-        getPath: (itemId: number) => `/items${itemId}/buy`,
+        getPath: (itemId: number) => `/items/${itemId}/buy`,
     },
     buyComplete: {
         path: '/buy/complete',

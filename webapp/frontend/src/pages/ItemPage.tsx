@@ -49,6 +49,7 @@ interface ItemPageProps extends WithStyles<typeof styles> {
     item: ItemData
     load: (itemId: string) => void
     isLoading: boolean
+    onClickBuy: (itemId: number) => void
 }
 
 type Props = ItemPageProps & RouteComponentProps<{ item_id: string }> & ErrorProps
@@ -58,6 +59,13 @@ class ItemPage extends React.Component<Props> {
         super(props);
 
         this.props.load(this.props.match.params.item_id);
+
+        this._onClickBuyButton = this._onClickBuyButton.bind(this);
+    }
+
+    _onClickBuyButton(e: React.MouseEvent) {
+        e.preventDefault();
+        this.props.onClickBuy(this.props.item.id);
     }
 
     render() {
@@ -122,7 +130,13 @@ class ItemPage extends React.Component<Props> {
                                         <Typography variant="h5">¥{item.price}</Typography>
                                     </Grid>
                                     <Grid item>
-                                        <Button variant="contained" className={classes.buyButton}>購入</Button>
+                                        <Button
+                                            variant="contained"
+                                            className={classes.buyButton}
+                                            onClick={this._onClickBuyButton}
+                                        >
+                                            購入
+                                        </Button>
                                     </Grid>
                                 </Grid>
                             </AppBar>
