@@ -20,7 +20,7 @@ CREATE TABLE `items` (
   `name` varchar(191) NOT NULL,
   `price` int unsigned NOT NULL,
   `description` text NOT NULL,
-  `category_id` int unsigned NOT NULL,
+  `category_id` int NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_category_id (`category_id`)
@@ -36,8 +36,8 @@ CREATE TABLE `transaction_evidences` (
   `item_name` varchar(191) NOT NULL,
   `item_price` int unsigned NOT NULL,
   `item_description` text NOT NULL,
-  `item_category_id` int unsigned NOT NULL,
-  `item_root_category_id` int unsigned NOT NULL,
+  `item_category_id` int NOT NULL,
+  `item_root_category_id` int NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
@@ -61,7 +61,7 @@ CREATE TABLE `shippings` (
 
 DROP TABLE IF EXISTS `categories`;
 CREATE TABLE `categories` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `parent_id` int unsigned NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `parent_id` int NOT NULL,
   `category_name` varchar(191) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
