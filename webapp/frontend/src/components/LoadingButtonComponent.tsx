@@ -5,6 +5,7 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 type Props = {
     onClick: (e: React.MouseEvent) => void
     buttonName: string
+    loading: boolean
 }
 
 export class LoadingButtonComponent extends React.Component<Props> {
