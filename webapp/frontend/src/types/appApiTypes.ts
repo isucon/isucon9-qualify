@@ -47,7 +47,7 @@ export interface GetItemRes {
  * POST /sell
  */
 // Request
-export interface SellReq extends CsrfRequiredReq{
+export interface SellReq {
     name: string,
     price: number,
     description: string,
@@ -69,7 +69,14 @@ export interface SettingsRes {
  * POST /buy
  */
 // Request
-export interface BuyReq extends CsrfRequiredReq {
+export interface BuyReq {
     item_id: number,
     token: string,
+}
+
+/**
+ * Error response
+ */
+export interface ErrorRes {
+    error: string,
 }

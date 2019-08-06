@@ -39,6 +39,10 @@ export function buyItemAction(itemId: number, cardNumber: string): ThunkResult<v
 
                 return response.json();
             })
+            .catch((err: Error) => {
+                // Wrapping to judge kinds of error
+                throw new PaymentResponseError(err.message);
+            })
             .then((body: CardRes) => {
                 return AppClient.post('/buy', {
                     item_id: itemId,
@@ -54,21 +58,40 @@ export function buyItemAction(itemId: number, cardNumber: string): ThunkResult<v
 
                 return response.json();
             })
-            .then((body: {}) => {
+            .then(() => {
                 dispatch(buySuccessAction());
                 dispatch(push(routes.buyComplete.path));
             })
             .catch((err: Error) => {
                 if (err instanceof ResponseError) {
-                    return err.getResponse().json();
+                    const res = err.getResponse();
+                    let action: Function;
+
+                    if (err instanceof PaymentResponseError) {
+                        action = usingCardFailAction;
+                    } else if (err instanceof AppResponseError) {
+                        action = buyFailAction;
+                    } else {
+                        action = buyFailAction;
+                    }
+
+                    if (res) {
+                        return res.json()
+                            .then((body: any) => {
+                                if (body && body.error) {
+                                    dispatch(action(body.error))
+                                    return;
+                                }
+
+                                dispatch(action(err.message));
+                            })
+                    }
+
+                    dispatch(action(err.message));
+                    return;
                 }
 
                 dispatch(buyFailAction(err.message));
-            })
-            .then((body: any) => {
-                if (body) {
-                    dispatch(usingCardFailAction(body.error)); // TODO cardエラーかappエラーか区別する
-                }
             });
     };
 }
