@@ -1070,7 +1070,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	tx := dbx.MustBegin()
 
 	seller := User{}
-	err = tx.Get(&seller, "SELECT * FROM `user` WHERE `id` = ? FOR UPDATE", user.ID)
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "user not found")
 		tx.Rollback()
@@ -1105,7 +1105,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err = tx.Exec("UPDATE `user` SET `num_sell_items`=? WHERE `id`=?",
+	result, err = tx.Exec("UPDATE `users` SET `num_sell_items`=? WHERE `id`=?",
 		seller.NumSellItems+1,
 		seller.ID,
 	)
