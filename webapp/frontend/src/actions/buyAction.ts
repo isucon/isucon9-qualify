@@ -27,7 +27,7 @@ export function buyItemAction(itemId: number, cardNumber: string): ThunkResult<v
             .then(() => {
                 return PaymentClient.post('/card', {
                     card_number: cardNumber,
-                    shop_id: 'TODO',
+                    shop_id: '11', // TODO getting from /settings
                 } as CardReq);
             })
             .then((response: Response) => {
