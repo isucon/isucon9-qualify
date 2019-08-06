@@ -57,8 +57,6 @@ class ItemPage extends React.Component<Props> {
     constructor(props: Props) {
         super(props);
 
-        console.log(this.props);
-        console.log(`load will be executed ${this.props.match.params.item_id}`);
         this.props.load(this.props.match.params.item_id);
     }
 

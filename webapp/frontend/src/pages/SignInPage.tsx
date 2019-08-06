@@ -2,7 +2,6 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core';
 import SignInFormContainer from "../containers/SignInFormContainer";
-import {withBaseComponent} from "../hoc/withBaseComponent";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -13,7 +12,9 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-const SignInPage: React.FC = () => {
+type Props = {};
+
+const SignInPage: React.FC<Props> = () => {
     const classes = useStyles();
 
     return (
@@ -23,4 +24,4 @@ const SignInPage: React.FC = () => {
     );
 };
 
-export default withBaseComponent(SignInPage);
+export default SignInPage;

@@ -34,7 +34,11 @@ export function fetchItemPageAction(itemId: string): ThunkResult<void> {
                     id: body.id,
                     status: body.status,
                     sellerId: body.seller_id,
-                    seller: body.seller,
+                    seller: {
+                        id: body.seller.id,
+                        accountName: body.seller.account_name,
+                        numSellItems: body.seller.num_sell_items,
+                    },
                     buyerId: body.buyer_id,
                     buyer: body.buyer,
                     name: body.name,

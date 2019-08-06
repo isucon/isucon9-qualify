@@ -30,7 +30,11 @@ export interface GetItemReq {
 export interface GetItemRes {
     id: number,
     seller_id: number,
-    seller: UserData,
+    seller: {
+        id: number,
+        account_name: string,
+        num_sell_items: number,
+    },
     buyer_id: number,
     buyer?: UserData,
     status: ItemStatus,
