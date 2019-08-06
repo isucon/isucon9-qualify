@@ -26,6 +26,10 @@ import (
 const (
 	sessionName = "session_isucari"
 
+	ItemMinPrice    = 100
+	ItemMaxPrice    = 1000000
+	ItemPriceErrMsg = "商品価格は100円以上、1,000,000円以下にしてください"
+
 	ItemStatusOnSale  = "on_sale"
 	ItemStatusTrading = "trading"
 	ItemStatusSoldOut = "sold_out"
@@ -56,13 +60,16 @@ type User struct {
 	AccountName    string    `json:"account_name" db:"account_name"`
 	HashedPassword []byte    `json:"-" db:"hashed_password"`
 	Address        string    `json:"address,omitempty" db:"address"`
+	NumSellItems   int       `json:"num_sell_items" db:"num_sell_items"`
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
 type Item struct {
 	ID          int64     `json:"id" db:"id"`
 	SellerID    int64     `json:"seller_id" db:"seller_id"`
+	Seller      *User     `json:"seller" db:"-"`
 	BuyerID     int64     `json:"buyer_id" db:"buyer_id"`
+	Buyer       *User     `json:"buyer,omitempty" db:"-"`
 	Status      string    `json:"status" db:"status"`
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
@@ -123,6 +130,10 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
+type resBuy struct {
+	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
+}
+
 type reqSell struct {
 	CSRFToken   string `json:"csrf_token"`
 	Name        string `json:"name"`
@@ -155,16 +166,10 @@ type reqPostComplete struct {
 
 type resSetting struct {
 	CSRFToken string `json:"csrf_token"`
+	User      *User  `json:"user,omitempty"`
 }
 
 func init() {
-	templates = template.Must(template.ParseFiles(
-		"templates/item_edit.html",
-		"templates/buy.html",
-		"templates/ship.html",
-		"templates/ship_done.html",
-		"templates/complete.html",
-	))
 	store = sessions.NewCookieStore([]byte("abc"))
 
 	log.SetFlags(log.Lshortfile)
@@ -221,23 +226,18 @@ func main() {
 
 	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
-	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getItemEdit)
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
-	mux.HandleFunc(pat.Get("/buy/:item_id"), getBuyItem)
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
 	mux.HandleFunc(pat.Post("/sell"), postSell)
-	mux.HandleFunc(pat.Get("/ship/:item_id"), getShip)
 	mux.HandleFunc(pat.Post("/ship"), postShip)
-	mux.HandleFunc(pat.Get("/ship_done/:item_id"), getShipDone)
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
-	mux.HandleFunc(pat.Get("/complete/:item_id"), getComplete)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 
-	log.Fatal(http.ListenAndServe("localhost:8000", mux))
+	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 
 func getSession(r *http.Request) *sessions.Session {
@@ -257,15 +257,23 @@ func getCSRFToken(r *http.Request) string {
 	return csrfToken.(string)
 }
 
-func getUserID(r *http.Request) int64 {
+func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	session := getSession(r)
-
 	userID, ok := session.Values["user_id"]
 	if !ok {
-		return 0
+		return user, http.StatusNotFound, "no session"
 	}
 
-	return userID.(int64)
+	err := dbx.Get(&user, "SELECT * FROM `users` WHERE `id` = ?", userID)
+	if err == sql.ErrNoRows {
+		return user, http.StatusNotFound, "user not found"
+	}
+	if err != nil {
+		log.Println(err)
+		return user, http.StatusInternalServerError, "db error"
+	}
+
+	return user, http.StatusOK, ""
 }
 
 func getTop(w http.ResponseWriter, r *http.Request) {
@@ -276,6 +284,12 @@ func getTop(w http.ResponseWriter, r *http.Request) {
 func getItem(w http.ResponseWriter, r *http.Request) {
 	itemID := pat.Param(r, "item_id")
 
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
 	item := Item{}
 	err := dbx.Get(&item, "SELECT * FROM `items` WHERE `id` = ?", itemID)
 	if err == sql.ErrNoRows {
@@ -284,32 +298,43 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		log.Println(err)
-
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
+	}
+
+	seller := User{}
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", item.SellerID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "seller not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	seller.Address = ""
+	item.Seller = &seller
+
+	if (user.ID == item.Seller.ID || user.ID == item.BuyerID) && item.BuyerID != 0 {
+		buyer := User{}
+		err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", item.BuyerID)
+		if err == sql.ErrNoRows {
+			outputErrorMsg(w, http.StatusNotFound, "buyer not found")
+			return
+		}
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+		buyer.Address = ""
+		item.Buyer = &buyer
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
 	json.NewEncoder(w).Encode(item)
-}
-
-func getItemEdit(w http.ResponseWriter, r *http.Request) {
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusBadRequest, "id error")
-		return
-	}
-
-	csrfToken := getCSRFToken(r)
-
-	templates.ExecuteTemplate(w, "item_edit.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
 }
 
 func postItemEdit(w http.ResponseWriter, r *http.Request) {
@@ -330,7 +355,16 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := getUserID(r)
+	if price < ItemMinPrice || price > ItemMaxPrice {
+		outputErrorMsg(w, http.StatusBadRequest, ItemPriceErrMsg)
+		return
+	}
+
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
 
 	targetItem := Item{}
 	err = dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
@@ -345,13 +379,8 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if targetItem.SellerID != userID {
+	if targetItem.SellerID != seller.ID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
-		return
-	}
-
-	if targetItem.Status != ItemStatusOnSale {
-		outputErrorMsg(w, http.StatusForbidden, "販売中の商品以外編集できません")
 		return
 	}
 
@@ -362,6 +391,11 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
+		return
+	}
+
+	if targetItem.Status != ItemStatusOnSale {
+		outputErrorMsg(w, http.StatusForbidden, "販売中の商品以外編集できません")
 		return
 	}
 
@@ -381,26 +415,6 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 }
 
-func getBuyItem(w http.ResponseWriter, r *http.Request) {
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusBadRequest, "id error")
-		return
-	}
-
-	csrfToken := getCSRFToken(r)
-
-	templates.ExecuteTemplate(w, "buy.html", struct {
-		CSRFToken string
-		ItemID    int64
-
-		PaymentServiceShopID string
-	}{csrfToken, itemID, PaymentServiceIsucariShopID})
-}
-
 func postBuy(w http.ResponseWriter, r *http.Request) {
 	rb := reqBuy{}
 
@@ -416,60 +430,45 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	buyerID := getUserID(r)
+	buyer, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	tx := dbx.MustBegin()
 
 	targetItem := Item{}
-	err = dbx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", rb.ItemID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		tx.Rollback()
 		return
 	}
 	if err != nil {
 		log.Println(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
 		return
 	}
 
 	if targetItem.Status != ItemStatusOnSale {
 		outputErrorMsg(w, http.StatusForbidden, "item is not for sale")
+		tx.Rollback()
 		return
 	}
 
-	if targetItem.SellerID == buyerID {
+	if targetItem.SellerID == buyer.ID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品は買えません")
-		return
-	}
-
-	tx := dbx.MustBegin()
-	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", rb.ItemID)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
 
-	buyer := User{}
 	seller := User{}
-	err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", buyerID)
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", targetItem.SellerID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
-		tx.Rollback()
-		return
-	}
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", targetItem.SellerID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		outputErrorMsg(w, http.StatusNotFound, "seller not found")
 		tx.Rollback()
 		return
 	}
@@ -483,7 +482,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	result, err := tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		targetItem.SellerID,
-		buyerID,
+		buyer.ID,
 		TransactionEvidenceStatusWaitShipping,
 		targetItem.ID,
 		targetItem.Name,
@@ -508,7 +507,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = tx.Exec("UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?",
-		buyerID,
+		buyer.ID,
 		ItemStatusTrading,
 		time.Now(),
 		targetItem.ID,
@@ -588,22 +587,12 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
-}
 
-func getShip(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
-
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
-		return
+	rpb := resBuy{
+		TransactionEvidenceID: transactionEvidenceID,
 	}
+	json.NewEncoder(w).Encode(rpb)
 
-	templates.ExecuteTemplate(w, "ship.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
 }
 
 func postShip(w http.ResponseWriter, r *http.Request) {
@@ -624,7 +613,12 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := getUserID(r)
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
 	if err == sql.ErrNoRows {
@@ -638,18 +632,34 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.SellerID != userID {
+	if transactionEvidence.SellerID != seller.ID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 
-	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
-		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
+	tx := dbx.MustBegin()
+
+	item := Item{}
+	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
 		return
 	}
 
-	tx := dbx.MustBegin()
-	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if item.Status != ItemStatusTrading {
+		outputErrorMsg(w, http.StatusForbidden, "商品が取引中ではありません")
+		tx.Rollback()
+		return
+	}
+
+	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "db not found")
 		tx.Rollback()
@@ -661,21 +671,9 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		return
 	}
+
 	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
 		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
-		tx.Rollback()
-		return
-	}
-	item := Item{}
-	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "item not found")
-		tx.Rollback()
-		return
-	}
-	if err != nil {
-		log.Println(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
@@ -737,22 +735,6 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rps)
 }
 
-func getShipDone(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
-
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
-		return
-	}
-
-	templates.ExecuteTemplate(w, "ship_done.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
-}
-
 func postShipDone(w http.ResponseWriter, r *http.Request) {
 	reqpsd := reqPostShipDone{}
 
@@ -771,7 +753,12 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := getUserID(r)
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
 	if err == sql.ErrNoRows {
@@ -785,28 +772,59 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.SellerID != userID {
+	if transactionEvidence.SellerID != seller.ID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 
-	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
-		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
+	tx := dbx.MustBegin()
+
+	item := Item{}
+	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusBadRequest, "items not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
 		return
 	}
 
-	tx := dbx.MustBegin()
-	tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if item.Status != ItemStatusTrading {
+		outputErrorMsg(w, http.StatusForbidden, "商品が取引中ではありません")
+		tx.Rollback()
+		return
+	}
+
+	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE", transactionEvidence.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	if transactionEvidence.Status != TransactionEvidenceStatusWaitShipping {
 		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
 		tx.Rollback()
 		return
 	}
-	item := Item{}
-	tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 
 	shipping := Shipping{}
 	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		tx.Rollback()
+		return
+	}
 	if err != nil {
 		log.Println(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
@@ -860,22 +878,6 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 }
 
-func getComplete(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
-
-	itemIDStr := pat.Param(r, "item_id")
-	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "invalid syntax")
-		return
-	}
-
-	templates.ExecuteTemplate(w, "complete.html", struct {
-		CSRFToken string
-		ItemID    int64
-	}{csrfToken, itemID})
-}
-
 func postComplete(w http.ResponseWriter, r *http.Request) {
 	reqpc := reqPostComplete{}
 
@@ -894,9 +896,18 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := getUserID(r)
+	buyer, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusBadRequest, "transaction_evidence not found")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
@@ -904,25 +915,50 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.BuyerID != userID {
+	if transactionEvidence.BuyerID != buyer.ID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
 
-	if transactionEvidence.Status != TransactionEvidenceStatusWaitDone {
-		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
+	tx := dbx.MustBegin()
+	item := Item{}
+	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusBadRequest, "items not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
 		return
 	}
 
-	tx := dbx.MustBegin()
-	tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if item.Status != ItemStatusTrading {
+		outputErrorMsg(w, http.StatusForbidden, "商品が取引中ではありません")
+		tx.Rollback()
+		return
+	}
+
+	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusBadRequest, "db not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	if transactionEvidence.Status != TransactionEvidenceStatusWaitDone {
 		outputErrorMsg(w, http.StatusForbidden, "準備ができていません")
 		tx.Rollback()
 		return
 	}
-	item := Item{}
-	tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 
 	shipping := Shipping{}
 	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
@@ -950,19 +986,6 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
-		ItemStatusSoldOut,
-		time.Now(),
-		itemID,
-	)
-	if err != nil {
-		log.Println(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-
 	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
 		ShippingsStatusDone,
 		time.Now(),
@@ -980,6 +1003,19 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		TransactionEvidenceStatusDone,
 		time.Now(),
 		transactionEvidence.ID,
+	)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
+		ItemStatusSoldOut,
+		time.Now(),
+		itemID,
 	)
 	if err != nil {
 		log.Println(err)
@@ -1019,16 +1055,36 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if price < 100 || price > 1000000 {
-		outputErrorMsg(w, http.StatusBadRequest, "商品価格は100円以上、1,000,000円以下にしてください")
+	if price < ItemMinPrice || price > ItemMaxPrice {
+		outputErrorMsg(w, http.StatusBadRequest, ItemPriceErrMsg)
 
 		return
 	}
 
-	sellerID := getUserID(r)
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
 
-	result, err := dbx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",
-		sellerID,
+	tx := dbx.MustBegin()
+
+	seller := User{}
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",
+		seller.ID,
 		ItemStatusOnSale,
 		name,
 		price,
@@ -1049,6 +1105,18 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	result, err = tx.Exec("UPDATE `users` SET `num_sell_items`=? WHERE `id`=?",
+		seller.NumSellItems+1,
+		seller.ID,
+	)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	tx.Commit()
+
 	json.NewEncoder(w).Encode(resSell{ID: itemID})
 }
 
@@ -1063,9 +1131,20 @@ func secureRandomStr(b int) string {
 func getSettings(w http.ResponseWriter, r *http.Request) {
 	csrfToken := getCSRFToken(r)
 
-	json.NewEncoder(w).Encode(resSetting{
-		CSRFToken: csrfToken,
-	})
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	ress := resSetting{}
+	ress.CSRFToken = csrfToken
+	if errMsg != "" {
+		ress.User = &user
+	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(ress)
 }
 
 func postLogin(w http.ResponseWriter, r *http.Request) {
@@ -1146,10 +1225,11 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)",
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?, ?)",
 		accountName,
 		hashedPassword,
 		address,
+		0,
 	)
 	if err != nil {
 		log.Println(err)

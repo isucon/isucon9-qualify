@@ -1,0 +1,20 @@
+- name: nginx log format with ltsv
+  become: yes
+  copy:
+    dest: /etc/nginx/conf.d/log_format_ltsv.conf
+    mode: 0644
+    owner: root
+    group: root
+    content: |
+      log_format ltsv 'time:$time_local\t'
+                      'host:$host\t'
+                      'remote_addr:$remote_addr\t'
+                      'uri:$uri\t'
+                      'status:$status\t'
+                      'size:$body_bytes_sent\t'
+                      'ua:$http_user_agent\t'
+                      'ptime:$request_time\t'
+                      'uptime:$upstream_response_time\t'
+                      'ssl_protocol:$ssl_protocol\t'
+                      'ssl_cipher:$ssl_cipher\t'
+                      'http2:$http2\t';

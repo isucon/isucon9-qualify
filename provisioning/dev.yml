@@ -7,11 +7,13 @@
 
     - vagrant-specific
 
+    - kernel-tune
     - nginx
-    - mysql
+    - nginx.log-format
     - golang
-    - webapp.nginx
-    - webapp.golang
+    - external.nginx
+    - external.shipment
+    - external.payment
 
   tasks:
     - name: Start default daemons
@@ -24,5 +26,5 @@
         enabled: yes
       with_items:
         - nginx.service
-        - mysql.service
-        - isucari.golang.service
+        - shipment.service
+        - payment.service

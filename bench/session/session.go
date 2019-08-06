@@ -95,7 +95,9 @@ func NewSession() (*Session, error) {
 }
 
 func (s *Session) newGetRequest(u *url.URL, spath string) (*http.Request, error) {
-	u.Path = spath
+	if len(spath) > 0 {
+		u.Path = spath
+	}
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
