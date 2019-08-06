@@ -27,6 +27,16 @@ $ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isuc
 └── webapp       # 各言語の参考実装
 ```
 
+## 開発方法
+
+tmuxで端末を複数立てるのがおすすめ。外部サービスを手元で立てるなら以下のようにする。
+
+```
+$ make
+$ ./bin/payment
+$ ./bin/shipment
+```
+
 ## 参考実装移植について
 
   * 実装は`webapp`ディレクトリ以下に各言語名でディレクトリを作って、その中で実装
