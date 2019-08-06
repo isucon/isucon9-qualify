@@ -34,11 +34,13 @@ export function fetchItemPageAction(itemId: string): ThunkResult<void> {
                     id: body.id,
                     status: body.status,
                     sellerId: body.seller_id,
+                    seller: body.seller,
+                    buyerId: body.buyer_id,
+                    buyer: body.buyer,
                     name: body.name,
                     price: body.price,
                     thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png', // TODO
                     description: body.description,
-                    createdAt: '2019-07-20 12:00:00', // TODO
                 }));
             })
             .catch((err: Error) => {

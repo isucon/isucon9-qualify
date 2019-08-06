@@ -1,4 +1,5 @@
 import {ItemStatus} from "../dataObjects/item";
+import {UserData} from "../dataObjects/user";
 
 interface CsrfRequiredReq {
     csrf_token: string
@@ -29,7 +30,9 @@ export interface GetItemReq {
 export interface GetItemRes {
     id: number,
     seller_id: number,
-    buyer_id: number, // will remove later
+    seller: UserData,
+    buyer_id: number,
+    buyer?: UserData,
     status: ItemStatus,
     name: string,
     price: number,

@@ -101,11 +101,11 @@ class ItemPage extends React.Component<Props> {
                                                     <Grid item>
                                                         <RouteLink className={classes.link}
                                                                    to={routes.user.getPath(item.sellerId)}>
-                                                            <Avatar className={classes.avatar}>"T"</Avatar>
+                                                            <Avatar className={classes.avatar}>{item.seller.accountName.charAt(0)}</Avatar>
                                                         </RouteLink>
                                                     </Grid>
                                                     <Grid item xs>
-                                                        <Typography variant="body1">"TODO"</Typography>
+                                                        <Typography variant="body1">{item.seller.accountName}</Typography>
                                                     </Grid>
                                                 </Grid>
                                             </div>
