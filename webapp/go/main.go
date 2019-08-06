@@ -162,6 +162,7 @@ type reqPostComplete struct {
 
 type resSetting struct {
 	CSRFToken string `json:"csrf_token"`
+	User      *User  `json:"user,omitempty"`
 }
 
 func init() {
@@ -1120,9 +1121,20 @@ func secureRandomStr(b int) string {
 func getSettings(w http.ResponseWriter, r *http.Request) {
 	csrfToken := getCSRFToken(r)
 
-	json.NewEncoder(w).Encode(resSetting{
-		CSRFToken: csrfToken,
-	})
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	ress := resSetting{}
+	ress.CSRFToken = csrfToken
+	if errMsg != "" {
+		ress.User = &user
+	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(ress)
 }
 
 func postLogin(w http.ResponseWriter, r *http.Request) {
