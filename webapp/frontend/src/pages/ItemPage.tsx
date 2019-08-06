@@ -12,6 +12,7 @@ import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
 import LoadingComponent from "../components/LoadingComponent";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     title: {
@@ -72,7 +73,7 @@ class ItemPage extends React.Component<Props> {
         const { classes, item, isLoading } = this.props;
 
         return (
-            <React.Fragment>
+            <BasePageComponent>
                 {
                     isLoading ? (
                         <LoadingComponent/>
@@ -143,10 +144,9 @@ class ItemPage extends React.Component<Props> {
                         </React.Fragment>
                     )
                 }
-            </React.Fragment>
+            </BasePageComponent>
         );
     }
 }
 
 export default PageComponentWithError<any>()(withStyles(styles)(ItemPage));
-

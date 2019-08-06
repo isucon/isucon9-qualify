@@ -1,8 +1,10 @@
 import React from 'react';
-import {withBaseComponent} from "../hoc/withBaseComponent";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const ItemEditPage: React.FC = () => (
-    <div>Item Edit Page</div>
+    <BasePageComponent>
+        <div>Item Edit Page</div>
+    </BasePageComponent>
 );
 
-export default withBaseComponent(ItemEditPage);
+export default ItemEditPage;
