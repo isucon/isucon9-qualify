@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import { postLoginAction } from "../actions/authenticationActions";
 
 const mapStateToProps = (state: any) => ({
-    errors: state.formError.errorMsg,
+    error: state.formError.error,
 });
 const mapDispatchToProps = (dispatch: any) => ({
     onSubmit: (accountName: string, password: string) => {

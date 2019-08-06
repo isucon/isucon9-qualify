@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
-	"github.com/isucon/isucon9-qualify/external/payment"
-	"github.com/isucon/isucon9-qualify/external/shipment"
 	"github.com/k0kubun/pp"
 )
 
@@ -23,26 +22,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	muxPayment := http.NewServeMux()
-	muxPayment.HandleFunc("/card", payment.CardHandler)
-	muxPayment.HandleFunc("/token", payment.TokenHandler)
-
-	muxShipment := http.NewServeMux()
-	muxShipment.HandleFunc("/create", shipment.CreateHandler)
-	muxShipment.HandleFunc("/request", shipment.RequestHandler)
-	muxShipment.HandleFunc("/accept", shipment.AcceptHandler)
-	muxShipment.HandleFunc("/status", shipment.StatusHandler)
-
 	serverPayment := &http.Server{
-		Handler: &Server{
-			mux: muxPayment,
-		},
+		Handler: server.NewPayment(),
 	}
 
 	serverShipment := &http.Server{
-		Handler: &Server{
-			mux: muxShipment,
-		},
+		Handler: server.NewShipment(),
 	}
 
 	go func() {

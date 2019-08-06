@@ -140,6 +140,10 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
+type resBuy struct {
+	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
+}
+
 type reqSell struct {
 	CSRFToken   string `json:"csrf_token"`
 	Name        string `json:"name"`
@@ -173,6 +177,7 @@ type reqPostComplete struct {
 
 type resSetting struct {
 	CSRFToken string `json:"csrf_token"`
+	User      *User  `json:"user,omitempty"`
 }
 
 func init() {
@@ -617,6 +622,12 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	rpb := resBuy{
+		TransactionEvidenceID: transactionEvidenceID,
+	}
+	json.NewEncoder(w).Encode(rpb)
+
 }
 
 func postShip(w http.ResponseWriter, r *http.Request) {
@@ -1168,9 +1179,20 @@ func secureRandomStr(b int) string {
 func getSettings(w http.ResponseWriter, r *http.Request) {
 	csrfToken := getCSRFToken(r)
 
-	json.NewEncoder(w).Encode(resSetting{
-		CSRFToken: csrfToken,
-	})
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	ress := resSetting{}
+	ress.CSRFToken = csrfToken
+	if errMsg != "" {
+		ress.User = &user
+	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(ress)
 }
 
 func postLogin(w http.ResponseWriter, r *http.Request) {
@@ -1251,7 +1273,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?)",
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?, ?)",
 		accountName,
 		hashedPassword,
 		address,

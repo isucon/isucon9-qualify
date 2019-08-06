@@ -1,29 +1,20 @@
 import React from 'react';
-import Typography from "@material-ui/core/Typography/Typography";
+import {FormHelperText} from "@material-ui/core";
 
 interface ErrorMessageComponentProps {
-    errMsg: string[]
+    id: string,
+    error: string,
 }
 
-const ErrorMessageComponent: React.FC<ErrorMessageComponentProps> = ({ errMsg }) => {
-    const errors = [];
-
-    for (const error of errMsg) {
-        errors.push(
-            <Typography
-                key={error}
-                variant="body2"
-                color="error"
-            >
-                {error}
-            </Typography>
-        )
-    }
-
+const ErrorMessageComponent: React.FC<ErrorMessageComponentProps> = ({ id, error}) => {
     return (
-        <React.Fragment>
-            {errors}
-        </React.Fragment>
+        <FormHelperText
+            key={error}
+            id={id}
+            error={true}
+        >
+            {error}
+        </FormHelperText>
     );
 };
 

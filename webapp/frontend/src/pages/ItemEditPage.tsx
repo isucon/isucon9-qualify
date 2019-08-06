@@ -1,7 +1,10 @@
 import React from 'react';
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const ItemEditPage: React.FC = () => (
-    <div>Item Edit Page</div>
+    <BasePageComponent>
+        <div>Item Edit Page</div>
+    </BasePageComponent>
 );
 
-export { ItemEditPage }
+export default ItemEditPage;
