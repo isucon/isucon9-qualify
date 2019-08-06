@@ -21,4 +21,4 @@ const SignUpPage: React.FC = () => {
     );
 };
 
-export { SignUpPage }
+export default SignUpPage;

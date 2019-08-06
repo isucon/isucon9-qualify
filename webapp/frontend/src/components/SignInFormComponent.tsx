@@ -7,6 +7,7 @@ import { Link as RouteLink } from 'react-router-dom';
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import {ErrorMessageComponent} from "./ErrorMessageComponent";
+import {routes} from "../routes/Route";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     paper: {
@@ -29,7 +30,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface SignInFormComponentProps extends WithStyles<typeof styles> {
     onSubmit: (accountName: string, password: string) => void
-    errors: string[]
+    error?: string,
 }
 
 interface SignInFormComponentState {
@@ -108,10 +109,11 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                         onChange={this._onChangePassword}
                     />
                     {
-                        this.props.errors.length !== 0 &&
-                        <ErrorMessageComponent errMsg={this.props.errors}/>
+                        this.props.error &&
+                        <ErrorMessageComponent id="signInButton" error={this.props.error}/>
                     }
                     <Button
+                        id="signInButton"
                         type="submit"
                         fullWidth
                         variant="contained"
@@ -123,7 +125,7 @@ class SignInPageFormComponent extends React.Component<SignInFormComponentProps, 
                     </Button>
                     <Grid container>
                         <Grid item xs>
-                            <RouteLink to="/signup">新規登録はこちら</RouteLink>
+                            <RouteLink to={routes.register.path}>新規登録はこちら</RouteLink>
                         </Grid>
                     </Grid>
                 </form>

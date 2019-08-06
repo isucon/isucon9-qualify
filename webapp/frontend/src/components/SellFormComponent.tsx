@@ -19,7 +19,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface SellFormComponentProps extends WithStyles<typeof styles> {
     sellItem: (name: string, description: string, price: number) => void
-    errors: string[]
+    error?: string,
 }
 
 interface SellFormComponentState {
@@ -125,10 +125,11 @@ class SellFormComponent extends React.Component<SellFormComponentProps, SellForm
                         onChange={this._onChangePrice}
                     />
                     {
-                        this.props.errors.length !== 0 &&
-                        <ErrorMessageComponent errMsg={this.props.errors}/>
+                        this.props.error &&
+                        <ErrorMessageComponent id="sellButton" error={this.props.error}/>
                     }
                     <Button
+                        id="sellButton"
                         type="submit"
                         fullWidth
                         variant="contained"

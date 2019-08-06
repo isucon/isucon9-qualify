@@ -5,6 +5,7 @@ import { FormErrorState } from "../reducers/formErrorReducer";
 import { push } from 'connected-react-router';
 import {AnyAction} from "redux";
 import {RegisterReq, RegisterRes} from "../types/appApiTypes";
+import {routes} from "../routes/Route";
 
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAIL = 'REGISTER_FAIL';
@@ -28,11 +29,11 @@ export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
                     accountName: body.account_name,
                     address: body.address,
                 }));
-                dispatch(push('/items'))
+                dispatch(push(routes.top.path))
             })
             .catch((err: Error) => {
                 dispatch(registerFailAction({
-                    errorMsg: [err.message]
+                    error: err.message,
                 }))
             })
     };

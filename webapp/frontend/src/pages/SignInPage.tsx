@@ -12,7 +12,9 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-const SignInPage: React.FC = () => {
+type Props = {};
+
+const SignInPage: React.FC<Props> = () => {
     const classes = useStyles();
 
     return (
@@ -22,4 +24,4 @@ const SignInPage: React.FC = () => {
     );
 };
 
-export { SignInPage }
+export default SignInPage;

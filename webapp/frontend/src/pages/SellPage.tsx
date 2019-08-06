@@ -2,6 +2,7 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core';
 import SellFormContainer from "../containers/SellFormContainer";
+import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -12,7 +13,9 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-const SellPage: React.FC = () => {
+type Props = {} & ErrorProps;
+
+const SellPage: React.FC<Props> = () => {
     const classes = useStyles();
 
     return (
@@ -22,4 +25,4 @@ const SellPage: React.FC = () => {
     );
 };
 
-export { SellPage }
+export default PageComponentWithError<Props>()(SellPage);

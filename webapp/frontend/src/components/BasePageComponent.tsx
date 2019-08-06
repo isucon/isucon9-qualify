@@ -1,6 +1,7 @@
-import React from 'react';
+import React, {ReactNode} from 'react';
 
 import { Container, MuiThemeProvider, createMuiTheme } from '@material-ui/core';
+import LoadingComponent from "./LoadingComponent";
 
 const themeInstance = createMuiTheme({
     palette: {
@@ -10,10 +11,25 @@ const themeInstance = createMuiTheme({
     },
 });
 
-const BasePageComponent: React.FC = ({children}) => (
-    <MuiThemeProvider theme={themeInstance}>
-        <Container maxWidth="lg" children={children} />
-    </MuiThemeProvider>
-);
+export type Props = {
+    children: ReactNode
+    isLoading: boolean
+}
+
+class BasePageComponent extends React.Component<Props> {
+    render() {
+        return (
+            <MuiThemeProvider theme={themeInstance}>
+                <Container maxWidth="lg">
+                    {
+                        this.props.isLoading ? (
+                            <LoadingComponent/>
+                        ) : (this.props.children)
+                    }
+                </Container>
+            </MuiThemeProvider>
+        );
+    }
+}
 
 export { BasePageComponent }

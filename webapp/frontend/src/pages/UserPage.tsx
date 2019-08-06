@@ -8,6 +8,8 @@ import {Grid} from "@material-ui/core";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import SellingButtonContainer from "../containers/SellingButtonContainer";
+import {withBaseComponent} from "../hoc/withBaseComponent";
+import {mockItems, mockUser} from "../mocks";
 
 const useStyles = makeStyles(theme => ({
     avatar: {
@@ -24,47 +26,6 @@ interface UserPageProps {
     items: ItemData[]
     user: UserData
 }
-
-const mockItems: ItemData[] = [
-    {
-        id: 1,
-        name: 'いす',
-        price: 10000,
-        description: 'いすです',
-        createdAt: '2日前',
-        thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
-    },
-    {
-        id: 2,
-        name: 'いす',
-        price: 10000,
-        description: 'いすです',
-        createdAt: '2日前',
-        thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
-    },
-    {
-        id: 3,
-        name: 'いす',
-        price: 10000,
-        description: 'いすです',
-        createdAt: '2日前',
-        thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
-    },
-    {
-        id: 4,
-        name: 'いす',
-        price: 10000,
-        description: 'いすです',
-        createdAt: '2日前',
-        thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
-    },
-];
-
-const mockUser: UserData = {
-    id: 1235,
-    accountName: 'Kirin',
-    address: 'Tokyo',
-};
 
 const UserPage: React.FC/*<UserPageProps>*/ = (/*{ items, user }*/) => {
     const classes = useStyles();
@@ -98,4 +59,4 @@ const UserPage: React.FC/*<UserPageProps>*/ = (/*{ items, user }*/) => {
     );
 };
 
-export { UserPage }
+export default withBaseComponent(UserPage);
