@@ -5,12 +5,12 @@ import SignUpPage from "../pages/SignUpPage";
 import SellPage from "../pages/SellPage";
 import ItemEditPage from "../pages/ItemEditPage";
 import ItemBuyPage from "../pages/ItemBuyPage";
-import TransactionPage from "../pages/TransactionPage";
-import UserPage from "../pages/UserPage";
 import UserSettingPage from "../pages/UserSettingPage";
 import BuyCompletePage from "../pages/BuyComplete";
-import ItemListPage from "../pages/ItemListPage";
 import ItemPageContainer from "../containers/ItemPageContainer";
+import ItemListPageContainer from "../containers/ItemListPageContainer";
+import TransactionPageContainer from "../containers/TransactionPageContainer";
+import UserPageContainer from "../containers/UserPageContainer";
 
 interface route {
     [name: string]: {
@@ -69,7 +69,7 @@ export const routes: route = {
 export const AppRoute: React.FC = () => {
     return (
         <Switch>
-            <Route exact path={routes.top.path}         component={ItemListPage} />
+            <Route exact path={routes.top.path}         component={ItemListPageContainer} />
             <Route exact path={routes.login.path}       component={SignInPage} />
             <Route exact path={routes.register.path}    component={SignUpPage}/>
             <Route exact path={routes.sell.path}        component={SellPage} />
@@ -77,8 +77,8 @@ export const AppRoute: React.FC = () => {
             <Route exact path={routes.itemEdit.path}    component={ItemEditPage} />
             <Route exact path={routes.buy.path}         component={ItemBuyPage} />
             <Route exact path={routes.buyComplete.path} component={BuyCompletePage} />
-            <Route exact path={routes.transaction.path} component={TransactionPage} />
-            <Route exact path={routes.user.path}        component={UserPage} />
+            <Route exact path={routes.transaction.path} component={TransactionPageContainer} />
+            <Route exact path={routes.user.path}        component={UserPageContainer} />
             <Route exact path={routes.userSetting.path} component={UserSettingPage} />
         </Switch>
     );

@@ -150,4 +150,3 @@ class ItemPage extends React.Component<Props> {
 }
 
 export default PageComponentWithError<any>()(withStyles(styles)(ItemPage));
-
