@@ -4,7 +4,12 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 
 const useStyles = makeStyles(theme => ({
     progress: {
-        margin: theme.spacing(2),
+        top: 0,
+        bottom: 0,
+        right: 0,
+        left: 0,
+        margin: 'auto',
+        position: 'absolute',
     },
 }));
 
@@ -13,7 +18,10 @@ const LoadingComponent: React.FC = () => {
 
     return (
         <React.Fragment>
-            <CircularProgress className={classes.progress}/>
+            <CircularProgress
+                size={80}
+                className={classes.progress}
+            />
         </React.Fragment>
     );
 };
