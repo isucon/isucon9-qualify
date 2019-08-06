@@ -1,5 +1,4 @@
 import React from 'react';
-import {withBaseComponent} from "../hoc/withBaseComponent";
 import ItemBuyFormContainer from "../containers/ItemBuyFormContainer";
 
 const ItemBuyPage: React.FC = () => {

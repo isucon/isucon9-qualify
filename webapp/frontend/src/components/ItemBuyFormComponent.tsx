@@ -2,12 +2,12 @@ import React from 'react';
 import {ItemData} from "../dataObjects/item";
 import Typography from "@material-ui/core/Typography/Typography";
 import TextField from "@material-ui/core/TextField/TextField";
-import Button from "@material-ui/core/Button/Button";
 import {BuyFormErrorState} from "../reducers/formErrorReducer";
 import {ErrorMessageComponent} from './ErrorMessageComponent';
 import {createStyles, StyleRules, Theme, WithStyles} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import validator from 'validator';
+import LoadingButton from "./LoadingButtonComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     itemImage: {
@@ -20,14 +20,12 @@ const styles = (theme: Theme): StyleRules => createStyles({
         width: '100%',
         marginTop: theme.spacing(3,0, 1),
     },
-    submit: {
-        margin: theme.spacing(3, 0, 1),
-    },
 });
 
 interface ItemBuyFormProps extends WithStyles<typeof styles> {
     item: ItemData,
     onBuyAction: (itemId: number, cardNumber: string) => void,
+    loadingBuy: boolean,
     errors: BuyFormErrorState,
 }
 
@@ -70,7 +68,7 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
     }
 
     render() {
-        const { item, errors, classes } = this.props;
+        const { item, errors, classes, loadingBuy } = this.props;
         const cardError = errors.cardError;
         const appError = errors.buyError;
 
@@ -98,17 +96,11 @@ class ItemBuyFormComponent extends React.Component<ItemBuyFormProps, ItemBuyForm
                         cardError &&
                         <ErrorMessageComponent id="cardNumber" error={cardError} />
                     }
-                    <Button
-                        id="buyButton"
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        color="primary"
+                    <LoadingButton
                         onClick={this._onClickBuyButton}
-                        className={classes.submit}
-                    >
-                        購入
-                    </Button>
+                        buttonName={'購入'}
+                        loading={loadingBuy}
+                    />
                     {
                         appError &&
                         <ErrorMessageComponent id="buyButton" error={appError}/>

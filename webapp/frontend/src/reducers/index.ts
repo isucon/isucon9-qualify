@@ -4,6 +4,7 @@ import formError from './formErrorReducer';
 import viewingItem from './viewingItemReducer';
 import error from './errorReducer';
 import page from './pageReducuer';
+import buyPage from './buyPageReducer';
 import { connectRouter } from 'connected-react-router';
 import { History } from 'history';
 
@@ -14,4 +15,5 @@ export default (history: History) => combineReducers({
     viewingItem,
     error,
     page,
+    buyPage,
 });

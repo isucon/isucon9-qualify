@@ -3,7 +3,7 @@ import PaymentClient from '../httpClients/paymentClient';
 import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { FormErrorState } from "../reducers/formErrorReducer";
 import { push } from 'connected-react-router';
-import {AnyAction} from "redux";
+import {Action, AnyAction} from "redux";
 import {BuyReq} from "../types/appApiTypes";
 import {routes} from "../routes/Route";
 import {CardReq, CardRes} from "../types/paymentApiTypes";
@@ -11,6 +11,7 @@ import {PaymentResponseError} from "../errors/PaymentResponseError";
 import {AppResponseError} from "../errors/AppResponseError";
 import {ResponseError} from "../errors/ResponseError";
 
+export const BUY_START = 'BUY_START';
 export const BUY_SUCCESS = 'BUY_SUCCESS';
 export const BUY_FAIL = 'BUY_FAIL';
 export const USING_CARD_FAIL = 'USING_CARD_FAIL';
@@ -20,10 +21,15 @@ type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
 
 export function buyItemAction(itemId: number, cardNumber: string): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-        PaymentClient.post('/card', {
-            card_number: cardNumber,
-            shop_id: 'TODO',
-        } as CardReq)
+        Promise.resolve(() => {
+            dispatch(buyStartAction());
+        })
+            .then(() => {
+                return PaymentClient.post('/card', {
+                    card_number: cardNumber,
+                    shop_id: 'TODO',
+                } as CardReq);
+            })
             .then((response: Response) => {
                 if (!response.ok) {
                     throw new PaymentResponseError(
@@ -59,15 +65,23 @@ export function buyItemAction(itemId: number, cardNumber: string): ThunkResult<v
 
                 dispatch(buyFailAction(err.message));
             })
-            .then((body) => {
-                dispatch(usingCardFailAction(body.error)); // TODO cardエラーかappエラーか区別する
+            .then((body: any) => {
+                if (body) {
+                    dispatch(usingCardFailAction(body.error)); // TODO cardエラーかappエラーか区別する
+                }
             });
     };
 }
 
-export interface BuySuccessAction {
-    type: typeof BUY_SUCCESS,
+export interface BuyStartAction extends Action<typeof BUY_START> {}
+
+export function buyStartAction(): BuyStartAction{
+    return {
+        type: BUY_START,
+    };
 }
+
+export interface BuySuccessAction extends Action<typeof BUY_SUCCESS>{}
 
 export function buySuccessAction(): BuySuccessAction {
     return {
@@ -75,8 +89,7 @@ export function buySuccessAction(): BuySuccessAction {
     };
 }
 
-export interface UsingCardFailAction {
-    type: typeof USING_CARD_FAIL,
+export interface UsingCardFailAction extends Action<typeof USING_CARD_FAIL> {
     payload: FormErrorState,
 }
 
@@ -91,8 +104,7 @@ export function usingCardFailAction(error: string): UsingCardFailAction{
         },
     };
 }
-export interface BuyFailAction {
-    type: typeof BUY_FAIL,
+export interface BuyFailAction extends Action<typeof BUY_FAIL>{
     payload: FormErrorState,
 }
 
