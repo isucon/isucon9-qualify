@@ -1068,7 +1068,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	tx := dbx.MustBegin()
 
 	seller := User{}
-	err = tx.Get(&seller, "SELECT * FROM `user` WHERE `id` = ? FOR UPDATE", user.ID)
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "user not found")
 		tx.Rollback()
@@ -1104,7 +1104,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now().Unix()
-	result, err = tx.Exec("UPDATE `user` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
+	result, err = tx.Exec("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
 		seller.NumSellItems+1,
 		now,
 		seller.ID,
@@ -1300,11 +1300,10 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`,`last_bump`) VALUES (?, ?, ?, 0)",
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`,`last_bump`) VALUES (?, ?, ?, 0, 0)",
 		accountName,
 		hashedPassword,
 		address,
-		0,
 	)
 	if err != nil {
 		log.Println(err)
