@@ -48,7 +48,7 @@ const (
 	ShippingsStatusShipping   = "shipping"
 	ShippingsStatusDone       = "done"
 
-	BumpChargeSeconds = 3
+	BumpChargeSeconds = 3 * time.Second
 )
 
 var (
@@ -63,7 +63,7 @@ type User struct {
 	HashedPassword []byte    `json:"-" db:"hashed_password"`
 	Address        string    `json:"address,omitempty" db:"address"`
 	NumSellItems   int       `json:"num_sell_items" db:"num_sell_items"`
-	LastBump       int       `json:"-" db:"last_bump"`
+	LastBump       time.Time `json:"-" db:"last_bump"`
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
@@ -1114,7 +1114,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now().Unix()
+	now := time.Now()
 	result, err = tx.Exec("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
 		seller.NumSellItems+1,
 		now,
@@ -1197,14 +1197,16 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now().Unix()
-	if int64(seller.LastBump+BumpChargeSeconds) <= now {
+	now := time.Now()
+	// last_bump + 3s > now
+	if seller.LastBump.Add(BumpChargeSeconds).After(now) {
 		outputErrorMsg(w, http.StatusBadRequest, "Bump not allowed")
 		tx.Rollback()
 		return
 	}
 
-	_, err = tx.Exec("UPDATE `items` SET `created`=NOW() WHERE id=?",
+	_, err = tx.Exec("UPDATE `items` SET `created`=? WHERE id=?",
+		now,
 		item.ID,
 	)
 	if err != nil {
@@ -1228,15 +1230,11 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 func getSettings(w http.ResponseWriter, r *http.Request) {
 	csrfToken := getCSRFToken(r)
 
-	user, errCode, errMsg := getUser(r)
-	if errMsg != "" {
-		outputErrorMsg(w, errCode, errMsg)
-		return
-	}
+	user, _, errMsg := getUser(r)
 
 	ress := resSetting{}
 	ress.CSRFToken = csrfToken
-	if errMsg != "" {
+	if errMsg == "" {
 		ress.User = &user
 	}
 
@@ -1322,10 +1320,12 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`,`last_bump`) VALUES (?, ?, ?, 0, 0)",
+	defaultLastBump, _ := time.Parse("2006-01-02 15:04:05 MST", "2000-01-01 00:00:00 JST")
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`,`last_bump`) VALUES (?, ?, ?, 0, ?)",
 		accountName,
 		hashedPassword,
 		address,
+		defaultLastBump,
 	)
 	if err != nil {
 		log.Println(err)
