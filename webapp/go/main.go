@@ -130,6 +130,10 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
+type resBuy struct {
+	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
+}
+
 type reqSell struct {
 	CSRFToken   string `json:"csrf_token"`
 	Name        string `json:"name"`
@@ -582,6 +586,12 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	rpb := resBuy{
+		TransactionEvidenceID: transactionEvidenceID,
+	}
+	json.NewEncoder(w).Encode(rpb)
+
 }
 
 func postShip(w http.ResponseWriter, r *http.Request) {
