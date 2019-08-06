@@ -3,6 +3,7 @@ import Card from "@material-ui/core/Card";
 import { Link as RouteLink } from 'react-router-dom'
 import GridListTileBar from "@material-ui/core/GridListTileBar";
 import makeStyles from "@material-ui/core/styles/makeStyles";
+import {routes} from "../routes/Route";
 
 const useStyles = makeStyles(theme => ({
     itemImage: {
@@ -24,7 +25,7 @@ const ItemComponent: React.FC<ItemComponentProps> = ({
 
     return (
         <Card>
-            <RouteLink to={`/items/${itemId}`}>
+            <RouteLink to={routes.item.getPath(itemId)}>
                 <img className={classes.itemImage} src={imageUrl} alt={title}/>
             </RouteLink>
             <GridListTileBar

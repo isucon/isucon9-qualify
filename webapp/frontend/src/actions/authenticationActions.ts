@@ -4,6 +4,7 @@ import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { FormErrorState } from "../reducers/formErrorReducer";
 import { push } from 'connected-react-router';
 import {AnyAction} from "redux";
+import {routes} from "../routes/Route";
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const LOGIN_FAIL = 'LOGIN_FAIL';
@@ -30,11 +31,11 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
                     accountName: body.account_name,
                     address: body.address,
                 }));
-                dispatch(push('/items'))
+                dispatch(push(routes.top.path))
             })
             .catch((err: Error) => {
                 dispatch(loginFailAction({
-                    errorMsg: [err.message]
+                    error: err.message,
                 }))
             })
     };
