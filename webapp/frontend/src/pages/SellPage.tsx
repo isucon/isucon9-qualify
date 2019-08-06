@@ -3,6 +3,7 @@ import React from 'react';
 import { makeStyles } from '@material-ui/core';
 import SellFormContainer from "../containers/SellFormContainer";
 import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -19,9 +20,11 @@ const SellPage: React.FC<Props> = () => {
     const classes = useStyles();
 
     return (
-        <div className={classes.paper}>
-            <SellFormContainer />
-        </div>
+        <BasePageComponent>
+            <div className={classes.paper}>
+                <SellFormContainer />
+            </div>
+        </BasePageComponent>
     );
 };
 

@@ -1,8 +1,10 @@
 import React from 'react';
-import {withBaseComponent} from "../hoc/withBaseComponent";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const TransactionPage: React.FC = () => (
-    <div>Transaction Page</div>
+    <BasePageComponent>
+        <div>Transaction Page</div>
+    </BasePageComponent>
 );
 
-export default withBaseComponent(TransactionPage);
+export default TransactionPage;

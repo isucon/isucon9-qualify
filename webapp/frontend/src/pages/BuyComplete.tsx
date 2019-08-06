@@ -1,8 +1,10 @@
 import React from 'react';
-import {withBaseComponent} from "../hoc/withBaseComponent";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const BuyCompletePage: React.FC = () => (
-    <div>Item buying Page</div>
+    <BasePageComponent>
+        <div>Item buying Page</div>
+    </BasePageComponent>
 );
 
-export default withBaseComponent(BuyCompletePage);
+export default BuyCompletePage;

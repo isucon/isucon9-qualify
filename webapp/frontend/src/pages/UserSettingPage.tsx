@@ -1,8 +1,8 @@
 import React from 'react';
-import {withBaseComponent} from "../hoc/withBaseComponent";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const UserSettingPage: React.FC = () => (
-    <div>User setting Page</div>
+    <BasePageComponent>User setting Page</BasePageComponent>
 );
 
-export default withBaseComponent(UserSettingPage);
+export default UserSettingPage;

@@ -8,8 +8,8 @@ import {Grid} from "@material-ui/core";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import SellingButtonContainer from "../containers/SellingButtonContainer";
-import {withBaseComponent} from "../hoc/withBaseComponent";
 import {mockItems, mockUser} from "../mocks";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const useStyles = makeStyles(theme => ({
     avatar: {
@@ -33,7 +33,7 @@ const UserPage: React.FC/*<UserPageProps>*/ = (/*{ items, user }*/) => {
     const items = mockItems;
 
     return (
-        <div>
+        <BasePageComponent>
             <p>User Page</p>
             <Grid
                 container
@@ -55,8 +55,8 @@ const UserPage: React.FC/*<UserPageProps>*/ = (/*{ items, user }*/) => {
                 <ItemListComponent items={items}/>
             </div>
             <SellingButtonContainer />
-        </div>
+        </BasePageComponent>
     );
 };
 
-export default withBaseComponent(UserPage);
+export default UserPage;

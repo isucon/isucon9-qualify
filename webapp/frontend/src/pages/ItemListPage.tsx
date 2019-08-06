@@ -5,6 +5,7 @@ import { ItemListComponent } from '../components/ItemListComponent';
 import SellingButtonContainer from "../containers/SellingButtonContainer";
 import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
 import {mockItems} from "../mocks";
+import {BasePageComponent} from "../components/BasePageComponent";
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -25,10 +26,12 @@ const ItemListPage: React.FC/*<ItemListPageProps>*/ = (/*{ items }: ItemListPage
     const items = mockItems;
 
     return (
-        <div className={classes.root}>
-            <ItemListComponent items={items}/>
-            <SellingButtonContainer />
-        </div>
+        <BasePageComponent>
+            <div className={classes.root}>
+                <ItemListComponent items={items}/>
+                <SellingButtonContainer />
+            </div>
+        </BasePageComponent>
     );
 };
 
