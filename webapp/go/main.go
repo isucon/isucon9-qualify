@@ -83,6 +83,18 @@ type Item struct {
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
 }
 
+type ItemSimple struct {
+	ID         int64     `json:"id"`
+	SellerID   int64     `json:"seller_id"`
+	Seller     *User     `json:"seller"`
+	Status     string    `json:"status"`
+	Name       string    `json:"name"`
+	Price      int       `json:"price"`
+	CategoryID int       `json:"category_id"`
+	Category   *Category `json:"category"`
+	CreatedAt  int64     `json:"created_at"`
+}
+
 type TransactionEvidence struct {
 	ID                 int64     `json:"id" db:"id"`
 	SellerID           int64     `json:"seller_id" db:"seller_id"`
@@ -122,10 +134,10 @@ type Category struct {
 }
 
 type resNewItems struct {
-	RootCategoryID   *int    `json:"root_category_id,omitempty"`
-	RootCategoryName *string `json:"root_category_name,omitempty"`
-	HasNext          bool    `json:"has_next"`
-	Items            []Item  `json:"items"`
+	RootCategoryID   *int         `json:"root_category_id,omitempty"`
+	RootCategoryName *string      `json:"root_category_name,omitempty"`
+	HasNext          bool         `json:"has_next"`
+	Items            []ItemSimple `json:"items"`
 }
 
 type reqRegister struct {
@@ -360,6 +372,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	itemSimples := []ItemSimple{}
 	for i := range items {
 		seller, err := getUserByID(items[i].SellerID)
 		if err != nil {
@@ -371,18 +384,27 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 			outputErrorMsg(w, http.StatusNotFound, "category not found")
 			return
 		}
-		items[i].Seller = &seller
-		items[i].Category = &category
+		itemSimples = append(itemSimples, ItemSimple{
+			ID:         items[i].ID,
+			SellerID:   items[i].SellerID,
+			Seller:     &seller,
+			Status:     items[i].Status,
+			Name:       items[i].Name,
+			Price:      items[i].Price,
+			CategoryID: items[i].CategoryID,
+			Category:   &category,
+			CreatedAt:  items[i].CreatedAt.Unix(),
+		})
 	}
 
 	hasNext := false
-	if len(items) > 48 {
+	if len(itemSimples) > 48 {
 		hasNext = true
-		items = items[0:47]
+		itemSimples = itemSimples[0:47]
 	}
 
 	rni := resNewItems{
-		Items:   items,
+		Items:   itemSimples,
 		HasNext: hasNext,
 	}
 
@@ -455,6 +477,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	itemSimples := []ItemSimple{}
 	for i := range items {
 		seller, err := getUserByID(items[i].SellerID)
 		if err != nil {
@@ -466,20 +489,29 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 			outputErrorMsg(w, http.StatusNotFound, "category not found")
 			return
 		}
-		items[i].Seller = &seller
-		items[i].Category = &category
+		itemSimples = append(itemSimples, ItemSimple{
+			ID:         items[i].ID,
+			SellerID:   items[i].SellerID,
+			Seller:     &seller,
+			Status:     items[i].Status,
+			Name:       items[i].Name,
+			Price:      items[i].Price,
+			CategoryID: items[i].CategoryID,
+			Category:   &category,
+			CreatedAt:  items[i].CreatedAt.Unix(),
+		})
 	}
 
 	hasNext := false
-	if len(items) > 48 {
+	if len(itemSimples) > 48 {
 		hasNext = true
-		items = items[0:47]
+		itemSimples = itemSimples[0:47]
 	}
 
 	rni := resNewItems{
 		RootCategoryID:   &rootCategory.ID,
 		RootCategoryName: &rootCategory.CategoryName,
-		Items:            items,
+		Items:            itemSimples,
 		HasNext:          hasNext,
 	}
 
