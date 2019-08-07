@@ -401,27 +401,27 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	itemSimples := []ItemSimple{}
-	for i := range items {
-		seller, err := getUserSimpleByID(items[i].SellerID)
+	for _, item := range items {
+		seller, err := getUserSimpleByID(item.SellerID)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			return
 		}
-		category, err := getCategoryByID(items[i].CategoryID)
+		category, err := getCategoryByID(item.CategoryID)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "category not found")
 			return
 		}
 		itemSimples = append(itemSimples, ItemSimple{
-			ID:         items[i].ID,
-			SellerID:   items[i].SellerID,
+			ID:         item.ID,
+			SellerID:   item.SellerID,
 			Seller:     &seller,
-			Status:     items[i].Status,
-			Name:       items[i].Name,
-			Price:      items[i].Price,
-			CategoryID: items[i].CategoryID,
+			Status:     item.Status,
+			Name:       item.Name,
+			Price:      item.Price,
+			CategoryID: item.CategoryID,
 			Category:   &category,
-			CreatedAt:  items[i].CreatedAt.Unix(),
+			CreatedAt:  item.CreatedAt.Unix(),
 		})
 	}
 
@@ -509,27 +509,27 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	itemSimples := []ItemSimple{}
-	for i := range items {
-		seller, err := getUserSimpleByID(items[i].SellerID)
+	for _, item := range items {
+		seller, err := getUserSimpleByID(item.SellerID)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			return
 		}
-		category, err := getCategoryByID(items[i].CategoryID)
+		category, err := getCategoryByID(item.CategoryID)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "category not found")
 			return
 		}
 		itemSimples = append(itemSimples, ItemSimple{
-			ID:         items[i].ID,
-			SellerID:   items[i].SellerID,
+			ID:         item.ID,
+			SellerID:   item.SellerID,
 			Seller:     &seller,
-			Status:     items[i].Status,
-			Name:       items[i].Name,
-			Price:      items[i].Price,
-			CategoryID: items[i].CategoryID,
+			Status:     item.Status,
+			Name:       item.Name,
+			Price:      item.Price,
+			CategoryID: item.CategoryID,
 			Category:   &category,
-			CreatedAt:  items[i].CreatedAt.Unix(),
+			CreatedAt:  item.CreatedAt.Unix(),
 		})
 	}
 
