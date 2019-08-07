@@ -1,5 +1,5 @@
 - name: Install benchmarker
-  command: /home/isucon/local/go/bin/go build -o bin/benchmarker cmd/benchmarker/main.go
+  command: /home/isucon/local/go/bin/go build -o bin/benchmarker cmd/bench/main.go
   args:
     chdir: /home/isucon/isucari
   environment:
