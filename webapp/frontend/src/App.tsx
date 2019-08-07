@@ -52,7 +52,7 @@ const routes: Array<{
         pageName: 'User page',
     },
     {
-        path: '/users/:user_id/setting',
+        path: '/users/setting',
         pageName: 'User setting page',
     },
 ];

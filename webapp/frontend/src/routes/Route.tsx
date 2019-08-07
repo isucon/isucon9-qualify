@@ -11,8 +11,7 @@ import ItemPageContainer from "../containers/ItemPageContainer";
 import ItemListPageContainer from "../containers/ItemListPageContainer";
 import TransactionPageContainer from "../containers/TransactionPageContainer";
 import UserPageContainer from "../containers/UserPageContainer";
-import AuthContainer from '../containers/AuthContainer';
-import NonAuthContainer from '../containers/NonAuthContainer';
+import AuthRoute from '../containers/AuthContainer';
 
 interface route {
     [name: string]: {
@@ -75,26 +74,18 @@ export const routes: route = {
 export const AppRoute: React.FC = () => {
     return (
         <Switch>
-            <NonAuthContainer>
-                <Switch>
-                    <Route exact path={routes.top.path}         component={() => (<div>'hoge'</div>)} />
-                    <Route exact path={routes.login.path}       component={SignInPage} />
-                    <Route exact path={routes.register.path}    component={SignUpPage}/>
-                </Switch>
-            </NonAuthContainer>
-            <AuthContainer>
-                <Switch>
-                    <Route exact path={routes.timeline.path}    component={ItemListPageContainer} />
-                    <Route exact path={routes.sell.path}        component={SellPage} />
-                    <Route exact path={routes.item.path}        component={ItemPageContainer} />
-                    <Route exact path={routes.itemEdit.path}    component={ItemEditPage} />
-                    <Route exact path={routes.buy.path}         component={ItemBuyPage} />
-                    <Route exact path={routes.buyComplete.path} component={BuyCompletePage} />
-                    <Route exact path={routes.transaction.path} component={TransactionPageContainer} />
-                    <Route exact path={routes.user.path}        component={UserPageContainer} />
-                    <Route exact path={routes.userSetting.path} component={UserSettingPage} />
-                </Switch>
-            </AuthContainer>
+            <Route exact path={routes.top.path}         component={() => (<div>'hoge'</div>)} />
+            <Route exact path={routes.login.path}       component={SignInPage} />
+            <Route exact path={routes.register.path}    component={SignUpPage}/>
+            <AuthRoute exact path={routes.timeline.path}    component={ItemListPageContainer} />
+            <AuthRoute exact path={routes.sell.path}        component={SellPage} />
+            <AuthRoute exact path={routes.item.path}        component={ItemPageContainer} />
+            <AuthRoute exact path={routes.itemEdit.path}    component={ItemEditPage} />
+            <AuthRoute exact path={routes.buy.path}         component={ItemBuyPage} />
+            <AuthRoute exact path={routes.buyComplete.path} component={BuyCompletePage} />
+            <AuthRoute exact path={routes.transaction.path} component={TransactionPageContainer} />
+            <AuthRoute exact path={routes.user.path}        component={UserPageContainer} />
+            <AuthRoute exact path={routes.userSetting.path} component={UserSettingPage} />
         </Switch>
     );
 };
