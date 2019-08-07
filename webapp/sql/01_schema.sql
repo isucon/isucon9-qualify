@@ -7,7 +7,7 @@ CREATE TABLE `users` (
   `hashed_password` varbinary(191) NOT NULL,
   `address` varchar(191) NOT NULL,
   `num_sell_items` int unsigned NOT NULL,
-  `last_bump` datetime NOT NULL,
+  `last_bump` datetime NOT NULL DEFAULT '2000-01-01 00:00:00',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
 
