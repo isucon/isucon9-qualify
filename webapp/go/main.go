@@ -160,6 +160,12 @@ type resNewItems struct {
 	Items            []ItemSimple `json:"items"`
 }
 
+type resUserItems struct {
+	User    *UserSimple  `json:"user"`
+	HasNext bool         `json:"has_next"`
+	Items   []ItemSimple `json:"items"`
+}
+
 type reqRegister struct {
 	AccountName string `json:"account_name"`
 	Address     string `json:"address"`
@@ -286,6 +292,7 @@ func main() {
 	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
+	mux.HandleFunc(pat.Get("/user_items/:user_id.json"), getUserItems)
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
@@ -377,11 +384,12 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	if itemID != "" && createdAt > 0 {
 		// paging
 		err := dbx.Select(&items,
-			"SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT 49",
+			"SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			time.Unix(createdAt, 0),
 			itemID,
+			ItemsPerPage+1,
 		)
 		if err != nil {
 			log.Println(err)
@@ -391,9 +399,10 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// 1st page
 		err := dbx.Select(&items,
-			"SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT 49",
+			"SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
+			ItemsPerPage+1,
 		)
 		if err != nil {
 			log.Println(err)
@@ -474,12 +483,13 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	if itemID != "" && createdAt > 0 {
 		// paging
 		inQuery, inArgs, err = sqlx.In(
-			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT 49",
+			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			categoryIDs,
 			time.Unix(createdAt, 0),
 			itemID,
+			ItemsPerPage+1,
 		)
 		if err != nil {
 			log.Println(err)
@@ -489,10 +499,11 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// 1st page
 		inQuery, inArgs, err = sqlx.In(
-			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY created_at DESC, id DESC LIMIT 49",
+			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY created_at DESC, id DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			categoryIDs,
+			ItemsPerPage+1,
 		)
 		if err != nil {
 			log.Println(err)
@@ -551,6 +562,99 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(rni)
 
+}
+
+func getUserItems(w http.ResponseWriter, r *http.Request) {
+	userIDParam := pat.Param(r, "user_id")
+	userID, err := strconv.ParseInt(userIDParam, 10, 64)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "incorrect user id")
+		return
+	}
+
+	userSimple, err := getUserSimpleByID(userID)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		return
+	}
+
+	query := r.URL.Query()
+	itemID := query.Get("item_id")
+	createdAtParam := query.Get("created_at")
+	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
+
+	items := []Item{}
+	if itemID != "" && createdAt > 0 {
+		// paging
+		err := dbx.Select(&items,
+			"SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			userSimple.ID,
+			ItemStatusOnSale,
+			ItemStatusSoldOut,
+			time.Unix(createdAt, 0),
+			itemID,
+			ItemsPerPage+1,
+		)
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+	} else {
+		// 1st page
+		err := dbx.Select(&items,
+			"SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			userSimple.ID,
+			ItemStatusOnSale,
+			ItemStatusSoldOut,
+			ItemsPerPage+1,
+		)
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+	}
+
+	itemSimples := []ItemSimple{}
+	for _, item := range items {
+		seller, err := getUserSimpleByID(item.SellerID)
+		if err != nil {
+			outputErrorMsg(w, http.StatusNotFound, "seller not found")
+			return
+		}
+		category, err := getCategoryByID(item.CategoryID)
+		if err != nil {
+			outputErrorMsg(w, http.StatusNotFound, "category not found")
+			return
+		}
+		itemSimples = append(itemSimples, ItemSimple{
+			ID:         item.ID,
+			SellerID:   item.SellerID,
+			Seller:     &seller,
+			Status:     item.Status,
+			Name:       item.Name,
+			Price:      item.Price,
+			CategoryID: item.CategoryID,
+			Category:   &category,
+			CreatedAt:  item.CreatedAt.Unix(),
+		})
+	}
+
+	hasNext := false
+	if len(itemSimples) > ItemsPerPage {
+		hasNext = true
+		itemSimples = itemSimples[0 : ItemsPerPage-1]
+	}
+
+	rui := resUserItems{
+		User:    &userSimple,
+		Items:   itemSimples,
+		HasNext: hasNext,
+	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(rui)
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
