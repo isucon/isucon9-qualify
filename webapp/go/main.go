@@ -1609,13 +1609,10 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Todo: default last_bump
-	defaultLastBump, _ := time.Parse("2006-01-02 15:04:05 MST", "2000-01-01 00:00:00 JST")
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`,`last_bump`) VALUES (?, ?, ?, 0, ?)",
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?, 0, ?)",
 		accountName,
 		hashedPassword,
 		address,
-		defaultLastBump,
 	)
 	if err != nil {
 		log.Println(err)
