@@ -20,6 +20,10 @@ const routes: Array<{
         pageName: 'Sign up page',
     },
     {
+        path: '/timeline',
+        pageName: 'Timeline page'
+    },
+    {
         path: '/items/:item_id',
         pageName: 'Item page',
     },
