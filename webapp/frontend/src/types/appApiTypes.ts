@@ -1,24 +1,28 @@
 import {ItemStatus} from "../dataObjects/item";
 import {UserData} from "../dataObjects/user";
 
-interface CsrfRequiredReq {
-    csrf_token: string
-}
-
 /**
  * POST /register
  */
-// Request
 export interface RegisterReq {
     account_name: string
     address: string
     password: string
 }
-// Response
 export interface RegisterRes extends Response{
     id: number
     account_name: string
     address: string
+}
+
+/**
+ * POST /login
+ */
+export interface LoginRes {
+    id: number,
+    account_name: string,
+    address?: string,
+    num_sell_items: number,
 }
 
 /**
@@ -63,6 +67,12 @@ export interface SellRes extends Response {
 // Response
 export interface SettingsRes {
     csrf_token: string,
+    user?: {
+        id: number,
+        account_name: string,
+        address?: string,
+        num_sell_items: number,
+    },
 }
 
 /**

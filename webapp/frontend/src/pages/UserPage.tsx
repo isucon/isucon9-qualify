@@ -8,9 +8,8 @@ import {Grid} from "@material-ui/core";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import SellingButtonContainer from "../containers/SellingButtonContainer";
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
-import LoadingComponent from "../components/LoadingComponent";
 
 const useStyles = makeStyles(theme => ({
     avatar: {
@@ -26,45 +25,35 @@ const useStyles = makeStyles(theme => ({
 type Props = {
     items: ItemData[]
     user: UserData,
-    loading: boolean,
 } & ErrorProps
 
-const UserPage: React.FC<Props> = ({ items, user, loading }) => {
+const UserPage: React.FC<Props> = ({ items, user }) => {
     const classes = useStyles();
 
     return (
-        <BasePageComponent>
-            {
-                loading ?
-                    (
-                        <LoadingComponent />
-                    ) : (
-                        <React.Fragment>
-                            <p>User Page</p>
-                            <Grid
-                                container
-                                direction="row"
-                                justify="center"
-                                alignItems="center"
-                                wrap="nowrap"
-                                spacing={2}
-                            >
-                                <Grid item>
-                                    <Avatar className={classes.avatar}>{user.accountName.charAt(0)}</Avatar>
-                                </Grid>
-                                <Grid item xs>
-                                    <Typography variant="h3">{user.accountName}</Typography>
-                                </Grid>
-                            </Grid>
-                            <Divider variant="middle" />
-                            <div className={classes.itemList}>
-                                <ItemListComponent items={items}/>
-                            </div>
-                            <SellingButtonContainer />
-                        </React.Fragment>
-                )
-            }
-        </BasePageComponent>
+        <BasePageContainer>
+            <p>User Page</p>
+            <Grid
+                container
+                direction="row"
+                justify="center"
+                alignItems="center"
+                wrap="nowrap"
+                spacing={2}
+            >
+                <Grid item>
+                    <Avatar className={classes.avatar}>{user.accountName.charAt(0)}</Avatar>
+                </Grid>
+                <Grid item xs>
+                    <Typography variant="h3">{user.accountName}</Typography>
+                </Grid>
+            </Grid>
+            <Divider variant="middle" />
+            <div className={classes.itemList}>
+                <ItemListComponent items={items}/>
+            </div>
+            <SellingButtonContainer />
+        </BasePageContainer>
     );
 };
 

@@ -2,7 +2,7 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core';
 import SignInFormContainer from "../containers/SignInFormContainer";
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 
 const useStyles = makeStyles(theme => ({
     paper: {
@@ -19,11 +19,11 @@ const SignInPage: React.FC<Props> = () => {
     const classes = useStyles();
 
     return (
-        <BasePageComponent>
+        <BasePageContainer>
             <div className={classes.paper}>
                 <SignInFormContainer />
             </div>
-        </BasePageComponent>
+        </BasePageContainer>
     );
 };
 

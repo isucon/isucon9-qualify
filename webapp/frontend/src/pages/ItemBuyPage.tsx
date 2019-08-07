@@ -1,12 +1,12 @@
 import React from 'react';
 import ItemBuyFormContainer from "../containers/ItemBuyFormContainer";
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 
 const ItemBuyPage: React.FC = () => {
     return (
-        <BasePageComponent>
+        <BasePageContainer>
             <ItemBuyFormContainer />
-        </BasePageComponent>
+        </BasePageContainer>
     );
 };
 

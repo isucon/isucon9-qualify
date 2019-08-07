@@ -55,9 +55,9 @@ export interface SellingFailAction {
     payload: FormErrorState,
 }
 
-export function sellingFailAction(newErros: FormErrorState): SellingFailAction {
+export function sellingFailAction(newErrors: FormErrorState): SellingFailAction {
     return {
         type: SELLING_ITEM_FAIL,
-        payload: newErros,
+        payload: newErrors,
     };
 }

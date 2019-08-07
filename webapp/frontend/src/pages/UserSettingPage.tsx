@@ -1,8 +1,8 @@
 import React from 'react';
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 
 const UserSettingPage: React.FC = () => (
-    <BasePageComponent>User setting Page</BasePageComponent>
+    <BasePageContainer>User setting Page</BasePageContainer>
 );
 
 export default UserSettingPage;

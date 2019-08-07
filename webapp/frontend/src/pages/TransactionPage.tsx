@@ -1,22 +1,13 @@
 import React from 'react';
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
-import LoadingComponent from "../components/LoadingComponent";
 
-type Props = {
-    loading: boolean,
-} & ErrorProps
+type Props = {} & ErrorProps
 
-const TransactionPage: React.FC<Props> = ({ loading }) => (
-    <BasePageComponent>
-        {
-            loading ? (
-                <LoadingComponent/>
-            ) : (
-                <div>Transaction Page</div>
-            )
-        }
-    </BasePageComponent>
+const TransactionPage: React.FC<Props> = () => (
+    <BasePageContainer>
+        <div>Transaction Page</div>
+    </BasePageContainer>
 );
 
 export default PageComponentWithError<Props>()(TransactionPage);

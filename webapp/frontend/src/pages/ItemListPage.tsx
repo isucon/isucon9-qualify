@@ -4,8 +4,7 @@ import makeStyles from "@material-ui/core/styles/makeStyles";
 import { ItemListComponent } from '../components/ItemListComponent';
 import SellingButtonContainer from "../containers/SellingButtonContainer";
 import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
-import {BasePageComponent} from "../components/BasePageComponent";
-import LoadingComponent from "../components/LoadingComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -19,25 +18,18 @@ const useStyles = makeStyles(theme => ({
 
 type ItemListPageProps = {
     items: ItemData[],
-    loading: boolean,
 } & ErrorProps
 
-const ItemListPage: React.FC<ItemListPageProps> = ({ items, loading }: ItemListPageProps) => {
+const ItemListPage: React.FC<ItemListPageProps> = ({ items }: ItemListPageProps) => {
     const classes = useStyles();
 
     return (
-        <BasePageComponent>
-            {
-                loading ? (
-                    <LoadingComponent/>
-                ) : (
-                    <div className={classes.root}>
-                        <ItemListComponent items={items}/>
-                        <SellingButtonContainer/>
-                    </div>
-                )
-            }
-        </BasePageComponent>
+        <BasePageContainer>
+            <div className={classes.root}>
+                <ItemListComponent items={items}/>
+                <SellingButtonContainer/>
+            </div>
+        </BasePageContainer>
     );
 };
 

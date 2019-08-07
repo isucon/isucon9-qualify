@@ -5,6 +5,7 @@ import {
     NotFoundErrorAction
 } from "../actions/errorAction";
 import {FETCH_ITEM_PAGE_FAIL, FetchItemPageFailAction} from "../actions/fetchItemPageAction";
+import {FETCH_SETTINGS_FAIL, FetchSettingsFailAction} from "../actions/settingsAction";
 
 export const NoError = 'NO_ERROR';
 export const NotFoundError = 'NOT_FOUND';
@@ -20,7 +21,10 @@ const initialState: ErrorState = {
     errorType: NoError,
 };
 
-type errorActions = NotFoundErrorAction | InternalServerErrorAction | FetchItemPageFailAction;
+type errorActions = NotFoundErrorAction
+    | InternalServerErrorAction
+    | FetchItemPageFailAction
+    | FetchSettingsFailAction;
 
 const error = (state: ErrorState = initialState, action: errorActions): ErrorState => {
     switch (action.type) {
@@ -28,6 +32,7 @@ const error = (state: ErrorState = initialState, action: errorActions): ErrorSta
             return { errorType: NotFoundError, errorCode: 404 };
         case INTERNAL_SERVER_ERROR:
         case FETCH_ITEM_PAGE_FAIL:
+        case FETCH_SETTINGS_FAIL:
             return { errorType: InternalServerError, errorCode: 500 };
         default:
             return { errorType: NoError };

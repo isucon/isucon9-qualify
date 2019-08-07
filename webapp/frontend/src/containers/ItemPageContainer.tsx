@@ -6,9 +6,9 @@ import {push} from "connected-react-router";
 import {routes} from "../routes/Route";
 
 const mapStateToProps = (state: AppState) => ({
+    loading: state.page.isItemPageLoading,
     item: state.viewingItem.item,
     errorType: state.error.errorType,
-    isLoading: state.page.isLoading,
 });
 const mapDispatchToProps = (dispatch: any) => ({
     load: (itemId: string) => {
