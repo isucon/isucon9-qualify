@@ -12,6 +12,7 @@
     - nginx.log-format
     - golang
     - external.nginx
+    - external.benchmarker
     - external.shipment
     - external.payment
     # TODO
