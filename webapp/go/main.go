@@ -314,13 +314,11 @@ func getUserByID(userID int64) (user User, err error) {
 func getCategoryByID(categoryID int) (category Category, err error) {
 	err = dbx.Get(&category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
 	if category.ParentID != 0 {
-		parentCategory := Category{}
-		err = dbx.Get(&parentCategory, "SELECT * FROM `categories` WHERE `id` = ?", category.ParentID)
+		parentCategory, err := getCategoryByID(category.ParentID)
 		if err != nil {
 			return category, err
 		}
 		category.ParentCategoryName = parentCategory.CategoryName
-
 	}
 	return category, err
 }
