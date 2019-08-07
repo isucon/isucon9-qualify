@@ -292,7 +292,7 @@ func main() {
 	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
-	mux.HandleFunc(pat.Get("/user_items/:user_id.json"), getUserItems)
+	mux.HandleFunc(pat.Get("/users/:user_id.json"), getUserItems)
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
 	mux.HandleFunc(pat.Post("/buy"), postBuy)
