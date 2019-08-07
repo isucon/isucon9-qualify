@@ -502,10 +502,10 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items := []Item{}
-	sqlErr := dbx.Select(&items, inQuery, inArgs...)
+	err = dbx.Select(&items, inQuery, inArgs...)
 
-	if sqlErr != nil {
-		log.Println(sqlErr)
+	if err != nil {
+		log.Println(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
