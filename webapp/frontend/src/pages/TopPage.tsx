@@ -23,14 +23,6 @@ const useStyles = makeStyles(theme => ({
     button: {
         margin: theme.spacing(1),
     },
-    loginButton: {
-        textDecoration: 'none',
-        color: theme.palette.primary.contrastText,
-    },
-    registerButton: {
-        textDecoration: 'none',
-        color: theme.palette.primary.main,
-    },
 }));
 
 const TopPage: React.FC = () => {
