@@ -369,32 +369,35 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	itemID := query.Get("item_id")
 	createdAtParam := query.Get("created_at")
-	createdAt, createdAtErr := time.Parse("2006-01-02 15:04:05", createdAtParam)
+	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
 
 	items := []Item{}
-	var sqlErr error
-	if itemID != "" && createdAtErr != nil {
+	if itemID != "" && createdAt > 0 {
 		// paging
-		sqlErr = dbx.Select(&items,
+		err := dbx.Select(&items,
 			"SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT 49",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
-			createdAt,
+			time.Unix(createdAt, 0),
 			itemID,
 		)
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
 	} else {
 		// 1st page
-		sqlErr = dbx.Select(&items,
+		err := dbx.Select(&items,
 			"SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT 49",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 		)
-	}
-
-	if sqlErr != nil {
-		log.Println(sqlErr)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		return
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
 	}
 
 	itemSimples := []ItemSimple{}
@@ -462,39 +465,42 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	itemID := query.Get("item_id")
 	createdAtParam := query.Get("created_at")
-	createdAt, createdAtErr := time.Parse("2006-01-02 15:04:05", createdAtParam)
+	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
 
-	var inQeury string
+	var inQuery string
 	var inArgs []interface{}
-	var inErr error
-	if itemID != "" && createdAtErr != nil {
+	if itemID != "" && createdAt > 0 {
 		// paging
-		inQeury, inArgs, inErr = sqlx.In(
+		inQuery, inArgs, err = sqlx.In(
 			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT 49",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			categoryIDs,
-			createdAt,
+			time.Unix(createdAt, 0),
 			itemID,
 		)
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
 	} else {
 		// 1st page
-		inQeury, inArgs, inErr = sqlx.In(
+		inQuery, inArgs, err = sqlx.In(
 			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY created_at DESC, id DESC LIMIT 49",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			categoryIDs,
 		)
-	}
-
-	if inErr != nil {
-		log.Println(inErr)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		return
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
 	}
 
 	items := []Item{}
-	sqlErr := dbx.Select(&items, inQeury, inArgs...)
+	sqlErr := dbx.Select(&items, inQuery, inArgs...)
 
 	if sqlErr != nil {
 		log.Println(sqlErr)
