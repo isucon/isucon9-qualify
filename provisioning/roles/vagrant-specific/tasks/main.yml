@@ -1,26 +1,12 @@
-- name: Symlink webapp
+- name: Symlink isucari
   file:
-    path: /home/isucon/isucari/webapp
-    src: /tmp/ansible/webapp
+    path: /home/isucon/isucari
+    src: /tmp/ansible/isucon9-qualify
     state: link
 
-- name: Chown webapp to isucon
+- name: Chown to isucon
   file:
-    path: /tmp/ansible/webapp
-    owner: isucon
-    group: isucon
-    recurse: yes
-  become: yes
-
-- name: Symlink external
-  file:
-    path: /home/isucon/isucari/external
-    src: /tmp/ansible/external
-    state: link
-
-- name: Chown external to isucon
-  file:
-    path: /tmp/ansible/external
+    path: /tmp/ansible/isucon9-qualify
     owner: isucon
     group: isucon
     recurse: yes

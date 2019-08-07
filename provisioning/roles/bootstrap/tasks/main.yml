@@ -48,14 +48,3 @@
     owner: isucon
     group: isucon
     mode: 0755
-
-- name: Create directories
-  become: yes
-  file:
-    path: "{{ item.path }}"
-    mode: "{{ item.mode }}"
-    owner: "{{ item.owner }}"
-    group: "{{ item.group }}"
-    state: directory
-  with_items:
-    - { path: /home/isucon/isucari, mode: "0755", owner: isucon, group: isucon }

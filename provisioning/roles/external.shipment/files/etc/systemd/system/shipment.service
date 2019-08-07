@@ -2,10 +2,10 @@
 Description = isucon9 qualifier external shipment application
 
 [Service]
-WorkingDirectory=/home/isucon/isucari/external/shipment
+WorkingDirectory=/home/isucon/isucari
 #EnvironmentFile=/home/isucon/env.sh
 
-ExecStart = /home/isucon/isucari/external/shipment/shipment
+ExecStart = /home/isucon/isucari/bin/shipment
 
 Restart   = always
 Type      = simple

@@ -2,10 +2,10 @@
 Description = isucon9 qualifier external payment application
 
 [Service]
-WorkingDirectory=/home/isucon/isucari/external/payment
+WorkingDirectory=/home/isucon/isucari
 #EnvironmentFile=/home/isucon/env.sh
 
-ExecStart = /home/isucon/isucari/external/payment/payment
+ExecStart = /home/isucon/isucari/bin/payment
 
 Restart   = always
 Type      = simple
