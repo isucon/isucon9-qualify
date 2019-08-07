@@ -11,6 +11,7 @@ import ItemPageContainer from "../containers/ItemPageContainer";
 import ItemListPageContainer from "../containers/ItemListPageContainer";
 import TransactionPageContainer from "../containers/TransactionPageContainer";
 import UserPageContainer from "../containers/UserPageContainer";
+import AuthContainer from '../containers/AuthContainer';
 
 interface route {
     [name: string]: {
@@ -72,14 +73,18 @@ export const AppRoute: React.FC = () => {
             <Route exact path={routes.top.path}         component={ItemListPageContainer} />
             <Route exact path={routes.login.path}       component={SignInPage} />
             <Route exact path={routes.register.path}    component={SignUpPage}/>
-            <Route exact path={routes.sell.path}        component={SellPage} />
-            <Route exact path={routes.item.path}        component={ItemPageContainer} />
-            <Route exact path={routes.itemEdit.path}    component={ItemEditPage} />
-            <Route exact path={routes.buy.path}         component={ItemBuyPage} />
-            <Route exact path={routes.buyComplete.path} component={BuyCompletePage} />
-            <Route exact path={routes.transaction.path} component={TransactionPageContainer} />
-            <Route exact path={routes.user.path}        component={UserPageContainer} />
-            <Route exact path={routes.userSetting.path} component={UserSettingPage} />
+            <AuthContainer>
+                <Switch>
+                    <Route exact path={routes.sell.path}        component={SellPage} />
+                    <Route exact path={routes.item.path}        component={ItemPageContainer} />
+                    <Route exact path={routes.itemEdit.path}    component={ItemEditPage} />
+                    <Route exact path={routes.buy.path}         component={ItemBuyPage} />
+                    <Route exact path={routes.buyComplete.path} component={BuyCompletePage} />
+                    <Route exact path={routes.transaction.path} component={TransactionPageContainer} />
+                    <Route exact path={routes.user.path}        component={UserPageContainer} />
+                    <Route exact path={routes.userSetting.path} component={UserSettingPage} />
+                </Switch>
+            </AuthContainer>
         </Switch>
     );
 };
