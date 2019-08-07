@@ -12,6 +12,8 @@ import ItemListPageContainer from "../containers/ItemListPageContainer";
 import TransactionPageContainer from "../containers/TransactionPageContainer";
 import UserPageContainer from "../containers/UserPageContainer";
 import AuthRoute from '../containers/AuthContainer';
+import NonAuthRoute from '../containers/NonAuthContainer';
+import NotFoundPage from "../pages/error/NotFoundPage";
 
 interface route {
     [name: string]: {
@@ -74,9 +76,9 @@ export const routes: route = {
 export const AppRoute: React.FC = () => {
     return (
         <Switch>
-            <Route exact path={routes.top.path}         component={() => (<div>'hoge'</div>)} />
-            <Route exact path={routes.login.path}       component={SignInPage} />
-            <Route exact path={routes.register.path}    component={SignUpPage}/>
+            <NonAuthRoute exact path={routes.top.path}      component={() => (<div>'hoge'</div>)} />
+            <NonAuthRoute exact path={routes.login.path}    component={SignInPage} />
+            <NonAuthRoute exact path={routes.register.path} component={SignUpPage}/>
             <AuthRoute exact path={routes.timeline.path}    component={ItemListPageContainer} />
             <AuthRoute exact path={routes.sell.path}        component={SellPage} />
             <AuthRoute exact path={routes.item.path}        component={ItemPageContainer} />
@@ -86,6 +88,7 @@ export const AppRoute: React.FC = () => {
             <AuthRoute exact path={routes.transaction.path} component={TransactionPageContainer} />
             <AuthRoute exact path={routes.user.path}        component={UserPageContainer} />
             <AuthRoute exact path={routes.userSetting.path} component={UserSettingPage} />
+            <Route component={NotFoundPage} />
         </Switch>
     );
 };
