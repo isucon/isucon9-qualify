@@ -67,32 +67,50 @@ type User struct {
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
+type UserSimple struct {
+	ID           int64  `json:"id"`
+	AccountName  string `json:"account_name"`
+	NumSellItems int    `json:"num_sell_items"`
+}
+
 type Item struct {
 	ID          int64     `json:"id" db:"id"`
 	SellerID    int64     `json:"seller_id" db:"seller_id"`
-	Seller      *User     `json:"seller" db:"-"`
 	BuyerID     int64     `json:"buyer_id" db:"buyer_id"`
-	Buyer       *User     `json:"buyer,omitempty" db:"-"`
 	Status      string    `json:"status" db:"status"`
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
 	Description string    `json:"description" db:"description"`
 	CategoryID  int       `json:"category_id" db:"category_id"`
-	Category    *Category `json:"category" db:"-"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
 }
 
 type ItemSimple struct {
-	ID         int64     `json:"id"`
-	SellerID   int64     `json:"seller_id"`
-	Seller     *User     `json:"seller"`
-	Status     string    `json:"status"`
-	Name       string    `json:"name"`
-	Price      int       `json:"price"`
-	CategoryID int       `json:"category_id"`
-	Category   *Category `json:"category"`
-	CreatedAt  int64     `json:"created_at"`
+	ID         int64       `json:"id"`
+	SellerID   int64       `json:"seller_id"`
+	Seller     *UserSimple `json:"seller"`
+	Status     string      `json:"status"`
+	Name       string      `json:"name"`
+	Price      int         `json:"price"`
+	CategoryID int         `json:"category_id"`
+	Category   *Category   `json:"category"`
+	CreatedAt  int64       `json:"created_at"`
+}
+
+type ItemDetail struct {
+	ID          int64       `json:"id"`
+	SellerID    int64       `json:"seller_id"`
+	Seller      *UserSimple `json:"seller"`
+	BuyerID     *int64      `json:"buyer_id,omitempty"`
+	Buyer       *UserSimple `json:"buyer,omitempty"`
+	Status      string      `json:"status"`
+	Name        string      `json:"name"`
+	Price       int         `json:"price"`
+	Description string      `json:"description"`
+	CategoryID  int         `json:"category_id"`
+	Category    *Category   `json:"category"`
+	CreatedAt   int64       `json:"created_at"`
 }
 
 type TransactionEvidence struct {
@@ -318,9 +336,16 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	return user, http.StatusOK, ""
 }
 
-func getUserByID(userID int64) (user User, err error) {
+func getUserSimpleByID(userID int64) (userSimple UserSimple, err error) {
+	user := User{}
 	err = dbx.Get(&user, "SELECT * FROM `users` WHERE `id` = ?", userID)
-	return user, err
+	if err != nil {
+		return userSimple, err
+	}
+	userSimple.ID = user.ID
+	userSimple.AccountName = user.AccountName
+	userSimple.NumSellItems = user.NumSellItems
+	return userSimple, err
 }
 
 func getCategoryByID(categoryID int) (category Category, err error) {
@@ -374,7 +399,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 
 	itemSimples := []ItemSimple{}
 	for i := range items {
-		seller, err := getUserByID(items[i].SellerID)
+		seller, err := getUserSimpleByID(items[i].SellerID)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			return
@@ -479,7 +504,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 
 	itemSimples := []ItemSimple{}
 	for i := range items {
-		seller, err := getUserByID(items[i].SellerID)
+		seller, err := getUserSimpleByID(items[i].SellerID)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			return
@@ -541,47 +566,46 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	seller := User{}
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", item.SellerID)
-	if err == sql.ErrNoRows {
+	category, err := getCategoryByID(item.CategoryID)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "category not found")
+		return
+	}
+
+	seller, err := getUserSimpleByID(item.SellerID)
+	if err != nil {
 		outputErrorMsg(w, http.StatusNotFound, "seller not found")
 		return
 	}
-	if err != nil {
-		log.Println(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		return
-	}
-	seller.Address = ""
-	item.Seller = &seller
 
-	if (user.ID == item.Seller.ID || user.ID == item.BuyerID) && item.BuyerID != 0 {
-		buyer := User{}
-		err = dbx.Get(&buyer, "SELECT * FROM `users` WHERE `id` = ?", item.BuyerID)
-		if err == sql.ErrNoRows {
+	itemDetail := ItemDetail{
+		ID:       item.ID,
+		SellerID: item.SellerID,
+		Seller:   &seller,
+		// BuyerID
+		// Buyer
+		Status:      item.Status,
+		Name:        item.Name,
+		Price:       item.Price,
+		Description: item.Description,
+		CategoryID:  item.CategoryID,
+		Category:    &category,
+		CreatedAt:   item.CreatedAt.Unix(),
+	}
+
+	if (user.ID == item.SellerID || user.ID == item.BuyerID) && item.BuyerID != 0 {
+		buyer, err := getUserSimpleByID(item.BuyerID)
+		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "buyer not found")
 			return
 		}
-		if err != nil {
-			log.Println(err)
-			outputErrorMsg(w, http.StatusInternalServerError, "db error")
-			return
-		}
-		buyer.Address = ""
-		item.Buyer = &buyer
+		itemDetail.BuyerID = &item.BuyerID
+		itemDetail.Buyer = &buyer
 	}
-
-	category, err := getCategoryByID(item.CategoryID)
-	if err != nil {
-		log.Println(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "category id error")
-		return
-	}
-	item.Category = &category
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
-	json.NewEncoder(w).Encode(item)
+	json.NewEncoder(w).Encode(itemDetail)
 }
 
 func postItemEdit(w http.ResponseWriter, r *http.Request) {
