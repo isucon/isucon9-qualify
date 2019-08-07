@@ -3,10 +3,13 @@ import {SellingButonComponent} from "../components/SellingButtonComponent";
 import {connect} from "react-redux";
 import {routes} from "../routes/Route";
 import * as React from "react";
+import {AppState} from "../index";
+import {ThunkDispatch} from "redux-thunk";
+import {AnyAction} from "redux";
 
-const mapStateToProps = (state: any) => ({});
+const mapStateToProps = (state: AppState) => ({});
 
-const mapDispatchToProps = (dispatch: any) => ({
+const mapDispatchToProps = (dispatch: ThunkDispatch<AppState, undefined, AnyAction>) => ({
     onClick: (e: React.MouseEvent) => {
         e.preventDefault();
         dispatch(push(routes.sell.path));

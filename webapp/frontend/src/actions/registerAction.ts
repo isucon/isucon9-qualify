@@ -10,7 +10,7 @@ import {routes} from "../routes/Route";
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAIL = 'REGISTER_FAIL';
 
-type State = void | AuthStatusState;
+export type State = void | AuthStatusState;
 type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
 
 export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {

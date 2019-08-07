@@ -33,7 +33,7 @@ const styles = (theme: Theme): StyleRules => createStyles({
 
 interface SignUpFormComponentProps extends WithStyles<typeof styles> {
     register: (params: RegisterReq) => void
-    error: string,
+    error?: string,
 }
 
 interface SignUpFormComponentState {
