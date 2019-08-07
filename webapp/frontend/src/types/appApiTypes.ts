@@ -1,10 +1,6 @@
 import {ItemStatus} from "../dataObjects/item";
 import {UserData} from "../dataObjects/user";
 
-interface CsrfRequiredReq {
-    csrf_token: string
-}
-
 /**
  * POST /register
  */
@@ -63,6 +59,12 @@ export interface SellRes extends Response {
 // Response
 export interface SettingsRes {
     csrf_token: string,
+    user?: {
+        id: number,
+        account_name: string,
+        address?: string,
+        num_sell_items: number,
+    },
 }
 
 /**
