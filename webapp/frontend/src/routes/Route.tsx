@@ -11,6 +11,9 @@ import ItemPageContainer from "../containers/ItemPageContainer";
 import ItemListPageContainer from "../containers/ItemListPageContainer";
 import TransactionPageContainer from "../containers/TransactionPageContainer";
 import UserPageContainer from "../containers/UserPageContainer";
+import AuthRoute from '../containers/AuthContainer';
+import NonAuthRoute from '../containers/NonAuthContainer';
+import NotFoundPage from "../pages/error/NotFoundPage";
 
 interface route {
     [name: string]: {
@@ -31,6 +34,10 @@ export const routes: route = {
     register: {
         path: '/register',
         getPath: () => 'register',
+    },
+    timeline: {
+        path: '/timeline',
+        getPath: () => '/timeline',
     },
     sell: {
         path: '/sell',
@@ -69,17 +76,19 @@ export const routes: route = {
 export const AppRoute: React.FC = () => {
     return (
         <Switch>
-            <Route exact path={routes.top.path}         component={ItemListPageContainer} />
-            <Route exact path={routes.login.path}       component={SignInPage} />
-            <Route exact path={routes.register.path}    component={SignUpPage}/>
-            <Route exact path={routes.sell.path}        component={SellPage} />
-            <Route exact path={routes.item.path}        component={ItemPageContainer} />
-            <Route exact path={routes.itemEdit.path}    component={ItemEditPage} />
-            <Route exact path={routes.buy.path}         component={ItemBuyPage} />
-            <Route exact path={routes.buyComplete.path} component={BuyCompletePage} />
-            <Route exact path={routes.transaction.path} component={TransactionPageContainer} />
-            <Route exact path={routes.user.path}        component={UserPageContainer} />
-            <Route exact path={routes.userSetting.path} component={UserSettingPage} />
+            <NonAuthRoute exact path={routes.top.path}      component={() => (<div>'hoge'</div>)} />
+            <NonAuthRoute exact path={routes.login.path}    component={SignInPage} />
+            <NonAuthRoute exact path={routes.register.path} component={SignUpPage}/>
+            <AuthRoute exact path={routes.timeline.path}    component={ItemListPageContainer} />
+            <AuthRoute exact path={routes.sell.path}        component={SellPage} />
+            <AuthRoute exact path={routes.item.path}        component={ItemPageContainer} />
+            <AuthRoute exact path={routes.itemEdit.path}    component={ItemEditPage} />
+            <AuthRoute exact path={routes.buy.path}         component={ItemBuyPage} />
+            <AuthRoute exact path={routes.buyComplete.path} component={BuyCompletePage} />
+            <AuthRoute exact path={routes.transaction.path} component={TransactionPageContainer} />
+            <AuthRoute exact path={routes.user.path}        component={UserPageContainer} />
+            <AuthRoute exact path={routes.userSetting.path} component={UserSettingPage} />
+            <Route component={NotFoundPage} />
         </Switch>
     );
 };

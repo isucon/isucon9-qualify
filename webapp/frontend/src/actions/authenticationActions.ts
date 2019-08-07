@@ -5,12 +5,12 @@ import { FormErrorState } from "../reducers/formErrorReducer";
 import { push } from 'connected-react-router';
 import {AnyAction} from "redux";
 import {routes} from "../routes/Route";
+import {AppState} from "../index";
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const LOGIN_FAIL = 'LOGIN_FAIL';
 
-type State = void | AuthStatusState;
-type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, AnyAction>
 
 export function postLoginAction(accountName: string, password: string): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, AnyAction>) => {

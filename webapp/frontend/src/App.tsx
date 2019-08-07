@@ -20,6 +20,10 @@ const routes: Array<{
         pageName: 'Sign up page',
     },
     {
+        path: '/timeline',
+        pageName: 'Timeline page'
+    },
+    {
         path: '/items/:item_id',
         pageName: 'Item page',
     },
@@ -48,7 +52,7 @@ const routes: Array<{
         pageName: 'User page',
     },
     {
-        path: '/users/:user_id/setting',
+        path: '/users/setting',
         pageName: 'User setting page',
     },
 ];
