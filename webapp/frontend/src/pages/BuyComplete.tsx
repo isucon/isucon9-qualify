@@ -1,10 +1,10 @@
 import React from 'react';
-import {BasePageComponent} from "../components/BasePageComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 
 const BuyCompletePage: React.FC = () => (
-    <BasePageComponent>
+    <BasePageContainer>
         <div>Item buying Page</div>
-    </BasePageComponent>
+    </BasePageContainer>
 );
 
 export default BuyCompletePage;

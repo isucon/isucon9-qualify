@@ -4,17 +4,25 @@ import {UserData} from "../dataObjects/user";
 /**
  * POST /register
  */
-// Request
 export interface RegisterReq {
     account_name: string
     address: string
     password: string
 }
-// Response
 export interface RegisterRes extends Response{
     id: number
     account_name: string
     address: string
+}
+
+/**
+ * POST /login
+ */
+export interface LoginRes {
+    id: number,
+    account_name: string,
+    address?: string,
+    num_sell_items: number,
 }
 
 /**

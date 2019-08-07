@@ -14,6 +14,7 @@ import UserPageContainer from "../containers/UserPageContainer";
 import AuthRoute from '../containers/AuthContainer';
 import NonAuthRoute from '../containers/NonAuthContainer';
 import NotFoundPage from "../pages/error/NotFoundPage";
+import TopPage from "../pages/TopPage";
 
 interface route {
     [name: string]: {
@@ -76,7 +77,7 @@ export const routes: route = {
 export const AppRoute: React.FC = () => {
     return (
         <Switch>
-            <NonAuthRoute exact path={routes.top.path}      component={() => (<div>'hoge'</div>)} />
+            <NonAuthRoute exact path={routes.top.path}      component={TopPage} />
             <NonAuthRoute exact path={routes.login.path}    component={SignInPage} />
             <NonAuthRoute exact path={routes.register.path} component={SignUpPage}/>
             <AuthRoute exact path={routes.timeline.path}    component={ItemListPageContainer} />

@@ -1,4 +1,3 @@
-import { AuthStatusState } from "../reducers/authStatusReducer";
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from "redux-thunk";
 import { FormErrorState } from "../reducers/formErrorReducer";
@@ -6,6 +5,7 @@ import { push } from 'connected-react-router';
 import {AnyAction} from "redux";
 import {routes} from "../routes/Route";
 import {AppState} from "../index";
+import {LoginRes} from "../types/appApiTypes";
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const LOGIN_FAIL = 'LOGIN_FAIL';
@@ -25,7 +25,7 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
 
                 return response.json();
             })
-            .then((body) => {
+            .then((body: LoginRes) => {
                 dispatch(loginSuccessAction({
                     userId: body.id,
                     accountName: body.account_name,
@@ -43,10 +43,14 @@ export function postLoginAction(accountName: string, password: string): ThunkRes
 
 export interface LoginSuccessAction {
     type: typeof LOGIN_SUCCESS,
-    payload: AuthStatusState,
+    payload: {
+        userId: number,
+        accountName: string,
+        address?: string,
+    },
 }
 
-export function loginSuccessAction(newAuthState: AuthStatusState): LoginSuccessAction {
+export function loginSuccessAction(newAuthState: { userId: number, accountName: string, address?: string }): LoginSuccessAction {
     return {
         type: LOGIN_SUCCESS,
         payload: newAuthState,

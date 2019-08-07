@@ -41,10 +41,14 @@ export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
 
 export interface RegisterSuccessAction {
     type: typeof REGISTER_SUCCESS,
-    payload: AuthStatusState,
+    payload: {
+        userId: number,
+        accountName: string,
+        address: string,
+    },
 }
 
-export function registerSuccessAction(newAuthState: AuthStatusState): RegisterSuccessAction {
+export function registerSuccessAction(newAuthState: { userId: number, accountName: string, address: string }): RegisterSuccessAction {
     return {
         type: REGISTER_SUCCESS,
         payload: newAuthState,

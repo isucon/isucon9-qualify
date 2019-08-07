@@ -11,8 +11,8 @@ import {routes} from "../routes/Route";
 import {StyleRules} from "@material-ui/core/styles";
 import withStyles from "@material-ui/core/styles/withStyles";
 import {ErrorProps, PageComponentWithError} from "../hoc/withBaseComponent";
+import BasePageContainer from "../containers/BasePageContainer";
 import LoadingComponent from "../components/LoadingComponent";
-import {BasePageComponent} from "../components/BasePageComponent";
 
 const styles = (theme: Theme): StyleRules => createStyles({
     title: {
@@ -47,9 +47,9 @@ const styles = (theme: Theme): StyleRules => createStyles({
 });
 
 interface ItemPageProps extends WithStyles<typeof styles> {
+    loading: boolean,
     item: ItemData
     load: (itemId: string) => void
-    isLoading: boolean
     onClickBuy: (itemId: number) => void
 }
 
@@ -60,7 +60,6 @@ class ItemPage extends React.Component<Props> {
         super(props);
 
         this.props.load(this.props.match.params.item_id);
-
         this._onClickBuyButton = this._onClickBuyButton.bind(this);
     }
 
@@ -70,12 +69,12 @@ class ItemPage extends React.Component<Props> {
     }
 
     render() {
-        const { classes, item, isLoading } = this.props;
+        const { classes, item, loading } = this.props;
 
         return (
-            <BasePageComponent>
+            <BasePageContainer>
                 {
-                    isLoading ? (
+                    loading ? (
                         <LoadingComponent/>
                     ) : (
                         <React.Fragment>
@@ -108,7 +107,8 @@ class ItemPage extends React.Component<Props> {
                                                     <Grid item>
                                                         <RouteLink className={classes.link}
                                                                    to={routes.user.getPath(item.sellerId)}>
-                                                            <Avatar className={classes.avatar}>{item.seller.accountName.charAt(0)}</Avatar>
+                                                            <Avatar
+                                                                className={classes.avatar}>{item.seller.accountName.charAt(0)}</Avatar>
                                                         </RouteLink>
                                                     </Grid>
                                                     <Grid item xs>
@@ -144,7 +144,7 @@ class ItemPage extends React.Component<Props> {
                         </React.Fragment>
                     )
                 }
-            </BasePageComponent>
+            </BasePageContainer>
         );
     }
 }
