@@ -49,6 +49,8 @@ const (
 	ShippingsStatusDone       = "done"
 
 	BumpChargeSeconds = 3 * time.Second
+
+	ItemsPerPage = 48
 )
 
 var (
@@ -426,9 +428,9 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hasNext := false
-	if len(itemSimples) > 48 {
+	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0:47]
+		itemSimples = itemSimples[0 : ItemsPerPage-1]
 	}
 
 	rni := resNewItems{
@@ -534,9 +536,9 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hasNext := false
-	if len(itemSimples) > 48 {
+	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0:47]
+		itemSimples = itemSimples[0 : ItemsPerPage-1]
 	}
 
 	rni := resNewItems{
