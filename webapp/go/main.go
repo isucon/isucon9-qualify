@@ -47,6 +47,8 @@ const (
 	ShippingsStatusWaitPickup = "wait_pickup"
 	ShippingsStatusShipping   = "shipping"
 	ShippingsStatusDone       = "done"
+
+	BumpChargeSeconds = 3 * time.Second
 )
 
 var (
@@ -61,6 +63,7 @@ type User struct {
 	HashedPassword []byte    `json:"-" db:"hashed_password"`
 	Address        string    `json:"address,omitempty" db:"address"`
 	NumSellItems   int       `json:"num_sell_items" db:"num_sell_items"`
+	LastBump       time.Time `json:"-" db:"last_bump"`
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
@@ -74,21 +77,25 @@ type Item struct {
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
 	Description string    `json:"description" db:"description"`
+	CategoryID  int       `json:"category_id" db:"category_id"`
+	Category    *Category `json:"category" db:"-"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
 }
 
 type TransactionEvidence struct {
-	ID              int64     `json:"id" db:"id"`
-	SellerID        int64     `json:"seller_id" db:"seller_id"`
-	BuyerID         int64     `json:"buyer_id" db:"buyer_id"`
-	Status          string    `json:"status" db:"status"`
-	ItemID          int64     `json:"item_id" db:"item_id"`
-	ItemName        string    `json:"item_name" db:"item_name"`
-	ItemPrice       int       `json:"item_price" db:"item_price"`
-	ItemDescription string    `json:"item_description" db:"item_description"`
-	CreatedAt       time.Time `json:"-" db:"created_at"`
-	UpdatedAt       time.Time `json:"-" db:"updated_at"`
+	ID                 int64     `json:"id" db:"id"`
+	SellerID           int64     `json:"seller_id" db:"seller_id"`
+	BuyerID            int64     `json:"buyer_id" db:"buyer_id"`
+	Status             string    `json:"status" db:"status"`
+	ItemID             int64     `json:"item_id" db:"item_id"`
+	ItemName           string    `json:"item_name" db:"item_name"`
+	ItemPrice          int       `json:"item_price" db:"item_price"`
+	ItemDescription    string    `json:"item_description" db:"item_description"`
+	ItemCategoryID     int       `json:"item_category_id" db:"item_category_id"`
+	ItemRootCategoryID int       `json:"item_root_category_id" db:"item_root_category_id"`
+	CreatedAt          time.Time `json:"-" db:"created_at"`
+	UpdatedAt          time.Time `json:"-" db:"updated_at"`
 }
 
 type Shipping struct {
@@ -105,6 +112,12 @@ type Shipping struct {
 	ImgName               string    `json:"img_name" db:"img_name"`
 	CreatedAt             time.Time `json:"-" db:"created_at"`
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
+}
+
+type Category struct {
+	ID           int    `json:"id" db:"id"`
+	ParentID     int    `json:"parent_id" db:"parent_id"`
+	CategoryName string `json:"category_name" db:"category_name"`
 }
 
 type reqRegister struct {
@@ -139,6 +152,7 @@ type reqSell struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Price       int    `json:"price"`
+	CategoryID  int    `json:"category_id"`
 }
 
 type resSell struct {
@@ -160,6 +174,11 @@ type reqPostShipDone struct {
 }
 
 type reqPostComplete struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+}
+
+type reqBump struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
 }
@@ -232,6 +251,7 @@ func main() {
 	mux.HandleFunc(pat.Post("/ship"), postShip)
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
+	mux.HandleFunc(pat.Post("/bump"), postBump)
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
@@ -274,6 +294,11 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	}
 
 	return user, http.StatusOK, ""
+}
+
+func getCategoryByID(categoryID int) (category Category, err error) {
+	err = dbx.Get(&category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
+	return category, err
 }
 
 func getTop(w http.ResponseWriter, r *http.Request) {
@@ -331,6 +356,14 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		buyer.Address = ""
 		item.Buyer = &buyer
 	}
+
+	category, err := getCategoryByID(item.CategoryID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "category id error")
+		return
+	}
+	item.Category = &category
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
@@ -466,7 +499,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	seller := User{}
-	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", targetItem.SellerID)
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", targetItem.SellerID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "seller not found")
 		tx.Rollback()
@@ -480,7 +513,16 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	category, err := getCategoryByID(targetItem.CategoryID)
+	if err != nil {
+		log.Println(err)
+
+		outputErrorMsg(w, http.StatusInternalServerError, "category id error")
+		tx.Rollback()
+		return
+	}
+
+	result, err := tx.Exec("INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		targetItem.SellerID,
 		buyer.ID,
 		TransactionEvidenceStatusWaitShipping,
@@ -488,6 +530,8 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		targetItem.Name,
 		targetItem.Price,
 		targetItem.Description,
+		category.ID,
+		category.ParentID,
 	)
 	if err != nil {
 		log.Println(err)
@@ -1048,8 +1092,14 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	name := rs.Name
 	price := rs.Price
 	description := rs.Description
+	categoryID := rs.CategoryID
 
-	if name == "" || description == "" || price == 0 {
+	// For test purpose, use 13 as default category
+	if categoryID == 0 {
+		categoryID = 13
+	}
+
+	if name == "" || description == "" || price == 0 || categoryID == 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
 
 		return
@@ -1058,6 +1108,13 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	if price < ItemMinPrice || price > ItemMaxPrice {
 		outputErrorMsg(w, http.StatusBadRequest, ItemPriceErrMsg)
 
+		return
+	}
+
+	category, err := getCategoryByID(categoryID)
+	if err != nil || category.ParentID == 0 {
+		log.Println(categoryID, category)
+		outputErrorMsg(w, http.StatusBadRequest, "Incorrect category ID")
 		return
 	}
 
@@ -1083,12 +1140,13 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`) VALUES (?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
 		price,
 		description,
+		category.ID,
 	)
 	if err != nil {
 		log.Println(err)
@@ -1105,8 +1163,10 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err = tx.Exec("UPDATE `users` SET `num_sell_items`=? WHERE `id`=?",
+	now := time.Now()
+	result, err = tx.Exec("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
 		seller.NumSellItems+1,
+		now,
 		seller.ID,
 	)
 	if err != nil {
@@ -1128,8 +1188,21 @@ func secureRandomStr(b int) string {
 	return fmt.Sprintf("%x", k)
 }
 
-func getSettings(w http.ResponseWriter, r *http.Request) {
-	csrfToken := getCSRFToken(r)
+func postBump(w http.ResponseWriter, r *http.Request) {
+	rb := reqBump{}
+	err := json.NewDecoder(r.Body).Decode(&rb)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
+		return
+	}
+
+	csrfToken := rb.CSRFToken
+	itemID := rb.ItemID
+
+	if csrfToken != getCSRFToken(r) {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
+		return
+	}
 
 	user, errCode, errMsg := getUser(r)
 	if errMsg != "" {
@@ -1137,9 +1210,81 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tx := dbx.MustBegin()
+
+	item := Item{}
+	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	if item.SellerID != user.ID {
+		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
+		tx.Rollback()
+		return
+	}
+
+	seller := User{}
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "user not found")
+		tx.Rollback()
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
+	now := time.Now()
+	// last_bump + 3s > now
+	if seller.LastBump.Add(BumpChargeSeconds).After(now) {
+		outputErrorMsg(w, http.StatusBadRequest, "Bump not allowed")
+		tx.Rollback()
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `items` SET `created`=? WHERE id=?",
+		now,
+		item.ID,
+	)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	_, err = tx.Exec("UPDATE `users` SET `last_bump`=? WHERE id=?",
+		now,
+		seller.ID,
+	)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	tx.Commit()
+}
+
+func getSettings(w http.ResponseWriter, r *http.Request) {
+	csrfToken := getCSRFToken(r)
+
+	user, _, errMsg := getUser(r)
+
 	ress := resSetting{}
 	ress.CSRFToken = csrfToken
-	if errMsg != "" {
+	if errMsg == "" {
 		ress.User = &user
 	}
 
@@ -1225,11 +1370,12 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?, ?)",
+	defaultLastBump, _ := time.Parse("2006-01-02 15:04:05 MST", "2000-01-01 00:00:00 JST")
+	result, err := dbx.Exec("INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`,`last_bump`) VALUES (?, ?, ?, 0, ?)",
 		accountName,
 		hashedPassword,
 		address,
-		0,
+		defaultLastBump,
 	)
 	if err != nil {
 		log.Println(err)
