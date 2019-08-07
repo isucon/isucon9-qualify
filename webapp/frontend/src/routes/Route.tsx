@@ -12,6 +12,7 @@ import ItemListPageContainer from "../containers/ItemListPageContainer";
 import TransactionPageContainer from "../containers/TransactionPageContainer";
 import UserPageContainer from "../containers/UserPageContainer";
 import AuthContainer from '../containers/AuthContainer';
+import NonAuthContainer from '../containers/NonAuthContainer';
 
 interface route {
     [name: string]: {
@@ -32,6 +33,10 @@ export const routes: route = {
     register: {
         path: '/register',
         getPath: () => 'register',
+    },
+    timeline: {
+        path: '/timeline',
+        getPath: () => '/timeline',
     },
     sell: {
         path: '/sell',
@@ -70,11 +75,16 @@ export const routes: route = {
 export const AppRoute: React.FC = () => {
     return (
         <Switch>
-            <Route exact path={routes.top.path}         component={ItemListPageContainer} />
-            <Route exact path={routes.login.path}       component={SignInPage} />
-            <Route exact path={routes.register.path}    component={SignUpPage}/>
+            <NonAuthContainer>
+                <Switch>
+                    <Route exact path={routes.top.path}         component={() => (<div>'hoge'</div>)} />
+                    <Route exact path={routes.login.path}       component={SignInPage} />
+                    <Route exact path={routes.register.path}    component={SignUpPage}/>
+                </Switch>
+            </NonAuthContainer>
             <AuthContainer>
                 <Switch>
+                    <Route exact path={routes.timeline.path}    component={ItemListPageContainer} />
                     <Route exact path={routes.sell.path}        component={SellPage} />
                     <Route exact path={routes.item.path}        component={ItemPageContainer} />
                     <Route exact path={routes.itemEdit.path}    component={ItemEditPage} />
