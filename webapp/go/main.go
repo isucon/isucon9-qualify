@@ -102,7 +102,7 @@ type ItemDetail struct {
 	ID          int64       `json:"id"`
 	SellerID    int64       `json:"seller_id"`
 	Seller      *UserSimple `json:"seller"`
-	BuyerID     *int64      `json:"buyer_id,omitempty"`
+	BuyerID     int64       `json:"buyer_id,omitempty"`
 	Buyer       *UserSimple `json:"buyer,omitempty"`
 	Status      string      `json:"status"`
 	Name        string      `json:"name"`
@@ -152,8 +152,8 @@ type Category struct {
 }
 
 type resNewItems struct {
-	RootCategoryID   *int         `json:"root_category_id,omitempty"`
-	RootCategoryName *string      `json:"root_category_name,omitempty"`
+	RootCategoryID   int          `json:"root_category_id,omitempty"`
+	RootCategoryName string       `json:"root_category_name,omitempty"`
 	HasNext          bool         `json:"has_next"`
 	Items            []ItemSimple `json:"items"`
 }
@@ -534,8 +534,8 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rni := resNewItems{
-		RootCategoryID:   &rootCategory.ID,
-		RootCategoryName: &rootCategory.CategoryName,
+		RootCategoryID:   rootCategory.ID,
+		RootCategoryName: rootCategory.CategoryName,
 		Items:            itemSimples,
 		HasNext:          hasNext,
 	}
@@ -599,7 +599,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 			outputErrorMsg(w, http.StatusNotFound, "buyer not found")
 			return
 		}
-		itemDetail.BuyerID = &item.BuyerID
+		itemDetail.BuyerID = item.BuyerID
 		itemDetail.Buyer = &buyer
 	}
 
