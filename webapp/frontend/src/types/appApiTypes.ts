@@ -1,5 +1,39 @@
 import {ItemStatus} from "../dataObjects/item";
 import {UserData} from "../dataObjects/user";
+import {TransactionStatus} from "../dataObjects/transaction";
+import {ShippingStatus} from "../dataObjects/shipping";
+
+type Category = {
+    id: number,
+    parent_id: number,
+    category_name: string,
+    parent_category_name: string,
+}
+
+type User = {
+    id: number,
+    account_name: string,
+    address?: string,
+    num_sell_items: number,
+}
+
+type UserSimple = {
+    id: number,
+    account_name: string,
+    num_sell_items: number,
+}
+
+type ItemSimple = {
+    id: number
+    seller_id: number
+    seller: UserSimple,
+    status: ItemStatus,
+    name: string,
+    price: number,
+    category_id: number,
+    category: Category,
+    created_at: number,
+}
 
 /**
  * POST /register
@@ -45,6 +79,12 @@ export interface GetItemRes {
     name: string,
     price: number,
     description: string,
+    category_id: number,
+    category: Category,
+    transaction_evidence_id?: number,
+    transaction_evidence_status?: TransactionStatus,
+    shipping_status?: ShippingStatus,
+    created_at: number,
 }
 
 /**
@@ -55,6 +95,7 @@ export interface SellReq {
     name: string,
     price: number,
     description: string,
+    category_id: number,
 }
 // Response
 export interface SellRes extends Response {
@@ -67,12 +108,7 @@ export interface SellRes extends Response {
 // Response
 export interface SettingsRes {
     csrf_token: string,
-    user?: {
-        id: number,
-        account_name: string,
-        address?: string,
-        num_sell_items: number,
-    },
+    user?: User,
 }
 
 /**
@@ -103,24 +139,5 @@ export interface NewItemRes {
     root_category_id?: number,
     root_category_name?: string,
     has_next: boolean,
-    items: {
-        id: number
-        seller_id: number
-        seller: {
-            id: number,
-            account_name: string,
-            num_sell_items: number,
-        },
-        status: ItemStatus,
-        name: string,
-        price: number,
-        category_id: number,
-        category: {
-            id: number,
-            parent_id: number,
-            category_name: string,
-            parent_category_name: string,
-        },
-        created_at: number,
-    }[]
+    items: ItemSimple[]
 }
