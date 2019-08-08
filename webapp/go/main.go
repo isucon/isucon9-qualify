@@ -383,10 +383,18 @@ func getTop(w http.ResponseWriter, r *http.Request) {
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
-	itemIDParam := query.Get("item_id")
-	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
-	createdAtParam := query.Get("created_at")
-	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
+	itemIDStr := query.Get("item_id")
+	itemID := 0
+	if itemIDStr != "" {
+		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+		if err != nil || itemID <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
+			return
+		}
+	}
+
+	createdAtStr := query.Get("created_at")
+	createdAt, _ := strconv.ParseInt(createdAtStr, 10, 64)
 
 	items := []Item{}
 	if itemID > 0 && createdAt > 0 {
@@ -460,9 +468,9 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
-	rootCategoryIDParam := pat.Param(r, "root_category_id")
-	rootCategoryID, err := strconv.Atoi(rootCategoryIDParam)
-	if err != nil || rootCategoryID == 0 {
+	rootCategoryIDStr := pat.Param(r, "root_category_id")
+	rootCategoryID, err := strconv.Atoi(rootCategoryIDStr)
+	if err != nil || rootCategoryID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect category id")
 		return
 	}
@@ -482,10 +490,25 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	itemIDParam := query.Get("item_id")
-	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
-	createdAtParam := query.Get("created_at")
-	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
+	itemIDStr := query.Get("item_id")
+	itemID := 0
+	if itemIDStr != "" {
+		itemID, _ := strconv.ParseInt(itemIDStr, 10, 64)
+		if err != nil || itemID <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
+			return
+		}
+	}
+
+	createdAtStr := query.Get("created_at")
+	createdAt := int64(0)
+	if createdAtStr != "" {
+		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		if err != nil || createdAt <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
+			return
+		}
+	}
 
 	var inQuery string
 	var inArgs []interface{}
@@ -574,9 +597,9 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserItems(w http.ResponseWriter, r *http.Request) {
-	userIDParam := pat.Param(r, "user_id")
-	userID, err := strconv.ParseInt(userIDParam, 10, 64)
-	if err != nil {
+	userIDStr := pat.Param(r, "user_id")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil || userID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect user id")
 		return
 	}
@@ -588,10 +611,25 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	itemIDParam := query.Get("item_id")
-	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
-	createdAtParam := query.Get("created_at")
-	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
+	itemIDStr := query.Get("item_id")
+	itemID := 0
+	if itemIDStr != "" {
+		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+		if err != nil || itemID <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
+			return
+		}
+	}
+
+	createdAtStr := query.Get("created_at")
+	createdAt := int64(0)
+	if createdAtStr != "" {
+		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		if err != nil || createdAt <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
+			return
+		}
+	}
 
 	items := []Item{}
 	if itemID > 0 && createdAt > 0 {
@@ -673,10 +711,25 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	itemIDParam := query.Get("item_id")
-	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
-	createdAtParam := query.Get("created_at")
-	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
+	itemIDStr := query.Get("item_id")
+	itemID := 0
+	if itemIDStr != "" {
+		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+		if err != nil || itemID <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
+			return
+		}
+	}
+
+	createdAtStr := query.Get("created_at")
+	createdAt := int64(0)
+	if createdAtStr != "" {
+		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		if err != nil || createdAt <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
+			return
+		}
+	}
 
 	items := []Item{}
 	if itemID > 0 && createdAt > 0 {
@@ -813,7 +866,12 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
-	itemID := pat.Param(r, "item_id")
+	itemIDStr := pat.Param(r, "item_id")
+	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+	if err != nil || itemID <= 0 {
+		outputErrorMsg(w, http.StatusBadRequest, "incorrect item id")
+		return
+	}
 
 	user, errCode, errMsg := getUser(r)
 	if errMsg != "" {
@@ -822,7 +880,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := Item{}
-	err := dbx.Get(&item, "SELECT * FROM `items` WHERE `id` = ?", itemID)
+	err = dbx.Get(&item, "SELECT * FROM `items` WHERE `id` = ?", itemID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "item not found")
 		return
