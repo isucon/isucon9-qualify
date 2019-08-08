@@ -394,7 +394,14 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdAtStr := query.Get("created_at")
-	createdAt, _ := strconv.ParseInt(createdAtStr, 10, 64)
+	createdAt := int64(0)
+	if createdAtStr != "" {
+		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		if err != nil || createdAt <= 0 {
+			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
+			return
+		}
+	}
 
 	items := []Item{}
 	if itemID > 0 && createdAt > 0 {
