@@ -32,7 +32,7 @@ return function (App $app) {
         ];
         $pdo = new \PDO($dsn, $settings['username'], $settings['password'], $options);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, FALSE);
+        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         return $pdo;
     };
 

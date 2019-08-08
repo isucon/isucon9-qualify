@@ -43,6 +43,7 @@ return function (App $app) {
             'ico' => 'image/x-icon',
             'js' => 'application/javascript',
             'json' => 'application/json ',
+            'png' => 'image/png',
             'map' => 'application/json ', // source map, main.js.map
         ];
 

@@ -35,7 +35,7 @@ class Service
     private const DATETIME_SQL_FORMAT = 'Y-m-d h:i:s';
 
     private const ITEM_STATUS_ON_SALE = 'on_sale';
-    private const ITEM_STATUS_Trading = 'trading';
+    private const ITEM_STATUS_TRADING = 'trading';
     private const ITEM_STATUS_SOLD_OUT = 'sold_out';
     private const ITEM_STATUS_STOP = 'stop';
     private const ITEM_STATUS_CANCEL = 'cancel';
@@ -313,7 +313,7 @@ class Service
                 $sth->execute([
                     $user['id'],
                     self::ITEM_STATUS_ON_SALE,
-                    self::ITEM_STATUS_Trading,
+                    self::ITEM_STATUS_TRADING,
                     self::ITEM_STATUS_SOLD_OUT,
                     (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
@@ -326,7 +326,7 @@ class Service
                 $sth->execute([
                     $user['id'],
                     self::ITEM_STATUS_ON_SALE,
-                    self::ITEM_STATUS_Trading,
+                    self::ITEM_STATUS_TRADING,
                     self::ITEM_STATUS_SOLD_OUT,
                     self::ITEM_PER_PAGE + 1,
                 ]);
@@ -463,7 +463,8 @@ class Service
             [
                 'csrf_token' => $token,
                 'user' => $user
-            ]);
+            ]
+        );
     }
 
 
@@ -705,14 +706,36 @@ class Service
                 return $response->withStatus(404)->withJson(['error' => 'seller not found']);
             }
 
+            $category = $this->getCategoryByID($item['category_id']);
+            if ($category === false) {
+                return $response->withStatus(500)->withJson(['error' => 'category id error']);
+            }
+
             $sth = $this->dbh->prepare('INSERT INTO `transaction_evidences` '.
-                '(`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`) '.
-                'VALUES (?, ?, ?, ?, ?, ?, ?)');
+                '(`seller_id`, `buyer_id`, `status`, '.
+                '`item_id`, `item_name`, `item_price`, `item_description`, '.
+                '`item_category_id`, `item_root_category_id`) '.
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $sth->execute([
-                $item['seller_id'], $buyer['id'], TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING,
-                $item['id'], $item['name'], $item['price'], $item['description']
+                $item['seller_id'],
+                $buyer['id'],
+                self::TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING,
+                $item['id'],
+                $item['name'],
+                $item['price'],
+                $item['description'],
+                $category['id'],
+                $category['parent_id'],
             ]);
             $transactionEvidenceId = $this->dbh->lastInsertId();
+
+            $sth = $this->dbh->prepare('UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?');
+            $sth->execute([
+                $buyer['id'],
+                self::ITEM_STATUS_TRADING,
+                (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
+                $item['id'],
+            ]);
 
             $client = new Client();
             $res = $client->post(
@@ -743,11 +766,13 @@ class Service
                     'price' => $item['price'],
                 ]]
             );
+
             if ($pres->getStatusCode() != 200) {
                 $this->dbh->rollBack();
                 $this->logger->error($res->getReasonPhrase());
                 return $response->withStatus(500)->withJson(['error' => 'payment service is failed']);
             }
+
             $paymentResponse = json_decode($pres->getBody());
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $this->dbh->rollBack();
@@ -755,17 +780,17 @@ class Service
                 return $response->withStatus(500)->withJson(['error' => 'payment service is failed']);
             }
 
-            if ($paymentResponse['status'] === 'invalid') {
+            if ($paymentResponse->status === 'invalid') {
                 $this->dbh->rollBack();
                 return $response->withStatus(400)->withJson(['error' => 'カード情報に誤りがあります']);
             }
 
-            if ($paymentResponse['fail'] === 'invalid') {
+            if ($paymentResponse->status === 'fail') {
                 $this->dbh->rollBack();
                 return $response->withStatus(400)->withJson(['error' => 'カードの残高が足りません']);
             }
 
-            if ($paymentResponse['status'] !== 'ok') {
+            if ($paymentResponse->status !== 'ok') {
                 $this->dbh->rollBack();
                 return $response->withStatus(400)->withJson(['error' => '想定外のエラー']);
             }
@@ -841,7 +866,7 @@ class Service
                 return $response->withStatus(404)->withJson(['error' => 'item not found']);
             }
 
-            if ($item['status'] !== self::ITEM_STATUS_Trading) {
+            if ($item['status'] !== self::ITEM_STATUS_TRADING) {
                 $this->dbh->rollBack();
                 return $response->withStatus(404)->withJson(['error' => '商品が取引中ではありません']);
             }
@@ -904,7 +929,7 @@ class Service
         }
 
         return $response->withStatus(200)->withJson([
-            'url' => sprintf("http://%s/upload/%s.png", $payload->host, $imgName),
+            'url' => sprintf("http://%s/upload/%s.png", $request->getServerParam('HTTP_HOST'), $imgName),
         ]);
     }
 
@@ -952,7 +977,7 @@ class Service
                 return $response->withStatus(404)->withJson(['error' => 'item not found']);
             }
 
-            if ($item['status'] != self::ITEM_STATUS_Trading) {
+            if ($item['status'] != self::ITEM_STATUS_TRADING) {
                 $this->dbh->rollBack();
                 return $response->withStatus(403)->withJson(['error' => '商品が取引中ではありません']);
             }
@@ -979,7 +1004,7 @@ class Service
             }
 
             $client = new Client();
-            $r = $client->post('http://localhost:7000/status', [
+            $r = $client->get('http://localhost:7000/status', [
                 'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                 'json' => ['reserve_id' => $shipping['reserve_id']],
             ]);
@@ -989,7 +1014,7 @@ class Service
                 return $response->withStatus(500)->withJson(['error' => 'failed to request to shipment service']);
             }
             $shippingResponse = json_decode($r->getBody());
-            if ($shippingResponse->status !== self::SHIPPING_STATUS_DONE || $shippingResponse->status !== self::SHIPPING_STATUS_SHIPPING) {
+            if (! ($shippingResponse->status === self::SHIPPING_STATUS_DONE || $shippingResponse->status === self::SHIPPING_STATUS_SHIPPING)) {
                 $this->dbh->rollBack();
                 return $response->withStatus(500)->withJson(['error' => 'shipment service側で配送中か配送完了になっていません']);
             }
@@ -1041,7 +1066,7 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?');
-            $sth->execute($payload->item_id);
+            $sth->execute([$payload->item_id]);
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 return $response->withStatus(404)->withJson(['error' => 'transaction_evidence not found']);
@@ -1054,14 +1079,14 @@ class Service
             $this->dbh->beginTransaction();
 
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE');
-            $sth->execute($payload->item_id);
+            $sth->execute([$payload->item_id]);
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
                 return $response->withStatus(404)->withJson(['error' => 'item not found']);
             }
 
-            if ($item['status'] != self::ITEM_STATUS_Trading) {
+            if ($item['status'] != self::ITEM_STATUS_TRADING) {
                 $this->dbh->rollBack();
                 return $response->withStatus(403)->withJson(['error' => '商品が取引中ではありません']);
             }
@@ -1186,7 +1211,7 @@ class Service
                 return $response->withStatus(400)->withJson(['error' => 'Bump not allowed']);
             }
 
-            $sth = $this->dbh->prepare('UPDATE `items` SET `created`=? WHERE id=?');
+            $sth = $this->dbh->prepare('UPDATE `items` SET `created_at`=? WHERE id=?');
             $sth->execute([
                 $now->format(self::DATETIME_SQL_FORMAT),
                 $item['id']
