@@ -924,6 +924,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pstr, err := APIPaymentToken("http://localhost:5555", &APIPaymentServiceTokenReq{
+		ShopID: PaymentServiceIsucariShopID,
 		Token:  rb.Token,
 		APIKey: PaymentServiceIsucariAPIKey,
 		Price:  targetItem.Price,
