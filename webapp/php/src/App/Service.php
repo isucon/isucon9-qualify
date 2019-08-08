@@ -60,6 +60,7 @@ class Service
     private const BUMP_CHARGE_SECONDS = 3;
 
     private const ITEM_PER_PAGE = 48;
+    private const TRANSACTIONS_PER_PAGE = 10;
 
     // constructor receives container instance
     public function __construct(ContainerInterface $container)
@@ -148,7 +149,6 @@ class Service
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
                 ]);
-                $items = $sth->fetchAll(PDO::FETCH_ASSOC);
             } else {
                 // 1st page
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
@@ -157,8 +157,8 @@ class Service
                     self::ITEM_STATUS_SOLD_OUT,
                     self::ITEM_PER_PAGE + 1,
                 ]);
-                $items = $sth->fetchAll(PDO::FETCH_ASSOC);
             }
+            $items = $sth->fetchAll(PDO::FETCH_ASSOC);
 
             $itemSimples = [];
             foreach ($items as $item) {
@@ -238,7 +238,6 @@ class Service
                         self::ITEM_PER_PAGE + 1,
                     ]
                 ));
-                $items = $sth->fetchAll(PDO::FETCH_ASSOC);
             } else {
                 // 1st page
                 $in = str_repeat('?,', count($categoryIds) - 1) . '?';
@@ -248,8 +247,8 @@ class Service
                     $categoryIds,
                     [self::ITEM_PER_PAGE + 1]
                 ));
-                $items = $sth->fetchAll(PDO::FETCH_ASSOC);
             }
+            $items = $sth->fetchAll(PDO::FETCH_ASSOC);
 
             $itemSimples = [];
             foreach ($items as $item) {
@@ -319,7 +318,6 @@ class Service
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
                 ]);
-                $items = $sth->fetchAll(PDO::FETCH_ASSOC);
             } else {
                 // 1st page
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
@@ -330,8 +328,8 @@ class Service
                     self::ITEM_STATUS_SOLD_OUT,
                     self::ITEM_PER_PAGE + 1,
                 ]);
-                $items = $sth->fetchAll(PDO::FETCH_ASSOC);
             }
+            $items = $sth->fetchAll(PDO::FETCH_ASSOC);
 
             $itemSimples = [];
             foreach ($items as $item) {
@@ -373,6 +371,155 @@ class Service
                 'has_next' => $hasNext
             ]
         );
+    }
+
+    public function transactions(Request $request, Response $response, array $args)
+    {
+        try {
+            $payload = $this->jsonPayload($request);
+        } catch (\InvalidArgumentException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(400)->withJson(['error' => 'json decode error']);
+        }
+
+        try {
+            $user = $this->getCurrentUser();
+        } catch (\DomainException $e) {
+            $this->logger->warning('user not found');
+            return $response->withStatus(404)->withJson(['error' => 'user not found']);
+        } catch (\Exception $e) {
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
+        $itemId = $request->getParam('item_id', null);
+        $createdAt = (int) $request->getParam('created_at', 0);
+
+        try {
+            $this->dbh->beginTransaction();
+
+            if ($itemId !== null && $createdAt > 0) {
+                // paging
+                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE '.
+                    '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? '.
+                    'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
+                $sth->execute([
+                   $user['id'],
+                   $user['id'],
+                   self::ITEM_STATUS_ON_SALE,
+                   self::ITEM_STATUS_TRADING,
+                   self::ITEM_STATUS_SOLD_OUT,
+                   self::ITEM_STATUS_CANCEL,
+                   self::ITEM_STATUS_STOP,
+                    (new \DateTime($createdAt))->format(self::DATETIME_SQL_FORMAT),
+                    $itemId,
+                    self::TRANSACTIONS_PER_PAGE +1,
+                ]);
+            } else {
+                // 1st page
+                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE ' .
+                    '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) ' .
+                    'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
+                $sth->execute([
+                    $user['id'],
+                    $user['id'],
+                    self::ITEM_STATUS_ON_SALE,
+                    self::ITEM_STATUS_TRADING,
+                    self::ITEM_STATUS_SOLD_OUT,
+                    self::ITEM_STATUS_CANCEL,
+                    self::ITEM_STATUS_STOP,
+                    self::TRANSACTIONS_PER_PAGE + 1,
+                ]);
+            }
+            $items = $sth->fetchAll(PDO::FETCH_ASSOC);
+            $itemDetails = [];
+            foreach ($items as $item) {
+                $seller = $this->getUserSimpleByID($item['seller_id']);
+                if ($seller === false) {
+                    $this->dbh->rollBack();
+                    return $response->withStatus(404)->withJson(['error' => 'seller not found']);
+                }
+
+                $category = $this->getCategoryByID($item['category_id']);
+                if ($category === false) {
+                    $this->dbh->rollBack();
+                    return $response->withStatus(404)->withJson(['error' => 'seller not found']);
+                }
+                $detail = [
+                        'id' => $item['id'],
+                        'seller_id' => $item['seller_id'],
+                        'seller' => $seller,
+                        'status' => $item['status'],
+                        'name' => $item['name'],
+                        'price' => $item['price'],
+                        'category_id' => $item['category_id'],
+                        'category' => $category,
+                        'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
+                    ];
+
+                if ($item['buyer_id'] !== 0) {
+                    $buyer = $this->getUserSimpleByID($item['buyer_id']);
+                    if ($buyer === false) {
+                        $this->dbh->rollBack();
+                        return $response->withStatus(404)->withJson(['error' => 'buyer not found']);
+                    }
+                    $detail['buyer_id'] = $item['buyer_id'];
+                    $detail['buyer'] = $buyer;
+                }
+
+                $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?');
+                $sth->execute([$payload->item_id]);
+                $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
+                if ($transactionEvidence === false) {
+                    $this->dbh->rollBack();
+                    return $response->withStatus(404)->withJson(['error' => 'transaction_evidences not found']);
+                }
+
+                if ($transactionEvidence['id'] > 0) {
+                    $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?');
+                    $sth->execute([$payload->item_id]);
+                    $shipping = $sth->fetch(PDO::FETCH_ASSOC);
+                    if ($shipping === false) {
+                        $this->dbh->rollBack();
+                        return $response->withStatus(404)->withJson(['error' => 'transaction_evidences not found']);
+                    }
+
+                    $client = new Client();
+                    $r = $client->get('http://localhost:7000/status', [
+                            'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                            'json' => ['reserve_id' => $shipping['reserve_id']],
+                        ]);
+                    if ($r->getStatusCode() !== 200) {
+                        $this->logger->error(($r->getReasonPhrase()));
+                        $this->dbh->rollBack();
+                        return $response->withStatus(500)->withJson(['error' => 'failed to request to shipment service']);
+                    }
+                    $shippingResponse = json_decode($r->getBody());
+
+                    $detail['transaction_evidence_id'] = $transactionEvidence['id'];
+                    $detail['transaction_evidence_status'] = $transactionEvidence['status'];
+                    $detail['shipping_status'] = $shippingResponse->status;
+                }
+
+                $itemDetails[] = $detail;
+            }
+
+            $this->dbh->commit();
+
+            $hasNext = false;
+            if (count($itemDetails) > self::TRANSACTIONS_PER_PAGE) {
+                $hasNext = true;
+                $itemDetails = array_slice($itemDetails, 0, self::TRANSACTIONS_PER_PAGE - 1);
+            }
+        } catch (\PDOException $e) {
+            $this->dbh->rollBack();
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
+        return $response->withStatus(200)->withJson([
+            'items' => $itemDetails,
+            'has_next' => $hasNext,
+        ]);
     }
 
     public function register(Request $request, Response $response, array $args)
