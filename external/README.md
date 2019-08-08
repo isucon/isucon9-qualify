@@ -12,6 +12,7 @@ POST /card
 
 POST /token
 | user | == token => | isucari | == token  => | payment service |
+                                   shop id
                                    api key
                                     price
 
