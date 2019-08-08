@@ -43,6 +43,7 @@ type reqSell struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Price       int    `json:"price"`
+	CategoryID  int    `json:"category_id"`
 }
 
 type reqShip struct {
@@ -121,12 +122,13 @@ func (s *Session) SetSettings() error {
 	return nil
 }
 
-func (s *Session) Sell(name string, price int, description string) (int64, error) {
+func (s *Session) Sell(name string, price int, description string, categoryID int) (int64, error) {
 	b, _ := json.Marshal(reqSell{
 		CSRFToken:   s.csrfToken,
 		Name:        name,
 		Price:       price,
 		Description: description,
+		CategoryID:  categoryID,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/json", bytes.NewBuffer(b))
 	if err != nil {
