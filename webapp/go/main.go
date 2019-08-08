@@ -48,7 +48,8 @@ const (
 
 	BumpChargeSeconds = 3 * time.Second
 
-	ItemsPerPage = 48
+	ItemsPerPage        = 48
+	TransactionsPerPage = 10
 )
 
 var (
@@ -99,18 +100,20 @@ type ItemSimple struct {
 }
 
 type ItemDetail struct {
-	ID          int64       `json:"id"`
-	SellerID    int64       `json:"seller_id"`
-	Seller      *UserSimple `json:"seller"`
-	BuyerID     int64       `json:"buyer_id,omitempty"`
-	Buyer       *UserSimple `json:"buyer,omitempty"`
-	Status      string      `json:"status"`
-	Name        string      `json:"name"`
-	Price       int         `json:"price"`
-	Description string      `json:"description"`
-	CategoryID  int         `json:"category_id"`
-	Category    *Category   `json:"category"`
-	CreatedAt   int64       `json:"created_at"`
+	ID                        int64       `json:"id"`
+	SellerID                  int64       `json:"seller_id"`
+	Seller                    *UserSimple `json:"seller"`
+	BuyerID                   int64       `json:"buyer_id,omitempty"`
+	Buyer                     *UserSimple `json:"buyer,omitempty"`
+	Status                    string      `json:"status"`
+	Name                      string      `json:"name"`
+	Price                     int         `json:"price"`
+	Description               string      `json:"description"`
+	CategoryID                int         `json:"category_id"`
+	Category                  *Category   `json:"category"`
+	TransactionEvidenceStatus string      `json:"transaction_evidence_status,omitempty"`
+	ShippingStatus            string      `json:"shipping_status,omitempty"`
+	CreatedAt                 int64       `json:"created_at"`
 }
 
 type TransactionEvidence struct {
@@ -162,6 +165,11 @@ type resUserItems struct {
 	User    *UserSimple  `json:"user"`
 	HasNext bool         `json:"has_next"`
 	Items   []ItemSimple `json:"items"`
+}
+
+type resTransactions struct {
+	HasNext bool         `json:"has_next"`
+	Items   []ItemDetail `json:"items"`
 }
 
 type reqRegister struct {
@@ -290,6 +298,7 @@ func main() {
 	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
+	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
 	mux.HandleFunc(pat.Get("/users/:user_id.json"), getUserItems)
 	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
 	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
@@ -650,6 +659,151 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(rui)
+}
+
+func getTransactions(w http.ResponseWriter, r *http.Request) {
+
+	user, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	query := r.URL.Query()
+	itemID := query.Get("item_id")
+	createdAtParam := query.Get("created_at")
+	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
+
+	items := []Item{}
+	if itemID != "" && createdAt > 0 {
+		// paging
+		err := dbx.Select(&items,
+			"SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			user.ID,
+			user.ID,
+			ItemStatusOnSale,
+			ItemStatusTrading,
+			ItemStatusSoldOut,
+			ItemStatusCancel,
+			ItemStatusStop,
+			time.Unix(createdAt, 0),
+			itemID,
+			TransactionsPerPage+1,
+		)
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+	} else {
+		// 1st page
+		err := dbx.Select(&items,
+			"SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			user.ID,
+			user.ID,
+			ItemStatusOnSale,
+			ItemStatusTrading,
+			ItemStatusSoldOut,
+			ItemStatusCancel,
+			ItemStatusStop,
+			TransactionsPerPage+1,
+		)
+		if err != nil {
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+	}
+
+	itemDetails := []ItemDetail{}
+	for _, item := range items {
+		seller, err := getUserSimpleByID(item.SellerID)
+		if err != nil {
+			outputErrorMsg(w, http.StatusNotFound, "seller not found")
+			return
+		}
+		category, err := getCategoryByID(item.CategoryID)
+		if err != nil {
+			outputErrorMsg(w, http.StatusNotFound, "category not found")
+			return
+		}
+
+		itemDetail := ItemDetail{
+			ID:       item.ID,
+			SellerID: item.SellerID,
+			Seller:   &seller,
+			// BuyerID
+			// Buyer
+			Status:      item.Status,
+			Name:        item.Name,
+			Price:       item.Price,
+			Description: item.Description,
+			CategoryID:  item.CategoryID,
+			Category:    &category,
+			CreatedAt:   item.CreatedAt.Unix(),
+		}
+
+		if (user.ID == item.SellerID || user.ID == item.BuyerID) && item.BuyerID != 0 {
+			buyer, err := getUserSimpleByID(item.BuyerID)
+			if err != nil {
+				outputErrorMsg(w, http.StatusNotFound, "buyer not found")
+				return
+			}
+			itemDetail.BuyerID = item.BuyerID
+			itemDetail.Buyer = &buyer
+		}
+
+		transactionEvidence := TransactionEvidence{}
+		err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", item.ID)
+		if err != nil && err != sql.ErrNoRows {
+			// It's able to ignore ErrNoRows
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+
+		if transactionEvidence.ID > 0 {
+			shipping := Shipping{}
+			err = dbx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", transactionEvidence.ID)
+			if err == sql.ErrNoRows {
+				outputErrorMsg(w, http.StatusNotFound, "shipping not found")
+				return
+			}
+			if err != nil {
+				log.Println(err)
+				outputErrorMsg(w, http.StatusInternalServerError, "db error")
+				return
+			}
+			ssr, err := api.ShipmentStatus("http://localhost:7000", &api.ShipmentStatusReq{
+				ReserveID: shipping.ReserveID,
+			})
+			if err != nil {
+				log.Println(err)
+				outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+				return
+			}
+
+			itemDetail.TransactionEvidenceStatus = transactionEvidence.Status
+			itemDetail.ShippingStatus = ssr.Status
+		}
+
+		itemDetails = append(itemDetails, itemDetail)
+	}
+
+	hasNext := false
+	if len(itemDetails) > TransactionsPerPage {
+		hasNext = true
+		itemDetails = itemDetails[0 : TransactionsPerPage-1]
+	}
+
+	rts := resTransactions{
+		Items:   itemDetails,
+		HasNext: hasNext,
+	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(rts)
+
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
