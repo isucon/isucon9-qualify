@@ -458,7 +458,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        unset($user['hashed_password'], $user['last_bump'], $user['created_at']);
+        unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
         return $response->withStatus(200)->withJson(
             [
                 'csrf_token' => $token,
