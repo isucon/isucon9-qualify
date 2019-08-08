@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"sync"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -8,7 +9,29 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/session"
 )
 
-func SellAndBuy() error {
+func Initialize() {
+}
+
+func Verify() *fails.Critical {
+	var wg sync.WaitGroup
+
+	critical := fails.NewCritical()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := sellAndBuy()
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Wait()
+
+	return critical
+}
+
+func sellAndBuy() error {
 	s1, err := session.NewSession()
 	if err != nil {
 		return err

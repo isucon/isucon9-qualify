@@ -8,10 +8,8 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
-	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/scenario"
 	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -64,10 +62,10 @@ func main() {
 	}
 
 	fmt.Fprintf(os.Stderr, "=== initialize ===\n")
-	initialize()
+	scenario.Initialize()
 	fmt.Fprintf(os.Stderr, "=== verify ===\n")
 
-	cerr := verify()
+	cerr := scenario.Verify()
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
 		fmt.Fprintf(os.Stderr, "cause error!\n")
@@ -83,26 +81,10 @@ func main() {
 	}
 
 	fmt.Fprintf(os.Stderr, "=== validation ===\n")
-}
 
-func initialize() {
-}
-
-func verify() *fails.Critical {
-	var wg sync.WaitGroup
-
-	critical := fails.NewCritical()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err := scenario.SellAndBuy()
-		if err != nil {
-			critical.Add(err)
-		}
-	}()
-
-	wg.Wait()
-
-	return critical
+	output := Output{
+		Pass:  true,
+		Score: 0,
+	}
+	json.NewEncoder(os.Stdout).Encode(output)
 }
