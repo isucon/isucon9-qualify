@@ -142,7 +142,7 @@ type Shipping struct {
 	ToName                string    `json:"to_name" db:"to_name"`
 	FromAddress           string    `json:"from_address" db:"from_address"`
 	FromName              string    `json:"from_name" db:"from_name"`
-	ImgBinary             []byte    `json:"img_binary" db:"img_binary"`
+	ImgBinary             []byte    `json:"-" db:"img_binary"`
 	CreatedAt             time.Time `json:"-" db:"created_at"`
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
 }
