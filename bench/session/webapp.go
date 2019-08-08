@@ -50,6 +50,11 @@ type resShip struct {
 	URL string `json:"url"`
 }
 
+type reqBump struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+}
+
 func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	b, _ := json.Marshal(reqLogin{
 		AccountName: accountName,
@@ -337,4 +342,36 @@ func (s *Session) DecodeQRURL(aurl string) (*url.URL, error) {
 	}
 
 	return sparsedURL, nil
+}
+
+func (s *Session) Bump(itemID int64) error {
+	b, _ := json.Marshal(reqBump{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/bump", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /bump: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /bump: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "POST /bump: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
+		}
+		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /bump: レスポンスのステータスコードが200ではありません")
+	}
+
+	_, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return fails.NewError(err, "POST /bump: bodyの読み込みに失敗しました")
+	}
+
+	return nil
 }

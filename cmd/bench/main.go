@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"net"
-	"net/http"
 	"os"
 	"time"
 
@@ -26,31 +24,10 @@ func init() {
 }
 
 func main() {
-	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 5555})
+	err := server.RunServer(5555, 7000)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 7000})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	serverPayment := &http.Server{
-		Handler: server.NewPayment(),
-	}
-
-	serverShipment := &http.Server{
-		Handler: server.NewShipment(),
-	}
-
-	go func() {
-		log.Println(serverPayment.Serve(liPayment))
-	}()
-
-	go func() {
-		log.Println(serverShipment.Serve(liShipment))
-	}()
 
 	err = session.SetShareTargetURLs(
 		"http://localhost:8000",

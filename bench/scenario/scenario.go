@@ -26,6 +26,15 @@ func Verify() *fails.Critical {
 		}
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := bump()
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
 	wg.Wait()
 
 	return critical
@@ -112,6 +121,55 @@ func sellAndBuy() error {
 	<-time.After(6 * time.Second)
 
 	err = s2.Complete(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func bump() error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	s2, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	user1, user2 := asset.GetRandomUserPair()
+
+	seller, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(seller) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	buyer, err := s2.Login(user2.AccountName, user2.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user2.Equal(buyer) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s2.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	err = s1.Bump(1)
 	if err != nil {
 		return err
 	}

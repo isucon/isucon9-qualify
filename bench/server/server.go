@@ -1,7 +1,10 @@
 package server
 
 import (
+	"fmt"
+	"net"
 	"net/http"
+	"os"
 
 	"github.com/isucon/isucon9-qualify/external/payment"
 	"github.com/isucon/isucon9-qualify/external/shipment"
@@ -60,4 +63,34 @@ func apply(h http.Handler, adapters ...Adapter) http.Handler {
 		h = adpt(h)
 	}
 	return h
+}
+
+func RunServer(paymentPort, shipmentPort int) error {
+	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: paymentPort})
+	if err != nil {
+		return err
+	}
+
+	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: shipmentPort})
+	if err != nil {
+		return err
+	}
+
+	serverPayment := &http.Server{
+		Handler: NewPayment(),
+	}
+
+	serverShipment := &http.Server{
+		Handler: NewShipment(),
+	}
+
+	go func() {
+		fmt.Fprintln(os.Stderr, serverPayment.Serve(liPayment))
+	}()
+
+	go func() {
+		fmt.Fprintln(os.Stderr, serverShipment.Serve(liShipment))
+	}()
+
+	return nil
 }
