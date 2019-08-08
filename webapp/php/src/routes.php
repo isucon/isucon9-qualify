@@ -14,6 +14,7 @@ return function (App $app) {
     $app->get('/new_items.json', \App\Service::class . ':new_items');
     $app->get('/new_items/{id}.json', \App\Service::class . ':new_category_items');
     $app->get('/users/{id}.json', \App\Service::class . ':user_items');
+    $app->get('/users/transactions', \App\Service::class . ':transactions');
     $app->get('/items/{id}.json', \App\Service::class . ':item');
     $app->post('/items/edit', \App\Service::class . ':edit');
     $app->post('/buy', \App\Service::class . ':buy');
@@ -43,6 +44,7 @@ return function (App $app) {
             'ico' => 'image/x-icon',
             'js' => 'application/javascript',
             'json' => 'application/json ',
+            'png' => 'image/png',
             'map' => 'application/json ', // source map, main.js.map
         ];
 
