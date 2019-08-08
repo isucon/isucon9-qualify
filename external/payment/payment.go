@@ -30,6 +30,7 @@ type cardRes struct {
 }
 
 type tokenReq struct {
+	ShopID string `json:"shop_id"`
 	Token  string `json:"token"`
 	APIKey string `json:"api_key"`
 	Price  int    `json:"price"`
@@ -107,6 +108,15 @@ func TokenHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&tr)
 	if err != nil {
 		b, _ := json.Marshal(errorRes{Error: "json decode error"})
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(b)
+
+		return
+	}
+
+	if tr.ShopID != IsucariShopID {
+		b, _ := json.Marshal(errorRes{Error: "wrong shop id"})
 
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(b)

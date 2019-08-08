@@ -13,6 +13,7 @@ const (
 )
 
 type APIPaymentServiceTokenReq struct {
+	ShopID string `json:"shop_id"`
 	Token  string `json:"token"`
 	APIKey string `json:"api_key"`
 	Price  int    `json:"price"`
