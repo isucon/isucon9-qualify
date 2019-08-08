@@ -111,6 +111,7 @@ type ItemDetail struct {
 	Description               string      `json:"description"`
 	CategoryID                int         `json:"category_id"`
 	Category                  *Category   `json:"category"`
+	TransactionEvidenceID     int64       `json:"transaction_evidence_id,omitempty"`
 	TransactionEvidenceStatus string      `json:"transaction_evidence_status,omitempty"`
 	ShippingStatus            string      `json:"shipping_status,omitempty"`
 	CreatedAt                 int64       `json:"created_at"`
@@ -860,6 +861,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			itemDetail.TransactionEvidenceID = transactionEvidence.ID
 			itemDetail.TransactionEvidenceStatus = transactionEvidence.Status
 			itemDetail.ShippingStatus = ssr.Status
 		}
@@ -933,8 +935,11 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		Price:       item.Price,
 		Description: item.Description,
 		CategoryID:  item.CategoryID,
-		Category:    &category,
-		CreatedAt:   item.CreatedAt.Unix(),
+		// TransactionEvidenceID
+		// TransactionEvidenceStatus
+		// ShippingStatus
+		Category:  &category,
+		CreatedAt: item.CreatedAt.Unix(),
 	}
 
 	if (user.ID == item.SellerID || user.ID == item.BuyerID) && item.BuyerID != 0 {
@@ -945,10 +950,36 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		}
 		itemDetail.BuyerID = item.BuyerID
 		itemDetail.Buyer = &buyer
+
+		transactionEvidence := TransactionEvidence{}
+		err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", item.ID)
+		if err != nil && err != sql.ErrNoRows {
+			// It's able to ignore ErrNoRows
+			log.Println(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+
+		if transactionEvidence.ID > 0 {
+			shipping := Shipping{}
+			err = dbx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", transactionEvidence.ID)
+			if err == sql.ErrNoRows {
+				outputErrorMsg(w, http.StatusNotFound, "shipping not found")
+				return
+			}
+			if err != nil {
+				log.Println(err)
+				outputErrorMsg(w, http.StatusInternalServerError, "db error")
+				return
+			}
+
+			itemDetail.TransactionEvidenceID = transactionEvidence.ID
+			itemDetail.TransactionEvidenceStatus = transactionEvidence.Status
+			itemDetail.ShippingStatus = shipping.Status
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-
 	json.NewEncoder(w).Encode(itemDetail)
 }
 
