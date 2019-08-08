@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/isucon/isucon9-qualify/webapp/go/api"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -911,7 +909,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scr, err := api.ShipmentCreate("http://localhost:7000", &api.ShipmentCreateReq{
+	scr, err := APIShipmentCreate("http://localhost:7000", &APIShipmentCreateReq{
 		ToAddress:   buyer.Address,
 		ToName:      buyer.AccountName,
 		FromAddress: seller.Address,
@@ -925,7 +923,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pstr, err := api.PaymentToken("http://localhost:5555", &api.PaymentServiceTokenReq{
+	pstr, err := APIPaymentToken("http://localhost:5555", &APIPaymentServiceTokenReq{
 		Token:  rb.Token,
 		APIKey: PaymentServiceIsucariAPIKey,
 		Price:  targetItem.Price,
@@ -1083,7 +1081,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	img, err := api.ShipmentRequest("http://localhost:7000", &api.ShipmentRequestReq{
+	img, err := APIShipmentRequest("http://localhost:7000", &APIShipmentRequestReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
@@ -1223,7 +1221,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ssr, err := api.ShipmentStatus("http://localhost:7000", &api.ShipmentStatusReq{
+	ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
@@ -1360,7 +1358,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ssr, err := api.ShipmentStatus("http://localhost:7000", &api.ShipmentStatusReq{
+	ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {

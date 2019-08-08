@@ -1,4 +1,4 @@
-package api
+package main
 
 import (
 	"bytes"
@@ -12,32 +12,75 @@ const (
 	IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0"
 )
 
-type ShipmentCreateReq struct {
+type APIPaymentServiceTokenReq struct {
+	Token  string `json:"token"`
+	APIKey string `json:"api_key"`
+	Price  int    `json:"price"`
+}
+
+type APIPaymentServiceTokenRes struct {
+	Status string `json:"status"`
+}
+
+type APIShipmentCreateReq struct {
 	ToAddress   string `json:"to_address"`
 	ToName      string `json:"to_name"`
 	FromAddress string `json:"from_address"`
 	FromName    string `json:"from_name"`
 }
 
-type ShipmentCreateRes struct {
+type APIShipmentCreateRes struct {
 	ReserveID   string `json:"reserve_id"`
 	ReserveTime int64  `json:"reserve_time"`
 }
 
-type ShipmentRequestReq struct {
+type APIShipmentRequestReq struct {
 	ReserveID string `json:"reserve_id"`
 }
 
-type ShipmentStatusRes struct {
+type APIShipmentStatusRes struct {
 	Status      string `json:"status"`
 	ReserveTime int64  `json:"reserve_time"`
 }
 
-type ShipmentStatusReq struct {
+type APIShipmentStatusReq struct {
 	ReserveID string `json:"reserve_id"`
 }
 
-func ShipmentCreate(shipmentURL string, param *ShipmentCreateReq) (*ShipmentCreateRes, error) {
+func APIPaymentToken(paymentURL string, param *APIPaymentServiceTokenReq) (*APIPaymentServiceTokenRes, error) {
+	b, _ := json.Marshal(param)
+
+	req, err := http.NewRequest(http.MethodPost, paymentURL+"/token", bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read res.Body and the status code of the response from shipment service was not 200: %v", err)
+		}
+		return nil, fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
+	}
+
+	pstr := &APIPaymentServiceTokenRes{}
+	err = json.NewDecoder(res.Body).Decode(pstr)
+	if err != nil {
+		return nil, err
+	}
+
+	return pstr, nil
+}
+
+func APIShipmentCreate(shipmentURL string, param *APIShipmentCreateReq) (*APIShipmentCreateRes, error) {
 	b, _ := json.Marshal(param)
 
 	req, err := http.NewRequest(http.MethodPost, shipmentURL+"/create", bytes.NewBuffer(b))
@@ -62,7 +105,7 @@ func ShipmentCreate(shipmentURL string, param *ShipmentCreateReq) (*ShipmentCrea
 		return nil, fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
 	}
 
-	scr := &ShipmentCreateRes{}
+	scr := &APIShipmentCreateRes{}
 	err = json.NewDecoder(res.Body).Decode(&scr)
 	if err != nil {
 		return nil, err
@@ -71,7 +114,7 @@ func ShipmentCreate(shipmentURL string, param *ShipmentCreateReq) (*ShipmentCrea
 	return scr, nil
 }
 
-func ShipmentRequest(shipmentURL string, param *ShipmentRequestReq) ([]byte, error) {
+func APIShipmentRequest(shipmentURL string, param *APIShipmentRequestReq) ([]byte, error) {
 	b, _ := json.Marshal(param)
 
 	req, err := http.NewRequest(http.MethodPost, shipmentURL+"/request", bytes.NewBuffer(b))
@@ -99,7 +142,7 @@ func ShipmentRequest(shipmentURL string, param *ShipmentRequestReq) ([]byte, err
 	return ioutil.ReadAll(res.Body)
 }
 
-func ShipmentStatus(shipmentURL string, param *ShipmentStatusReq) (*ShipmentStatusRes, error) {
+func APIShipmentStatus(shipmentURL string, param *APIShipmentStatusReq) (*APIShipmentStatusRes, error) {
 	b, _ := json.Marshal(param)
 
 	req, err := http.NewRequest(http.MethodGet, shipmentURL+"/status", bytes.NewBuffer(b))
@@ -124,7 +167,7 @@ func ShipmentStatus(shipmentURL string, param *ShipmentStatusReq) (*ShipmentStat
 		return nil, fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
 	}
 
-	ssr := &ShipmentStatusRes{}
+	ssr := &APIShipmentStatusRes{}
 	err = json.NewDecoder(res.Body).Decode(&ssr)
 	if err != nil {
 		return nil, err
