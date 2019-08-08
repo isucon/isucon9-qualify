@@ -90,3 +90,37 @@ export interface BuyReq {
 export interface ErrorRes {
     error: string,
 }
+
+/**
+ * GET /new_item.json
+ */
+export interface NewItemReq {
+    item_id?: number,
+    created?: number,
+}
+
+export interface NewItemRes {
+    root_category_id?: number,
+    root_category_name?: string,
+    has_next: boolean,
+    items: {
+        id: number
+        seller_id: number
+        seller: {
+            id: number,
+            account_name: string,
+            num_sell_items: number,
+        },
+        status: ItemStatus,
+        name: string,
+        price: number,
+        category_id: number,
+        category: {
+            id: number,
+            parent_id: number,
+            category_name: string,
+            parent_category_name: string,
+        },
+        created_at: number,
+    }[]
+}
