@@ -8,16 +8,11 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/tuotoo/qrcode"
 	"golang.org/x/xerrors"
 )
-
-type AppUser struct {
-	ID          int64  `json:"id"`
-	AccountName string `json:"account_name"`
-	Address     string `json:"address,omitempty"`
-}
 
 type resSetting struct {
 	CSRFToken string `json:"csrf_token"`
@@ -55,7 +50,7 @@ type resShip struct {
 	URL string `json:"url"`
 }
 
-func (s *Session) Login(accountName, password string) (*AppUser, error) {
+func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	b, _ := json.Marshal(reqLogin{
 		AccountName: accountName,
 		Password:    password,
@@ -79,7 +74,7 @@ func (s *Session) Login(accountName, password string) (*AppUser, error) {
 		return nil, fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /login: レスポンスのステータスコードが200ではありません")
 	}
 
-	u := &AppUser{}
+	u := &asset.AppUser{}
 	err = json.NewDecoder(res.Body).Decode(u)
 	if err != nil {
 		return nil, fails.NewError(err, "POST /login: JSONデコードに失敗しました")

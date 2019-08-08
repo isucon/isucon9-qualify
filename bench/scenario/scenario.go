@@ -3,8 +3,9 @@ package scenario
 import (
 	"time"
 
+	"github.com/isucon/isucon9-qualify/bench/asset"
+	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/session"
-	"github.com/k0kubun/pp"
 )
 
 func SellAndBuy() error {
@@ -18,21 +19,31 @@ func SellAndBuy() error {
 		return err
 	}
 
-	seller, err := s1.Login("aaa", "aaa")
+	user1, user2 := asset.GetRandomUserPair()
+
+	seller, err := s1.Login(user1.AccountName, user1.Password)
 	if err != nil {
 		return err
 	}
-	pp.Println(seller)
+
+	if !user1.Equal(seller) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
 	err = s1.SetSettings()
 	if err != nil {
 		return err
 	}
 
-	buyer, err := s2.Login("bbb", "bbb")
+	buyer, err := s2.Login(user2.AccountName, user2.Password)
 	if err != nil {
 		return err
 	}
-	pp.Println(buyer)
+
+	if !user2.Equal(buyer) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
 	err = s2.SetSettings()
 	if err != nil {
 		return err

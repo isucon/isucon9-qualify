@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/scenario"
@@ -19,6 +21,10 @@ type Output struct {
 	Pass     bool     `json:"pass"`
 	Score    int64    `json:"score"`
 	Messages []string `json:"messages"`
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {
