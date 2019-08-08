@@ -739,8 +739,10 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			Price:       item.Price,
 			Description: item.Description,
 			CategoryID:  item.CategoryID,
-			Category:    &category,
-			CreatedAt:   item.CreatedAt.Unix(),
+			// TransactionEvidenceStatus
+			// ShippingStatus
+			Category:  &category,
+			CreatedAt: item.CreatedAt.Unix(),
 		}
 
 		if (user.ID == item.SellerID || user.ID == item.BuyerID) && item.BuyerID != 0 {
