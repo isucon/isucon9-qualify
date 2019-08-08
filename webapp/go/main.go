@@ -190,6 +190,13 @@ type reqItemEdit struct {
 	ItemPrice int    `json:"item_price"`
 }
 
+type resIemEdit struct {
+	ItemID        int64 `json:"item_id"`
+	ItemPrice     int   `json:"item_price"`
+	ItemCreatedAt int64 `json:"item_created_at"`
+	ItemUpdatedAt int64 `json:"item_updated_at"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -1058,7 +1065,23 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(&resIemEdit{
+		ItemID:        targetItem.ID,
+		ItemPrice:     targetItem.Price,
+		ItemCreatedAt: targetItem.CreatedAt.Unix(),
+		ItemUpdatedAt: targetItem.UpdatedAt.Unix(),
+	})
 }
 
 func postBuy(w http.ResponseWriter, r *http.Request) {
@@ -1246,11 +1269,8 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	tx.Commit()
 
-	rpb := resBuy{
-		TransactionEvidenceID: transactionEvidenceID,
-	}
-	json.NewEncoder(w).Encode(rpb)
-
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(resBuy{TransactionEvidenceID: transactionEvidenceID})
 }
 
 func postShip(w http.ResponseWriter, r *http.Request) {
@@ -1534,6 +1554,9 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(resBuy{TransactionEvidenceID: transactionEvidence.ID})
 }
 
 func postComplete(w http.ResponseWriter, r *http.Request) {
@@ -1684,6 +1707,9 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(resBuy{TransactionEvidenceID: transactionEvidence.ID})
 }
 
 func postSell(w http.ResponseWriter, r *http.Request) {
@@ -1791,6 +1817,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 	tx.Commit()
 
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(resSell{ID: itemID})
 }
 
@@ -1826,8 +1853,8 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 
 	tx := dbx.MustBegin()
 
-	item := Item{}
-	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	targetItem := Item{}
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "item not found")
 		tx.Rollback()
@@ -1840,7 +1867,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if item.SellerID != user.ID {
+	if targetItem.SellerID != user.ID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
 		tx.Rollback()
 		return
@@ -1871,7 +1898,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 	_, err = tx.Exec("UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?",
 		now,
 		now,
-		item.ID,
+		targetItem.ID,
 	)
 	if err != nil {
 		log.Println(err)
@@ -1889,7 +1916,23 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(&resIemEdit{
+		ItemID:        targetItem.ID,
+		ItemPrice:     targetItem.Price,
+		ItemCreatedAt: targetItem.CreatedAt.Unix(),
+		ItemUpdatedAt: targetItem.UpdatedAt.Unix(),
+	})
 }
 
 func getSettings(w http.ResponseWriter, r *http.Request) {
@@ -1956,6 +1999,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(u)
 }
 
@@ -2011,6 +2055,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		AccountName: accountName,
 		Address:     address,
 	}
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(u)
 }
 
