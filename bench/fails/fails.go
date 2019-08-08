@@ -6,35 +6,55 @@ import (
 	"sync"
 )
 
-var mu sync.Mutex
-var messages []string
-var isCritical bool
-
-func init() {
-	messages = make([]string, 100)
+type Error struct {
+	Msg string
+	Err error
 }
 
-func Get() []string {
-	mu.Lock()
-	allMessages := messages[:]
-	mu.Unlock()
-	return allMessages
+func (e *Error) Error() string {
+	return e.Msg + ": " + e.Err.Error()
 }
 
-func Add(msg string, err error) {
-	mu.Lock()
-	messages = append(messages, msg)
-	mu.Unlock()
-
-	if err != nil {
-		msg += " error: " + err.Error()
+func NewError(err error, msg string) *Error {
+	ferr := &Error{
+		Msg: msg,
+		Err: err,
 	}
-	fmt.Fprintln(os.Stderr, msg)
+	fmt.Fprintln(os.Stderr, ferr.Error())
+
+	return ferr
 }
 
-type Logger struct {
+type Critical struct {
+	Msgs []string
+	mu   sync.Mutex
 }
 
-func (l *Logger) Add(msg string, err error) {
-	Add(msg, err)
+func NewCritical() *Critical {
+	msgs := make([]string, 0, 100)
+	return &Critical{
+		Msgs: msgs,
+	}
+}
+
+func (c *Critical) GetMsgs() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.Msgs[:]
+}
+
+func (c *Critical) Add(err error) {
+	if err == nil {
+		return
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if ferr, ok := err.(*Error); ok {
+		c.Msgs = append(c.Msgs, ferr.Msg)
+	} else {
+		c.Msgs = append(c.Msgs, "運営に連絡してください")
+	}
 }
