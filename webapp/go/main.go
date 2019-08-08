@@ -776,7 +776,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 				outputErrorMsg(w, http.StatusInternalServerError, "db error")
 				return
 			}
-			ssr, err := api.ShipmentStatus("http://localhost:7000", &api.ShipmentStatusReq{
+			ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
 				ReserveID: shipping.ReserveID,
 			})
 			if err != nil {
