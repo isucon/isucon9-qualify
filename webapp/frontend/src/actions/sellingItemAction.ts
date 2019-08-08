@@ -12,10 +12,10 @@ export const SELLING_ITEM_FAIL = 'SELLING_ITEM_FAIL';
 type State = void;
 type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>
 
-export function listItemAction(name: string, description: string, price: number): ThunkResult<void> {
+export function listItemAction(name: string, description: string, price: number, categoryId: number): ThunkResult<void> {
     return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
         const payload: SellReq = {
-            name, description, price,
+            name, description, price, category_id: categoryId,
         };
         AppClient.post('/sell', payload)
             .then((response: Response) => {

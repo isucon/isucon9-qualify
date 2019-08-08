@@ -4,7 +4,7 @@ import {createStyles, Theme, Typography, WithStyles} from "@material-ui/core";
 import Grid from "@material-ui/core/Grid";
 import Divider from "@material-ui/core/Divider";
 import Avatar from "@material-ui/core/Avatar";
-import {Link as RouteLink, RouteComponentProps} from 'react-router-dom';
+import {Link, Link as RouteLink, RouteComponentProps} from 'react-router-dom';
 import AppBar from "@material-ui/core/AppBar";
 import Button from "@material-ui/core/Button";
 import {routes} from "../routes/Route";
@@ -91,6 +91,16 @@ class ItemPage extends React.Component<Props> {
                                                 <Typography variant="h4">商品説明</Typography>
                                                 <Divider className={classes.divider} variant="middle"/>
                                                 <Typography variant="body1">{item.description}</Typography>
+                                            </div>
+
+                                            <div className={classes.descSection}>
+                                                <Typography variant="h4">カテゴリ</Typography>
+                                                <Divider className={classes.divider} variant="middle"/>
+                                                <Typography variant="body1">
+                                                    <Link to={routes.categoryTimeline.getPath(item.category.parentId)}>
+                                                        {item.category.parentCategoryName}
+                                                    </Link> > {item.category.categoryName}
+                                                </Typography>
                                             </div>
 
                                             <div className={classes.descSection}>

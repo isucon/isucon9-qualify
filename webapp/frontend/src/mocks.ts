@@ -25,6 +25,13 @@ export const mockItems: ItemData[] = [
         price: 10000,
         description: 'いすです',
         thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
+        category: {
+            id: 1,
+            categoryName: 'カテゴリ1',
+            parentId: 2,
+            parentCategoryName: '親カテゴリ',
+        },
+        createdAt: 10000,
     },
     {
         id: 2,
@@ -41,6 +48,13 @@ export const mockItems: ItemData[] = [
         price: 10000,
         description: 'いすです',
         thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
+        category: {
+            id: 1,
+            categoryName: 'カテゴリ1',
+            parentId: 2,
+            parentCategoryName: '親カテゴリ',
+        },
+        createdAt: 10000,
     },
     {
         id: 3,
@@ -57,6 +71,13 @@ export const mockItems: ItemData[] = [
         price: 10000,
         description: 'いすです',
         thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
+        category: {
+            id: 1,
+            categoryName: 'カテゴリ1',
+            parentId: 2,
+            parentCategoryName: '親カテゴリ',
+        },
+        createdAt: 10000,
     },
     {
         id: 4,
@@ -73,5 +94,12 @@ export const mockItems: ItemData[] = [
         price: 10000,
         description: 'いすです',
         thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png',
+        category: {
+            id: 1,
+            categoryName: 'カテゴリ1',
+            parentId: 2,
+            parentCategoryName: '親カテゴリ',
+        },
+        createdAt: 10000,
     },
 ];
