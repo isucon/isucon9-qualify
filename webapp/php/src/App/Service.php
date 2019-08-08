@@ -737,8 +737,9 @@ class Service
             $pres = $client->post(
                 'http://localhost:5555/token',
                 ['json' => [
-                    'token' =>  $payload->token,
+                    'shop_id' => self::PAYMENT_SERVICE_ISUCARI_SHOP_ID,
                     'api_key' => self::PAYMENT_SERVICE_ISUCARI_API_KEY,
+                    'token' =>  $payload->token,
                     'price' => $item['price'],
                 ]]
             );
