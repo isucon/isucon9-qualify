@@ -155,6 +155,12 @@ type Category struct {
 	ParentCategoryName string `json:"parent_category_name" db:"-"`
 }
 
+type CategorySimple struct {
+	ID           int    `json:"id" db:"id"`
+	ParentID     int    `json:"parent_id" db:"parent_id"`
+	CategoryName string `json:"category_name" db:"category_name"`
+}
+
 type resNewItems struct {
 	RootCategoryID   int          `json:"root_category_id,omitempty"`
 	RootCategoryName string       `json:"root_category_name,omitempty"`
@@ -237,8 +243,9 @@ type reqBump struct {
 }
 
 type resSetting struct {
-	CSRFToken string `json:"csrf_token"`
-	User      *User  `json:"user,omitempty"`
+	CSRFToken  string           `json:"csrf_token"`
+	User       *User            `json:"user,omitempty"`
+	Categories []CategorySimple `json:"categories"`
 }
 
 func init() {
@@ -1902,6 +1909,16 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	if errMsg == "" {
 		ress.User = &user
 	}
+
+	categories := []CategorySimple{}
+
+	err := dbx.Select(&categories, "SELECT * FROM `categories`")
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	ress.Categories = categories
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(ress)
