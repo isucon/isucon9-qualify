@@ -122,7 +122,7 @@ func scenarioSellAndBuy() error {
 		return err
 	}
 
-	targetItemID, err := s1.Sell("abcd", 100, "description description")
+	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
 	if err != nil {
 		return err
 	}
