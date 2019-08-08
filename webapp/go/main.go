@@ -383,12 +383,13 @@ func getTop(w http.ResponseWriter, r *http.Request) {
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
-	itemID := query.Get("item_id")
+	itemIDParam := query.Get("item_id")
+	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
 	createdAtParam := query.Get("created_at")
 	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
 
 	items := []Item{}
-	if itemID != "" && createdAt > 0 {
+	if itemID > 0 && createdAt > 0 {
 		// paging
 		err := dbx.Select(&items,
 			"SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
@@ -481,13 +482,14 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	itemID := query.Get("item_id")
+	itemIDParam := query.Get("item_id")
+	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
 	createdAtParam := query.Get("created_at")
 	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
 
 	var inQuery string
 	var inArgs []interface{}
-	if itemID != "" && createdAt > 0 {
+	if itemID > 0 && createdAt > 0 {
 		// paging
 		inQuery, inArgs, err = sqlx.In(
 			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
@@ -586,12 +588,13 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	itemID := query.Get("item_id")
+	itemIDParam := query.Get("item_id")
+	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
 	createdAtParam := query.Get("created_at")
 	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
 
 	items := []Item{}
-	if itemID != "" && createdAt > 0 {
+	if itemID > 0 && createdAt > 0 {
 		// paging
 		err := dbx.Select(&items,
 			"SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
@@ -670,12 +673,13 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	itemID := query.Get("item_id")
+	itemIDParam := query.Get("item_id")
+	itemID, _ := strconv.ParseInt(itemIDParam, 10, 64)
 	createdAtParam := query.Get("created_at")
 	createdAt, _ := strconv.ParseInt(createdAtParam, 10, 64)
 
 	items := []Item{}
-	if itemID != "" && createdAt > 0 {
+	if itemID > 0 && createdAt > 0 {
 		// paging
 		err := dbx.Select(&items,
 			"SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
