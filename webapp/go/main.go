@@ -384,7 +384,7 @@ func getTop(w http.ResponseWriter, r *http.Request) {
 func getNewItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	itemIDStr := query.Get("item_id")
-	itemID := 0
+	var itemID int64
 	if itemIDStr != "" {
 		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
@@ -394,7 +394,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdAtStr := query.Get("created_at")
-	createdAt := int64(0)
+	var createdAt int64
 	if createdAtStr != "" {
 		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
@@ -498,7 +498,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 	itemIDStr := query.Get("item_id")
-	itemID := 0
+	var itemID int64
 	if itemIDStr != "" {
 		itemID, _ := strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
@@ -508,7 +508,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdAtStr := query.Get("created_at")
-	createdAt := int64(0)
+	var createdAt int64
 	if createdAtStr != "" {
 		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
@@ -619,7 +619,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 	itemIDStr := query.Get("item_id")
-	itemID := 0
+	var itemID int64
 	if itemIDStr != "" {
 		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
@@ -629,7 +629,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdAtStr := query.Get("created_at")
-	createdAt := int64(0)
+	var createdAt int64
 	if createdAtStr != "" {
 		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
@@ -719,7 +719,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 	itemIDStr := query.Get("item_id")
-	itemID := 0
+	var itemID int64
 	if itemIDStr != "" {
 		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
@@ -729,7 +729,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdAtStr := query.Get("created_at")
-	createdAt := int64(0)
+	var createdAt int64
 	if createdAtStr != "" {
 		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
