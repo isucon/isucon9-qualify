@@ -32,7 +32,7 @@ class Service
      */
     private $settings;
 
-    private const DATETIME_SQL_FORMAT = 'Y-m-d h:m:s';
+    private const DATETIME_SQL_FORMAT = 'Y-m-d h:i:s';
 
     private const ITEM_STATUS_ON_SALE = 'on_sale';
     private const ITEM_STATUS_Trading = 'trading';
@@ -458,7 +458,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        unset($user['hashed_password'], $user['last_bump'], $user['created_at']);
+        unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
         return $response->withStatus(200)->withJson(
             [
                 'csrf_token' => $token,
@@ -529,7 +529,7 @@ class Service
             return $response->withStatus(422)->withJson(['error' => 'csrf token error']);
         }
 
-        // TODO remove this
+        // For test purpose, use 13 as default category
         $payload->category_id = $payload->category_id ?? 13;
 
         if (empty($payload->name) || empty($payload->description) || empty($payload->price) || $payload->price === 0 || empty($payload->category_id)) {
@@ -737,8 +737,9 @@ class Service
             $pres = $client->post(
                 'http://localhost:5555/token',
                 ['json' => [
-                    'token' =>  $payload->token,
+                    'shop_id' => self::PAYMENT_SERVICE_ISUCARI_SHOP_ID,
                     'api_key' => self::PAYMENT_SERVICE_ISUCARI_API_KEY,
+                    'token' =>  $payload->token,
                     'price' => $item['price'],
                 ]]
             );

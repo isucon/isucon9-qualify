@@ -8,7 +8,7 @@ return function (App $app) {
     // session
     $app->add(
         new \Slim\Middleware\Session([
-            'name' => 'session_isucari',
+            'name' => 'session-isucari',
         ])
     );
 
