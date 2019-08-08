@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -229,7 +230,7 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) {
 	u.RawQuery = q.Encode()
 
 	msg := u.String()
-	fmt.Println(msg)
+	fmt.Fprintln(os.Stderr, msg)
 
 	qrCode, _ := qr.Encode(msg, qr.L, qr.Auto)
 	qrCode, _ = barcode.Scale(qrCode, 256, 256)
