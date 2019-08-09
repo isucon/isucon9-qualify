@@ -1,9 +1,6 @@
 package scenario
 
 import (
-	crand "crypto/rand"
-	"fmt"
-
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -43,16 +40,10 @@ func irregularSell(user1 asset.AppUser) error {
 		return err
 	}
 
-	csrfToken := s1.CSRFToken
-	s1.CSRFToken = secureRandomStr(20)
-
 	err = s1.SellWithWrongCSRFToken("abcd", 100, "description description", 32)
 	if err != nil {
 		return err
 	}
-
-	// CSRFTokenを元に戻す
-	s1.CSRFToken = csrfToken
 
 	err = s1.SellWithWrongPrice("abcd", session.ItemMinPrice-1, "description description", 32)
 	if err != nil {
@@ -114,18 +105,16 @@ func irregularBuy(user1, user2 asset.AppUser) error {
 	if err != nil {
 		return err
 	}
+
+	err = s2.BuyWithWrongCSRFToken(targetItemID, token)
+	if err != nil {
+		return err
+	}
+
 	err = s2.BuyWithFailedToken(targetItemID, token)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func secureRandomStr(b int) string {
-	k := make([]byte, b)
-	if _, err := crand.Read(k); err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%x", k)
 }
