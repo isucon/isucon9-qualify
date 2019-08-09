@@ -9,7 +9,8 @@ import categories from './categoriesReducer';
 import { connectRouter } from 'connected-react-router';
 import { History } from 'history';
 
-export default (history: History) => combineReducers({
+export default (history: History) =>
+  combineReducers({
     router: connectRouter(history),
     authStatus,
     formError,
@@ -18,4 +19,4 @@ export default (history: History) => combineReducers({
     page,
     buyPage,
     categories,
-});
+  });

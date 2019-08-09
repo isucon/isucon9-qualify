@@ -1,12 +1,12 @@
 export interface Category {
-    id: number,
-    parentId: number,
-    categoryName: string,
-    parentCategoryName: string,
+  id: number;
+  parentId: number;
+  categoryName: string;
+  parentCategoryName: string;
 }
 
 export interface CategorySimple {
-    id: number,
-    parentId: number,
-    categoryName: string,
+  id: number;
+  parentId: number;
+  categoryName: string;
 }

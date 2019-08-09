@@ -1,39 +1,39 @@
-import React from "react";
-import Card from "@material-ui/core/Card";
-import { Link as RouteLink } from 'react-router-dom'
-import GridListTileBar from "@material-ui/core/GridListTileBar";
-import makeStyles from "@material-ui/core/styles/makeStyles";
-import {routes} from "../routes/Route";
+import React from 'react';
+import Card from '@material-ui/core/Card';
+import { Link as RouteLink } from 'react-router-dom';
+import GridListTileBar from '@material-ui/core/GridListTileBar';
+import makeStyles from '@material-ui/core/styles/makeStyles';
+import { routes } from '../routes/Route';
 
 const useStyles = makeStyles(theme => ({
-    itemImage: {
-        height: '100%',
-    },
+  itemImage: {
+    height: '100%',
+  },
 }));
 
 interface ItemComponentProps {
-    itemId: number
-    imageUrl: string
-    title: string
-    price: number
+  itemId: number;
+  imageUrl: string;
+  title: string;
+  price: number;
 }
 
 const ItemComponent: React.FC<ItemComponentProps> = ({
-    itemId, imageUrl, title, price
+  itemId,
+  imageUrl,
+  title,
+  price,
 }) => {
-    const classes = useStyles();
+  const classes = useStyles();
 
-    return (
-        <Card>
-            <RouteLink to={routes.item.getPath(itemId)}>
-                <img className={classes.itemImage} src={imageUrl} alt={title}/>
-            </RouteLink>
-            <GridListTileBar
-                title={title}
-                subtitle={`¥${price}`}
-            />
-        </Card>
-    );
+  return (
+    <Card>
+      <RouteLink to={routes.item.getPath(itemId)}>
+        <img className={classes.itemImage} src={imageUrl} alt={title} />
+      </RouteLink>
+      <GridListTileBar title={title} subtitle={`¥${price}`} />
+    </Card>
+  );
 };
 
-export { ItemComponent }
+export { ItemComponent };
