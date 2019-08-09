@@ -2027,7 +2027,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	u := User{}
 	err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusUnauthorized, "user not found")
+		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
 		return
 	}
 	if err != nil {
@@ -2038,6 +2038,10 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 
