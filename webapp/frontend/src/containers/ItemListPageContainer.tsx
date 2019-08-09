@@ -5,7 +5,7 @@ import ItemListPage from '../pages/ItemListPage';
 const mapStateToProps = (state: AppState) => ({
   items: state.timeline.items,
   errorType: state.error.errorType,
-  loading: false, // TODO state.page.isLoading,
+  loading: state.page.isTimelineLoading,
 });
 const mapDispatchToProps = (dispatch: any) => ({});
 

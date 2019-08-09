@@ -13,11 +13,13 @@ import {
 export interface PageState {
   isLoading: boolean;
   isItemPageLoading: boolean;
+  isTimelineLoading: boolean;
 }
 
 const initialState: PageState = {
   isLoading: true,
   isItemPageLoading: true,
+  isTimelineLoading: true,
 };
 
 const page = (
