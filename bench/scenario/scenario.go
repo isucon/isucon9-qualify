@@ -94,7 +94,7 @@ func sellAndBuy() error {
 	if err != nil {
 		return err
 	}
-	surl, err := s3.DecodeQRURL(aurl)
+	surl, err := s1.DecodeQRURL(aurl)
 	if err != nil {
 		return err
 	}

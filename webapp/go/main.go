@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -143,7 +142,7 @@ type Shipping struct {
 	ToName                string    `json:"to_name" db:"to_name"`
 	FromAddress           string    `json:"from_address" db:"from_address"`
 	FromName              string    `json:"from_name" db:"from_name"`
-	ImgName               string    `json:"img_name" db:"img_name"`
+	ImgBinary             []byte    `json:"-" db:"img_binary"`
 	CreatedAt             time.Time `json:"-" db:"created_at"`
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
 }
@@ -152,7 +151,7 @@ type Category struct {
 	ID                 int    `json:"id" db:"id"`
 	ParentID           int    `json:"parent_id" db:"parent_id"`
 	CategoryName       string `json:"category_name" db:"category_name"`
-	ParentCategoryName string `json:"parent_category_name" db:"-"`
+	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
 }
 
 type resNewItems struct {
@@ -188,6 +187,13 @@ type reqItemEdit struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
 	ItemPrice int    `json:"item_price"`
+}
+
+type resItemEdit struct {
+	ItemID        int64 `json:"item_id"`
+	ItemPrice     int   `json:"item_price"`
+	ItemCreatedAt int64 `json:"item_created_at"`
+	ItemUpdatedAt int64 `json:"item_updated_at"`
 }
 
 type reqBuy struct {
@@ -237,8 +243,9 @@ type reqBump struct {
 }
 
 type resSetting struct {
-	CSRFToken string `json:"csrf_token"`
-	User      *User  `json:"user,omitempty"`
+	CSRFToken  string     `json:"csrf_token"`
+	User       *User      `json:"user,omitempty"`
+	Categories []Category `json:"categories"`
 }
 
 func init() {
@@ -308,6 +315,7 @@ func main() {
 	mux.HandleFunc(pat.Post("/ship"), postShip)
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
+	mux.HandleFunc(pat.Get("/transactions/:transaction_evidence_id.png"), getQRCode)
 	mux.HandleFunc(pat.Post("/bump"), postBump)
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
@@ -1058,7 +1066,79 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(&resItemEdit{
+		ItemID:        targetItem.ID,
+		ItemPrice:     targetItem.Price,
+		ItemCreatedAt: targetItem.CreatedAt.Unix(),
+		ItemUpdatedAt: targetItem.UpdatedAt.Unix(),
+	})
+}
+
+func getQRCode(w http.ResponseWriter, r *http.Request) {
+	transactionEvidenceIDStr := pat.Param(r, "transaction_evidence_id")
+	transactionEvidenceID, err := strconv.ParseInt(transactionEvidenceIDStr, 10, 64)
+	if err != nil || transactionEvidenceID <= 0 {
+		outputErrorMsg(w, http.StatusBadRequest, "incorrect transaction_evidence id")
+		return
+	}
+
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	transactionEvidence := TransactionEvidence{}
+	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ?", transactionEvidenceID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	if transactionEvidence.SellerID != seller.ID {
+		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
+		return
+	}
+
+	shipping := Shipping{}
+	err = dbx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", transactionEvidence.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "shippings not found")
+		return
+	}
+	if err != nil {
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	if shipping.Status != ShippingsStatusWaitPickup && shipping.Status != ShippingsStatusShipping {
+		outputErrorMsg(w, http.StatusForbidden, "qrcode not available")
+		return
+	}
+
+	if len(shipping.ImgBinary) == 0 {
+		outputErrorMsg(w, http.StatusInternalServerError, "empty qrcode image")
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Write(shipping.ImgBinary)
 }
 
 func postBuy(w http.ResponseWriter, r *http.Request) {
@@ -1223,7 +1303,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_name`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
 		transactionEvidenceID,
 		ShippingsStatusInitial,
 		targetItem.Name,
@@ -1246,11 +1326,8 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	tx.Commit()
 
-	rpb := resBuy{
-		TransactionEvidenceID: transactionEvidenceID,
-	}
-	json.NewEncoder(w).Encode(rpb)
-
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(resBuy{TransactionEvidenceID: transactionEvidenceID})
 }
 
 func postShip(w http.ResponseWriter, r *http.Request) {
@@ -1361,19 +1438,9 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgName := secureRandomStr(16)
-
-	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s.png", imgName), img, 0644)
-	if err != nil {
-		log.Println(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "failed to save the file")
-		tx.Rollback()
-		return
-	}
-
-	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `img_name` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
+	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
 		ShippingsStatusWaitPickup,
-		imgName,
+		img,
 		time.Now(),
 		transactionEvidence.ID,
 	)
@@ -1388,7 +1455,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	rps := resPostShip{
-		URL: fmt.Sprintf("http://%s/upload/%s.png", r.Host, imgName),
+		URL: fmt.Sprintf("http://%s/transactions/%d.png", r.Host, transactionEvidence.ID),
 	}
 	json.NewEncoder(w).Encode(rps)
 }
@@ -1534,6 +1601,9 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(resBuy{TransactionEvidenceID: transactionEvidence.ID})
 }
 
 func postComplete(w http.ResponseWriter, r *http.Request) {
@@ -1684,6 +1754,9 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(resBuy{TransactionEvidenceID: transactionEvidence.ID})
 }
 
 func postSell(w http.ResponseWriter, r *http.Request) {
@@ -1791,6 +1864,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 	tx.Commit()
 
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(resSell{ID: itemID})
 }
 
@@ -1826,8 +1900,8 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 
 	tx := dbx.MustBegin()
 
-	item := Item{}
-	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
+	targetItem := Item{}
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "item not found")
 		tx.Rollback()
@@ -1840,7 +1914,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if item.SellerID != user.ID {
+	if targetItem.SellerID != user.ID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
 		tx.Rollback()
 		return
@@ -1871,7 +1945,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 	_, err = tx.Exec("UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?",
 		now,
 		now,
-		item.ID,
+		targetItem.ID,
 	)
 	if err != nil {
 		log.Println(err)
@@ -1889,7 +1963,23 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		tx.Rollback()
+		return
+	}
+
 	tx.Commit()
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(&resItemEdit{
+		ItemID:        targetItem.ID,
+		ItemPrice:     targetItem.Price,
+		ItemCreatedAt: targetItem.CreatedAt.Unix(),
+		ItemUpdatedAt: targetItem.UpdatedAt.Unix(),
+	})
 }
 
 func getSettings(w http.ResponseWriter, r *http.Request) {
@@ -1902,6 +1992,16 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	if errMsg == "" {
 		ress.User = &user
 	}
+
+	categories := []Category{}
+
+	err := dbx.Select(&categories, "SELECT * FROM `categories`")
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	ress.Categories = categories
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(ress)
@@ -1956,6 +2056,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(u)
 }
 
@@ -2011,6 +2112,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		AccountName: accountName,
 		Address:     address,
 	}
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(u)
 }
 
