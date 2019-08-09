@@ -3,12 +3,9 @@ package session
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/isucon/isucon9-qualify/bench/fails"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -38,12 +35,9 @@ func (s *Session) LoginWithWrongPassword(accountName, password string) error {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusUnauthorized {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not %d: %w", http.StatusUnauthorized, err), "POST /login: bodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /login: 間違えたパスワードでログインした時の挙動が誤っています")
+	msg, err := checkStatusCode(res, http.StatusUnauthorized)
+	if err != nil {
+		return fails.NewError(err, "POST /login: "+msg)
 	}
 
 	re := resErr{}
@@ -74,12 +68,9 @@ func (s *Session) SellWithWrongCSRFToken(name string, price int, description str
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusUnprocessableEntity {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not %d: %w", http.StatusUnprocessableEntity, err), "POST /sell: bodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /sell: CSRFトークンの確認が正しく動いていません")
+	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	if err != nil {
+		return fails.NewError(err, "POST /sell: "+msg)
 	}
 
 	re := resErr{}
@@ -110,12 +101,9 @@ func (s *Session) SellWithWrongPrice(name string, price int, description string,
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusBadRequest {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not %d: %w", http.StatusBadRequest, err), "POST /sell: bodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /sell: 商品価格は100円以上、1,000,000円以下しか出品できません")
+	msg, err := checkStatusCode(res, http.StatusBadRequest)
+	if err != nil {
+		return fails.NewError(err, "POST /sell: "+msg)
 	}
 
 	re := resErr{}

@@ -3,13 +3,11 @@ package session
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/isucon/isucon9-qualify/bench/fails"
-	"golang.org/x/xerrors"
 )
 
 type reqCard struct {
@@ -39,12 +37,9 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return "", fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "[payment service] /card: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return "", fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "[payment service] /card: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return "", fails.NewError(err, "[payment service] /card: "+msg)
 	}
 
 	rc := &resCard{}
@@ -68,12 +63,9 @@ func (s *Session) ShipmentAccept(surl *url.URL) error {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "[shipment service] /accept: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "[shipment service] /accept: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return fails.NewError(err, "[shipment service] /accept: "+msg)
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
