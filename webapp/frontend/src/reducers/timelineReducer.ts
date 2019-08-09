@@ -1,17 +1,8 @@
 import { AnyAction } from 'redux';
-import { ItemStatus } from '../dataObjects/item';
-
-type ItemSimple = {
-  id: number;
-  status: ItemStatus;
-  name: string;
-  price: number;
-  thumbnailUrl: string;
-  createdAt: number;
-};
+import { TimelineItem } from '../dataObjects/item';
 
 export interface TimelineState {
-  items: ItemSimple[];
+  items: TimelineItem[];
   hasNext: boolean;
   categoryId?: number;
   categoryName?: string;

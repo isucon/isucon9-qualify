@@ -1,5 +1,5 @@
 import React from 'react';
-import { ItemData } from '../dataObjects/item';
+import { TimelineItem } from '../dataObjects/item';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import GridList from '@material-ui/core/GridList';
 import { ItemComponent } from './ItemComponent';
@@ -13,7 +13,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 interface ItemListPageProps {
-  items: ItemData[];
+  items: TimelineItem[];
 }
 
 const ItemListComponent: React.FC<ItemListPageProps> = ({

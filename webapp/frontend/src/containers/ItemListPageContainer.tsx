@@ -1,10 +1,9 @@
 import { connect } from 'react-redux';
 import { AppState } from '../index';
 import ItemListPage from '../pages/ItemListPage';
-import { mockItems } from '../mocks';
 
 const mapStateToProps = (state: AppState) => ({
-  items: mockItems, // TODO
+  items: state.timeline.items,
   errorType: state.error.errorType,
   loading: false, // TODO state.page.isLoading,
 });

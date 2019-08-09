@@ -1,5 +1,5 @@
 import React from 'react';
-import { ItemData } from '../dataObjects/item';
+import { TimelineItem } from '../dataObjects/item';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import { ItemListComponent } from '../components/ItemListComponent';
 import SellingButtonContainer from '../containers/SellingButtonContainer';
@@ -17,7 +17,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 type ItemListPageProps = {
-  items: ItemData[];
+  items: TimelineItem[];
 } & ErrorProps;
 
 const ItemListPage: React.FC<ItemListPageProps> = ({
