@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -143,7 +142,7 @@ type Shipping struct {
 	ToName                string    `json:"to_name" db:"to_name"`
 	FromAddress           string    `json:"from_address" db:"from_address"`
 	FromName              string    `json:"from_name" db:"from_name"`
-	ImgName               string    `json:"img_name" db:"img_name"`
+	ImgBinary             []byte    `json:"-" db:"img_binary"`
 	CreatedAt             time.Time `json:"-" db:"created_at"`
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
 }
@@ -316,6 +315,7 @@ func main() {
 	mux.HandleFunc(pat.Post("/ship"), postShip)
 	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
 	mux.HandleFunc(pat.Post("/complete"), postComplete)
+	mux.HandleFunc(pat.Get("/transactions/:transaction_evidence_id.png"), getQRCode)
 	mux.HandleFunc(pat.Post("/bump"), postBump)
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
@@ -1085,6 +1085,62 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func getQRCode(w http.ResponseWriter, r *http.Request) {
+	transactionEvidenceIDStr := pat.Param(r, "transaction_evidence_id")
+	transactionEvidenceID, err := strconv.ParseInt(transactionEvidenceIDStr, 10, 64)
+	if err != nil || transactionEvidenceID <= 0 {
+		outputErrorMsg(w, http.StatusBadRequest, "incorrect transaction_evidence id")
+		return
+	}
+
+	seller, errCode, errMsg := getUser(r)
+	if errMsg != "" {
+		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	transactionEvidence := TransactionEvidence{}
+	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ?", transactionEvidenceID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
+		return
+	}
+	if err != nil {
+		log.Println(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	if transactionEvidence.SellerID != seller.ID {
+		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
+		return
+	}
+
+	shipping := Shipping{}
+	err = dbx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", transactionEvidence.ID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "shippings not found")
+		return
+	}
+	if err != nil {
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	if shipping.Status != ShippingsStatusWaitPickup && shipping.Status != ShippingsStatusShipping {
+		outputErrorMsg(w, http.StatusForbidden, "qrcode not available")
+		return
+	}
+
+	if len(shipping.ImgBinary) == 0 {
+		outputErrorMsg(w, http.StatusInternalServerError, "empty qrcode image")
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Write(shipping.ImgBinary)
+}
+
 func postBuy(w http.ResponseWriter, r *http.Request) {
 	rb := reqBuy{}
 
@@ -1247,7 +1303,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_name`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+	_, err = tx.Exec("INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
 		transactionEvidenceID,
 		ShippingsStatusInitial,
 		targetItem.Name,
@@ -1382,19 +1438,9 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgName := secureRandomStr(16)
-
-	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s.png", imgName), img, 0644)
-	if err != nil {
-		log.Println(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "failed to save the file")
-		tx.Rollback()
-		return
-	}
-
-	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `img_name` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
+	_, err = tx.Exec("UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
 		ShippingsStatusWaitPickup,
-		imgName,
+		img,
 		time.Now(),
 		transactionEvidence.ID,
 	)
@@ -1409,7 +1455,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	rps := resPostShip{
-		URL: fmt.Sprintf("http://%s/upload/%s.png", r.Host, imgName),
+		URL: fmt.Sprintf("http://%s/transactions/%d.png", r.Host, transactionEvidence.ID),
 	}
 	json.NewEncoder(w).Encode(rps)
 }
