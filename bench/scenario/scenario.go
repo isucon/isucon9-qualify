@@ -66,6 +66,15 @@ func Verify() *fails.Critical {
 		}
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := irregularBuy(user2, user1)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
 	wg.Wait()
 
 	return critical

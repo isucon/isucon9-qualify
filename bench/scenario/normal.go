@@ -8,6 +8,12 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/session"
 )
 
+const (
+	CorrectCardNumber = "AAAAAAAA"
+	FailedCardNumber  = "FA10AAAA"
+	IsucariShopID     = "11"
+)
+
 func sellAndBuy(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
@@ -51,7 +57,7 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	if err != nil {
 		return err
 	}
-	token, err := s2.PaymentCard("AAAAAAAA", "11")
+	token, err := s2.PaymentCard(CorrectCardNumber, IsucariShopID)
 	if err != nil {
 		return err
 	}
@@ -65,12 +71,12 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	s3, err := session.NewSession()
+	surl, err := s1.DecodeQRURL(apath)
 	if err != nil {
 		return err
 	}
 
-	surl, err := s1.DecodeQRURL(apath)
+	s3, err := session.NewSession()
 	if err != nil {
 		return err
 	}

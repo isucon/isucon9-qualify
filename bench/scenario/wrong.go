@@ -1,9 +1,6 @@
 package scenario
 
 import (
-	crand "crypto/rand"
-	"fmt"
-
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -43,16 +40,10 @@ func irregularSell(user1 asset.AppUser) error {
 		return err
 	}
 
-	csrfToken := s1.CSRFToken
-	s1.CSRFToken = secureRandomStr(20)
-
 	err = s1.SellWithWrongCSRFToken("abcd", 100, "description description", 32)
 	if err != nil {
 		return err
 	}
-
-	// CSRFTokenを元に戻す
-	s1.CSRFToken = csrfToken
 
 	err = s1.SellWithWrongPrice("abcd", session.ItemMinPrice-1, "description description", 32)
 	if err != nil {
@@ -67,10 +58,63 @@ func irregularSell(user1 asset.AppUser) error {
 	return nil
 }
 
-func secureRandomStr(b int) string {
-	k := make([]byte, b)
-	if _, err := crand.Read(k); err != nil {
-		panic(err)
+func irregularBuy(user1, user2 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
 	}
-	return fmt.Sprintf("%x", k)
+
+	s2, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	seller, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(seller) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	buyer, err := s2.Login(user2.AccountName, user2.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user2.Equal(buyer) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s2.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
+	if err != nil {
+		return err
+	}
+	token, err := s2.PaymentCard(FailedCardNumber, IsucariShopID)
+	if err != nil {
+		return err
+	}
+
+	err = s2.BuyWithWrongCSRFToken(targetItemID, token)
+	if err != nil {
+		return err
+	}
+
+	err = s2.BuyWithFailedToken(targetItemID, token)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
