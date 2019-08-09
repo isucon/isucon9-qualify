@@ -47,7 +47,7 @@ type reqShip struct {
 }
 
 type resShip struct {
-	URL string `json:"url"`
+	Path string `json:"path"`
 }
 
 type reqBump struct {
@@ -191,7 +191,7 @@ func (s *Session) Buy(itemID int64, token string) error {
 	return nil
 }
 
-func (s *Session) Ship(itemID int64) (aurl string, err error) {
+func (s *Session) Ship(itemID int64) (apath string, err error) {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -221,7 +221,11 @@ func (s *Session) Ship(itemID int64) (aurl string, err error) {
 		return "", fails.NewError(err, "POST /ship: JSONデコードに失敗しました")
 	}
 
-	return rs.URL, nil
+	if len(rs.Path) == 0 {
+		return "", fails.NewError(nil, "POST /ship: Pathが空です")
+	}
+
+	return rs.Path, nil
 }
 
 func (s *Session) ShipDone(itemID int64) error {
@@ -288,21 +292,8 @@ func (s *Session) Complete(itemID int64) error {
 	return nil
 }
 
-func (s *Session) DecodeQRURL(aurl string) (*url.URL, error) {
-	if len(aurl) == 0 {
-		return nil, fails.NewError(nil, "URLが空です")
-	}
-
-	parsedURL, err := url.ParseRequestURI(aurl)
-	if err != nil {
-		return nil, fails.NewError(err, "QRコードの画像URLがURLとして解釈できません")
-	}
-
-	if parsedURL.Host != ShareTargetURLs.AppURL.Host {
-		return nil, fails.NewError(nil, "画像はアプリケーションのドメインで配信する必要があります")
-	}
-
-	req, err := s.newGetRequest(parsedURL, "")
+func (s *Session) DecodeQRURL(apath string) (*url.URL, error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
 		return nil, fails.NewError(err, "リクエストに失敗しました")
 	}
