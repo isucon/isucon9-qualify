@@ -118,3 +118,38 @@ func (s *Session) SellWithWrongPrice(name string, price int, description string,
 
 	return nil
 }
+
+func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
+	b, _ := json.Marshal(reqBuy{
+		CSRFToken: s.CSRFToken,
+		ItemID:    itemID,
+		Token:     token,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /buy: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /buy: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusBadRequest)
+	if err != nil {
+		return fails.NewError(err, "POST /buy: "+msg)
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return fails.NewError(err, "POST /buy: JSONデコードに失敗しました")
+	}
+
+	if re.Error != "カードの残高が足りません" {
+		return fails.NewError(err, "POST /buy: カードの残高が足りないはずです")
+	}
+
+	return nil
+}

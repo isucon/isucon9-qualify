@@ -67,6 +67,61 @@ func irregularSell(user1 asset.AppUser) error {
 	return nil
 }
 
+func irregularBuy(user1, user2 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	s2, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	seller, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(seller) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	buyer, err := s2.Login(user2.AccountName, user2.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user2.Equal(buyer) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s2.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
+	if err != nil {
+		return err
+	}
+	token, err := s2.PaymentCard(FailedCardNumber, IsucariShopID)
+	if err != nil {
+		return err
+	}
+	err = s2.BuyWithFailedToken(targetItemID, token)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func secureRandomStr(b int) string {
 	k := make([]byte, b)
 	if _, err := crand.Read(k); err != nil {
