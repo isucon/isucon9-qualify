@@ -1,24 +1,36 @@
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 import SellFormComponent from "../components/SellFormComponent";
-import {listItemAction} from "../actions/sellingItemAction";
-import {AppState} from "../index";
-import {AnyAction} from "redux";
-import {ThunkDispatch} from "redux-thunk";
-import {CategorySimple} from "../dataObjects/category";
+import { listItemAction } from "../actions/sellingItemAction";
+import { AppState } from "../index";
+import { AnyAction } from "redux";
+import { ThunkDispatch } from "redux-thunk";
+import { CategorySimple } from "../dataObjects/category";
 
 const mapStateToProps = (state: AppState) => {
-    // Note: Parent category's parent_id is 0
-    const categories = state.categories.categories.filter((category: CategorySimple) => category.parentId !== 0)
+  // Note: Parent category's parent_id is 0
+  const categories = state.categories.categories.filter(
+    (category: CategorySimple) => category.parentId !== 0
+  );
 
-    return {
-        error: state.formError.error,
-        categories,
-    };
+  return {
+    error: state.formError.error,
+    categories
+  };
 };
-const mapDispatchToProps = (dispatch: ThunkDispatch<AppState, undefined, AnyAction>) => ({
-    sellItem: (name: string, description: string, price: number, categoryId: number) => {
-        dispatch(listItemAction(name, description, price, categoryId));
-    },
+const mapDispatchToProps = (
+  dispatch: ThunkDispatch<AppState, undefined, AnyAction>
+) => ({
+  sellItem: (
+    name: string,
+    description: string,
+    price: number,
+    categoryId: number
+  ) => {
+    dispatch(listItemAction(name, description, price, categoryId));
+  }
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(SellFormComponent);
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(SellFormComponent);

@@ -1,3 +1,3 @@
-import {ResponseError} from "./ResponseError";
+import { ResponseError } from "./ResponseError";
 
 export class AppResponseError extends ResponseError {}

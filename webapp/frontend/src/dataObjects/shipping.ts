@@ -1,1 +1,1 @@
-export type ShippingStatus = 'initial' | 'wait_pickup' | 'shipping' | 'done';
+export type ShippingStatus = "initial" | "wait_pickup" | "shipping" | "done";

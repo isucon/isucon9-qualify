@@ -1,8 +1,8 @@
-import {UserData} from "./user";
-import {CategorySimple} from "./category";
+import { UserData } from "./user";
+import { CategorySimple } from "./category";
 
 export interface Settings {
-    csrfToken: string,
-    categories: CategorySimple[],
-    user?: UserData,
+  csrfToken: string;
+  categories: CategorySimple[];
+  user?: UserData;
 }

@@ -1,5 +1,5 @@
-import logger from './logger';
-import {Middleware} from "redux";
+import logger from "./logger";
+import { Middleware } from "redux";
 
 const middlewares: Middleware[] = [logger];
 

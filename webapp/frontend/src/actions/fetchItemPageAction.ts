@@ -1,93 +1,103 @@
-import AppClient from '../httpClients/appClient';
+import AppClient from "../httpClients/appClient";
 import { ThunkAction, ThunkDispatch } from "redux-thunk";
-import {Action, AnyAction} from "redux";
-import {GetItemRes} from "../types/appApiTypes";
-import {AppResponseError} from "../errors/AppResponseError";
-import {ItemData} from "../dataObjects/item";
-import {NotFoundError} from "../errors/NotFoundError";
+import { Action, AnyAction } from "redux";
+import { GetItemRes } from "../types/appApiTypes";
+import { AppResponseError } from "../errors/AppResponseError";
+import { ItemData } from "../dataObjects/item";
+import { NotFoundError } from "../errors/NotFoundError";
 
-export const FETCH_ITEM_PAGE_START = 'FETCH_ITEM_PAGE_START';
-export const FETCH_ITEM_PAGE_SUCCESS = 'FETCH_ITEM_PAGE_SUCCESS';
-export const FETCH_ITEM_PAGE_FAIL = 'FETCH_ITEM_PAGE_FAIL';
+export const FETCH_ITEM_PAGE_START = "FETCH_ITEM_PAGE_START";
+export const FETCH_ITEM_PAGE_SUCCESS = "FETCH_ITEM_PAGE_SUCCESS";
+export const FETCH_ITEM_PAGE_FAIL = "FETCH_ITEM_PAGE_FAIL";
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>
+type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
 
 export function fetchItemPageAction(itemId: string): ThunkResult<void> {
-    return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-        Promise.resolve(() => {
-            dispatch(fetchItemPageStartAction());
-        })
-            .then(() => AppClient.get(`/items/${itemId}.json`))
-            .then((response: Response) => {
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new NotFoundError('Item not found');
-                    }
+  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+    Promise.resolve(() => {
+      dispatch(fetchItemPageStartAction());
+    })
+      .then(() => AppClient.get(`/items/${itemId}.json`))
+      .then((response: Response) => {
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new NotFoundError("Item not found");
+          }
 
-                    throw new AppResponseError('Request for getting item data was failed', response);
-                }
+          throw new AppResponseError(
+            "Request for getting item data was failed",
+            response
+          );
+        }
 
-                return response.json();
-            })
-            .then((body: GetItemRes) => {
-                dispatch(fetchItemPageSuccessAction({
-                    id: body.id,
-                    status: body.status,
-                    sellerId: body.seller_id,
-                    seller: {
-                        id: body.seller.id,
-                        accountName: body.seller.account_name,
-                        numSellItems: body.seller.num_sell_items,
-                    },
-                    buyerId: body.buyer_id,
-                    buyer: body.buyer,
-                    name: body.name,
-                    price: body.price,
-                    thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png', // TODO
-                    description: body.description,
-                    category: {
-                        id: body.category.id,
-                        parentId: body.category.parent_id,
-                        categoryName: body.category.category_name,
-                        parentCategoryName: body.category.parent_category_name,
-                    },
-                    createdAt: body.created_at,
-                }));
-            })
-            .catch((err: Error) => {
-                dispatch(fetchItemPageFailAction());
-            });
-    };
+        return response.json();
+      })
+      .then((body: GetItemRes) => {
+        dispatch(
+          fetchItemPageSuccessAction({
+            id: body.id,
+            status: body.status,
+            sellerId: body.seller_id,
+            seller: {
+              id: body.seller.id,
+              accountName: body.seller.account_name,
+              numSellItems: body.seller.num_sell_items
+            },
+            buyerId: body.buyer_id,
+            buyer: body.buyer,
+            name: body.name,
+            price: body.price,
+            thumbnailUrl:
+              "https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png", // TODO
+            description: body.description,
+            category: {
+              id: body.category.id,
+              parentId: body.category.parent_id,
+              categoryName: body.category.category_name,
+              parentCategoryName: body.category.parent_category_name
+            },
+            createdAt: body.created_at
+          })
+        );
+      })
+      .catch((err: Error) => {
+        dispatch(fetchItemPageFailAction());
+      });
+  };
 }
 
-export interface FetchItemPageStartAction extends Action<typeof FETCH_ITEM_PAGE_START> {}
+export interface FetchItemPageStartAction
+  extends Action<typeof FETCH_ITEM_PAGE_START> {}
 
 const fetchItemPageStartAction = (): FetchItemPageStartAction => {
-    return {
-        type: FETCH_ITEM_PAGE_START,
-    };
+  return {
+    type: FETCH_ITEM_PAGE_START
+  };
 };
 
-export interface FetchItemPageSuccessAction extends Action<typeof FETCH_ITEM_PAGE_SUCCESS > {
-    payload: {
-        item: ItemData,
-    },
+export interface FetchItemPageSuccessAction
+  extends Action<typeof FETCH_ITEM_PAGE_SUCCESS> {
+  payload: {
+    item: ItemData;
+  };
 }
 
-const fetchItemPageSuccessAction = (item: ItemData): FetchItemPageSuccessAction => {
-    return {
-        type: FETCH_ITEM_PAGE_SUCCESS ,
-        payload: {
-            item
-        },
-    };
+const fetchItemPageSuccessAction = (
+  item: ItemData
+): FetchItemPageSuccessAction => {
+  return {
+    type: FETCH_ITEM_PAGE_SUCCESS,
+    payload: {
+      item
+    }
+  };
 };
 
-export interface FetchItemPageFailAction extends Action<typeof FETCH_ITEM_PAGE_FAIL > {}
+export interface FetchItemPageFailAction
+  extends Action<typeof FETCH_ITEM_PAGE_FAIL> {}
 
 const fetchItemPageFailAction = (): FetchItemPageFailAction => {
-    return {
-        type: FETCH_ITEM_PAGE_FAIL ,
-    };
+  return {
+    type: FETCH_ITEM_PAGE_FAIL
+  };
 };
-
