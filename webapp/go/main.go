@@ -1127,13 +1127,13 @@ func getQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(shipping.ImgBinary) == 0 {
-		outputErrorMsg(w, http.StatusInternalServerError, "empty qrcode image")
+	if shipping.Status != ShippingsStatusWaitPickup && shipping.Status != ShippingsStatusShipping {
+		outputErrorMsg(w, http.StatusForbidden, "qrcode not available")
 		return
 	}
 
-	if shipping.Status != ShippingsStatusWaitPickup && shipping.Status != ShippingsStatusShipping {
-		outputErrorMsg(w, http.StatusForbidden, "qrcode not available")
+	if len(shipping.ImgBinary) == 0 {
+		outputErrorMsg(w, http.StatusInternalServerError, "empty qrcode image")
 		return
 	}
 
