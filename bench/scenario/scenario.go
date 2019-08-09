@@ -94,7 +94,7 @@ func sellAndBuy() error {
 		return err
 	}
 
-	aurl, err := s1.Ship(targetItemID)
+	apath, err := s1.Ship(targetItemID)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,8 @@ func sellAndBuy() error {
 	if err != nil {
 		return err
 	}
-	surl, err := s1.DecodeQRURL(aurl)
+
+	surl, err := s1.DecodeQRURL(apath)
 	if err != nil {
 		return err
 	}

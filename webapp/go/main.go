@@ -224,7 +224,7 @@ type reqPostShip struct {
 }
 
 type resPostShip struct {
-	URL string `json:"url"`
+	Path string `json:"path"`
 }
 
 type reqPostShipDone struct {
@@ -1455,7 +1455,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	rps := resPostShip{
-		URL: fmt.Sprintf("http://%s/transactions/%d.png", r.Host, transactionEvidence.ID),
+		Path: fmt.Sprintf("/transactions/%d.png", transactionEvidence.ID),
 	}
 	json.NewEncoder(w).Encode(rps)
 }
