@@ -190,7 +190,7 @@ type reqItemEdit struct {
 	ItemPrice int    `json:"item_price"`
 }
 
-type resIemEdit struct {
+type resItemEdit struct {
 	ItemID        int64 `json:"item_id"`
 	ItemPrice     int   `json:"item_price"`
 	ItemCreatedAt int64 `json:"item_created_at"`
@@ -1076,7 +1076,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-	json.NewEncoder(w).Encode(&resIemEdit{
+	json.NewEncoder(w).Encode(&resItemEdit{
 		ItemID:        targetItem.ID,
 		ItemPrice:     targetItem.Price,
 		ItemCreatedAt: targetItem.CreatedAt.Unix(),
@@ -1927,7 +1927,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-	json.NewEncoder(w).Encode(&resIemEdit{
+	json.NewEncoder(w).Encode(&resItemEdit{
 		ItemID:        targetItem.ID,
 		ItemPrice:     targetItem.Price,
 		ItemCreatedAt: targetItem.CreatedAt.Unix(),
