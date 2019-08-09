@@ -57,8 +57,8 @@ const routes: Array<{
     },
 ];
 
-const getLinks: () => any[] = () => {
-    const routeComponents: React.ReactNode[] = []; // TODO
+const getLinks: () => React.ReactNode[] = () => {
+    const routeComponents: React.ReactNode[] = [];
 
     for (const route of routes) {
         routeComponents.push(
@@ -71,18 +71,16 @@ const getLinks: () => any[] = () => {
     return routeComponents;
 };
 
-const App: React.FC = () => {
-    return (
-        <React.Fragment>
-            <div>
-                <ul>
-                    {getLinks()}
-                </ul>
-            </div>
-            <hr />
-            <AppRoute/>
-        </React.Fragment>
-    );
-};
+const App: React.FC<{}> = () => (
+    <React.Fragment>
+        <div>
+            <ul>
+                {getLinks()}
+            </ul>
+        </div>
+        <hr />
+        <AppRoute/>
+    </React.Fragment>
+);
 
 export default App;
