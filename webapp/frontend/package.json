@@ -26,6 +26,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "deploy": "npm run build && rm -rf ../public/*.js && cp -r build/* ../public/",
+    "fix": "prettier --write ./src/**/*.{ts,tsx}",
+    "lint": "npm run fix && eslint",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "watch": "npm-watch"
@@ -55,7 +57,21 @@
     "@types/recompose": "^0.30.6",
     "@types/redux": "^3.6.0",
     "@types/redux-thunk": "^2.1.0",
+    "husky": "^3.0.3",
+    "lint-staged": "^9.2.1",
     "npm-watch": "^0.6.0",
+    "prettier": "^1.18.2",
     "redux-devtools-extension": "^2.13.8"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "npm run lint",
+      "git add"
+    ]
   }
 }
