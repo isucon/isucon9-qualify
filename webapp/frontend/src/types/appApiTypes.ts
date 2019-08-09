@@ -10,6 +10,12 @@ type Category = {
     parent_category_name: string,
 }
 
+type CategorySimple = {
+    id: number,
+    parent_id: number,
+    category_name: string,
+}
+
 type User = {
     id: number,
     account_name: string,
@@ -109,6 +115,7 @@ export interface SellRes extends Response {
 export interface SettingsRes {
     csrf_token: string,
     user?: User,
+    categories: CategorySimple[],
 }
 
 /**

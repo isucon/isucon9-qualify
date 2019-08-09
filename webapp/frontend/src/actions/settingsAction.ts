@@ -6,6 +6,7 @@ import {AppResponseError} from "../errors/AppResponseError";
 import {AppState} from "../index";
 import {Settings} from "../dataObjects/settings";
 import {UserData} from "../dataObjects/user";
+import {CategorySimple} from "../dataObjects/category";
 
 export const FETCH_SETTINGS_START = 'FETCH_SETTINGS_START';
 export const FETCH_SETTINGS_SUCCESS = 'FETCH_SETTINGS_SUCCESS';
@@ -40,6 +41,11 @@ export function fetchSettings(): ThunkResult<void> {
 
                 dispatch(fetchSettingsSuccessAction({
                     csrfToken: body.csrf_token,
+                    categories: body.categories.map<CategorySimple>((category) => ({
+                        id: category.id,
+                        parentId: category.parent_id,
+                        categoryName: category.category_name,
+                    })),
                     user: user,
                 }));
             })
