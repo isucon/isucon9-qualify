@@ -68,9 +68,6 @@ export interface LoginRes {
 /**
  * GET /item
  */
-export interface GetItemReq {
-  item_id: number;
-}
 export interface GetItemRes {
   id: number;
   seller_id: number;
