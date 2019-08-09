@@ -54,18 +54,6 @@ type reqBump struct {
 	ItemID    int64  `json:"item_id"`
 }
 
-func checkStatusCode(res *http.Response, expectedStatusCode int) (msg string, err error) {
-	if res.StatusCode != expectedStatusCode {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return "bodyの読み込みに失敗しました", err
-		}
-		return fmt.Sprintf("got response status code %d; expected %d", res.StatusCode, expectedStatusCode), fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
-	}
-
-	return "", nil
-}
-
 func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	b, _ := json.Marshal(reqLogin{
 		AccountName: accountName,

@@ -65,12 +65,12 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	s3, err := session.NewSession()
+	surl, err := s1.DecodeQRURL(apath)
 	if err != nil {
 		return err
 	}
 
-	surl, err := s1.DecodeQRURL(apath)
+	s3, err := session.NewSession()
 	if err != nil {
 		return err
 	}
