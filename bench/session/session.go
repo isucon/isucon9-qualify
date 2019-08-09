@@ -18,7 +18,7 @@ const (
 )
 
 type Session struct {
-	csrfToken  string
+	CSRFToken  string
 	httpClient *http.Client
 }
 
