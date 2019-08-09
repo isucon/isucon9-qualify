@@ -118,13 +118,13 @@ func (s *Session) SetSettings() error {
 		return fails.NewError(fmt.Errorf("csrf token is empty"), "GET /settings: csrf tokenが空でした")
 	}
 
-	s.csrfToken = rs.CSRFToken
+	s.CSRFToken = rs.CSRFToken
 	return nil
 }
 
 func (s *Session) Sell(name string, price int, description string, categoryID int) (int64, error) {
 	b, _ := json.Marshal(reqSell{
-		CSRFToken:   s.csrfToken,
+		CSRFToken:   s.CSRFToken,
 		Name:        name,
 		Price:       price,
 		Description: description,
@@ -160,7 +160,7 @@ func (s *Session) Sell(name string, price int, description string, categoryID in
 
 func (s *Session) Buy(itemID int64, token string) error {
 	b, _ := json.Marshal(reqBuy{
-		CSRFToken: s.csrfToken,
+		CSRFToken: s.CSRFToken,
 		ItemID:    itemID,
 		Token:     token,
 	})
@@ -193,7 +193,7 @@ func (s *Session) Buy(itemID int64, token string) error {
 
 func (s *Session) Ship(itemID int64) (apath string, err error) {
 	b, _ := json.Marshal(reqShip{
-		CSRFToken: s.csrfToken,
+		CSRFToken: s.CSRFToken,
 		ItemID:    itemID,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
@@ -230,7 +230,7 @@ func (s *Session) Ship(itemID int64) (apath string, err error) {
 
 func (s *Session) ShipDone(itemID int64) error {
 	b, _ := json.Marshal(reqShip{
-		CSRFToken: s.csrfToken,
+		CSRFToken: s.CSRFToken,
 		ItemID:    itemID,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship_done", "application/json", bytes.NewBuffer(b))
@@ -262,7 +262,7 @@ func (s *Session) ShipDone(itemID int64) error {
 
 func (s *Session) Complete(itemID int64) error {
 	b, _ := json.Marshal(reqShip{
-		CSRFToken: s.csrfToken,
+		CSRFToken: s.CSRFToken,
 		ItemID:    itemID,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/complete", "application/json", bytes.NewBuffer(b))
@@ -337,7 +337,7 @@ func (s *Session) DecodeQRURL(apath string) (*url.URL, error) {
 
 func (s *Session) Bump(itemID int64) error {
 	b, _ := json.Marshal(reqBump{
-		CSRFToken: s.csrfToken,
+		CSRFToken: s.CSRFToken,
 		ItemID:    itemID,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/bump", "application/json", bytes.NewBuffer(b))

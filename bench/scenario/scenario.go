@@ -3,6 +3,7 @@ package scenario
 import (
 	"sync"
 
+	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 )
 
@@ -14,10 +15,12 @@ func Verify() *fails.Critical {
 
 	critical := fails.NewCritical()
 
+	user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sellAndBuy()
+		err := sellAndBuy(user1, user2)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -26,7 +29,29 @@ func Verify() *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := bump()
+		user1 := asset.AppUser{
+			AccountName: "aaa",
+			Address:     "aaa",
+			Password:    "aaa",
+		}
+		user2 := asset.AppUser{
+			AccountName: "bbb",
+			Address:     "bbb",
+			Password:    "bbb",
+		}
+		// bumpするためにはそのユーザーのItemIDが必要
+		err := bump(user1, user2)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	user3 := asset.GetRandomUser()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := irregularLoginWrongPassword(user3)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -35,25 +60,7 @@ func Verify() *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := irregularWrongPassword()
-		if err != nil {
-			critical.Add(err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err := irregularSellWrongCSRFToken()
-		if err != nil {
-			critical.Add(err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err := irregularSellWrongPrice()
+		err := irregularSell(user3)
 		if err != nil {
 			critical.Add(err)
 		}

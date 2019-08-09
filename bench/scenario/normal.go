@@ -8,7 +8,7 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/session"
 )
 
-func sellAndBuy() error {
+func sellAndBuy(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
 		return err
@@ -18,8 +18,6 @@ func sellAndBuy() error {
 	if err != nil {
 		return err
 	}
-
-	user1, user2 := asset.GetRandomUserPair()
 
 	seller, err := s1.Login(user1.AccountName, user1.Password)
 	if err != nil {
@@ -97,7 +95,7 @@ func sellAndBuy() error {
 	return nil
 }
 
-func bump() error {
+func bump(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
 		return err
@@ -107,8 +105,6 @@ func bump() error {
 	if err != nil {
 		return err
 	}
-
-	user1, user2 := asset.GetRandomUserPair()
 
 	seller, err := s1.Login(user1.AccountName, user1.Password)
 	if err != nil {

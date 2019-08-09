@@ -1,4 +1,4 @@
 use `isucari`;
 -- For TEST
 
-INSERT INTO `items` VALUES (1,1,2,'on_sale','testtest',300,'test_description',33,'2019-08-07 23:36:47','2019-08-07 23:34:02');
+INSERT INTO `items` VALUES (1,1,0,'on_sale','testtest',300,'test_description',33,'2019-08-07 23:36:47','2019-08-07 23:34:02');
