@@ -55,6 +55,10 @@ type reqBump struct {
 	ItemID    int64  `json:"item_id"`
 }
 
+type resErr struct {
+	Error string `json:"error"`
+}
+
 func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	b, _ := json.Marshal(reqLogin{
 		AccountName: accountName,

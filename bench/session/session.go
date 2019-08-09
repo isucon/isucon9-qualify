@@ -131,3 +131,7 @@ func (s *Session) Do(req *http.Request) (*http.Response, error) {
 
 	return res, nil
 }
+
+func (s *Session) OverwriteCSRFToken(token string) {
+	s.csrfToken = token
+}

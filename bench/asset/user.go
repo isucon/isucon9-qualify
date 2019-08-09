@@ -32,3 +32,7 @@ func (u1 *AppUser) Equal(u2 *AppUser) bool {
 func GetRandomUserPair() (AppUser, AppUser) {
 	return users[0], users[1]
 }
+
+func GetRandomUser() AppUser {
+	return users[1]
+}
