@@ -94,7 +94,7 @@ func (s *Session) SellWithWrongCSRFToken(name string, price int, description str
 
 func (s *Session) SellWithWrongPrice(name string, price int, description string, categoryID int) error {
 	b, _ := json.Marshal(reqSell{
-		CSRFToken:   s.CSRFToken,
+		CSRFToken:   s.csrfToken,
 		Name:        name,
 		Price:       price,
 		Description: description,
@@ -162,7 +162,7 @@ func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
 
 func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
 	b, _ := json.Marshal(reqBuy{
-		CSRFToken: s.CSRFToken,
+		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
 		Token:     token,
 	})
