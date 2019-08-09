@@ -1,16 +1,16 @@
-import AppClient from "../httpClients/appClient";
-import { ThunkAction, ThunkDispatch } from "redux-thunk";
-import { Action, AnyAction } from "redux";
-import { SettingsRes } from "../types/appApiTypes";
-import { AppResponseError } from "../errors/AppResponseError";
-import { AppState } from "../index";
-import { Settings } from "../dataObjects/settings";
-import { UserData } from "../dataObjects/user";
-import { CategorySimple } from "../dataObjects/category";
+import AppClient from '../httpClients/appClient';
+import { ThunkAction, ThunkDispatch } from 'redux-thunk';
+import { Action, AnyAction } from 'redux';
+import { SettingsRes } from '../types/appApiTypes';
+import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
+import { Settings } from '../dataObjects/settings';
+import { UserData } from '../dataObjects/user';
+import { CategorySimple } from '../dataObjects/category';
 
-export const FETCH_SETTINGS_START = "FETCH_SETTINGS_START";
-export const FETCH_SETTINGS_SUCCESS = "FETCH_SETTINGS_SUCCESS";
-export const FETCH_SETTINGS_FAIL = "FETCH_SETTINGS_FAIL";
+export const FETCH_SETTINGS_START = 'FETCH_SETTINGS_START';
+export const FETCH_SETTINGS_SUCCESS = 'FETCH_SETTINGS_SUCCESS';
+export const FETCH_SETTINGS_FAIL = 'FETCH_SETTINGS_FAIL';
 
 type ThunkResult<R> = ThunkAction<R, AppState, undefined, AnyAction>;
 
@@ -23,8 +23,8 @@ export function fetchSettings(): ThunkResult<void> {
       .then((response: Response) => {
         if (!response.ok) {
           throw new AppResponseError(
-            "Request for getting settings data was failed",
-            response
+            'Request for getting settings data was failed',
+            response,
           );
         }
 
@@ -38,7 +38,7 @@ export function fetchSettings(): ThunkResult<void> {
             id: body.user.id,
             accountName: body.user.account_name,
             address: body.user.address,
-            numSellItems: body.user.num_sell_items
+            numSellItems: body.user.num_sell_items,
           };
         }
 
@@ -48,10 +48,10 @@ export function fetchSettings(): ThunkResult<void> {
             categories: body.categories.map<CategorySimple>(category => ({
               id: category.id,
               parentId: category.parent_id,
-              categoryName: category.category_name
+              categoryName: category.category_name,
             })),
-            user: user
-          })
+            user: user,
+          }),
         );
       })
       .catch((err: Error) => {
@@ -64,7 +64,7 @@ export interface FetchSettingsStartAction
   extends Action<typeof FETCH_SETTINGS_START> {}
 
 const fetchSettingStartAction = (): FetchSettingsStartAction => ({
-  type: "FETCH_SETTINGS_START"
+  type: 'FETCH_SETTINGS_START',
 });
 
 export interface FetchSettingsSuccessAction
@@ -75,17 +75,17 @@ export interface FetchSettingsSuccessAction
 }
 
 const fetchSettingsSuccessAction = (
-  settings: Settings
+  settings: Settings,
 ): FetchSettingsSuccessAction => ({
-  type: "FETCH_SETTINGS_SUCCESS",
+  type: 'FETCH_SETTINGS_SUCCESS',
   payload: {
-    settings
-  }
+    settings,
+  },
 });
 
 export interface FetchSettingsFailAction
   extends Action<typeof FETCH_SETTINGS_FAIL> {}
 
 const fetchItemPageFailAction = (): FetchSettingsFailAction => ({
-  type: "FETCH_SETTINGS_FAIL"
+  type: 'FETCH_SETTINGS_FAIL',
 });

@@ -1,41 +1,41 @@
-import React from "react";
+import React from 'react';
 import {
   Avatar,
   createStyles,
   Theme,
   Typography,
-  WithStyles
-} from "@material-ui/core";
-import { LockOutlined } from "@material-ui/icons";
-import TextField from "@material-ui/core/TextField";
-import Button from "@material-ui/core/Button";
-import Grid from "@material-ui/core/Grid";
-import { Link as RouteLink } from "react-router-dom";
-import { StyleRules } from "@material-ui/core/styles";
-import withStyles from "@material-ui/core/styles/withStyles";
-import { RegisterReq } from "../types/appApiTypes";
-import { ErrorMessageComponent } from "./ErrorMessageComponent";
-import { routes } from "../routes/Route";
+  WithStyles,
+} from '@material-ui/core';
+import { LockOutlined } from '@material-ui/icons';
+import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
+import Grid from '@material-ui/core/Grid';
+import { Link as RouteLink } from 'react-router-dom';
+import { StyleRules } from '@material-ui/core/styles';
+import withStyles from '@material-ui/core/styles/withStyles';
+import { RegisterReq } from '../types/appApiTypes';
+import { ErrorMessageComponent } from './ErrorMessageComponent';
+import { routes } from '../routes/Route';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     paper: {
       marginTop: theme.spacing(1),
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center"
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
     },
     avatar: {
       margin: theme.spacing(1),
-      backgroundColor: theme.palette.secondary.main
+      backgroundColor: theme.palette.secondary.main,
     },
     form: {
-      width: "100%",
-      marginTop: theme.spacing(1)
+      width: '100%',
+      marginTop: theme.spacing(1),
     },
     submit: {
-      margin: theme.spacing(3, 0, 2)
-    }
+      margin: theme.spacing(3, 0, 2),
+    },
   });
 
 interface SignUpFormComponentProps extends WithStyles<typeof styles> {
@@ -57,9 +57,9 @@ class SignUpFormComponent extends React.Component<
     super(props);
 
     this.state = {
-      accountName: "",
-      address: "",
-      password: ""
+      accountName: '',
+      address: '',
+      password: '',
     };
 
     this._onSubmit = this._onSubmit.bind(this);
@@ -73,25 +73,25 @@ class SignUpFormComponent extends React.Component<
     this.props.register({
       account_name: this.state.accountName,
       address: this.state.address,
-      password: this.state.password
+      password: this.state.password,
     });
   }
 
   _onChangeAccountName(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      accountName: e.target.value
+      accountName: e.target.value,
     });
   }
 
   _onChangeAddress(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      address: e.target.value
+      address: e.target.value,
     });
   }
 
   _onChangePassword(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      password: e.target.value
+      password: e.target.value,
     });
   }
 

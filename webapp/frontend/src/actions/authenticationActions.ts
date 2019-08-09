@@ -1,29 +1,29 @@
-import AppClient from "../httpClients/appClient";
-import { ThunkAction, ThunkDispatch } from "redux-thunk";
-import { FormErrorState } from "../reducers/formErrorReducer";
-import { push } from "connected-react-router";
-import { AnyAction } from "redux";
-import { routes } from "../routes/Route";
-import { AppState } from "../index";
-import { LoginRes } from "../types/appApiTypes";
+import AppClient from '../httpClients/appClient';
+import { ThunkAction, ThunkDispatch } from 'redux-thunk';
+import { FormErrorState } from '../reducers/formErrorReducer';
+import { push } from 'connected-react-router';
+import { AnyAction } from 'redux';
+import { routes } from '../routes/Route';
+import { AppState } from '../index';
+import { LoginRes } from '../types/appApiTypes';
 
-export const LOGIN_SUCCESS = "LOGIN_SUCCESS";
-export const LOGIN_FAIL = "LOGIN_FAIL";
+export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
+export const LOGIN_FAIL = 'LOGIN_FAIL';
 
 type ThunkResult<R> = ThunkAction<R, AppState, undefined, AnyAction>;
 
 export function postLoginAction(
   accountName: string,
-  password: string
+  password: string,
 ): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-    AppClient.post("/login", {
+    AppClient.post('/login', {
       account_name: accountName,
-      password: password
+      password: password,
     })
       .then((response: Response) => {
         if (response.status !== 200) {
-          throw new Error("HTTP status not 200");
+          throw new Error('HTTP status not 200');
         }
 
         return response.json();
@@ -33,16 +33,16 @@ export function postLoginAction(
           loginSuccessAction({
             userId: body.id,
             accountName: body.account_name,
-            address: body.address
-          })
+            address: body.address,
+          }),
         );
         dispatch(push(routes.top.path));
       })
       .catch((err: Error) => {
         dispatch(
           loginFailAction({
-            error: err.message
-          })
+            error: err.message,
+          }),
         );
       });
   };
@@ -64,7 +64,7 @@ export function loginSuccessAction(newAuthState: {
 }): LoginSuccessAction {
   return {
     type: LOGIN_SUCCESS,
-    payload: newAuthState
+    payload: newAuthState,
   };
 }
 
@@ -76,6 +76,6 @@ export interface LoginFailAction {
 export function loginFailAction(newErros: FormErrorState): LoginFailAction {
   return {
     type: LOGIN_FAIL,
-    payload: newErros
+    payload: newErros,
   };
 }

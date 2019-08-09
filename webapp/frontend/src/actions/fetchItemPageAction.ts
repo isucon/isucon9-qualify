@@ -1,14 +1,14 @@
-import AppClient from "../httpClients/appClient";
-import { ThunkAction, ThunkDispatch } from "redux-thunk";
-import { Action, AnyAction } from "redux";
-import { GetItemRes } from "../types/appApiTypes";
-import { AppResponseError } from "../errors/AppResponseError";
-import { ItemData } from "../dataObjects/item";
-import { NotFoundError } from "../errors/NotFoundError";
+import AppClient from '../httpClients/appClient';
+import { ThunkAction, ThunkDispatch } from 'redux-thunk';
+import { Action, AnyAction } from 'redux';
+import { GetItemRes } from '../types/appApiTypes';
+import { AppResponseError } from '../errors/AppResponseError';
+import { ItemData } from '../dataObjects/item';
+import { NotFoundError } from '../errors/NotFoundError';
 
-export const FETCH_ITEM_PAGE_START = "FETCH_ITEM_PAGE_START";
-export const FETCH_ITEM_PAGE_SUCCESS = "FETCH_ITEM_PAGE_SUCCESS";
-export const FETCH_ITEM_PAGE_FAIL = "FETCH_ITEM_PAGE_FAIL";
+export const FETCH_ITEM_PAGE_START = 'FETCH_ITEM_PAGE_START';
+export const FETCH_ITEM_PAGE_SUCCESS = 'FETCH_ITEM_PAGE_SUCCESS';
+export const FETCH_ITEM_PAGE_FAIL = 'FETCH_ITEM_PAGE_FAIL';
 
 type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
 
@@ -21,12 +21,12 @@ export function fetchItemPageAction(itemId: string): ThunkResult<void> {
       .then((response: Response) => {
         if (!response.ok) {
           if (response.status === 404) {
-            throw new NotFoundError("Item not found");
+            throw new NotFoundError('Item not found');
           }
 
           throw new AppResponseError(
-            "Request for getting item data was failed",
-            response
+            'Request for getting item data was failed',
+            response,
           );
         }
 
@@ -41,23 +41,23 @@ export function fetchItemPageAction(itemId: string): ThunkResult<void> {
             seller: {
               id: body.seller.id,
               accountName: body.seller.account_name,
-              numSellItems: body.seller.num_sell_items
+              numSellItems: body.seller.num_sell_items,
             },
             buyerId: body.buyer_id,
             buyer: body.buyer,
             name: body.name,
             price: body.price,
             thumbnailUrl:
-              "https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png", // TODO
+              'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png', // TODO
             description: body.description,
             category: {
               id: body.category.id,
               parentId: body.category.parent_id,
               categoryName: body.category.category_name,
-              parentCategoryName: body.category.parent_category_name
+              parentCategoryName: body.category.parent_category_name,
             },
-            createdAt: body.created_at
-          })
+            createdAt: body.created_at,
+          }),
         );
       })
       .catch((err: Error) => {
@@ -71,7 +71,7 @@ export interface FetchItemPageStartAction
 
 const fetchItemPageStartAction = (): FetchItemPageStartAction => {
   return {
-    type: FETCH_ITEM_PAGE_START
+    type: FETCH_ITEM_PAGE_START,
   };
 };
 
@@ -83,13 +83,13 @@ export interface FetchItemPageSuccessAction
 }
 
 const fetchItemPageSuccessAction = (
-  item: ItemData
+  item: ItemData,
 ): FetchItemPageSuccessAction => {
   return {
     type: FETCH_ITEM_PAGE_SUCCESS,
     payload: {
-      item
-    }
+      item,
+    },
   };
 };
 
@@ -98,6 +98,6 @@ export interface FetchItemPageFailAction
 
 const fetchItemPageFailAction = (): FetchItemPageFailAction => {
   return {
-    type: FETCH_ITEM_PAGE_FAIL
+    type: FETCH_ITEM_PAGE_FAIL,
   };
 };

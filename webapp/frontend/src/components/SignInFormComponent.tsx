@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 import {
   Avatar,
@@ -7,34 +7,34 @@ import {
   Button,
   Grid,
   createStyles,
-  WithStyles
-} from "@material-ui/core";
-import { Theme } from "@material-ui/core/styles/createMuiTheme";
-import { LockOutlined } from "@material-ui/icons";
-import { Link as RouteLink } from "react-router-dom";
-import { StyleRules } from "@material-ui/core/styles";
-import withStyles from "@material-ui/core/styles/withStyles";
-import { ErrorMessageComponent } from "./ErrorMessageComponent";
-import { routes } from "../routes/Route";
+  WithStyles,
+} from '@material-ui/core';
+import { Theme } from '@material-ui/core/styles/createMuiTheme';
+import { LockOutlined } from '@material-ui/icons';
+import { Link as RouteLink } from 'react-router-dom';
+import { StyleRules } from '@material-ui/core/styles';
+import withStyles from '@material-ui/core/styles/withStyles';
+import { ErrorMessageComponent } from './ErrorMessageComponent';
+import { routes } from '../routes/Route';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     paper: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center"
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
     },
     avatar: {
       margin: theme.spacing(1),
-      backgroundColor: theme.palette.secondary.main
+      backgroundColor: theme.palette.secondary.main,
     },
     form: {
-      width: "100%",
-      marginTop: theme.spacing(1)
+      width: '100%',
+      marginTop: theme.spacing(1),
     },
     submit: {
-      margin: theme.spacing(3, 0, 2)
-    }
+      margin: theme.spacing(3, 0, 2),
+    },
   });
 
 interface SignInFormComponentProps extends WithStyles<typeof styles> {
@@ -55,8 +55,8 @@ class SignInPageFormComponent extends React.Component<
     super(props);
 
     this.state = {
-      accountName: "",
-      password: ""
+      accountName: '',
+      password: '',
     };
 
     this._onSubmit = this._onSubmit.bind(this);
@@ -72,13 +72,13 @@ class SignInPageFormComponent extends React.Component<
 
   _onChangeAccountName(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      accountName: e.target.value
+      accountName: e.target.value,
     });
   }
 
   _onChangePassword(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      password: e.target.value
+      password: e.target.value,
     });
   }
 

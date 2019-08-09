@@ -1,4 +1,4 @@
-import config from "../config";
+import config from '../config';
 
 /**
  * HTTP client for payment service
@@ -9,19 +9,19 @@ class PaymentClient {
 
   async get(path: string): Promise<Response> {
     return await fetch(`${this.baseUrl}${path}`, {
-      method: "GET",
-      headers: this.defaultHeaders
+      method: 'GET',
+      headers: this.defaultHeaders,
     });
   }
 
   async post(path: string, params?: Object): Promise<Response> {
     let requestOption: RequestInit = {
-      method: "POST",
-      mode: "cors",
+      method: 'POST',
+      mode: 'cors',
       headers: Object.assign({}, this.defaultHeaders, {
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
       }),
-      credentials: "same-origin"
+      credentials: 'same-origin',
     };
 
     if (params) {

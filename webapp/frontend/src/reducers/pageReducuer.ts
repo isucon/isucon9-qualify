@@ -1,14 +1,14 @@
-import { AnyAction } from "redux";
+import { AnyAction } from 'redux';
 import {
   FETCH_ITEM_PAGE_FAIL,
   FETCH_ITEM_PAGE_START,
-  FETCH_ITEM_PAGE_SUCCESS
-} from "../actions/fetchItemPageAction";
+  FETCH_ITEM_PAGE_SUCCESS,
+} from '../actions/fetchItemPageAction';
 import {
   FETCH_SETTINGS_FAIL,
   FETCH_SETTINGS_START,
-  FETCH_SETTINGS_SUCCESS
-} from "../actions/settingsAction";
+  FETCH_SETTINGS_SUCCESS,
+} from '../actions/settingsAction';
 
 export interface PageState {
   isLoading: boolean;
@@ -17,12 +17,12 @@ export interface PageState {
 
 const initialState: PageState = {
   isLoading: true,
-  isItemPageLoading: true
+  isItemPageLoading: true,
 };
 
 const page = (
   state: PageState = initialState,
-  action: AnyAction
+  action: AnyAction,
 ): PageState => {
   switch (action.type) {
     case FETCH_ITEM_PAGE_START:

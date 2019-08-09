@@ -1,14 +1,14 @@
-import React, { PropsWithChildren } from "react";
+import React, { PropsWithChildren } from 'react';
 
-import { Container, MuiThemeProvider, createMuiTheme } from "@material-ui/core";
-import LoadingComponent from "./LoadingComponent";
+import { Container, MuiThemeProvider, createMuiTheme } from '@material-ui/core';
+import LoadingComponent from './LoadingComponent';
 
 const themeInstance = createMuiTheme({
   palette: {
     background: {
-      default: "white"
-    }
-  }
+      default: 'white',
+    },
+  },
 });
 
 export type Props = PropsWithChildren<{

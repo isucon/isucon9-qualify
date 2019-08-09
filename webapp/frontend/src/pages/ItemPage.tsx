@@ -1,50 +1,50 @@
-import React from "react";
-import { ItemData } from "../dataObjects/item";
-import { createStyles, Theme, Typography, WithStyles } from "@material-ui/core";
-import Grid from "@material-ui/core/Grid";
-import Divider from "@material-ui/core/Divider";
-import Avatar from "@material-ui/core/Avatar";
-import { Link, Link as RouteLink, RouteComponentProps } from "react-router-dom";
-import AppBar from "@material-ui/core/AppBar";
-import Button from "@material-ui/core/Button";
-import { routes } from "../routes/Route";
-import { StyleRules } from "@material-ui/core/styles";
-import withStyles from "@material-ui/core/styles/withStyles";
-import { ErrorProps, PageComponentWithError } from "../hoc/withBaseComponent";
-import BasePageContainer from "../containers/BasePageContainer";
-import LoadingComponent from "../components/LoadingComponent";
+import React from 'react';
+import { ItemData } from '../dataObjects/item';
+import { createStyles, Theme, Typography, WithStyles } from '@material-ui/core';
+import Grid from '@material-ui/core/Grid';
+import Divider from '@material-ui/core/Divider';
+import Avatar from '@material-ui/core/Avatar';
+import { Link, Link as RouteLink, RouteComponentProps } from 'react-router-dom';
+import AppBar from '@material-ui/core/AppBar';
+import Button from '@material-ui/core/Button';
+import { routes } from '../routes/Route';
+import { StyleRules } from '@material-ui/core/styles';
+import withStyles from '@material-ui/core/styles/withStyles';
+import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
+import BasePageContainer from '../containers/BasePageContainer';
+import LoadingComponent from '../components/LoadingComponent';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     title: {
-      margin: theme.spacing(3)
+      margin: theme.spacing(3),
     },
     itemImage: {
-      width: "100%",
-      maxWidth: "500px",
-      height: "auto"
+      width: '100%',
+      maxWidth: '500px',
+      height: 'auto',
     },
     avatar: {
-      width: "50px",
-      height: "50px"
+      width: '50px',
+      height: '50px',
     },
     divider: {
-      margin: theme.spacing(1)
+      margin: theme.spacing(1),
     },
     descSection: {
       marginTop: theme.spacing(3),
-      marginBottom: theme.spacing(3)
+      marginBottom: theme.spacing(3),
     },
     link: {
-      textDecoration: "none"
+      textDecoration: 'none',
     },
     appBar: {
-      top: "auto",
-      bottom: 0
+      top: 'auto',
+      bottom: 0,
     },
     buyButton: {
-      margin: theme.spacing(1)
-    }
+      margin: theme.spacing(1),
+    },
   });
 
 interface ItemPageProps extends WithStyles<typeof styles> {
@@ -109,11 +109,11 @@ class ItemPage extends React.Component<Props> {
                       <Typography variant="body1">
                         <Link
                           to={routes.categoryTimeline.getPath(
-                            item.category.parentId
+                            item.category.parentId,
                           )}
                         >
                           {item.category.parentCategoryName}
-                        </Link>{" "}
+                        </Link>{' '}
                         > {item.category.categoryName}
                       </Typography>
                     </div>

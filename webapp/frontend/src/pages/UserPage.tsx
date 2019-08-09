@@ -1,25 +1,25 @@
-import React from "react";
-import { ItemListComponent } from "../components/ItemListComponent";
-import { ItemData } from "../dataObjects/item";
-import { UserData } from "../dataObjects/user";
-import Avatar from "@material-ui/core/Avatar";
-import makeStyles from "@material-ui/core/styles/makeStyles";
-import { Grid } from "@material-ui/core";
-import Typography from "@material-ui/core/Typography";
-import Divider from "@material-ui/core/Divider";
-import SellingButtonContainer from "../containers/SellingButtonContainer";
-import BasePageContainer from "../containers/BasePageContainer";
-import { ErrorProps, PageComponentWithError } from "../hoc/withBaseComponent";
+import React from 'react';
+import { ItemListComponent } from '../components/ItemListComponent';
+import { ItemData } from '../dataObjects/item';
+import { UserData } from '../dataObjects/user';
+import Avatar from '@material-ui/core/Avatar';
+import makeStyles from '@material-ui/core/styles/makeStyles';
+import { Grid } from '@material-ui/core';
+import Typography from '@material-ui/core/Typography';
+import Divider from '@material-ui/core/Divider';
+import SellingButtonContainer from '../containers/SellingButtonContainer';
+import BasePageContainer from '../containers/BasePageContainer';
+import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 
 const useStyles = makeStyles(theme => ({
   avatar: {
     margin: theme.spacing(3),
-    width: "100px",
-    height: "100px"
+    width: '100px',
+    height: '100px',
   },
   itemList: {
-    marginTop: theme.spacing(4)
-  }
+    marginTop: theme.spacing(4),
+  },
 }));
 
 type Props = {

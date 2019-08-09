@@ -1,21 +1,21 @@
-import * as React from "react";
-import { Button, createStyles, Theme, WithStyles } from "@material-ui/core";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import { StyleRules } from "@material-ui/core/styles";
-import withStyles from "@material-ui/core/styles/withStyles";
+import * as React from 'react';
+import { Button, createStyles, Theme, WithStyles } from '@material-ui/core';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import { StyleRules } from '@material-ui/core/styles';
+import withStyles from '@material-ui/core/styles/withStyles';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     button: {
-      margin: theme.spacing(3, 0, 1)
+      margin: theme.spacing(3, 0, 1),
     },
     buttonProgress: {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
       marginTop: -12,
-      marginLeft: -12
-    }
+      marginLeft: -12,
+    },
   });
 
 interface Props extends WithStyles<typeof styles> {

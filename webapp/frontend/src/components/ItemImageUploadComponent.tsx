@@ -1,28 +1,28 @@
-import React from "react";
-import Paper from "@material-ui/core/Paper/Paper";
-import Avatar from "@material-ui/core/Avatar/Avatar";
-import { Camera } from "@material-ui/icons";
-import Typography from "@material-ui/core/Typography/Typography";
-import { Theme } from "@material-ui/core/styles/createMuiTheme";
+import React from 'react';
+import Paper from '@material-ui/core/Paper/Paper';
+import Avatar from '@material-ui/core/Avatar/Avatar';
+import { Camera } from '@material-ui/icons';
+import Typography from '@material-ui/core/Typography/Typography';
+import { Theme } from '@material-ui/core/styles/createMuiTheme';
 import withStyles, {
   WithStyles,
-  StyleRules
-} from "@material-ui/core/styles/withStyles";
-import createStyles from "@material-ui/core/styles/createStyles";
-import Grid from "@material-ui/core/Grid/Grid";
-import Button from "@material-ui/core/Button/Button";
+  StyleRules,
+} from '@material-ui/core/styles/withStyles';
+import createStyles from '@material-ui/core/styles/createStyles';
+import Grid from '@material-ui/core/Grid/Grid';
+import Button from '@material-ui/core/Button/Button';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     upload: {
-      display: "none"
+      display: 'none',
     },
     avatar: {
-      margin: theme.spacing(1)
+      margin: theme.spacing(1),
     },
     button: {
-      margin: theme.spacing(1)
-    }
+      margin: theme.spacing(1),
+    },
   });
 
 interface ItemImageUploadComponentProps extends WithStyles<typeof styles> {}
@@ -40,7 +40,7 @@ class ItemImageUploadComponent extends React.Component<
     super(props);
 
     this.state = {
-      imagePreviewUrl: ""
+      imagePreviewUrl: '',
     };
     this._handleImageChange = this._handleImageChange.bind(this);
   }
@@ -56,13 +56,13 @@ class ItemImageUploadComponent extends React.Component<
     const file = e.target.files[0];
 
     reader.onloadend = () => {
-      if (typeof reader.result !== "string") {
+      if (typeof reader.result !== 'string') {
         throw new Error();
       }
 
       this.setState({
         file: file,
-        imagePreviewUrl: reader.result
+        imagePreviewUrl: reader.result,
       });
     };
 

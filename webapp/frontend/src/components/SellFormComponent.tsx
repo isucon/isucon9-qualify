@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode } from 'react';
 
 import {
   Typography,
@@ -6,30 +6,30 @@ import {
   Button,
   createStyles,
   Theme,
-  WithStyles
-} from "@material-ui/core";
-import ItemImageUploadComponent from "../components/ItemImageUploadComponent";
-import { StyleRules } from "@material-ui/core/styles";
-import withStyles from "@material-ui/core/styles/withStyles";
-import validator from "validator";
-import { ErrorMessageComponent } from "./ErrorMessageComponent";
-import InputLabel from "@material-ui/core/InputLabel";
-import MenuItem from "@material-ui/core/MenuItem";
-import Select from "@material-ui/core/Select";
+  WithStyles,
+} from '@material-ui/core';
+import ItemImageUploadComponent from '../components/ItemImageUploadComponent';
+import { StyleRules } from '@material-ui/core/styles';
+import withStyles from '@material-ui/core/styles/withStyles';
+import validator from 'validator';
+import { ErrorMessageComponent } from './ErrorMessageComponent';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import Select from '@material-ui/core/Select';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     form: {
-      width: "80%",
-      marginTop: theme.spacing(1)
+      width: '80%',
+      marginTop: theme.spacing(1),
     },
     selectForm: {
-      minWidth: "200px",
-      margin: theme.spacing(1, 0, 2)
+      minWidth: '200px',
+      margin: theme.spacing(1, 0, 2),
     },
     submit: {
-      margin: theme.spacing(3, 0, 2)
-    }
+      margin: theme.spacing(3, 0, 2),
+    },
   });
 
 interface SellFormComponentProps extends WithStyles<typeof styles> {
@@ -37,7 +37,7 @@ interface SellFormComponentProps extends WithStyles<typeof styles> {
     name: string,
     description: string,
     price: number,
-    categoryId: number
+    categoryId: number,
   ) => void;
   error?: string;
   categories: {
@@ -62,10 +62,10 @@ class SellFormComponent extends React.Component<
     super(props);
 
     this.state = {
-      name: "",
-      description: "",
+      name: '',
+      description: '',
       price: 0,
-      selectedCategoryId: 0
+      selectedCategoryId: 0,
     };
 
     this._onSubmit = this._onSubmit.bind(this);
@@ -81,7 +81,7 @@ class SellFormComponent extends React.Component<
 
     if (!selectedCategoryId) {
       this.setState({
-        categoryError: "カテゴリを選択してください"
+        categoryError: 'カテゴリを選択してください',
       });
       return;
     }
@@ -91,19 +91,19 @@ class SellFormComponent extends React.Component<
 
   _onChangeName(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      name: e.target.value
+      name: e.target.value,
     });
   }
 
   _onChangeDescription(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      description: e.target.value
+      description: e.target.value,
     });
   }
 
   _onChangeCategory(e: React.ChangeEvent<any>, child: ReactNode) {
     this.setState({
-      selectedCategoryId: Number(e.target.value)
+      selectedCategoryId: Number(e.target.value),
     });
   }
 
@@ -117,7 +117,7 @@ class SellFormComponent extends React.Component<
     }
 
     this.setState({
-      price: Number(input)
+      price: Number(input),
     });
   }
 
@@ -128,7 +128,7 @@ class SellFormComponent extends React.Component<
       description,
       price,
       selectedCategoryId,
-      categoryError
+      categoryError,
     } = this.state;
 
     return (
@@ -171,8 +171,8 @@ class SellFormComponent extends React.Component<
             value={selectedCategoryId}
             onChange={this._onChangeCategory}
             inputProps={{
-              name: "category",
-              id: "choose-category"
+              name: 'category',
+              id: 'choose-category',
             }}
           >
             <MenuItem value={0}>

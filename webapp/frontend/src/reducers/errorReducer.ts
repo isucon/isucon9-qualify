@@ -2,20 +2,20 @@ import {
   INTERNAL_SERVER_ERROR,
   InternalServerErrorAction,
   NOT_FOUND_ERROR,
-  NotFoundErrorAction
-} from "../actions/errorAction";
+  NotFoundErrorAction,
+} from '../actions/errorAction';
 import {
   FETCH_ITEM_PAGE_FAIL,
-  FetchItemPageFailAction
-} from "../actions/fetchItemPageAction";
+  FetchItemPageFailAction,
+} from '../actions/fetchItemPageAction';
 import {
   FETCH_SETTINGS_FAIL,
-  FetchSettingsFailAction
-} from "../actions/settingsAction";
+  FetchSettingsFailAction,
+} from '../actions/settingsAction';
 
-export const NoError = "NO_ERROR";
-export const NotFoundError = "NOT_FOUND";
-export const InternalServerError = "INTERNAL_SERVER_ERROR";
+export const NoError = 'NO_ERROR';
+export const NotFoundError = 'NOT_FOUND';
+export const InternalServerError = 'INTERNAL_SERVER_ERROR';
 export type ErrorType =
   | typeof NoError
   | typeof NotFoundError
@@ -27,7 +27,7 @@ export interface ErrorState {
 }
 
 const initialState: ErrorState = {
-  errorType: NoError
+  errorType: NoError,
 };
 
 type errorActions =
@@ -38,7 +38,7 @@ type errorActions =
 
 const error = (
   state: ErrorState = initialState,
-  action: errorActions
+  action: errorActions,
 ): ErrorState => {
   switch (action.type) {
     case NOT_FOUND_ERROR:

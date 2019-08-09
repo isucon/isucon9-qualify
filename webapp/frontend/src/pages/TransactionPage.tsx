@@ -1,6 +1,6 @@
-import React from "react";
-import BasePageContainer from "../containers/BasePageContainer";
-import { ErrorProps, PageComponentWithError } from "../hoc/withBaseComponent";
+import React from 'react';
+import BasePageContainer from '../containers/BasePageContainer';
+import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 
 type Props = {} & ErrorProps;
 

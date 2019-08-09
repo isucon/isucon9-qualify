@@ -1,15 +1,15 @@
-import React from "react";
-import { ItemData } from "../dataObjects/item";
-import makeStyles from "@material-ui/core/styles/makeStyles";
-import GridList from "@material-ui/core/GridList";
-import { ItemComponent } from "./ItemComponent";
-import GridListTile from "@material-ui/core/GridListTile";
+import React from 'react';
+import { ItemData } from '../dataObjects/item';
+import makeStyles from '@material-ui/core/styles/makeStyles';
+import GridList from '@material-ui/core/GridList';
+import { ItemComponent } from './ItemComponent';
+import GridListTile from '@material-ui/core/GridListTile';
 
 const useStyles = makeStyles(theme => ({
   grid: {
-    width: "300px",
-    height: "300px"
-  }
+    width: '300px',
+    height: '300px',
+  },
 }));
 
 interface ItemListPageProps {
@@ -17,7 +17,7 @@ interface ItemListPageProps {
 }
 
 const ItemListComponent: React.FC<ItemListPageProps> = ({
-  items
+  items,
 }: ItemListPageProps) => {
   const classes = useStyles();
 
@@ -32,7 +32,7 @@ const ItemListComponent: React.FC<ItemListPageProps> = ({
           title={item.name}
           price={item.price}
         />
-      </GridListTile>
+      </GridListTile>,
     );
   }
 

@@ -1,7 +1,7 @@
-import { ItemStatus } from "../dataObjects/item";
-import { UserData } from "../dataObjects/user";
-import { TransactionStatus } from "../dataObjects/transaction";
-import { ShippingStatus } from "../dataObjects/shipping";
+import { ItemStatus } from '../dataObjects/item';
+import { UserData } from '../dataObjects/user';
+import { TransactionStatus } from '../dataObjects/transaction';
+import { ShippingStatus } from '../dataObjects/shipping';
 
 type Category = {
   id: number;

@@ -1,28 +1,28 @@
-import React from "react";
-import BasePageContainer from "../containers/BasePageContainer";
-import { routes } from "../routes/Route";
-import { Button } from "@material-ui/core";
-import Typography from "@material-ui/core/Typography";
-import makeStyles from "@material-ui/core/styles/makeStyles";
-import { Link, LinkProps } from "react-router-dom";
+import React from 'react';
+import BasePageContainer from '../containers/BasePageContainer';
+import { routes } from '../routes/Route';
+import { Button } from '@material-ui/core';
+import Typography from '@material-ui/core/Typography';
+import makeStyles from '@material-ui/core/styles/makeStyles';
+import { Link, LinkProps } from 'react-router-dom';
 
 const useStyles = makeStyles(theme => ({
   paper: {
     marginTop: theme.spacing(2),
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center"
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   textarea: {
     marginTop: theme.spacing(1),
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
   },
   img: {
-    width: "70%"
+    width: '70%',
   },
   button: {
-    margin: theme.spacing(1)
-  }
+    margin: theme.spacing(1),
+  },
 }));
 
 const TopPage: React.FC = () => {
@@ -32,20 +32,20 @@ const TopPage: React.FC = () => {
       <Link innerRef={ref} {...props}>
         ログイン
       </Link>
-    )
+    ),
   );
   const RegisterButtonLink = React.forwardRef(
     (props: LinkProps, ref: React.Ref<any>) => (
       <Link innerRef={ref} {...props}>
         新規会員登録
       </Link>
-    )
+    ),
   );
 
   return (
     <BasePageContainer>
       <div className={classes.paper}>
-        <img className={classes.img} src={"/logo.png"} alt={"ISUCARI"} />
+        <img className={classes.img} src={'/logo.png'} alt={'ISUCARI'} />
         <div className={classes.textarea}>
           <Typography variant="h6">ついにリリース！</Typography>
           <Typography variant="h6">

@@ -1,5 +1,5 @@
-import React from "react";
-import { FormHelperText } from "@material-ui/core";
+import React from 'react';
+import { FormHelperText } from '@material-ui/core';
 
 interface ErrorMessageComponentProps {
   id: string;
@@ -8,7 +8,7 @@ interface ErrorMessageComponentProps {
 
 const ErrorMessageComponent: React.FC<ErrorMessageComponentProps> = ({
   id,
-  error
+  error,
 }) => {
   return (
     <FormHelperText key={error} id={id} error={true}>

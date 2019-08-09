@@ -1,31 +1,31 @@
-import React from "react";
-import { ItemData } from "../dataObjects/item";
-import Typography from "@material-ui/core/Typography/Typography";
-import TextField from "@material-ui/core/TextField/TextField";
-import { BuyFormErrorState } from "../reducers/formErrorReducer";
-import { ErrorMessageComponent } from "./ErrorMessageComponent";
+import React from 'react';
+import { ItemData } from '../dataObjects/item';
+import Typography from '@material-ui/core/Typography/Typography';
+import TextField from '@material-ui/core/TextField/TextField';
+import { BuyFormErrorState } from '../reducers/formErrorReducer';
+import { ErrorMessageComponent } from './ErrorMessageComponent';
 import {
   createStyles,
   StyleRules,
   Theme,
-  WithStyles
-} from "@material-ui/core/styles";
-import withStyles from "@material-ui/core/styles/withStyles";
-import validator from "validator";
-import LoadingButton from "./LoadingButtonComponent";
+  WithStyles,
+} from '@material-ui/core/styles';
+import withStyles from '@material-ui/core/styles/withStyles';
+import validator from 'validator';
+import LoadingButton from './LoadingButtonComponent';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     itemImage: {
-      width: "100%",
-      maxWidth: "500px",
-      height: "auto",
-      textAlign: "center"
+      width: '100%',
+      maxWidth: '500px',
+      height: 'auto',
+      textAlign: 'center',
     },
     form: {
-      width: "100%",
-      marginTop: theme.spacing(3, 0, 1)
-    }
+      width: '100%',
+      marginTop: theme.spacing(3, 0, 1),
+    },
   });
 
 interface ItemBuyFormProps extends WithStyles<typeof styles> {
@@ -47,7 +47,7 @@ class ItemBuyFormComponent extends React.Component<
     super(props);
 
     this.state = {
-      cardNumber: ""
+      cardNumber: '',
     };
 
     this._onChangeCardNumber = this._onChangeCardNumber.bind(this);
@@ -61,18 +61,18 @@ class ItemBuyFormComponent extends React.Component<
       return;
     }
 
-    if (!validator.isHexadecimal(cardNumber) && cardNumber !== "") {
+    if (!validator.isHexadecimal(cardNumber) && cardNumber !== '') {
       return;
     }
 
     this.setState({
-      cardNumber: cardNumber.toUpperCase()
+      cardNumber: cardNumber.toUpperCase(),
     });
   }
 
   _onClickBuyButton(e: React.MouseEvent) {
     const {
-      item: { id }
+      item: { id },
     } = this.props;
     const { cardNumber } = this.state;
     this.props.onBuyAction(id, cardNumber);
@@ -112,7 +112,7 @@ class ItemBuyFormComponent extends React.Component<
           )}
           <LoadingButton
             onClick={this._onClickBuyButton}
-            buttonName={"購入"}
+            buttonName={'購入'}
             loading={loadingBuy}
           />
           {appError && (

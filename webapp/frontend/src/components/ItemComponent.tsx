@@ -1,14 +1,14 @@
-import React from "react";
-import Card from "@material-ui/core/Card";
-import { Link as RouteLink } from "react-router-dom";
-import GridListTileBar from "@material-ui/core/GridListTileBar";
-import makeStyles from "@material-ui/core/styles/makeStyles";
-import { routes } from "../routes/Route";
+import React from 'react';
+import Card from '@material-ui/core/Card';
+import { Link as RouteLink } from 'react-router-dom';
+import GridListTileBar from '@material-ui/core/GridListTileBar';
+import makeStyles from '@material-ui/core/styles/makeStyles';
+import { routes } from '../routes/Route';
 
 const useStyles = makeStyles(theme => ({
   itemImage: {
-    height: "100%"
-  }
+    height: '100%',
+  },
 }));
 
 interface ItemComponentProps {
@@ -22,7 +22,7 @@ const ItemComponent: React.FC<ItemComponentProps> = ({
   itemId,
   imageUrl,
   title,
-  price
+  price,
 }) => {
   const classes = useStyles();
 

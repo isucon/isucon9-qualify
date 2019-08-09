@@ -1,18 +1,18 @@
 import {
   LOGIN_SUCCESS,
-  LoginSuccessAction
-} from "../actions/authenticationActions";
+  LoginSuccessAction,
+} from '../actions/authenticationActions';
 import {
   REGISTER_SUCCESS,
-  RegisterSuccessAction
-} from "../actions/registerAction";
+  RegisterSuccessAction,
+} from '../actions/registerAction';
 import {
   FETCH_SETTINGS_FAIL,
   FETCH_SETTINGS_SUCCESS,
   FetchSettingsFailAction,
-  FetchSettingsSuccessAction
-} from "../actions/settingsAction";
-import { UserData } from "../dataObjects/user";
+  FetchSettingsSuccessAction,
+} from '../actions/settingsAction';
+import { UserData } from '../dataObjects/user';
 
 export interface AuthStatusState {
   userId?: number;
@@ -22,7 +22,7 @@ export interface AuthStatusState {
 }
 
 const initialState: AuthStatusState = {
-  checked: false
+  checked: false,
 };
 
 type Actions =
@@ -33,14 +33,14 @@ type Actions =
 
 const authStatus = (
   state: AuthStatusState = initialState,
-  action: Actions
+  action: Actions,
 ): AuthStatusState => {
   switch (action.type) {
     case LOGIN_SUCCESS:
     case REGISTER_SUCCESS: {
       return {
         ...state,
-        ...action.payload
+        ...action.payload,
       };
     }
     case FETCH_SETTINGS_SUCCESS: {
@@ -57,20 +57,20 @@ const authStatus = (
         userPayload = {
           userId: user.id,
           accountName: user.accountName,
-          address: user.address || undefined
+          address: user.address || undefined,
         };
       }
 
       return {
         ...state,
         ...userPayload,
-        checked: true
+        checked: true,
       };
     }
     case FETCH_SETTINGS_FAIL: {
       return {
         ...state,
-        checked: true
+        checked: true,
       };
     }
     default:
