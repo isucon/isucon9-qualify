@@ -1,4 +1,5 @@
 import {UserData} from "./user";
+import {Category} from "./category";
 
 export interface ItemData {
     id: number,
@@ -11,6 +12,8 @@ export interface ItemData {
     price: number,
     description: string,
     thumbnailUrl: string,
+    category: Category,
+    createdAt: number,
 }
 
 export type ItemStatus = 'on_sale' | 'trading' | 'sold_out' | 'stop' | 'cancel';

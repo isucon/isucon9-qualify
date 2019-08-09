@@ -45,6 +45,13 @@ export function fetchItemPageAction(itemId: string): ThunkResult<void> {
                     price: body.price,
                     thumbnailUrl: 'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png', // TODO
                     description: body.description,
+                    category: {
+                        id: body.category.id,
+                        parentId: body.category.parent_id,
+                        categoryName: body.category.category_name,
+                        parentCategoryName: body.category.parent_category_name,
+                    },
+                    createdAt: body.created_at,
                 }));
             })
             .catch((err: Error) => {

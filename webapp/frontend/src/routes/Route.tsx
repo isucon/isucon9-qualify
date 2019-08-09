@@ -40,6 +40,10 @@ export const routes: route = {
         path: '/timeline',
         getPath: () => '/timeline',
     },
+    categoryTimeline: {
+        path: '/categories/:category_id/items',
+        getPath: (categoryId: number) => `/categories/${categoryId}/items`
+    },
     sell: {
         path: '/sell',
         getPath: () => '/sell',

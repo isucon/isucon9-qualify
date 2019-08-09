@@ -4,13 +4,20 @@ import {listItemAction} from "../actions/sellingItemAction";
 import {AppState} from "../index";
 import {AnyAction} from "redux";
 import {ThunkDispatch} from "redux-thunk";
+import {CategorySimple} from "../dataObjects/category";
 
-const mapStateToProps = (state: AppState) => ({
-    error: state.formError.error,
-});
+const mapStateToProps = (state: AppState) => {
+    // Note: Parent category's parent_id is 0
+    const categories = state.categories.categories.filter((category: CategorySimple) => category.parentId !== 0)
+
+    return {
+        error: state.formError.error,
+        categories,
+    };
+};
 const mapDispatchToProps = (dispatch: ThunkDispatch<AppState, undefined, AnyAction>) => ({
-    sellItem: (name: string, description: string, price: number) => {
-        dispatch(listItemAction(name, description, price));
+    sellItem: (name: string, description: string, price: number, categoryId: number) => {
+        dispatch(listItemAction(name, description, price, categoryId));
     },
 });
 
