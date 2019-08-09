@@ -92,6 +92,11 @@ func irregularSellWrongPrice() error {
 	return nil
 }
 
+func irregularSellWrongCategory() error {
+	// TODO
+	return nil
+}
+
 func secureRandomStr(b int) string {
 	k := make([]byte, b)
 	if _, err := crand.Read(k); err != nil {
