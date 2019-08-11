@@ -61,7 +61,7 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	if err != nil {
 		return err
 	}
-	err = s2.Buy(targetItemID, token)
+	_, err = s2.Buy(targetItemID, token)
 	if err != nil {
 		return err
 	}

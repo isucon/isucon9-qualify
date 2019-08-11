@@ -1,7 +1,9 @@
 package scenario
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -47,6 +49,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
+	// 変な値段で買えない
 	err = s1.SellWithWrongPrice("abcd", session.ItemMinPrice-1, "description description", 32)
 	if err != nil {
 		return err
@@ -125,17 +128,88 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	err = s2.Buy(targetItemID, token)
+	transactionEvidenceID, err := s2.Buy(targetItemID, token)
 	if err != nil {
 		return err
 	}
 
-	err = s3.BuyWithFailed(targetItemID, token, http.StatusForbidden, "item is not for sale")
+	oToken, err := s3.PaymentCard(CorrectCardNumber, IsucariShopID)
+	if err != nil {
+		return err
+	}
+
+	// onsaleでない商品は買えない
+	err = s3.BuyWithFailed(targetItemID, oToken, http.StatusForbidden, "item is not for sale")
+	if err != nil {
+		return err
+	}
+
+	// QRコードはShipしないと見れない
+	err = s1.DecodeQRURLWithFailed(fmt.Sprintf("/transactions/%d.png", transactionEvidenceID), http.StatusForbidden)
 	if err != nil {
 		return err
 	}
 
 	err = s1.ShipWithWrongCSRFToken(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	// 他人はShipできない
+	err = s3.ShipWithFailed(targetItemID, http.StatusForbidden, "権限がありません")
+	if err != nil {
+		return err
+	}
+
+	apath, err := s1.Ship(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	// QRコードは他人だと見れない
+	err = s3.DecodeQRURLWithFailed(apath, http.StatusForbidden)
+	if err != nil {
+		return err
+	}
+
+	surl, err := s1.DecodeQRURL(apath)
+	if err != nil {
+		return err
+	}
+
+	// acceptしない前はship_doneできない
+	err = s1.ShipDoneWithFailed(targetItemID, http.StatusForbidden, "shipment service側で配送中か配送完了になっていません")
+	if err != nil {
+		return err
+	}
+
+	err = s3.ShipmentAccept(surl)
+	if err != nil {
+		return err
+	}
+
+	// 他人はship_doneできない
+	err = s3.ShipDoneWithFailed(targetItemID, http.StatusForbidden, "権限がありません")
+	if err != nil {
+		return err
+	}
+
+	err = s1.ShipDoneWithWrongCSRFToken(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	err = s1.ShipDone(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+	}()
+
+	<-time.After(6 * time.Second)
+
+	err = s2.Complete(targetItemID)
 	if err != nil {
 		return err
 	}

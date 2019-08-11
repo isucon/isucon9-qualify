@@ -32,6 +32,10 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
+type resBuy struct {
+	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
+}
+
 type reqSell struct {
 	CSRFToken   string `json:"csrf_token"`
 	Name        string `json:"name"`
@@ -148,7 +152,7 @@ func (s *Session) Sell(name string, price int, description string, categoryID in
 	return rs.ID, nil
 }
 
-func (s *Session) Buy(itemID int64, token string) error {
+func (s *Session) Buy(itemID int64, token string) (int64, error) {
 	b, _ := json.Marshal(reqBuy{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -156,26 +160,27 @@ func (s *Session) Buy(itemID int64, token string) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(err, "POST /buy: リクエストに失敗しました")
+		return 0, fails.NewError(err, "POST /buy: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(err, "POST /buy: リクエストに失敗しました")
+		return 0, fails.NewError(err, "POST /buy: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return fails.NewError(err, "POST /buy: "+msg)
+		return 0, fails.NewError(err, "POST /buy: "+msg)
 	}
 
-	_, err = ioutil.ReadAll(res.Body)
+	rb := &resBuy{}
+	err = json.NewDecoder(res.Body).Decode(rb)
 	if err != nil {
-		return fails.NewError(err, "POST /buy: bodyの読み込みに失敗しました")
+		return 0, fails.NewError(err, "POST /buy: JSONデコードに失敗しました")
 	}
 
-	return nil
+	return rb.TransactionEvidenceID, nil
 }
 
 func (s *Session) Ship(itemID int64) (apath string, err error) {
@@ -273,38 +278,38 @@ func (s *Session) Complete(itemID int64) error {
 func (s *Session) DecodeQRURL(apath string) (*url.URL, error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
-		return nil, fails.NewError(err, "リクエストに失敗しました")
+		return nil, fails.NewError(err, fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return nil, fails.NewError(err, "リクエストに失敗しました")
+		return nil, fails.NewError(err, fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return nil, fails.NewError(err, "QRコード "+msg)
+		return nil, fails.NewError(err, fmt.Sprintf("GET %s: %s", apath, msg))
 	}
 
 	qrmatrix, err := qrcode.Decode(res.Body)
 	if err != nil {
-		return nil, fails.NewError(err, "QRコードがデコードできませんでした")
+		return nil, fails.NewError(err, fmt.Sprintf("GET %s: QRコードがデコードできませんでした", apath))
 	}
 
 	surl := qrmatrix.Content
 
 	if len(surl) == 0 {
-		return nil, fails.NewError(nil, "QRコードの中身が空です")
+		return nil, fails.NewError(nil, fmt.Sprintf("GET %s: QRコードの中身が空です", apath))
 	}
 
 	sparsedURL, err := url.ParseRequestURI(surl)
 	if err != nil {
-		return nil, fails.NewError(err, "QRコードの中身がURLではありません")
+		return nil, fails.NewError(err, fmt.Sprintf("GET %s: QRコードの中身がURLではありません", apath))
 	}
 
 	if sparsedURL.Host != ShareTargetURLs.ShipmentURL.Host {
-		return nil, fails.NewError(nil, "shipment serviceのドメイン以外のURLがQRコードに表示されています")
+		return nil, fails.NewError(nil, fmt.Sprintf("GET %s: shipment serviceのドメイン以外のURLがQRコードに表示されています", apath))
 	}
 
 	return sparsedURL, nil
