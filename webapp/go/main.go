@@ -1569,7 +1569,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !(ssr.Status == ShippingsStatusShipping || ssr.Status == ShippingsStatusDone) {
-		outputErrorMsg(w, http.StatusInternalServerError, "shipment service側で配送中か配送完了になっていません")
+		outputErrorMsg(w, http.StatusForbidden, "shipment service側で配送中か配送完了になっていません")
 		tx.Rollback()
 		return
 	}
