@@ -5,8 +5,6 @@ use warnings;
 use Crypt::Eksblowfish::Bcrypt qw/bcrypt/;
 use Crypt::OpenSSL::Random;
 use Digest::SHA;
-use Time::Piece qw//;
-use Time::Piece::MySQL;
 
 my $BASE_PRICE = 108;
 my $NUM_USER_GENERATE = 200;
@@ -126,6 +124,12 @@ for my $cw (@CATEGOREIS_WEIGHT) {
     }
 }
 
+sub format_mysql {
+    my $time = shift;
+    my @lt = localtime($time);
+    sprintf("%04d-%02d-%02d %02d:%02d:%02d", $lt[5]+1900,$lt[4]+1,$lt[3],$lt[2],$lt[1],$lt[0]);
+}
+
 sub encrypt_password {
     my $password = shift;
     my $salt = shift || Crypt::Eksblowfish::Bcrypt::en_base64(Crypt::OpenSSL::Random::random_bytes(16));
@@ -171,7 +175,7 @@ my %users = ();
             $id,
             encrypt_password(Digest::SHA::hmac_sha256_base64($id,$PASSWORD_SALT)),
             $address,
-            Time::Piece::localtime($base_time+$i)->mysql_datetime,
+            format_mysql($base_time+$i)
         );
     }
 }
@@ -209,7 +213,7 @@ sub gen_text {
 
     my $te_id = 0;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
-        my $t_sell = Time::Piece::localtime($base_time+rand(10)-5);
+        my $t_sell = $base_time+rand(10)-5;
         my $t_buy = $t_sell + rand(10) + 60;
         my $t_done = $t_buy + 10;
 
@@ -244,8 +248,8 @@ sub gen_text {
                 $d,
                 $category->[0],
                 $category->[1],
-                $t_buy->mysql_datetime,
-                $t_done->mysql_datetime
+                format_mysql($t_buy),
+                format_mysql($t_done)
             );
 
             printf(
@@ -255,14 +259,14 @@ sub gen_text {
                 $n,
                 $i,
                 "0000000000", # XXX reserve_id
-                $t_buy->epoch,
+                $t_buy,
                 $users{$buyer}->[1],
                 $users{$buyer}->[0],
                 $users{$seller}->[1],
                 $users{$seller}->[0],
                 "", # XXX img_binary
-                $t_buy->mysql_datetime,
-                $t_done->mysql_datetime
+                format_mysql($t_buy),
+                format_mysql($t_done)
             );
         }
 
@@ -276,8 +280,8 @@ sub gen_text {
             $BASE_PRICE,
             $d,
             $category->[0],
-            $t_sell->mysql_datetime,
-            $t_done->mysql_datetime
+            format_mysql($t_sell),
+            format_mysql($t_done)
         );
         $base_time++;
     }
