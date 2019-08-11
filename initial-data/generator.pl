@@ -9,8 +9,10 @@ use Time::Piece qw//;
 use Time::Piece::MySQL;
 
 my $BASE_PRICE = 108;
-my $NUM_USER_GENERATE = 100;
-my $NUM_ITEM_GENERATE = 3000;
+my $NUM_USER_GENERATE = 200;
+my $NUM_ITEM_GENERATE = 10000;
+my $RATE_OF_SOLDOUT = 30;
+
 my $PASSWORD_SALT = 'Oi87WbXmCRnFZATUm4fXUJUE8VLdiI4tGk17M1K3SmS';
 my @ADDTIONAL_ADDREDSS = qw/
 青葉区
@@ -80,42 +82,42 @@ my @ADDTIONAL_ADDREDSS = qw/
 岩槻区
 /;
 my @CATEGOREIS_WEIGHT = (
-[2,1],
-[3,2],
-[4,1],
-[5,1],
-[6,1],
-[11,3],
-[12,2],
-[13,2],
-[14,3],
-[15,1],
-[21,3],
-[22,5],
-[23,3],
-[24,2],
-[31,4],
-[32,3],
-[33,2],
-[34,1],
-[35,1],
-[41,4],
-[42,2],
-[43,2],
-[44,2],
-[45,2],
-[51,1],
-[52,2],
-[53,1],
-[54,2],
-[55,1],
-[56,1],
-[61,3],
-[62,2],
-[63,1],
-[64,3],
-[65,3],
-[66,4]
+[[2,1],1],
+[[3,1],2],
+[[4,1],1],
+[[5,1],1],
+[[6,1],1],
+[[11,10],3],
+[[12,10],2],
+[[13,10],2],
+[[14,10],3],
+[[15,10],1],
+[[21,20],3],
+[[22,20],5],
+[[23,20],3],
+[[24,20],2],
+[[31,30],4],
+[[32,30],3],
+[[33,30],2],
+[[34,30],1],
+[[35,30],1],
+[[41,40],4],
+[[42,40],2],
+[[43,40],2],
+[[44,40],2],
+[[45,40],2],
+[[51,50],1],
+[[52,50],2],
+[[53,50],1],
+[[54,50],2],
+[[55,50],1],
+[[56,50],1],
+[[61,60],3],
+[[62,60],2],
+[[63,60],1],
+[[64,60],3],
+[[65,60],3],
+[[66,60],4]
 );
 my @CATEGOREIS=();
 for my $cw (@CATEGOREIS_WEIGHT) {
@@ -141,14 +143,18 @@ sub check_password {
     }
 }
 
+my %users = ();
 {
     open(my $fh, "<", "users.tsv") or die $!;
     my @dummy_users = map { chomp $_; [ split /\t/, $_, 3] } <$fh>;
     my $format = q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`created_at`) VALUES (%d,'%s','%s','%s','%s');!."\n";
     # For demo
     printf($format, 1, 'isudemo1', encrypt_password('isudemo1'), '東京都港区6-11-1', '2019-09-06 00:00:00');
+    $users{1} = ['isudemo1','東京都港区6-11-1'];
     printf($format, 2, 'isudemo2', encrypt_password('isudemo2'), '東京都新宿区4-1-6', '2019-09-06 00:00:01');
+    $users{2} = ['isudemo2','東京都新宿区4-1-6'];
     printf($format, 3, 'isudemo3', encrypt_password('isudemo3'), '東京都伊洲根9-4000', '2019-09-06 00:00:02');
+    $users{3} = ['isudemo3','東京都伊洲根9-4000'];
     my $base_time = 1567695603; #2019-09-06 00:00:03
     srand(1565458009);
     for (my $i=4;$i<=$NUM_USER_GENERATE;$i++) {
@@ -157,12 +163,14 @@ sub check_password {
         $id =~ s/@.+$//g;
         my $ad1 = int(rand(5))+1;
         my $ad2 = int(rand(50))+1;
+        my $address = $dummy_user->[2] . $ADDTIONAL_ADDREDSS[$i % (scalar @ADDTIONAL_ADDREDSS)] . $ad1 . "-" . $ad2;
+        $users{$i} = [$id,$address];
         printf(
             $format,
             $i,
             $id,
             encrypt_password(Digest::SHA::hmac_sha256_base64($id,$PASSWORD_SALT)),
-            $dummy_user->[2] . $ADDTIONAL_ADDREDSS[$i % (scalar @ADDTIONAL_ADDREDSS)] . $ad1 . "-" . $ad2,
+            $address,
             Time::Piece::localtime($base_time+$i)->mysql_datetime,
         );
     }
@@ -192,24 +200,84 @@ sub gen_text {
 {
     my $base_time = 1567702867; #2019-09-06 02:01:07
     srand(1565358009);
-    my $format = q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES (%d, %d, %d, 'on_sale', '%s', %d, '%s', %d, '%s', '%s');!."\n";
+    my $items_format = q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES (%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s');!."\n";
+
+    my $te_format = q!INSERT INTO `transaction_evidences` (`id`,`seller_id`,`buyer_id`,`status`,`item_id`,`item_name`,`item_price`,`item_description`,`item_category_id`,`item_root_category_id`,`created_at`,`updated_at`) VALUES (%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s');!."\n";
+
+    my $shippings_format = q!INSERT INTO `shippings` (`transaction_evidence_id`,`status`,`item_name`,`item_id`,`reserve_id`,`reserve_time`,`to_address`,`to_name`,`from_address`,`from_name`,`img_binary`,`created_at`,`updated_at`) VALUES (%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s');!."\n";
+
+
+    my $te_id = 0;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
-        my $t = Time::Piece::localtime($base_time+rand(10)-5)->mysql_datetime;
+        my $t_sell = Time::Piece::localtime($base_time+rand(10)-5);
+        my $t_buy = $t_sell + rand(10) + 60;
+        my $t_done = $t_buy + 10;
+
         my $n = gen_text(8,0),;
         $n =~ s/\s+/ /g;
         my $d = gen_text(200,1);
         $d =~ s/\n/\\n/g;
+
+        my $seller = int(rand($NUM_USER_GENERATE))+1;
+        my $status = 'on_sale';
+        my $buyer = 0;
+
+        my $category = $CATEGOREIS[int(rand(scalar @CATEGOREIS))];
+
+        if (rand(100) < $RATE_OF_SOLDOUT) {
+            $status = 'sold_out';
+            $te_id++;
+            $buyer = int(rand($NUM_USER_GENERATE))+1;
+            while ($buyer == $seller) {
+                $buyer = int(rand($NUM_USER_GENERATE))+1;
+            }
+
+            printf(
+                $te_format,
+                $te_id,
+                $seller,
+                $buyer,
+                'done',
+                $i,
+                $n,
+                $BASE_PRICE,
+                $d,
+                $category->[0],
+                $category->[1],
+                $t_buy->mysql_datetime,
+                $t_done->mysql_datetime
+            );
+
+            printf(
+                $shippings_format,
+                $te_id,
+                'done',
+                $n,
+                $i,
+                "0000000000", # XXX reserve_id
+                $t_buy->epoch,
+                $users{$buyer}->[1],
+                $users{$buyer}->[0],
+                $users{$seller}->[1],
+                $users{$seller}->[0],
+                "", # XXX img_binary
+                $t_buy->mysql_datetime,
+                $t_done->mysql_datetime
+            );
+        }
+
         printf(
-            $format,
+            $items_format,
             $i,
-            int(rand($NUM_USER_GENERATE))+1,
-            0,
+            $seller,
+            $buyer, # buyer
+            $status,
             $n,
             $BASE_PRICE,
             $d,
-            $CATEGOREIS[int(rand(scalar @CATEGOREIS))],
-            $t,
-            $t
+            $category->[0],
+            $t_sell->mysql_datetime,
+            $t_done->mysql_datetime
         );
         $base_time++;
     }
