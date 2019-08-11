@@ -160,7 +160,7 @@ func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
 	return nil
 }
 
-func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
+func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, expectedMsg string) error {
 	b, _ := json.Marshal(reqBuy{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -177,7 +177,7 @@ func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusBadRequest)
+	msg, err := checkStatusCode(res, expectedStatus)
 	if err != nil {
 		return fails.NewError(err, "POST /buy: "+msg)
 	}
@@ -188,8 +188,72 @@ func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
 		return fails.NewError(err, "POST /buy: JSONデコードに失敗しました")
 	}
 
-	if re.Error != "カードの残高が足りません" {
-		return fails.NewError(err, "POST /buy: カードの残高が足りないはずです")
+	if re.Error != expectedMsg {
+		return fails.NewError(err, "POST /buy: "+expectedMsg+"というエラーではありません")
+	}
+
+	return nil
+}
+
+func (s *Session) ShipWithWrongCSRFToken(itemID int64) error {
+	b, _ := json.Marshal(reqShip{
+		CSRFToken: secureRandomStr(20),
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: "+msg)
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: JSONデコードに失敗しました")
+	}
+
+	return nil
+}
+
+func (s *Session) ShipWithWrongSeller(itemID int64) error {
+	b, _ := json.Marshal(reqShip{
+		CSRFToken: secureRandomStr(20),
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusForbidden)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: "+msg)
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: JSONデコードに失敗しました")
+	}
+
+	if re.Error != "権限がありません" {
+		return fails.NewError(err, "POST /ship: 権限がないエラーが発生していません")
 	}
 
 	return nil
