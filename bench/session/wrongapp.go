@@ -160,7 +160,7 @@ func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
 	return nil
 }
 
-func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
+func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, expectedMsg string) error {
 	b, _ := json.Marshal(reqBuy{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -177,7 +177,7 @@ func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusBadRequest)
+	msg, err := checkStatusCode(res, expectedStatus)
 	if err != nil {
 		return fails.NewError(err, "POST /buy: "+msg)
 	}
@@ -188,8 +188,156 @@ func (s *Session) BuyWithFailedToken(itemID int64, token string) error {
 		return fails.NewError(err, "POST /buy: JSONデコードに失敗しました")
 	}
 
-	if re.Error != "カードの残高が足りません" {
-		return fails.NewError(err, "POST /buy: カードの残高が足りないはずです")
+	if re.Error != expectedMsg {
+		return fails.NewError(err, fmt.Sprintf("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error))
+	}
+
+	return nil
+}
+
+func (s *Session) ShipWithWrongCSRFToken(itemID int64) error {
+	b, _ := json.Marshal(reqShip{
+		CSRFToken: secureRandomStr(20),
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: "+msg)
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: JSONデコードに失敗しました")
+	}
+
+	return nil
+}
+
+func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg string) error {
+	b, _ := json.Marshal(reqShip{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, expectedStatus)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: "+msg)
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return fails.NewError(err, "POST /ship: JSONデコードに失敗しました")
+	}
+
+	if re.Error != expectedMsg {
+		return fails.NewError(err, fmt.Sprintf("POST /ship: exected error message: %s; actual: %s", expectedMsg, re.Error))
+	}
+
+	return nil
+}
+
+func (s *Session) DecodeQRURLWithFailed(apath string, expectedStatus int) error {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
+	if err != nil {
+		return fails.NewError(err, fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, expectedStatus)
+	if err != nil {
+		return fails.NewError(err, fmt.Sprintf("GET %s: %s", apath, msg))
+	}
+
+	return nil
+}
+
+func (s *Session) ShipDoneWithWrongCSRFToken(itemID int64) error {
+	b, _ := json.Marshal(reqShip{
+		CSRFToken: secureRandomStr(20),
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship_done", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: "+msg)
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: JSONデコードに失敗しました")
+	}
+
+	return nil
+}
+
+func (s *Session) ShipDoneWithFailed(itemID int64, expectedStatus int, expectedMsg string) error {
+	b, _ := json.Marshal(reqShip{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship_done", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, expectedStatus)
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: "+msg)
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return fails.NewError(err, "POST /ship_done: JSONデコードに失敗しました")
+	}
+
+	if re.Error != expectedMsg {
+		return fails.NewError(err, fmt.Sprintf("POST /ship_done: exected error message: %s; actual: %s", expectedMsg, re.Error))
 	}
 
 	return nil

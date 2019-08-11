@@ -10,3 +10,12 @@ bin/payment: cmd/payment/main.go external/payment/*.go
 
 bin/shipment: cmd/shipment/main.go external/shipment/*.go
 	go build -o bin/shipment cmd/shipment/main.go
+
+vet:
+	go vet ./...
+
+errcheck:
+	errcheck ./...
+
+staticcheck:
+	staticcheck -checks="all,-ST1000" ./...
