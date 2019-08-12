@@ -115,10 +115,6 @@ func init() {
 	shipmentHash.Write(SecretSeed)
 }
 
-type errorRes struct {
-	Error string `json:"error"`
-}
-
 type createRes struct {
 	ReserveID   string `json:"reserve_id"`
 	ReserveTime int64  `json:"reserve_time"`

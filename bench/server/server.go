@@ -7,8 +7,6 @@ import (
 	"os"
 	"sync"
 	"time"
-
-	"github.com/isucon/isucon9-qualify/external/payment"
 )
 
 type Server struct {
@@ -20,16 +18,8 @@ type Server struct {
 
 type Adapter func(http.Handler) http.Handler
 
-func NewPayment() *Server {
-	s := &Server{}
-
-	s.mux = http.NewServeMux()
-
-	// cardだけはdelayなし
-	s.mux.Handle("/card", apply(http.HandlerFunc(payment.CardHandler), s.withIPRestriction()))
-	s.mux.Handle("/token", apply(http.HandlerFunc(payment.TokenHandler), s.withDelay(), s.withIPRestriction()))
-
-	return s
+type errorRes struct {
+	Error string `json:"error"`
 }
 
 func (s *Server) SetDelay(d time.Duration) {

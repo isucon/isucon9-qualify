@@ -1,4 +1,4 @@
-package payment
+package server
 
 import (
 	crand "crypto/rand"
@@ -50,10 +50,6 @@ type cardToken struct {
 	expire time.Time
 }
 
-type errorRes struct {
-	Error string `json:"error"`
-}
-
 func newCardToken() *cardTokenStore {
 	m := make(map[string]cardToken)
 	c := &cardTokenStore{
@@ -96,9 +92,26 @@ func (c *cardTokenStore) Get(token string) (cardToken, bool) {
 	return v, found
 }
 
-var CardTokens = newCardToken()
+type ServerPayment struct {
+	cardTokens *cardTokenStore
 
-func TokenHandler(w http.ResponseWriter, req *http.Request) {
+	Server
+}
+
+func NewPayment() *ServerPayment {
+	s := &ServerPayment{}
+
+	s.cardTokens = newCardToken()
+	s.mux = http.NewServeMux()
+
+	// cardだけはdelayなし
+	s.mux.Handle("/card", apply(http.HandlerFunc(s.cardHandler), s.withIPRestriction()))
+	s.mux.Handle("/token", apply(http.HandlerFunc(s.tokenHandler), s.withDelay(), s.withIPRestriction()))
+
+	return s
+}
+
+func (s *ServerPayment) tokenHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -133,7 +146,7 @@ func TokenHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ct, ok := CardTokens.Get(tr.Token)
+	ct, ok := s.cardTokens.Get(tr.Token)
 	if !ok {
 		result := tokenRes{
 			Status: "invalid",
@@ -167,7 +180,7 @@ func isValidOrigin(origin string) bool {
 	return true
 }
 
-func CardHandler(w http.ResponseWriter, req *http.Request) {
+func (s *ServerPayment) cardHandler(w http.ResponseWriter, req *http.Request) {
 	if !isValidOrigin(req.Header.Get("Origin")) {
 		return
 	}
@@ -211,7 +224,7 @@ func CardHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token := CardTokens.Set(cr.CardNumber)
+	token := s.cardTokens.Set(cr.CardNumber)
 
 	res := cardRes{
 		Token: token,
