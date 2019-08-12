@@ -5,12 +5,17 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/isucon/isucon9-qualify/external/payment"
 	"github.com/isucon/isucon9-qualify/external/shipment"
 )
 
 type Server struct {
+	delay time.Duration
+	mu    sync.RWMutex
+
 	mux *http.ServeMux
 }
 
@@ -21,10 +26,10 @@ func NewShipment() *Server {
 
 	s.mux = http.NewServeMux()
 
-	s.mux.HandleFunc("/create", shipment.CreateHandler)
-	s.mux.HandleFunc("/request", shipment.RequestHandler)
-	s.mux.HandleFunc("/accept", shipment.AcceptHandler)
-	s.mux.HandleFunc("/status", shipment.StatusHandler)
+	s.mux.Handle("/create", apply(http.HandlerFunc(shipment.CreateHandler), s.withDelay(), s.withIPRestriction()))
+	s.mux.Handle("/request", apply(http.HandlerFunc(shipment.RequestHandler), s.withDelay(), s.withIPRestriction()))
+	s.mux.Handle("/accept", apply(http.HandlerFunc(shipment.AcceptHandler), s.withDelay(), s.withIPRestriction()))
+	s.mux.Handle("/status", apply(http.HandlerFunc(shipment.StatusHandler), s.withDelay(), s.withIPRestriction()))
 
 	return s
 }
@@ -34,10 +39,24 @@ func NewPayment() *Server {
 
 	s.mux = http.NewServeMux()
 
-	s.mux.Handle("/card", apply(http.HandlerFunc(payment.CardHandler), withIPRestriction()))
-	s.mux.Handle("/token", apply(http.HandlerFunc(payment.TokenHandler), withIPRestriction()))
+	// cardだけはdelayなし
+	s.mux.Handle("/card", apply(http.HandlerFunc(payment.CardHandler), s.withIPRestriction()))
+	s.mux.Handle("/token", apply(http.HandlerFunc(payment.TokenHandler), s.withDelay(), s.withIPRestriction()))
 
 	return s
+}
+
+func (s *Server) SetDelay(d time.Duration) {
+	s.mu.Lock()
+	s.delay = d
+	s.mu.Unlock()
+}
+
+func (s *Server) GetDelay() time.Duration {
+	s.mu.RLock()
+	d := s.delay
+	s.mu.RUnlock()
+	return d
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +69,16 @@ func tmp(next http.Handler) http.Handler {
 	})
 }
 
-func withIPRestriction() Adapter {
+func (s *Server) withDelay() Adapter {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r)
+			<-time.After(s.GetDelay())
+		})
+	}
+}
+
+func (s *Server) withIPRestriction() Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			next.ServeHTTP(w, r)
