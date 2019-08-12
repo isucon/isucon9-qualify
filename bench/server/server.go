@@ -7,9 +7,6 @@ import (
 	"os"
 	"sync"
 	"time"
-
-	"github.com/isucon/isucon9-qualify/external/payment"
-	"github.com/isucon/isucon9-qualify/external/shipment"
 )
 
 type Server struct {
@@ -21,29 +18,8 @@ type Server struct {
 
 type Adapter func(http.Handler) http.Handler
 
-func NewShipment() *Server {
-	s := &Server{}
-
-	s.mux = http.NewServeMux()
-
-	s.mux.Handle("/create", apply(http.HandlerFunc(shipment.CreateHandler), s.withDelay(), s.withIPRestriction()))
-	s.mux.Handle("/request", apply(http.HandlerFunc(shipment.RequestHandler), s.withDelay(), s.withIPRestriction()))
-	s.mux.Handle("/accept", apply(http.HandlerFunc(shipment.AcceptHandler), s.withDelay(), s.withIPRestriction()))
-	s.mux.Handle("/status", apply(http.HandlerFunc(shipment.StatusHandler), s.withDelay(), s.withIPRestriction()))
-
-	return s
-}
-
-func NewPayment() *Server {
-	s := &Server{}
-
-	s.mux = http.NewServeMux()
-
-	// cardだけはdelayなし
-	s.mux.Handle("/card", apply(http.HandlerFunc(payment.CardHandler), s.withIPRestriction()))
-	s.mux.Handle("/token", apply(http.HandlerFunc(payment.TokenHandler), s.withDelay(), s.withIPRestriction()))
-
-	return s
+type errorRes struct {
+	Error string `json:"error"`
 }
 
 func (s *Server) SetDelay(d time.Duration) {
@@ -104,12 +80,14 @@ func RunServer(paymentPort, shipmentPort int) error {
 		return err
 	}
 
+	pay := NewPayment()
 	serverPayment := &http.Server{
-		Handler: NewPayment(),
+		Handler: pay,
 	}
 
+	ship := NewShipment()
 	serverShipment := &http.Server{
-		Handler: NewShipment(),
+		Handler: ship,
 	}
 
 	go func() {
