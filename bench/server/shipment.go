@@ -1,4 +1,4 @@
-package shipment
+package server
 
 import (
 	"crypto/sha1"
@@ -108,8 +108,6 @@ func (c *shipmentStore) Get(key string) (shipment, bool) {
 	return v, found
 }
 
-var shipmentCache = NewShipmentStore()
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -126,7 +124,27 @@ type createRes struct {
 	ReserveTime int64  `json:"reserve_time"`
 }
 
-func CreateHandler(w http.ResponseWriter, r *http.Request) {
+type ServerShipment struct {
+	shipmentCache *shipmentStore
+
+	Server
+}
+
+func NewShipment() *ServerShipment {
+	s := &ServerShipment{}
+
+	s.shipmentCache = NewShipmentStore()
+	s.mux = http.NewServeMux()
+
+	s.mux.Handle("/create", apply(http.HandlerFunc(s.createHandler), s.withDelay(), s.withIPRestriction()))
+	s.mux.Handle("/request", apply(http.HandlerFunc(s.requestHandler), s.withDelay(), s.withIPRestriction()))
+	s.mux.Handle("/accept", apply(http.HandlerFunc(s.acceptHandler), s.withDelay(), s.withIPRestriction()))
+	s.mux.Handle("/status", apply(http.HandlerFunc(s.statusHandler), s.withDelay(), s.withIPRestriction()))
+
+	return s
+}
+
+func (s *ServerShipment) createHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -162,7 +180,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	ship.Status = StatusInitial
 
 	res := createRes{}
-	res.ReserveID = shipmentCache.Set(ship)
+	res.ReserveID = s.shipmentCache.Set(ship)
 	res.ReserveTime = ship.ReserveDatetime.Unix()
 
 	json.NewEncoder(w).Encode(res)
@@ -172,7 +190,7 @@ type requestReq struct {
 	ReserveID string `json:"reserve_id"`
 }
 
-func RequestHandler(w http.ResponseWriter, r *http.Request) {
+func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -203,7 +221,7 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok := shipmentCache.SetStatus(req.ReserveID, StatusWaitPickup)
+	_, ok := s.shipmentCache.SetStatus(req.ReserveID, StatusWaitPickup)
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
@@ -238,7 +256,7 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) {
 	png.Encode(w, qrCode)
 }
 
-func AcceptHandler(w http.ResponseWriter, r *http.Request) {
+func (s *ServerShipment) acceptHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	id := query.Get("id")
 	token := query.Get("token")
@@ -251,7 +269,7 @@ func AcceptHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok := shipmentCache.SetStatus(id, StatusShipping)
+	_, ok := s.shipmentCache.SetStatus(id, StatusShipping)
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
@@ -268,7 +286,7 @@ func AcceptHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func StatusHandler(w http.ResponseWriter, r *http.Request) {
+func (s *ServerShipment) statusHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Authorization") != IsucariAPIToken {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -292,7 +310,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(b)
 	}
 
-	ship, ok := shipmentCache.Get(req.ReserveID)
+	ship, ok := s.shipmentCache.Get(req.ReserveID)
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
