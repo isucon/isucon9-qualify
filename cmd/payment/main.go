@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/server"
@@ -25,5 +23,5 @@ func main() {
 
 	pay.SetDelay(200 * time.Millisecond)
 
-	fmt.Fprintln(os.Stderr, serverPayment.Serve(liPayment))
+	log.Print(serverPayment.Serve(liPayment))
 }

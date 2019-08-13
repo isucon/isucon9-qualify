@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -21,6 +20,8 @@ type Output struct {
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
 func main() {
@@ -38,14 +39,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Fprintf(os.Stderr, "=== initialize ===\n")
+	log.Print("=== initialize ===")
 	scenario.Initialize()
-	fmt.Fprintf(os.Stderr, "=== verify ===\n")
+	log.Print("=== verify ===")
 
 	cerr := scenario.Verify()
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
-		fmt.Fprintf(os.Stderr, "cause error!\n")
+		log.Print("cause error!")
 
 		output := Output{
 			Pass:     false,
@@ -57,7 +58,7 @@ func main() {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "=== validation ===\n")
+	log.Print("=== validation ===")
 
 	output := Output{
 		Pass:  true,

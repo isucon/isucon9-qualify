@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"hash"
 	"image/png"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"sync"
 	"time"
 
@@ -244,7 +244,7 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 	u.RawQuery = q.Encode()
 
 	msg := u.String()
-	fmt.Fprintln(os.Stderr, msg)
+	log.Print(msg)
 
 	qrCode, _ := qr.Encode(msg, qr.L, qr.Auto)
 	qrCode, _ = barcode.Scale(qrCode, 256, 256)
