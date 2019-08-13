@@ -29,16 +29,7 @@ func Verify() *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.AppUser{
-			AccountName: "aaa",
-			Address:     "aaa",
-			Password:    "aaa",
-		}
-		user2 := asset.AppUser{
-			AccountName: "bbb",
-			Address:     "bbb",
-			Password:    "bbb",
-		}
+		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
 		// bumpするためにはそのユーザーのItemIDが必要
 		err := bump(user1, user2)
 		if err != nil {

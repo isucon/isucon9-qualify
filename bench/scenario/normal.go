@@ -140,7 +140,7 @@ func bump(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	err = s1.Bump(1)
+	err = s1.Bump(asset.Items[user1.ID][0].ID)
 	if err != nil {
 		return err
 	}

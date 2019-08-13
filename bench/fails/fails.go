@@ -22,7 +22,11 @@ func NewError(err error, msg string) *Error {
 		Msg: msg,
 		Err: err,
 	}
-	log.Print(ferr.Error())
+	if err != nil {
+		log.Printf("%s: %+v", msg, err)
+	} else {
+		log.Print(ferr)
+	}
 
 	return ferr
 }
