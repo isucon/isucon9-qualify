@@ -541,8 +541,8 @@ class Service
         }
 
         try {
-            $sth = $this->dbh->prepare('INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?, ?)');
-            $sth->execute([$payload->account_name, $hashedPassword, $payload->address, 0]);
+            $sth = $this->dbh->prepare('INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)');
+            $sth->execute([$payload->account_name, $hashedPassword, $payload->address]);
             $userId = $this->dbh->lastInsertId();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -605,11 +605,17 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
+        $categories = $this->dbh->query('SELECT * FROM `categories`', PDO::FETCH_ASSOC);
+        if ($categories === false) {
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
         unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
         return $response->withStatus(200)->withJson(
             [
                 'csrf_token' => $token,
-                'user' => $user
+                'user' => $user,
+                'categories' => $categories,
             ]
         );
     }
@@ -792,6 +798,11 @@ class Service
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?');
             $sth->execute([$payload->price, (new \DateTime())->format(self::DATETIME_SQL_FORMAT), $payload->item_id]);
+
+            $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ?');
+            $sth->execute([$payload->item_id]);
+            $item = $sth->fetch(PDO::FETCH_ASSOC);
+
             $this->dbh->commit();
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
@@ -799,7 +810,12 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson([
+            'item_id' => $item['id'],
+            'item_price' => $item['price'],
+            'item_created_at' => $item['created_at'],
+            'item_updated_at' => $item['updated_at'],
+        ]);
     }
 
     public function buy(Request $request, Response $response, array $args)
@@ -1186,7 +1202,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson(['transaction_evidence_id' => $transactionEvidence['id']]);
     }
 
     public function complete(Request $request, Response $response, array $args)
@@ -1302,7 +1318,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson(['transaction_evidence_id' => $transactionEvidence['id']]);
     }
 
     public function bump(Request $request, Response $response, array $args)
@@ -1370,12 +1386,21 @@ class Service
                 $user['id']
             ]);
 
+            $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ?');
+            $sth->execute([$item['id']]);
+            $item = $sth->fetch(PDO::FETCH_ASSOC);
+
             $this->dbh->commit();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson([
+            'item_id' => $item['id'],
+            'item_price' => $item['price'],
+            'item_created_at' => $item['created_at'],
+            'item_updated_at' => $item['updated_at'],
+        ]);
     }
 }
