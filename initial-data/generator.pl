@@ -130,6 +130,13 @@ sub format_mysql {
     sprintf("%04d-%02d-%02d %02d:%02d:%02d", $lt[5]+1900,$lt[4]+1,$lt[3],$lt[2],$lt[1],$lt[0]);
 }
 
+#  パスワードの生成
+# account_name + salt の hmac + sha256 + base64
+sub gen_passwd {
+    my $id = shift;
+    Digest::SHA::hmac_sha256_base64($id,$PASSWORD_SALT)
+}
+
 sub encrypt_password {
     my $password = shift;
     my $salt = shift || Crypt::Eksblowfish::Bcrypt::en_base64(Crypt::OpenSSL::Random::random_bytes(16));
@@ -147,18 +154,36 @@ sub check_password {
     }
 }
 
+my @insert_users;
 my %users = ();
+sub insert_user {
+    my ($id, $name, $passwd, $address, $created_at) = @_;
+    push @insert_users, sprintf(q!(%d,'%s','%s','%s','%s')!, $id, $name, $passwd, $address, $created_at);
+    $users{$id} = [$name, $address];
+    if (@insert_users > 200) {
+        flush_users();
+    }
+}
+
+sub flush_users {
+    return unless @insert_users;
+    print q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`created_at`) VALUES ! . join(", ", @insert_users) . ";\n";
+    @insert_users = ();
+}
+
+{
+    print q!use `isucari`;!."\n\n";
+}
+
 {
     open(my $fh, "<", "users.tsv") or die $!;
     my @dummy_users = map { chomp $_; [ split /\t/, $_, 3] } <$fh>;
-    my $format = q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`created_at`) VALUES (%d,'%s','%s','%s','%s');!."\n";
+
     # For demo
-    printf($format, 1, 'isudemo1', encrypt_password('isudemo1'), '東京都港区6-11-1', '2019-09-06 00:00:00');
-    $users{1} = ['isudemo1','東京都港区6-11-1'];
-    printf($format, 2, 'isudemo2', encrypt_password('isudemo2'), '東京都新宿区4-1-6', '2019-09-06 00:00:01');
-    $users{2} = ['isudemo2','東京都新宿区4-1-6'];
-    printf($format, 3, 'isudemo3', encrypt_password('isudemo3'), '東京都伊洲根9-4000', '2019-09-06 00:00:02');
-    $users{3} = ['isudemo3','東京都伊洲根9-4000'];
+    insert_user(1, 'isudemo1', encrypt_password('isudemo1'), '東京都港区6-11-1', '2019-09-06 00:00:00');
+    insert_user(2, 'isudemo2', encrypt_password('isudemo2'), '東京都新宿区4-1-6', '2019-09-06 00:00:01');
+    insert_user(3, 'isudemo3', encrypt_password('isudemo3'), '東京都伊洲根9-4000', '2019-09-06 00:00:02');
+
     my $base_time = 1567695603; #2019-09-06 00:00:03
     srand(1565458009);
     for (my $i=4;$i<=$NUM_USER_GENERATE;$i++) {
@@ -169,15 +194,15 @@ my %users = ();
         my $ad2 = int(rand(50))+1;
         my $address = $dummy_user->[2] . $ADDTIONAL_ADDREDSS[$i % (scalar @ADDTIONAL_ADDREDSS)] . $ad1 . "-" . $ad2;
         $users{$i} = [$id,$address];
-        printf(
-            $format,
+        insert_user(
             $i,
             $id,
-            encrypt_password(Digest::SHA::hmac_sha256_base64($id,$PASSWORD_SALT)),
+            encrypt_password(gen_passwd($id)),
             $address,
             format_mysql($base_time+$i)
         );
     }
+    flush_users();
 }
 
 open(my $fh, "<", "keywords.txt") or die $!;
@@ -201,15 +226,40 @@ sub gen_text {
     return $text;
 }
 
+my @insert_items;
+my @insert_te;
+my @insert_shippings;
+sub insert_items {
+    push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s')!, @_);
+    if (@insert_items > 200) {
+        flush_items();
+        flush_te();
+        flush_shippings();
+    }
+
+}
+sub flush_items {
+    print q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
+    @insert_items = ();
+}
+sub insert_te {
+    push @insert_te, sprintf(q!(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s')!, @_);
+}
+sub flush_te {
+    print q!INSERT INTO `transaction_evidences` (`id`,`seller_id`,`buyer_id`,`status`,`item_id`,`item_name`,`item_price`,`item_description`,`item_category_id`,`item_root_category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_te) . ";\n";
+    @insert_te = ();
+}
+sub insert_shippings {
+    push @insert_shippings, sprintf(q!(%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s')!, @_);
+}
+sub flush_shippings {
+    print q!INSERT INTO `shippings` (`transaction_evidence_id`,`status`,`item_name`,`item_id`,`reserve_id`,`reserve_time`,`to_address`,`to_name`,`from_address`,`from_name`,`img_binary`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_shippings) . ";\n";
+    @insert_shippings = ();
+}
+
 {
     my $base_time = 1567702867; #2019-09-06 02:01:07
     srand(1565358009);
-    my $items_format = q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES (%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s');!."\n";
-
-    my $te_format = q!INSERT INTO `transaction_evidences` (`id`,`seller_id`,`buyer_id`,`status`,`item_id`,`item_name`,`item_price`,`item_description`,`item_category_id`,`item_root_category_id`,`created_at`,`updated_at`) VALUES (%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s');!."\n";
-
-    my $shippings_format = q!INSERT INTO `shippings` (`transaction_evidence_id`,`status`,`item_name`,`item_id`,`reserve_id`,`reserve_time`,`to_address`,`to_name`,`from_address`,`from_name`,`img_binary`,`created_at`,`updated_at`) VALUES (%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s');!."\n";
-
 
     my $te_id = 0;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
@@ -228,6 +278,19 @@ sub gen_text {
 
         my $category = $CATEGOREIS[int(rand(scalar @CATEGOREIS))];
 
+        insert_items(
+            $i,
+            $seller,
+            $buyer, # buyer
+            $status,
+            $n,
+            $BASE_PRICE,
+            $d,
+            $category->[0],
+            format_mysql($t_sell),
+            format_mysql($t_done)
+        );
+
         if (rand(100) < $RATE_OF_SOLDOUT) {
             $status = 'sold_out';
             $te_id++;
@@ -236,8 +299,7 @@ sub gen_text {
                 $buyer = int(rand($NUM_USER_GENERATE))+1;
             }
 
-            printf(
-                $te_format,
+            insert_te(
                 $te_id,
                 $seller,
                 $buyer,
@@ -252,8 +314,7 @@ sub gen_text {
                 format_mysql($t_done)
             );
 
-            printf(
-                $shippings_format,
+            insert_shippings(
                 $te_id,
                 'done',
                 $n,
@@ -270,19 +331,8 @@ sub gen_text {
             );
         }
 
-        printf(
-            $items_format,
-            $i,
-            $seller,
-            $buyer, # buyer
-            $status,
-            $n,
-            $BASE_PRICE,
-            $d,
-            $category->[0],
-            format_mysql($t_sell),
-            format_mysql($t_done)
-        );
         $base_time++;
     }
+
+    flush_items();
 }
