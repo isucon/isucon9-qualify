@@ -8,6 +8,8 @@
 
   roles:
     - bootstrap
+    - users.isucon
+    - users.isucon_admin
 
     - { role: vagrant-specific, when: target == "vagrant" }
 
