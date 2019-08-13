@@ -29,7 +29,7 @@ type UserSimple = {
   num_sell_items: number;
 };
 
-type ItemSimple = {
+export type ItemSimple = {
   id: number;
   seller_id: number;
   seller: UserSimple;
@@ -68,9 +68,6 @@ export interface LoginRes {
 /**
  * GET /item
  */
-export interface GetItemReq {
-  item_id: number;
-}
 export interface GetItemRes {
   id: number;
   seller_id: number;
@@ -139,10 +136,21 @@ export interface ErrorRes {
  */
 export interface NewItemReq {
   item_id?: number;
-  created?: number;
+  created_at?: number;
 }
 
 export interface NewItemRes {
+  root_category_id?: number;
+  root_category_name?: string;
+  has_next: boolean;
+  items: ItemSimple[];
+}
+/**
+ * GET /new_item.json
+ */
+export interface NewCategoryItemReq extends NewItemReq {}
+
+export interface NewCategoryItemRes {
   root_category_id?: number;
   root_category_name?: string;
   has_next: boolean;
