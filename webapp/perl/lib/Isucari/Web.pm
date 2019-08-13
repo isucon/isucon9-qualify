@@ -21,7 +21,7 @@ use Isucari::API;
 # XXX sessionName = "session_isucari"
 
 our $ITEM_MIN_PRICE    = 100;
-our $TEM_MAX_PRICE    = 1000000;
+our $ITEM_MAX_PRICE    = 1000000;
 our $ITEM_PRICE_ERRMSG = "商品価格は100円以上、1,000,000円以下にしてください";
 
 our $ITEM_STATUS_ON_SALE  = "on_sale";
@@ -118,9 +118,14 @@ sub api_client {
     };
 }
 
+sub getCSRFToken {
+    my ($self, $c) = @_;
+    my $session = Plack::Session->new($c->env);
+    return $session->get('csrf_token') // "";
+}
+
 sub getUser {
     my ($self, $c) = @_;
-
     my $session = Plack::Session->new($c->env);
     my $user_id = $session->get('user_id');
     return unless $user_id;
@@ -574,11 +579,180 @@ get '/items/{item_id}.json' => sub {
 post '/items/edit' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
 
+    my $csrf_token = $c->req->body_parameters->get('csrf_token');
+	my $item_id    = $c->req->body_parameters->get('item_id');
+	my $price      = $c->req->body_parameters->get('price');
+
+    if $csrf_token ne $self->getCSRFToken($c) {
+        $c->halt(422, 'csrf token error');
+    }
+
+    if ($price < $ITEM_MIN_PRICE || $price > $ITEM_MAX_PRICE) {
+        $c->halt(400, $ITEM_PRICE_ERRMSG);
+	}
+
+    my $seller = $self->getUser($c);
+    if (!$user) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $target_item = $self->dbh->select_row('SELECT * FROM `items` WHERE `id` = ?', $item_id);
+    if (!$target_item) {
+        $c->halt(404, 'item not found');
+    }
+    if ($target_item->{seller_id} != $seller->{id}) {
+        $c->halt(403, "自分の商品以外は編集できません");
+    }
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+    $target_item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
+
+    if ($target_item->{status} ne $ITEM_STATUS_ON_SALE) {
+        $c->halt(403, "販売中の商品以外編集できません");
+	}
+
+    $dbh->query(
+        'UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?',
+        $price,
+        mysql_datetime_from_unix(time),
+        $item_id
+    );
+
+    $target_item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ?', $item_id);
+
+    $txn->commit();
+
+    $c->render_json({
+        item_id => number $target_item->{id},
+        item_price => number $target_item->{price},
+        item_created_at => number unix_from_mysql_datetime($target_item->{created_at}),
+        item_updated_at => number unix_from_mysql_datetime($target_item->{updated_at}),
+    });
 };
 
 # postBuy
 post '/buy' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+    my $csrf_token = $c->req->body_parameters->get('csrf_token');
+    my $item_id    = $c->req->body_parameters->get('item_id');
+    my $token    = $c->req->body_parameters->get('token');
+
+    if ($csrf_token ne $self->getCSRFToken($c)) {
+        $c->halt(422, 'csrf token error');
+    }
+
+    if (!$token) {
+        $c->halt(400, 'token error');
+    }
+
+    my $buyer = $self->getUser($c);
+    if (!$buyer) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+
+    my $target_item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
+    if (!$target_item) {
+        $c->halt(404, 'item not found');
+    }
+    if ($target_item->{status} ne $ITEM_STATUS_ON_SALE) {
+        $c->halt(403, "item is not for sale");
+	}
+    if ($target_item->{seller_id} == $buyer->{id}) {
+        $c->halt(403, "自分の商品は買えません")
+    }
+
+    my $seller = $dbh->select_row('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', $target_item->{seller_id});
+    if (!$seller) {
+        $c->halt(404, 'seller not found');
+    }
+
+    my $category = $self->getCategoryByID($target_item->{category_id});
+    if (!$category) {
+        $c->halt(404, 'category id error');
+    }
+
+    $dbh->query(
+        'INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        $target_item->{seller_id},
+        $buyer->{id},
+        $TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING,
+        $target_item->{id},
+        $target_item->{name},
+        $target_item->{price},
+        $target_item->{description},
+        $category->{id},
+        $category->{parent_id}
+    );
+
+    my $transaction_evidence_id = $dbh->last_insert_id();
+
+    $dbh->query(
+        'UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?',
+        $buyer->{ID},
+        $ITEM_STATUS_TRADING,
+        mysql_datetime_from_unix(time),
+        $target_item->{id},
+    );
+
+    my $scr = eval{
+        $self->api_client->shipment_create("http://localhost:7000", {
+            to_address   => $buyer->{address},
+            to_name      => $buyer->{account_name},
+            from_address => $seller->{Address},
+            from_name    => $seller->{account_name}
+        });
+    };
+    if ($@) {
+        $c->halt(500, "failed to request to shipment service");
+    }
+
+    my $pstr = eval {
+        $self->api_client->payment_token("http://localhost:5555", {
+            shop_id => $PAYMENT_SERVICE_ISUCARI_SHOPID,
+            token   => $token,
+            api_key => $PAYMENT_SERVICE_ISUCARI_APIKEY,
+            price   => number $target_item->{price},
+        })
+    };
+    if ($@) {
+        $c->halt(500, "payment service is failed");
+    }
+
+    if ($pstr->{status} eq "invalid") {
+        $c->halt(400, "カード情報に誤りがあります");
+	}
+
+	if ($pstr->{status} eq "fail") {
+        $c->halt(400, "カードの残高が足りません");
+	}
+
+	if ($pstr->{status} ne "ok") {
+        $c->halt(400, "想定外のエラー");
+	}
+
+    $dbh->query(
+        'INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+		$transaction_evidence_id,
+		$SHIPPINGS_STATUS_INITIAL,
+        $target_item->{name},
+        $target_item->{id},
+        $scr->{reserve_id},
+        $scr->{reserve_time},
+		$buyer->{address},
+		$buyer->{account_name},
+		$seller->{address},
+		$seller->{account_name},
+		"", # default img_binary
+	);
+    $txn->commit();
+
+    $c->render_json({
+        transaction_evidence_id => number $transaction_evidence_id
+    });
 };
 
 # postSell
