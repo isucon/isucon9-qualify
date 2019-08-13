@@ -60,6 +60,26 @@ func main() {
 
 	log.Print("=== validation ===")
 
+	scenario.Validation(cerr)
+
+	criticalMsgs = cerr.GetMsgs()
+	if len(criticalMsgs) > 0 {
+		log.Print("cause error!")
+
+		output := Output{
+			Pass:     false,
+			Score:    0,
+			Messages: criticalMsgs,
+		}
+		json.NewEncoder(os.Stdout).Encode(output)
+
+		return
+	}
+
+	log.Print("=== final check ===")
+
+	scenario.FinalCheck(cerr)
+
 	output := Output{
 		Pass:  true,
 		Score: 0,

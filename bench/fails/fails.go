@@ -61,6 +61,8 @@ func (c *Critical) Add(err error) {
 	if ferr, ok := err.(*Error); ok {
 		c.Msgs = append(c.Msgs, ferr.Msg)
 	} else {
+		log.Printf("%+v", err)
+
 		c.Msgs = append(c.Msgs, "運営に連絡してください")
 	}
 }
