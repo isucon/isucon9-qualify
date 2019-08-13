@@ -86,6 +86,15 @@ sub dbh {
     };
 }
 
+sub get_login_user {
+    my ($self, $c) = @_;
+
+    my $session = Plack::Session->new($c->env);
+    my $user_id = $session->get('user_id');
+    return unless $user_id;
+    return $self->dbh->select_row('SELECT * FROM users WHERE id = ?', $user_id);
+}
+
 sub getUserSimpleByID {
     my ($self, $user_id) = @_;
     my $user = $self->dbh->select_row('SELECT * FROM `users` WHERE `id` = ?',$user_id);
@@ -257,13 +266,78 @@ get '/new_items/{root_category_id}.json' => sub {
     });
 };
 
-# getTransactions
-get '/users/transactions.json' => sub {
-    my ($self, $c) = @_;
-};
-
 # getUserItems
 get '/users/{user_id}.json' => sub {
+    my ($self, $c) = @_;
+    my $user_id = $c->args->{user_id};
+    my $item_id = $c->req->parameters->get('item_id');
+    my $created_at = $c->req->parameters->get('created_at');
+
+    my $user_simple = $self->getUserSimpleByID($user_id);
+    if (!$user_simple) {
+        $c->halt(404,'user not found'); #XXX
+    }
+
+    my $items = [];
+    if ($item_id && $created_at) {
+        # paging
+        $items = $self->dbh->select_all(
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND seller_id = ? AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
+            $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_SOLD_OUT,
+            $user_simple->{id},
+            mysql_datetime_from_unix($created_at),
+            $item_id,
+        );
+    }
+    else {
+        # 1st page
+        $items = $self->dbh->select_all(
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND seller_id = ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d',$ITEMS_PER_PAGE+1),
+            $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_SOLD_OUT,
+            $user_simple->{id},
+        );
+    }
+
+    my @item_simples = ();
+    for my $item (@$items) {
+        my $seller = $self->getUserSimpleByID($item->{seller_id});
+        if (!$seller) {
+            $c->halt(404,"seller not found"); #XXX
+        }
+        my $category = $self->getCategoryByID($item->{category_id});
+		if (!$category) {
+            $c->halt(404,"category not found"); #XXX
+		}
+        push @item_simples, +{
+            id => number $item->{id},
+            seller_id => number $item->{seller_id},
+            seller => $seller,
+            status => $item->{status},
+            name => $item->{name},
+            price => number $item->{price},
+            category_id => number $item->{category_id},
+            category => $category,
+            created_at => number unix_from_mysql_datetime($item->{created_at}),
+        }
+    }
+
+    my $has_next = 0;
+	if (@item_simples > $ITEMS_PER_PAGE) {
+		$has_next = 1;
+        pop @item_simples;
+	}
+
+    $c->render_json({
+        user => $user_simple,
+        items => \@item_simples,
+        hax_next => bool $has_next
+    });
+};
+
+# getTransactions
+get '/users/transactions.json' => sub {
     my ($self, $c) = @_;
 };
 
