@@ -277,14 +277,14 @@ sub insert_items {
 
     if (@insert_items > 200) {
         flush_items();
-        flush_te();
-        flush_shippings();
     }
 
 }
 sub flush_items {
     print $sql_fh q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
     @insert_items = ();
+    flush_te();
+    flush_shippings();
 }
 
 sub insert_te {
