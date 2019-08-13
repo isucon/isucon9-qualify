@@ -19,7 +19,7 @@ class AppClient {
     }
 
     let url = `${this.baseUrl}${path}`;
-    if (!(Object.keys(params).length === 0)) {
+    if (getParams.toString() !== '') {
       url = `${url}?${getParams.toString()}`;
     }
 
