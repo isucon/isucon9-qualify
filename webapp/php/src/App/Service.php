@@ -818,6 +818,52 @@ class Service
         ]);
     }
 
+    public function qrcode(Request $request, Response $response, array $args)
+    {
+        $transactionEvidenceId = (int) $args['id'];
+        try {
+            $seller = $this->getCurrentUser();
+        } catch (\DomainException $e) {
+            $this->logger->warning('user not found');
+            return $response->withStatus(404)->withJson(['error' => 'user not found']);
+        } catch (\Exception $e) {
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
+        try {
+            $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ?');
+            $sth->execute([$transactionEvidenceId]);
+            $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
+            if ($transactionEvidence === false) {
+                return $response->withStatus(404)->withJson(['error' => 'transaction_evidences not found']);
+            }
+
+            if ($transactionEvidence['seller_id'] !== $seller['id']) {
+                return $response->withStatus(403)->withJson(['error' => '権限がありません']);
+            }
+
+            $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?');
+            $sth->execute([$transactionEvidence['id']]);
+            $shipping = $sth->fetch(PDO::FETCH_ASSOC);
+            if ($shipping === false) {
+                return $response->withStatus(404)->withJson(['error' => 'shippings not found']);
+            }
+
+            if ($shipping['status'] !== self::SHIPPING_STATUS_WAIT_PICKUP && $shipping['status'] !== self::SHIPPING_STATUS_SHIPPING) {
+                return $response->withStatus(403)->withJson(['error' => 'qrcode not available']);
+            }
+
+            if (empty($shipping['img_binary'])) {
+                return $response->withStatus(500)->withJson(['error' => 'empty qrcode image']);
+            }
+        } catch (\PDOException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
+        return $response->withHeader('Content-Type', 'image/png')->withBody($shipping['img_binary']);
+    }
+
     public function buy(Request $request, Response $response, array $args)
     {
         try {
@@ -1055,21 +1101,14 @@ class Service
                 return $response->withStatus(404)->withJson(['error' => 'shippings not found']);
             }
 
-            $bytes = random_bytes(16);
-            $imgName = bin2hex($bytes);
-            $path = $this->settings['app']['upload_path'] . $imgName . '.png';
-            $resource = fopen($path, 'w');
-
             $client = new \GuzzleHttp\Client();
             $r = $client->post(
                 'http://localhost:7000/request',
                 [
                     'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                     'json' => ['reserve_id' => $shipping['reserve_id']],
-                    'sink' => $resource,
                 ]
             );
-            fclose($resource);
             if ($r->getStatusCode() !== 200) {
                 $this->logger->error($r->getReasonPhrase());
                 $this->dbh->rollBack();
@@ -1077,10 +1116,10 @@ class Service
             }
 
 
-            $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_name` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
+            $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
             $sth->execute([
                 self::SHIPPING_STATUS_WAIT_PICKUP,
-                $imgName,
+                (string) $r->getBody(),
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id']
             ]);
@@ -1092,7 +1131,7 @@ class Service
         }
 
         return $response->withStatus(200)->withJson([
-            'url' => sprintf("http://%s/upload/%s.png", $request->getServerParam('HTTP_HOST'), $imgName),
+            'path' => sprintf("/transactions/%d.png", $transactionEvidence['id']),
         ]);
     }
 
@@ -1179,7 +1218,7 @@ class Service
             $shippingResponse = json_decode($r->getBody());
             if (! ($shippingResponse->status === self::SHIPPING_STATUS_DONE || $shippingResponse->status === self::SHIPPING_STATUS_SHIPPING)) {
                 $this->dbh->rollBack();
-                return $response->withStatus(500)->withJson(['error' => 'shipment service側で配送中か配送完了になっていません']);
+                return $response->withStatus(403)->withJson(['error' => 'shipment service側で配送中か配送完了になっていません']);
             }
 
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
