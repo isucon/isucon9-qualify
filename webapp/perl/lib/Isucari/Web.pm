@@ -186,6 +186,75 @@ get '/new_items.json' => sub {
 # getNewCategoryItems
 get '/new_items/{root_category_id}.json' => sub {
     my ($self, $c) = @_;
+    my $root_category_id = $c->args->{root_category_id};
+    my $item_id = $c->req->parameters->get('item_id');
+    my $created_at = $c->req->parameters->get('created_at');
+
+    my $root_category = $self->getCategoryByID($root_category_id);
+    if (!$root_category) {
+        $c->halt(404,"root category not found"); #XXX
+    }
+
+    my $categories = $self->dbh->select_all('SELECT id FROM `categories` WHERE parent_id=?', $root_category_id);
+    my @category_ids = map {$_->{id}} @$categories;
+
+    my $items = [];
+    if ($item_id && $created_at) {
+        # paging
+        $items = $self->dbh->select_all(
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
+            $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_SOLD_OUT,
+            \@category_ids,
+            mysql_datetime_from_unix($created_at),
+            $item_id,
+        );
+    }
+    else {
+        # 1st page
+        $items = $self->dbh->select_all(
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY `created_at` DESC, `id` DESC LIMIT %d',$ITEMS_PER_PAGE+1),
+            $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_SOLD_OUT,
+            \@category_ids,
+        );
+    }
+
+    my @item_simples = ();
+    for my $item (@$items) {
+        my $seller = $self->getUserSimpleByID($item->{seller_id});
+        if (!$seller) {
+            $c->halt(404,"seller not found"); #XXX
+        }
+        my $category = $self->getCategoryByID($item->{category_id});
+		if (!$category) {
+            $c->halt(404,"category not found"); #XXX
+		}
+        push @item_simples, +{
+            id => number $item->{id},
+            seller_id => number $item->{seller_id},
+            seller => $seller,
+            status => $item->{status},
+            name => $item->{name},
+            price => number $item->{price},
+            category_id => number $item->{category_id},
+            category => $category,
+            created_at => number unix_from_mysql_datetime($item->{created_at}),
+        }
+    }
+
+    my $has_next = 0;
+	if (@item_simples > $ITEMS_PER_PAGE) {
+		$has_next = 1;
+        pop @item_simples;
+	}
+
+    $c->render_json({
+        root_category_id => number $root_category->{id},
+        root_category_name => $root_category->{name},
+        items => \@item_simples,
+        hax_next => bool $has_next
+    });
 };
 
 # getTransactions
