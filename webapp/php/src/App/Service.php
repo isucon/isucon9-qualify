@@ -569,13 +569,17 @@ class Service
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `account_name` = ?');
             $sth->execute([$payload->account_name]);
             $user = $sth->fetch(PDO::FETCH_ASSOC);
+
+            if ($user === false) {
+                return $response->withStatus(401)->withJson(['error' => 'アカウント名かパスワードが間違えています']);
+            }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
         if (! password_verify($payload->password, $user['hashed_password'])) {
-            return $response->withStatus(500)->withJson(['error' => 'crypt error']);
+            return $response->withStatus(401)->withJson(['error' => 'アカウント名かパスワードが間違えています']);
         }
 
         $this->session->set('user_id', $user['id']);
