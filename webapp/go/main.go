@@ -251,7 +251,7 @@ type resSetting struct {
 func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
-	log.SetFlags(log.Lshortfile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
 func readTopTemplate() {
