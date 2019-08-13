@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/server"
@@ -24,5 +22,5 @@ func main() {
 
 	ship.SetDelay(200 * time.Millisecond)
 
-	fmt.Fprintln(os.Stderr, serverShipment.Serve(liShipment))
+	log.Print(serverShipment.Serve(liShipment))
 }

@@ -1,8 +1,7 @@
 package fails
 
 import (
-	"fmt"
-	"os"
+	"log"
 	"sync"
 )
 
@@ -23,7 +22,7 @@ func NewError(err error, msg string) *Error {
 		Msg: msg,
 		Err: err,
 	}
-	fmt.Fprintln(os.Stderr, ferr.Error())
+	log.Print(ferr.Error())
 
 	return ferr
 }
