@@ -10,8 +10,9 @@
     - nginx
     - mysql
     - golang
-    - webapp.nginx
+    - webapp.mysql
     - webapp.golang
+    - webapp.nginx
 
   tasks:
     - name: Start default daemons
