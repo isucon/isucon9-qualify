@@ -33,7 +33,7 @@ export function fetchTimelineAction(
       .then(() => {
         let getParams: NewItemReq = {
           item_id: itemId,
-          created: createdAt,
+          created_at: createdAt,
         };
 
         if (categoryId) {

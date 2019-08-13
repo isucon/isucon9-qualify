@@ -17,7 +17,7 @@ const useStyles = makeStyles(theme => ({
 interface ItemListPageProps {
   items: TimelineItem[];
   hasNext: boolean;
-  loadMore: (page: number, createdAt?: number, itemId?: number) => void;
+  loadMore: (createdAt: number, itemId: number, page: number) => void;
 }
 
 const ItemListComponent: React.FC<ItemListPageProps> = function({

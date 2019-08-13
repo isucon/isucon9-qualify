@@ -15,7 +15,7 @@ const mapDispatchToProps = (dispatch: any) => ({
   load: () => {
     dispatch(fetchTimelineAction());
   },
-  loadMore: (page: number, createdAt?: number, itemId?: number) => {
+  loadMore: (createdAt: number, itemId: number, page: number) => {
     dispatch(fetchTimelineAction(createdAt, itemId));
   },
 });

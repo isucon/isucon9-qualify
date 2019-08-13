@@ -136,7 +136,7 @@ export interface ErrorRes {
  */
 export interface NewItemReq {
   item_id?: number;
-  created?: number;
+  created_at?: number;
 }
 
 export interface NewItemRes {
@@ -148,11 +148,7 @@ export interface NewItemRes {
 /**
  * GET /new_item.json
  */
-export interface NewCategoryItemReq {
-  item_id?: number;
-  created?: number;
-  root_category_id: number;
-}
+export interface NewCategoryItemReq extends NewItemReq {}
 
 export interface NewCategoryItemRes {
   root_category_id?: number;
