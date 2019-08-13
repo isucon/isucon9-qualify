@@ -1,10 +1,9 @@
 package server
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
@@ -91,11 +90,11 @@ func RunServer(paymentPort, shipmentPort int) error {
 	}
 
 	go func() {
-		fmt.Fprintln(os.Stderr, serverPayment.Serve(liPayment))
+		log.Print(serverPayment.Serve(liPayment))
 	}()
 
 	go func() {
-		fmt.Fprintln(os.Stderr, serverShipment.Serve(liShipment))
+		log.Print(serverShipment.Serve(liShipment))
 	}()
 
 	return nil
