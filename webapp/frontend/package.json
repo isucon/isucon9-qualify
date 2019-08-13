@@ -13,6 +13,7 @@
     "connected-react-router": "^6.5.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
+    "react-infinite-scroller": "^1.2.4",
     "react-redux": "^7.1.0",
     "react-router-dom": "^5.0.1",
     "react-scripts": "3.0.1",
@@ -25,7 +26,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "deploy": "npm run build && rm -rf ../public/*.js && cp -r build/* ../public/",
+    "deploy": "npm run build && rm -rf ../public/* && cp -r build/* ../public/",
     "fix": "prettier --write ./src/**/*.{ts,tsx}",
     "lint": "npm run fix && eslint",
     "test": "react-scripts test",
@@ -52,6 +53,7 @@
   },
   "devDependencies": {
     "@types/material-ui": "^0.21.6",
+    "@types/react-infinite-scroller": "^1.2.1",
     "@types/react-redux": "^7.1.1",
     "@types/react-router-dom": "^4.3.4",
     "@types/recompose": "^0.30.6",

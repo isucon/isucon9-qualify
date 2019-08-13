@@ -1,13 +1,24 @@
 import { connect } from 'react-redux';
 import { AppState } from '../index';
 import ItemListPage from '../pages/ItemListPage';
+import { fetchTimelineAction } from '../actions/fetchTimelineAction';
 
-const mapStateToProps = (state: AppState) => ({
-  items: state.timeline.items,
-  errorType: state.error.errorType,
-  loading: state.page.isTimelineLoading,
+const mapStateToProps = (state: AppState) => {
+  return {
+    items: state.timeline.items,
+    hasNext: state.timeline.hasNext,
+    errorType: state.error.errorType,
+    loading: state.page.isTimelineLoading,
+  };
+};
+const mapDispatchToProps = (dispatch: any) => ({
+  load: () => {
+    dispatch(fetchTimelineAction());
+  },
+  loadMore: (page: number, createdAt?: number, itemId?: number) => {
+    dispatch(fetchTimelineAction(createdAt, itemId));
+  },
 });
-const mapDispatchToProps = (dispatch: any) => ({});
 
 export default connect(
   mapStateToProps,

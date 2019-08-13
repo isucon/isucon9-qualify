@@ -11,9 +11,9 @@ import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
 
-export const FETCH_TIMELINE_START = 'FETCH_ITEM_PAGE_START';
-export const FETCH_TIMELINE_SUCCESS = 'FETCH_ITEM_PAGE_SUCCESS';
-export const FETCH_TIMELINE_FAIL = 'FETCH_ITEM_PAGE_FAIL';
+export const FETCH_TIMELINE_START = 'FETCH_TIMELINE_START';
+export const FETCH_TIMELINE_SUCCESS = 'FETCH_TIMELINE_SUCCESS';
+export const FETCH_TIMELINE_FAIL = 'FETCH_TIMELINE_FAIL';
 
 type Actions =
   | FetchTimelineStartAction

@@ -4,6 +4,8 @@ import makeStyles from '@material-ui/core/styles/makeStyles';
 import GridList from '@material-ui/core/GridList';
 import { ItemComponent } from './ItemComponent';
 import GridListTile from '@material-ui/core/GridListTile';
+import InfiniteScroll from 'react-infinite-scroller';
+import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
 
 const useStyles = makeStyles(theme => ({
   grid: {
@@ -14,11 +16,15 @@ const useStyles = makeStyles(theme => ({
 
 interface ItemListPageProps {
   items: TimelineItem[];
+  hasNext: boolean;
+  loadMore: (page: number, createdAt?: number, itemId?: number) => void;
 }
 
-const ItemListComponent: React.FC<ItemListPageProps> = ({
+const ItemListComponent: React.FC<ItemListPageProps> = function({
   items,
-}: ItemListPageProps) => {
+  hasNext,
+  loadMore,
+}: ItemListPageProps) {
   const classes = useStyles();
 
   const itemComponents = [];
@@ -36,7 +42,18 @@ const ItemListComponent: React.FC<ItemListPageProps> = ({
     );
   }
 
-  return <GridList cols={3}>{itemComponents}</GridList>;
+  const lastItem = items[items.length - 1];
+
+  return (
+    <InfiniteScroll
+      pageStart={0}
+      loadMore={loadMore.bind(null, lastItem.createdAt, lastItem.id)}
+      hasMore={hasNext}
+      loader={<CircularProgress />}
+    >
+      <GridList cols={3}>{itemComponents}</GridList>
+    </InfiniteScroll>
+  );
 };
 
 export { ItemListComponent };

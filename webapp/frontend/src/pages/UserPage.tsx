@@ -52,7 +52,11 @@ const UserPage: React.FC<Props> = ({ items, user }) => {
       </Grid>
       <Divider variant="middle" />
       <div className={classes.itemList}>
-        <ItemListComponent items={items} />
+        <ItemListComponent
+          items={items}
+          hasNext={false /* TODO */}
+          loadMore={(page: number) => {} /* TODO */}
+        />
       </div>
       <SellingButtonContainer />
     </BasePageContainer>

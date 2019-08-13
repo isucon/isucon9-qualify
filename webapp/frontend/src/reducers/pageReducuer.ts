@@ -9,6 +9,11 @@ import {
   FETCH_SETTINGS_START,
   FETCH_SETTINGS_SUCCESS,
 } from '../actions/settingsAction';
+import {
+  FETCH_TIMELINE_FAIL,
+  FETCH_TIMELINE_START,
+  FETCH_TIMELINE_SUCCESS,
+} from '../actions/fetchTimelineAction';
 
 export interface PageState {
   isLoading: boolean;
@@ -27,11 +32,19 @@ const page = (
   action: AnyAction,
 ): PageState => {
   switch (action.type) {
+    // Item page
     case FETCH_ITEM_PAGE_START:
       return { ...state, isItemPageLoading: true };
     case FETCH_ITEM_PAGE_SUCCESS:
     case FETCH_ITEM_PAGE_FAIL:
       return { ...state, isItemPageLoading: false };
+    // Timeline
+    case FETCH_TIMELINE_START:
+      return { ...state, isTimelineLoading: true };
+    case FETCH_TIMELINE_SUCCESS:
+    case FETCH_TIMELINE_FAIL:
+      return { ...state, isTimelineLoading: false };
+    // Settings
     case FETCH_SETTINGS_START:
       return { ...state, isLoading: true };
     case FETCH_SETTINGS_SUCCESS:

@@ -12,7 +12,10 @@ class AppClient {
   async get(path: string, params: Record<string, any> = {}): Promise<Response> {
     let getParams = new URLSearchParams();
     for (const key in params) {
-      getParams.set(key, params[key]);
+      const value = params[key];
+      if (value !== undefined) {
+        getParams.set(key, params[key]);
+      }
     }
 
     let url = `${this.baseUrl}${path}`;
