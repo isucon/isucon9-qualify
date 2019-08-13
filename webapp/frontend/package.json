@@ -26,7 +26,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "deploy": "npm run build && rm -rf ../public/* && cp -r build/* ../public/",
+    "deploy:clean": "node ./tool/clean.js",
+    "deploy:copy": "cp -r build/* ../public/",
+    "deploy": "npm run build && npm run deploy:clean && npm run deploy:copy",
     "fix": "prettier --write ./src/**/*.{ts,tsx}",
     "lint": "npm run fix && eslint",
     "test": "react-scripts test",
@@ -63,7 +65,8 @@
     "lint-staged": "^9.2.1",
     "npm-watch": "^0.6.0",
     "prettier": "^1.18.2",
-    "redux-devtools-extension": "^2.13.8"
+    "redux-devtools-extension": "^2.13.8",
+    "rimraf": "^2.6.3"
   },
   "husky": {
     "hooks": {
