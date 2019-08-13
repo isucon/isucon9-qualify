@@ -58,6 +58,7 @@ const page = (state: PageState = initialState, action: Actions): PageState => {
 
       switch (pathname) {
         case routes.timeline.path:
+          // TODO カテゴリ新着のチェックもここに入る
           return { ...state, isTimelineLoading: true };
         default:
           return { ...state };
