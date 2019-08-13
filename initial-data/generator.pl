@@ -277,14 +277,14 @@ sub insert_items {
 
     if (@insert_items > 200) {
         flush_items();
-        flush_te();
-        flush_shippings();
     }
 
 }
 sub flush_items {
     print $sql_fh q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
     @insert_items = ();
+    flush_te();
+    flush_shippings();
 }
 
 sub insert_te {
@@ -361,19 +361,6 @@ sub flush_shippings {
         my $status = 'on_sale';
         my $buyer = 0;
 
-        insert_items(
-            $i,
-            $seller,
-            $buyer,
-            $status,
-            $name,
-            $BASE_PRICE,
-            $description,
-            $category->[0],
-            format_mysql($t_sell),
-            format_mysql($t_done)
-        );
-
         if (rand(100) < $RATE_OF_SOLDOUT) {
             $status = 'sold_out';
             $te_id++;
@@ -413,6 +400,19 @@ sub flush_shippings {
                 format_mysql($t_done)
             );
         }
+
+        insert_items(
+            $i,
+            $seller,
+            $buyer,
+            $status,
+            $name,
+            $BASE_PRICE,
+            $description,
+            $category->[0],
+            format_mysql($t_sell),
+            format_mysql($t_done)
+        );
 
         $base_time++;
     }
