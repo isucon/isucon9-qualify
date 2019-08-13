@@ -9,8 +9,18 @@ class AppClient {
   private baseUrl: string = config.apiUrl;
   private defaultHeaders: HeadersInit = {};
 
-  async get(path: string): Promise<Response> {
-    return await fetch(`${this.baseUrl}${path}`, {
+  async get(path: string, params: Record<string, any> = {}): Promise<Response> {
+    let getParams = new URLSearchParams();
+    for (const key in params) {
+      getParams.set(key, params[key]);
+    }
+
+    let url = `${this.baseUrl}${path}`;
+    if (!(Object.keys(params).length === 0)) {
+      url = `${url}?${getParams.toString()}`;
+    }
+
+    return await fetch(url, {
       method: 'GET',
       headers: this.defaultHeaders,
     });

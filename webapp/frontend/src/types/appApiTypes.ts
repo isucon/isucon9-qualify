@@ -29,7 +29,7 @@ type UserSimple = {
   num_sell_items: number;
 };
 
-type ItemSimple = {
+export type ItemSimple = {
   id: number;
   seller_id: number;
   seller: UserSimple;
@@ -140,6 +140,21 @@ export interface NewItemReq {
 }
 
 export interface NewItemRes {
+  root_category_id?: number;
+  root_category_name?: string;
+  has_next: boolean;
+  items: ItemSimple[];
+}
+/**
+ * GET /new_item.json
+ */
+export interface NewCategoryItemReq {
+  item_id?: number;
+  created?: number;
+  root_category_id: number;
+}
+
+export interface NewCategoryItemRes {
   root_category_id?: number;
   root_category_name?: string;
   has_next: boolean;
