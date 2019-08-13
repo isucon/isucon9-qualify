@@ -33,6 +33,10 @@ type reqBuy struct {
 	Token     string `json:"token"`
 }
 
+type resBuy struct {
+	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
+}
+
 type reqSell struct {
 	CSRFToken   string `json:"csrf_token"`
 	Name        string `json:"name"`
@@ -47,7 +51,12 @@ type reqShip struct {
 }
 
 type resShip struct {
-	URL string `json:"url"`
+	Path string `json:"path"`
+}
+
+type reqBump struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
 }
 
 func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
@@ -66,12 +75,9 @@ func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "POST /login: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return nil, fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /login: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return nil, fails.NewError(err, "POST /login: "+msg)
 	}
 
 	u := &asset.AppUser{}
@@ -86,27 +92,24 @@ func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 func (s *Session) SetSettings() error {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/settings")
 	if err != nil {
-		return fails.NewError(err, "GET /settings: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /settings: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(err, "GET /settings: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /settings: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "GET /settings: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "GET /settings: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /settings: "+msg)
 	}
 
 	rs := &resSetting{}
 	err = json.NewDecoder(res.Body).Decode(rs)
 	if err != nil {
-		return fails.NewError(err, "GET /settings: JSONデコードに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /settings: JSONデコードに失敗しました")
 	}
 
 	if rs.CSRFToken == "" {
@@ -127,33 +130,30 @@ func (s *Session) Sell(name string, price int, description string, categoryID in
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return 0, fails.NewError(err, "POST /sell: リクエストに失敗しました")
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return 0, fails.NewError(err, "POST /sell: リクエストに失敗しました")
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return 0, fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "POST /sell: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return 0, fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /sell: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: "+msg)
 	}
 
 	rs := &resSell{}
 	err = json.NewDecoder(res.Body).Decode(rs)
 	if err != nil {
-		return 0, fails.NewError(err, "POST /sell: JSONデコードに失敗しました")
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: JSONデコードに失敗しました")
 	}
 
 	return rs.ID, nil
 }
 
-func (s *Session) Buy(itemID int64, token string) error {
+func (s *Session) Buy(itemID int64, token string) (int64, error) {
 	b, _ := json.Marshal(reqBuy{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -161,62 +161,61 @@ func (s *Session) Buy(itemID int64, token string) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(err, "POST /buy: リクエストに失敗しました")
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(err, "POST /buy: リクエストに失敗しました")
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "POST /buy: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /buy: レスポンスのステータスコードが200ではありません")
-	}
-
-	_, err = ioutil.ReadAll(res.Body)
+	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return fails.NewError(err, "POST /buy: bodyの読み込みに失敗しました")
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: "+msg)
 	}
 
-	return nil
+	rb := &resBuy{}
+	err = json.NewDecoder(res.Body).Decode(rb)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: JSONデコードに失敗しました")
+	}
+
+	return rb.TransactionEvidenceID, nil
 }
 
-func (s *Session) Ship(itemID int64) (aurl string, err error) {
+func (s *Session) Ship(itemID int64) (apath string, err error) {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return "", fails.NewError(err, "POST /ship: リクエストに失敗しました")
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return "", fails.NewError(err, "POST /ship: リクエストに失敗しました")
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return "", fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "POST /ship: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return "", fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /ship: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: "+msg)
 	}
 
 	rs := &resShip{}
 	err = json.NewDecoder(res.Body).Decode(rs)
 	if err != nil {
-		return "", fails.NewError(err, "POST /ship: JSONデコードに失敗しました")
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: JSONデコードに失敗しました")
 	}
 
-	return rs.URL, nil
+	if len(rs.Path) == 0 {
+		return "", fails.NewError(nil, "POST /ship: Pathが空です")
+	}
+
+	return rs.Path, nil
 }
 
 func (s *Session) ShipDone(itemID int64) error {
@@ -226,26 +225,23 @@ func (s *Session) ShipDone(itemID int64) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship_done", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(err, "POST /ship_done: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(err, "POST /ship_done: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "POST /ship_done: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /ship_done: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: "+msg)
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return fails.NewError(err, "POST /ship_done: bodyの読み込みに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: bodyの読み込みに失敗しました")
 	}
 
 	return nil
@@ -258,83 +254,93 @@ func (s *Session) Complete(itemID int64) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/complete", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(err, "POST /complete: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /complete: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(err, "POST /complete: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /complete: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "POST /complete: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "POST /complete: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /complete: "+msg)
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return fails.NewError(err, "POST /complete: bodyの読み込みに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /complete: bodyの読み込みに失敗しました")
 	}
 
 	return nil
 }
 
-func (s *Session) DecodeQRURL(aurl string) (*url.URL, error) {
-	if len(aurl) == 0 {
-		return nil, fails.NewError(nil, "URLが空です")
-	}
-
-	parsedURL, err := url.ParseRequestURI(aurl)
+func (s *Session) DecodeQRURL(apath string) (*url.URL, error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
-		return nil, fails.NewError(err, "QRコードの画像URLがURLとして解釈できません")
-	}
-
-	if parsedURL.Host != ShareTargetURLs.AppURL.Host {
-		return nil, fails.NewError(nil, "画像はアプリケーションのドメインで配信する必要があります")
-	}
-
-	req, err := s.newGetRequest(parsedURL, "")
-	if err != nil {
-		return nil, fails.NewError(err, "リクエストに失敗しました")
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return nil, fails.NewError(err, "リクエストに失敗しました")
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "QRコードの画像へのリクエストがステータスコード200以外でbodyの読み込みにも失敗しました")
-		}
-		return nil, fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "QRコードの画像へのリクエストがステータスコード200以外でした")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: %s", apath, msg))
 	}
 
 	qrmatrix, err := qrcode.Decode(res.Body)
 	if err != nil {
-		return nil, fails.NewError(err, "QRコードがデコードできませんでした")
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: QRコードがデコードできませんでした", apath))
 	}
 
 	surl := qrmatrix.Content
 
 	if len(surl) == 0 {
-		return nil, fails.NewError(nil, "QRコードの中身が空です")
+		return nil, fails.NewError(nil, fmt.Sprintf("GET %s: QRコードの中身が空です", apath))
 	}
 
 	sparsedURL, err := url.ParseRequestURI(surl)
 	if err != nil {
-		return nil, fails.NewError(err, "QRコードの中身がURLではありません")
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: QRコードの中身がURLではありません", apath))
 	}
 
 	if sparsedURL.Host != ShareTargetURLs.ShipmentURL.Host {
-		return nil, fails.NewError(nil, "shipment serviceのドメイン以外のURLがQRコードに表示されています")
+		return nil, fails.NewError(nil, fmt.Sprintf("GET %s: shipment serviceのドメイン以外のURLがQRコードに表示されています", apath))
 	}
 
 	return sparsedURL, nil
+}
+
+func (s *Session) Bump(itemID int64) error {
+	b, _ := json.Marshal(reqBump{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/bump", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /bump: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /bump: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /bump: "+msg)
+	}
+
+	_, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /bump: bodyの読み込みに失敗しました")
+	}
+
+	return nil
 }

@@ -22,7 +22,6 @@ $ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isuc
 
 ```
 ├── bench        # ベンチマーカーのソースコード
-├── external     # 外部サービスのソースコード
 ├── provisioning # セットアップ用ansible
 └── webapp       # 各言語の参考実装
 ```
@@ -49,3 +48,5 @@ $ ./bin/shipment
     * 今回パスワードのハッシュ化にbcryptを使用していますが、PHPではデフォルトのため `password_hash` `password_verify` に置き換えるだけで利用可能です
     * `secureRandomStr`という関数をGoでは作っていますが、Rubyなら`SecureRandom.hex`を呼ぶだけでいいはずです
     * ライブラリ選定は過去のISUCONの実装も参考にしつつ、各言語で一般的なものを極力選んでください
+  * 初期実装やベンチマーカーの挙動で気になることがあれば教えてください
+    * 例年実装移植中に問題が見つかります

@@ -1,8 +1,7 @@
 package fails
 
 import (
-	"fmt"
-	"os"
+	"log"
 	"sync"
 )
 
@@ -12,6 +11,9 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
+	if e.Err == nil {
+		return e.Msg
+	}
 	return e.Msg + ": " + e.Err.Error()
 }
 
@@ -20,7 +22,11 @@ func NewError(err error, msg string) *Error {
 		Msg: msg,
 		Err: err,
 	}
-	fmt.Fprintln(os.Stderr, ferr.Error())
+	if err != nil {
+		log.Printf("%s: %+v", msg, err)
+	} else {
+		log.Print(ferr)
+	}
 
 	return ferr
 }

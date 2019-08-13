@@ -3,7 +3,6 @@ package session
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -28,29 +27,26 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.PaymentURL, "/card", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return "", fails.NewError(err, "[payment service] /card: リクエストに失敗しました")
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: リクエストに失敗しました")
 	}
 
 	req.Header.Add("Origin", "http://localhost:8000")
 
 	res, err := s.Do(req)
 	if err != nil {
-		return "", fails.NewError(err, "[payment service] /card: リクエストに失敗しました")
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return "", fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "[payment service] /card: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return "", fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "[payment service] /card: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: "+msg)
 	}
 
 	rc := &resCard{}
 	err = json.NewDecoder(res.Body).Decode(rc)
 	if err != nil {
-		return "", fails.NewError(err, "[payment service] /card: JSONデコードに失敗しました")
+		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: JSONデコードに失敗しました")
 	}
 
 	return rc.Token, nil
@@ -59,26 +55,23 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 func (s *Session) ShipmentAccept(surl *url.URL) error {
 	req, err := s.newGetRequest(surl, "")
 	if err != nil {
-		return fails.NewError(err, "[shipment service] /accept: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: リクエストに失敗しました")
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(err, "[shipment service] /accept: リクエストに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: リクエストに失敗しました")
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return fails.NewError(xerrors.Errorf("failed to read res.Body and the status code of the response from api was not 200: %w", err), "[shipment service] /accept: レスポンスのステータスコードが200以外でかつbodyの読み込みに失敗しました")
-		}
-		return fails.NewError(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), "[shipment service] /accept: レスポンスのステータスコードが200ではありません")
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: "+msg)
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return fails.NewError(err, "[shipment service] /accept: bodyの読み込みに失敗しました")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: bodyの読み込みに失敗しました")
 	}
 
 	return nil

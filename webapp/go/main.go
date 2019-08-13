@@ -224,7 +224,7 @@ type reqPostShip struct {
 }
 
 type resPostShip struct {
-	URL string `json:"url"`
+	Path string `json:"path"`
 }
 
 type reqPostShipDone struct {
@@ -251,7 +251,7 @@ type resSetting struct {
 func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
-	log.SetFlags(log.Lshortfile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
 func readTopTemplate() {
@@ -1455,7 +1455,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	rps := resPostShip{
-		URL: fmt.Sprintf("http://%s/transactions/%d.png", r.Host, transactionEvidence.ID),
+		Path: fmt.Sprintf("/transactions/%d.png", transactionEvidence.ID),
 	}
 	json.NewEncoder(w).Encode(rps)
 }
@@ -1569,7 +1569,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !(ssr.Status == ShippingsStatusShipping || ssr.Status == ShippingsStatusDone) {
-		outputErrorMsg(w, http.StatusInternalServerError, "shipment service側で配送中か配送完了になっていません")
+		outputErrorMsg(w, http.StatusForbidden, "shipment service側で配送中か配送完了になっていません")
 		tx.Rollback()
 		return
 	}
@@ -2027,7 +2027,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	u := User{}
 	err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusUnauthorized, "user not found")
+		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
 		return
 	}
 	if err != nil {
@@ -2038,6 +2038,10 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
+		return
+	}
 	if err != nil {
 		log.Println(err)
 

@@ -2,16 +2,25 @@ package main
 
 import (
 	"log"
+	"net"
 	"net/http"
+	"time"
 
-	"github.com/isucon/isucon9-qualify/external/shipment"
+	"github.com/isucon/isucon9-qualify/bench/server"
 )
 
 func main() {
-	http.HandleFunc("/create", shipment.CreateHandler)
-	http.HandleFunc("/request", shipment.RequestHandler)
-	http.HandleFunc("/accept", shipment.AcceptHandler)
-	http.HandleFunc("/status", shipment.StatusHandler)
+	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 7000})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Fatal(http.ListenAndServe(":7000", nil))
+	ship := server.NewShipment()
+	serverShipment := &http.Server{
+		Handler: ship,
+	}
+
+	ship.SetDelay(200 * time.Millisecond)
+
+	log.Print(serverShipment.Serve(liShipment))
 }

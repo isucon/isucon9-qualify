@@ -2,11 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
-	"net"
-	"net/http"
 	"os"
 	"time"
 
@@ -23,34 +20,15 @@ type Output struct {
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
 func main() {
-	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 5555})
+	err := server.RunServer(5555, 7000)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 7000})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	serverPayment := &http.Server{
-		Handler: server.NewPayment(),
-	}
-
-	serverShipment := &http.Server{
-		Handler: server.NewShipment(),
-	}
-
-	go func() {
-		log.Println(serverPayment.Serve(liPayment))
-	}()
-
-	go func() {
-		log.Println(serverShipment.Serve(liShipment))
-	}()
 
 	err = session.SetShareTargetURLs(
 		"http://localhost:8000",
@@ -61,14 +39,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Fprintf(os.Stderr, "=== initialize ===\n")
+	log.Print("=== initialize ===")
 	scenario.Initialize()
-	fmt.Fprintf(os.Stderr, "=== verify ===\n")
+	log.Print("=== verify ===")
 
 	cerr := scenario.Verify()
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
-		fmt.Fprintf(os.Stderr, "cause error!\n")
+		log.Print("cause error!")
 
 		output := Output{
 			Pass:     false,
@@ -80,7 +58,7 @@ func main() {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "=== validation ===\n")
+	log.Print("=== validation ===")
 
 	output := Output{
 		Pass:  true,

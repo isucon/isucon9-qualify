@@ -1,0 +1,23 @@
+- name: Create MySQL database and user
+  shell: mysql < 00_create_database.sql
+  args:
+    chdir: /home/isucon/isucari/webapp/sql
+  become: yes
+
+- name: Load MySQL database schema
+  shell: mysql < 01_schema.sql
+  args:
+    chdir: /home/isucon/isucari/webapp/sql
+  become: yes
+
+- name: Load categories
+  shell: mysql < 02_categories.sql
+  args:
+    chdir: /home/isucon/isucari/webapp/sql
+  become: yes
+
+- name: Init data
+  shell: mysql < initial.sql
+  args:
+    chdir: /home/isucon/isucari/initial-data/result/
+  become: yes

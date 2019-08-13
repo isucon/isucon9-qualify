@@ -47,7 +47,7 @@ CREATE TABLE `shippings` (
   `transaction_evidence_id` bigint NOT NULL PRIMARY KEY,
   `status` enum('initial', 'wait_pickup', 'shipping', 'done') NOT NULL,
   `item_name` varchar(191) NOT NULL,
-  `item_id` varchar(191) NOT NULL,
+  `item_id` bigint NOT NULL,
   `reserve_id` varchar(191) NOT NULL,
   `reserve_time` bigint NOT NULL,
   `to_address` varchar(191) NOT NULL,
