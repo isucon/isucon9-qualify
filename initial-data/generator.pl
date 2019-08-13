@@ -2,11 +2,20 @@
 
 use strict;
 use warnings;
+use utf8;
 use Crypt::Eksblowfish::Bcrypt qw/bcrypt/;
 use Crypt::OpenSSL::Random;
 use Digest::SHA;
+use JSON;
+use JSON::Types;
 
-my $BASE_PRICE = 108;
+open(my $sql_fh, ">:utf8", "result/initial.sql") or die $!;
+open(my $users_fh, ">", "result/users_json.txt") or die $!;
+open(my $items_fh, ">", "result/items_json.txt") or die $!;
+open(my $te_fh, ">", "result/transaction_evidences_json.txt") or die $!;
+open(my $shippings_fh, ">", "result/shippings_json.txt") or die $!;
+
+my $BASE_PRICE = 100;
 my $NUM_USER_GENERATE = 200;
 my $NUM_ITEM_GENERATE = 10000;
 my $RATE_OF_SOLDOUT = 30;
@@ -158,7 +167,19 @@ my @insert_users;
 my %users = ();
 sub insert_user {
     my ($id, $name, $passwd, $address, $created_at) = @_;
-    push @insert_users, sprintf(q!(%d,'%s','%s','%s','%s')!, $id, $name, $passwd, $address, $created_at);
+    {
+        print $users_fh JSON::encode_json({
+            id           => number $id,
+            account_name => string $name,
+            plain_passwd => string $passwd,
+            address      => string $address,
+            created_at   => string $created_at
+        })."\n";
+    }
+    {
+        push @insert_users, sprintf(q!(%d,'%s','%s','%s','%s')!, $id, $name, encrypt_password($passwd), $address, $created_at);
+    }
+
     $users{$id} = [$name, $address];
     if (@insert_users > 200) {
         flush_users();
@@ -167,22 +188,22 @@ sub insert_user {
 
 sub flush_users {
     return unless @insert_users;
-    print q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`created_at`) VALUES ! . join(", ", @insert_users) . ";\n";
+    print $sql_fh q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`created_at`) VALUES ! . join(", ", @insert_users) . ";\n";
     @insert_users = ();
 }
 
 {
-    print q!use `isucari`;!."\n\n";
+    print $sql_fh q!use `isucari`;!."\n\n";
 }
 
 {
-    open(my $fh, "<", "users.tsv") or die $!;
+    open(my $fh, "<:utf8", "users.tsv") or die $!;
     my @dummy_users = map { chomp $_; [ split /\t/, $_, 3] } <$fh>;
 
     # For demo
-    insert_user(1, 'isudemo1', encrypt_password('isudemo1'), '東京都港区6-11-1', '2019-09-06 00:00:00');
-    insert_user(2, 'isudemo2', encrypt_password('isudemo2'), '東京都新宿区4-1-6', '2019-09-06 00:00:01');
-    insert_user(3, 'isudemo3', encrypt_password('isudemo3'), '東京都伊洲根9-4000', '2019-09-06 00:00:02');
+    insert_user(1, 'isudemo1', 'isudemo1', '東京都港区6-11-1', '2019-09-06 00:00:00');
+    insert_user(2, 'isudemo2', 'isudemo2', '東京都新宿区4-1-6', '2019-09-06 00:00:01');
+    insert_user(3, 'isudemo3', 'isudemo3', '東京都伊洲根9-4000', '2019-09-06 00:00:02');
 
     my $base_time = 1567695603; #2019-09-06 00:00:03
     srand(1565458009);
@@ -197,7 +218,7 @@ sub flush_users {
         insert_user(
             $i,
             $id,
-            encrypt_password(gen_passwd($id)),
+            gen_passwd($id),
             $address,
             format_mysql($base_time+$i)
         );
@@ -205,7 +226,7 @@ sub flush_users {
     flush_users();
 }
 
-open(my $fh, "<", "keywords.txt") or die $!;
+open(my $fh, "<:utf8", "keywords.tsv") or die $!;
 my @KEYWORDS = map { chomp $_; $_ } <$fh>;
 
 sub gen_text {
@@ -230,7 +251,26 @@ my @insert_items;
 my @insert_te;
 my @insert_shippings;
 sub insert_items {
-    push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s')!, @_);
+    my ($id, $seller_id, $buyer_id, $status, $name, $price, $description, $category_id, $created_at, $updated_at) = @_;
+    {
+        print $items_fh JSON::encode_json({
+            id        => number $id,
+            seller_id => number $seller_id,
+            buyer_id  => number $buyer_id,
+            status    => string $status,
+            name      => string $name,
+            price     => number $price,
+            description => string $description,
+            category_id => number $category_id,
+            created_at  => string $created_at,
+            updated_at  => string $updated_at
+        })."\n";
+    }
+    {
+        $description =~ s/\n/\\n/g;
+        push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $name, $price, $description, $category_id, $created_at, $updated_at);
+    }
+
     if (@insert_items > 200) {
         flush_items();
         flush_te();
@@ -239,21 +279,63 @@ sub insert_items {
 
 }
 sub flush_items {
-    print q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
+    print $sql_fh q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
     @insert_items = ();
 }
 sub insert_te {
-    push @insert_te, sprintf(q!(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s')!, @_);
+    my ($id, $seller_id, $buyer_id, $status, $item_id, $item_name, $item_price, $item_description, $item_category_id, $item_root_category_id, $created_at, $updated_at) = @_;
+    {
+        print $te_fh JSON::encode_json({
+            id         => number $id,
+            seller_id  => number $seller_id,
+            buyer_id   => number $buyer_id,
+            status     => string $status,
+            item_id    => number $item_id,
+            item_name  => string $item_name,
+            item_price => number $item_price,
+            item_description      => string $item_description,
+            item_category_id      => number $item_category_id,
+            item_root_category_id => number $item_root_category_id,
+            created_at            => string $created_at,
+            updated_at            => string $updated_at
+        })."\n";
+    }
+    {
+        push @insert_te, sprintf(q!(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $item_id, $item_name, $item_price, $item_description, $item_category_id, $item_root_category_id, $created_at, $updated_at);
+    }
 }
 sub flush_te {
-    print q!INSERT INTO `transaction_evidences` (`id`,`seller_id`,`buyer_id`,`status`,`item_id`,`item_name`,`item_price`,`item_description`,`item_category_id`,`item_root_category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_te) . ";\n";
+    return unless @insert_te;
+    print $sql_fh q!INSERT INTO `transaction_evidences` (`id`,`seller_id`,`buyer_id`,`status`,`item_id`,`item_name`,`item_price`,`item_description`,`item_category_id`,`item_root_category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_te) . ";\n";
     @insert_te = ();
 }
+
 sub insert_shippings {
-    push @insert_shippings, sprintf(q!(%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s')!, @_);
+    my ($transaction_evidence_id, $status, $item_name, $item_id, $reserve_id, $reserve_time, $to_address, $to_name, $from_address, $from_name, $img_binary, $created_at, $updated_at) = @_;
+    {
+        print $shippings_fh JSON::encode_json({
+            transaction_evidence_id => number $transaction_evidence_id,
+            status => string $status,
+            item_name => string $item_name,
+            item_id => number $item_id,
+            reserve_id => string $reserve_id,
+            reserve_time => number $reserve_time,
+            to_address => string $to_address,
+            to_name => string $to_name,
+            from_address => string $from_address,
+            from_name => string $from_name,
+            img_binary => string "", # XXX
+            created_at => string $created_at,
+            updated_at => string $updated_at,
+        })."\n";
+    }
+    {
+        push @insert_shippings, sprintf(q!(%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s')!, $transaction_evidence_id, $status, $item_name, $item_id, $reserve_id, $reserve_time, $to_address, $to_name, $from_address, $from_name, $img_binary, $created_at, $updated_at);
+    }
 }
 sub flush_shippings {
-    print q!INSERT INTO `shippings` (`transaction_evidence_id`,`status`,`item_name`,`item_id`,`reserve_id`,`reserve_time`,`to_address`,`to_name`,`from_address`,`from_name`,`img_binary`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_shippings) . ";\n";
+    return unless @insert_shippings;
+    print $sql_fh q!INSERT INTO `shippings` (`transaction_evidence_id`,`status`,`item_name`,`item_id`,`reserve_id`,`reserve_time`,`to_address`,`to_name`,`from_address`,`from_name`,`img_binary`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_shippings) . ";\n";
     @insert_shippings = ();
 }
 
@@ -267,25 +349,22 @@ sub flush_shippings {
         my $t_buy = $t_sell + rand(10) + 60;
         my $t_done = $t_buy + 10;
 
-        my $n = gen_text(8,0),;
-        $n =~ s/\s+/ /g;
-        my $d = gen_text(200,1);
-        $d =~ s/\n/\\n/g;
+        my $name = gen_text(8,0),;
+        my $description = gen_text(200,1);
+        my $category = $CATEGOREIS[int(rand(scalar @CATEGOREIS))];
 
         my $seller = int(rand($NUM_USER_GENERATE))+1;
         my $status = 'on_sale';
         my $buyer = 0;
 
-        my $category = $CATEGOREIS[int(rand(scalar @CATEGOREIS))];
-
         insert_items(
             $i,
             $seller,
-            $buyer, # buyer
+            $buyer,
             $status,
-            $n,
+            $name,
             $BASE_PRICE,
-            $d,
+            $description,
             $category->[0],
             format_mysql($t_sell),
             format_mysql($t_done)
@@ -305,9 +384,9 @@ sub flush_shippings {
                 $buyer,
                 'done',
                 $i,
-                $n,
+                $name,
                 $BASE_PRICE,
-                $d,
+                $description,
                 $category->[0],
                 $category->[1],
                 format_mysql($t_buy),
@@ -317,7 +396,7 @@ sub flush_shippings {
             insert_shippings(
                 $te_id,
                 'done',
-                $n,
+                $name,
                 $i,
                 "0000000000", # XXX reserve_id
                 $t_buy,
