@@ -161,11 +161,11 @@ sub insert_user {
     push @insert_users, sprintf(q!(%d,'%s','%s','%s','%s')!, $id, $name, $passwd, $address, $created_at);
     $users{$id} = [$name, $address];
     if (@insert_users > 200) {
-        finish_users();
+        flush_users();
     }
 }
 
-sub finish_users {
+sub flush_users {
     return unless @insert_users;
     print q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`created_at`) VALUES ! . join(", ", @insert_users) . ";\n";
     @insert_users = ();
@@ -202,7 +202,7 @@ sub finish_users {
             format_mysql($base_time+$i)
         );
     }
-    finish_users();
+    flush_users();
 }
 
 open(my $fh, "<", "keywords.txt") or die $!;
@@ -232,31 +232,27 @@ my @insert_shippings;
 sub insert_items {
     push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s')!, @_);
     if (@insert_items > 200) {
-        finish_items();
+        flush_items();
+        flush_te();
+        flush_shippings();
     }
 
 }
-sub finish_items {
+sub flush_items {
     print q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
     @insert_items = ();
 }
 sub insert_te {
     push @insert_te, sprintf(q!(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s')!, @_);
-    if (@insert_te > 200) {
-        finish_te();
-    }
 }
-sub finish_te {
+sub flush_te {
     print q!INSERT INTO `transaction_evidences` (`id`,`seller_id`,`buyer_id`,`status`,`item_id`,`item_name`,`item_price`,`item_description`,`item_category_id`,`item_root_category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_te) . ";\n";
     @insert_te = ();
 }
 sub insert_shippings {
     push @insert_shippings, sprintf(q!(%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s')!, @_);
-    if (@insert_shippings > 200) {
-        finish_shippings();
-    }
 }
-sub finish_shippings {
+sub flush_shippings {
     print q!INSERT INTO `shippings` (`transaction_evidence_id`,`status`,`item_name`,`item_id`,`reserve_id`,`reserve_time`,`to_address`,`to_name`,`from_address`,`from_name`,`img_binary`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_shippings) . ";\n";
     @insert_shippings = ();
 }
@@ -338,7 +334,5 @@ sub finish_shippings {
         $base_time++;
     }
 
-    finish_items();
-    finish_te();
-    finish_shippings();
+    flush_items();
 }
