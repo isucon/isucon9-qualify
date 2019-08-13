@@ -12,6 +12,11 @@ use Plack::Session;
 use Time::Moment;
 use File::Spec;
 use HTTP::Date qw//;
+use Crypt::Eksblowfish::Bcrypt qw/bcrypt/;
+use Crypt::OpenSSL::Random;
+use Digest::SHA;
+
+use Isucari::API;
 
 # XXX sessionName = "session_isucari"
 
@@ -63,6 +68,26 @@ sub mysql_datetime_from_unix {
     sprintf("%04d-%02d-%02d %02d:%02d:%02d", $lt[5]+1900,$lt[4]+1,$lt[3],$lt[2],$lt[1],$lt[0]);
 }
 
+sub encrypt_password {
+    my $password = shift;
+    my $salt = shift || Crypt::Eksblowfish::Bcrypt::en_base64(Crypt::OpenSSL::Random::random_bytes(16));
+    my $settings = '$2a$10$'.$salt;
+    return Crypt::Eksblowfish::Bcrypt::bcrypt($password, $settings);
+}
+
+sub check_password {
+    my ($plain_password, $hashed_password) = @_;
+    if ($hashed_password =~ m!^\$2a\$\d{2}\$([A-Za-z0-9+\\.]{22})!) {
+        return encrypt_password($plain_password, $1) eq $hashed_password;
+    }
+    die "crypt_error";
+}
+
+sub secure_random_str {
+    my $length = shift || 16;
+    unpack("H*",Crypt::OpenSSL::Random::random_bytes($length))
+}
+
 sub dbh {
     my $self = shift;
     $self->{_dbh} ||= do {
@@ -86,7 +111,14 @@ sub dbh {
     };
 }
 
-sub get_login_user {
+sub api_client {
+    my $self = shift;
+    $self->{_api_client} ||= do {
+        Isucari::API->new();
+    };
+}
+
+sub getUser {
     my ($self, $c) = @_;
 
     my $session = Plack::Session->new($c->env);
@@ -339,16 +371,209 @@ get '/users/{user_id}.json' => sub {
 # getTransactions
 get '/users/transactions.json' => sub {
     my ($self, $c) = @_;
+    my $user = $self->getUser($c);
+    if (!$user) {
+        $c->halt(404, 'user not found');
+    }
+    my $item_id = $c->req->parameters->get('item_id');
+    my $created_at = $c->req->parameters->get('created_at');
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+
+    my $items = [];
+    if ($item_id && $created_at) {
+        # paging
+        $items = $dbh->select_all(
+            sprintf('SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $TRANSACTIONS_PER_PAGE+1),
+            $user->{id},
+            $user->{id},
+            $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_TRADING,
+            $ITEM_STATUS_SOLD_OUT,
+            $ITEM_STATUS_CANCEL,
+            $ITEM_STATUS_STOP,
+            mysql_datetime_from_unix($created_at),
+            $item_id,
+        );
+    }
+    else {
+        # 1st page
+        $items = $dbh->select_all(
+            sprintf('SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT %d',$TRANSACTIONS_PER_PAGE+1),
+            $user->{id},
+            $user->{id},
+            $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_TRADING,
+            $ITEM_STATUS_SOLD_OUT,
+            $ITEM_STATUS_CANCEL,
+            $ITEM_STATUS_STOP,
+        );
+    }
+
+    my @item_details = ();
+    for my $item (@$items) {
+        my $seller = $self->getUserSimpleByID($item->{seller_id});
+        if (!$seller) {
+            $c->halt(404,"seller not found"); #XXX
+        }
+        my $category = $self->getCategoryByID($item->{category_id});
+        if (!$category) {
+            $c->halt(404,"category not found"); #XXX
+        }
+
+        my $item_detail = +{
+            id => number $item->{id},
+            seller_id => number $item->{seller_id},
+            seller => $seller,
+            # buyer_id
+            # buyer
+            status => $item->{status},
+            name => $item->{name},
+            price => number $item->{price},
+            description => $item->{description},
+            category_id => number $item->{category_id},
+            # transaction_evidence_id
+            # transaction_evidence_status
+            # shipping_status
+            category => $category,
+            created_at => number unix_from_mysql_datetime($item->{created_at}),
+        };
+
+        if ($item->{buyer_id} != 0) {
+            my $buyer = $self->getUserSimpleByID($item->{buyer_id});
+            if (!$buyer) {
+                $c->halt(404, 'buyer not found'); # XXX
+            }
+            $item_detail->{buyer_id} = number $item->{buyer_id};
+            $item_detail->{buyer} = $buyer;
+        }
+
+        my $transaction_evidence = $dbh->select_row(
+            'SELECT * FROM `transaction_evidences` WHERE `item_id` = ?',
+            $item->{id}
+        );
+
+        if ($transaction_evidence) {
+            my $shipping = $dbh->select_row(
+                'SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?',
+                $transaction_evidence->{id}
+            );
+            if (!$shipping) {
+                $c->halt(404,'shipping not found'); #XXX
+            }
+
+            my $ssr = eval {
+                $self->api_client->shipment_status("http://localhost:7000", {reserve_id => number $shipping->{reserve_id}});
+            };
+            if ($@) {
+                my $msg = $@;
+                $msg =~ s/\n/ /gms;
+                warn $msg;
+                $c->halt(500, "failed to request to shipment service"); #XXX
+            }
+
+            $item_detail->{transaction_evidence_id} = numner $transaction_evidence->{id};
+            $item_detail->{transaction_evidence_status} = $transaction_evidence->{status};
+            $item_detail->{shipping_status} = $ssr->{status};
+        }
+
+        push @item_details, $item_detail;
+    }
+
+    $txn->commit();
+
+    my $has_next = 0;
+    if (@item_details > $TRANSACTIONS_PER_PAGE) {
+        $has_next = 1;
+        pop @item_details;
+    }
+
+    $c->render_json({
+        items => \@item_details,
+        hax_next => bool $has_next
+    });
 };
 
 # getItem
 get '/items/{item_id}.json' => sub {
     my ($self, $c) = @_;
+    my $item_id = $c->args->{item_id};
+
+    my $user = $self->getUser($c);
+    if (!$user) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $item = $self->dbh->select_row('SELECT * FROM `items` WHERE `id` = ?', $item_id);
+    if (!$item) {
+        $c->halt(404, 'item not found');
+    }
+
+    my $seller = $self->getUserSimpleByID($item->{seller_id});
+    if (!$seller) {
+        $c->halt(404,"seller not found"); #XXX
+    }
+    my $category = $self->getCategoryByID($item->{category_id});
+    if (!$category) {
+        $c->halt(404,"category not found"); #XXX
+    }
+
+    my $item_detail = +{
+        id => number $item->{id},
+        seller_id => number $item->{seller_id},
+        seller => $seller,
+        # buyer_id
+        # buyer
+        status => $item->{status},
+        name => $item->{name},
+        price => number $item->{price},
+        description => $item->{description},
+        category_id => number $item->{category_id},
+        # transaction_evidence_id
+        # transaction_evidence_status
+        # shipping_status
+        category => $category,
+        created_at => number unix_from_mysql_datetime($item->{created_at}),
+    };
+
+    # if (user.ID == item.SellerID || user.ID == item.BuyerID) && item.BuyerID != 0 {
+    if (($user->{id} == $item->{seller_id} || $user->{id} == $item->{buyer_id}) && $item->{buyer_id} != 0) {
+        my $buyer = $self->getUserSimpleByID($item->{buyer_id});
+        if (!$buyer) {
+            $c->halt(404, 'buyer not found'); # XXX
+        }
+        $item_detail->{buyer_id} = $item->{buyer_id};
+        $item_detail->{buyer} = $buyer;
+
+        my $transaction_evidence = $self->dbh->select_row(
+            'SELECT * FROM `transaction_evidences` WHERE `item_id` = ?',
+            $item->{id}
+        );
+
+        if ($transaction_evidence) {
+            my $shipping = $self->dbh->select_row(
+                'SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?',
+                $transaction_evidence->{id}
+            );
+            if (!$shipping) {
+                $c->halt(404,'shipping not found'); #XXX
+            }
+
+            $item_detail->{transaction_evidence_id} = number $transaction_evidence->{id};
+            $item_detail->{transaction_evidence_status} = $transaction_evidence->{status};
+            $item_detail->{shipping_status} = $shipping->{status};
+        }
+
+    }
+
+    $c->render_json($item_detail);
 };
 
 # postItemEdit
 post '/items/edit' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+
 };
 
 # postBuy
@@ -394,6 +619,39 @@ get '/settings' => sub {
 # postLogin
 post '/login' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+    my $account_name = $c->req->body_parameters->get('account_name');
+    my $password = $c->req->body_parameters->get('password');
+
+    if (!$account_name || !$password) {
+        $c->halt(400,'all parameters are required'); #XXX
+    }
+
+    my $user = $self->dbh->select_row('SELECT * FROM `users` WHERE `account_name` = ?', $account_name);
+    if (!$user) {
+        $c->halt(401, "アカウント名かパスワードが間違えています"); #XXX
+    }
+
+    my $res = eval {
+        check_password($password, $user->{hashed_password});
+    };
+    if ($@) {
+        warn $@;
+        $c->halt(500, 'crypt error');
+    }
+    if (!$res) {
+        $c->halt(401, "アカウント名かパスワードが間違えています");
+    }
+
+    my $session = Plack::Session->new($c->env);
+    $session->set('user_id' => $user->{id});
+    $session->set('csrf_token' => secure_random_str(20));
+
+    $c->render_json({
+        id => $user->{id},
+        account_name => $user->{account_name},
+        address => $user->{address},
+        num_sell_items => $user->{num_sell_items},
+    });
 };
 
 # postRegister
