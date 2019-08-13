@@ -9,26 +9,3 @@
     state: started
     daemon_reload: yes
     enabled: yes
-
-- name: Create MySQL isucari@localhost user
-  command: >
-    mysql -e "
-    DROP USER IF EXISTS isucon@'localhost';
-    CREATE USER isucon@'localhost' IDENTIFIED BY 'isucon';
-    GRANT ALL on *.* TO isucon@'localhost';
-    "
-  become: yes
-
-- name: Create MySQL isucari@% user
-  command: >
-    mysql -e "
-    DROP USER IF EXISTS isucon@'%';
-    CREATE USER isucon@'%' IDENTIFIED BY 'isucon';
-    GRANT ALL on *.* TO isucon@'%';
-    "
-  become: yes
-
-- name: Create MySQL Database for ISUCON9
-  command: >
-    mysql -e "CREATE DATABASE isucari;"
-  become: yes
