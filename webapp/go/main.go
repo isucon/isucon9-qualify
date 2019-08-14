@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -253,9 +252,7 @@ func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-}
 
-func readTopTemplate() {
 	templates = template.Must(template.ParseFiles(
 		"../public/index.html",
 	))
@@ -320,8 +317,22 @@ func main() {
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
-	mux.HandleFunc(pat.Get("/*"), getAssets)
-
+	// Frontend
+	mux.HandleFunc(pat.Get("/"), getAssets)
+	mux.HandleFunc(pat.Get("/login"), getAssets)
+	mux.HandleFunc(pat.Get("/register"), getAssets)
+	mux.HandleFunc(pat.Get("/timeline"), getAssets)
+	mux.HandleFunc(pat.Get("/categories/:category_id/items"), getAssets)
+	mux.HandleFunc(pat.Get("/sell"), getAssets)
+	mux.HandleFunc(pat.Get("/items/:item_id"), getAssets)
+	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getAssets)
+	mux.HandleFunc(pat.Get("/items/:item_id/buy"), getAssets)
+	mux.HandleFunc(pat.Get("/buy/complete"), getAssets)
+	mux.HandleFunc(pat.Get("/transactions/:transaction_id"), getAssets)
+	mux.HandleFunc(pat.Get("/users/:user_id"), getAssets)
+	mux.HandleFunc(pat.Get("/users/setting"), getAssets)
+	// Assets
+	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 
@@ -386,16 +397,7 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 }
 
 func getAssets(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-	re, _ := regexp.Compile("^.*\\.(js|css|json|png)$")
-
-	if !re.MatchString(path) {
-		readTopTemplate()
-		templates.ExecuteTemplate(w, "index.html", struct{}{})
-		return
-	}
-
-	http.FileServer(http.Dir("../public")).ServeHTTP(w, r)
+	templates.ExecuteTemplate(w, "index.html", struct{}{})
 }
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
