@@ -12,7 +12,7 @@ export const POST_SHIPPED_FAIL = 'POST_SHIPPED_FAIL';
 export type State = void | AuthStatusState;
 type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>;
 
-export function postRegisterAction(itemId: number): ThunkResult<void> {
+export function postShippedAction(itemId: number): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
     Promise.resolve()
       .then(() => {
