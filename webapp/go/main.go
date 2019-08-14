@@ -389,7 +389,6 @@ func getAssets(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	re, _ := regexp.Compile("^.*\\.(js|css|json|png)$")
 
-	fmt.Println(path)
 	if !re.MatchString(path) {
 		readTopTemplate()
 		templates.ExecuteTemplate(w, "index.html", struct{}{})
