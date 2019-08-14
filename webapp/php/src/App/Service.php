@@ -187,13 +187,13 @@ class Service
                     return $response->withStatus(404)->withJson(['error' => 'category not found']);
                 }
                 $itemSimples[] = [
-                  'id' => $item['id'],
-                  'seller_id' => $item['seller_id'],
+                  'id' => (int) $item['id'],
+                  'seller_id' => (int) $item['seller_id'],
                   'seller' => $seller,
                   'status' => $item['status'],
                   'name' => $item['name'],
-                  'price' => $item['price'],
-                  'category_id' => $item['category_id'],
+                  'price' => (int) $item['price'],
+                  'category_id' => (int) $item['category_id'],
                   'category' => $category,
                   'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
                 ];
@@ -310,7 +310,7 @@ class Service
 
         return $response->withStatus(200)->withJson(
             [
-                'root_category_id' => $rootCategory['id'],
+                'root_category_id' => (int) $rootCategory['id'],
                 'root_category_name' => $rootCategory['category_name'],
                 'items' => $itemSimples,
                 'has_next' => $hasNext
@@ -481,24 +481,24 @@ class Service
                     return $response->withStatus(404)->withJson(['error' => 'seller not found']);
                 }
                 $detail = [
-                        'id' => $item['id'],
-                        'seller_id' => $item['seller_id'],
+                        'id' => (int) $item['id'],
+                        'seller_id' => (int) $item['seller_id'],
                         'seller' => $seller,
                         'status' => $item['status'],
                         'name' => $item['name'],
-                        'price' => $item['price'],
-                        'category_id' => $item['category_id'],
+                        'price' => (int) $item['price'],
+                        'category_id' => (int) $item['category_id'],
                         'category' => $category,
                         'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
                     ];
 
-                if ($item['buyer_id'] !== 0) {
+                if ((int) $item['buyer_id'] !== 0) {
                     $buyer = $this->getUserSimpleByID($item['buyer_id']);
                     if ($buyer === false) {
                         $this->dbh->rollBack();
                         return $response->withStatus(404)->withJson(['error' => 'buyer not found']);
                     }
-                    $detail['buyer_id'] = $item['buyer_id'];
+                    $detail['buyer_id'] = (int) $item['buyer_id'];
                     $detail['buyer'] = $buyer;
                 }
 
@@ -710,7 +710,7 @@ class Service
             unset($seller['hashed_password'], $seller['address'], $seller['created_at']);
             $item['seller'] = $seller;
 
-            if (($user['id'] === $item['seller']['id'] || $user['id'] === $item['buyer_id']) && $item['buyer_id'] !== 0) {
+            if (($user['id'] === $item['seller']['id'] || $user['id'] === $item['buyer_id']) && (int) $item['buyer_id'] !== 0) {
                 $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
                 $r = $sth->execute([$item['buyer_id']]);
                 if ($r === false) {
@@ -752,6 +752,7 @@ class Service
         }
 
         if ($payload->price < self::MIN_ITEM_PRICE || $payload->price > self::MAX_ITEM_PRICE) {
+            $this->logger->info($payload->price);
             return $response->withStatus(400)->withJson(['error' => '商品価格は100円以上、1,000,000円以下にしてください']);
         }
 
@@ -814,7 +815,7 @@ class Service
 
         $this->dbh->commit();
 
-        return $response->withStatus(200)->withJson(['id' => $itemId]);
+        return $response->withStatus(200)->withJson(['id' => (int) $itemId]);
     }
 
     public function edit(Request $request, Response $response, array $args)
@@ -893,10 +894,10 @@ class Service
         }
 
         return $response->withStatus(200)->withJson([
-            'item_id' => $item['id'],
-            'item_price' => $item['price'],
-            'item_created_at' => $item['created_at'],
-            'item_updated_at' => $item['updated_at'],
+            'item_id' => (int) $item['id'],
+            'item_price' => (int) $item['price'],
+            'item_created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
+            'item_updated_at' => (new \DateTime($item['updated_at']))->getTImestamp(),
         ]);
     }
 
@@ -1132,7 +1133,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson(['transaction_evidence_id' => $transactionEvidenceId]);
+        return $response->withStatus(200)->withJson(['transaction_evidence_id' => (int) $transactionEvidenceId]);
     }
 
     public function ship(Request $request, Response $response, array $args)
@@ -1249,7 +1250,7 @@ class Service
         }
 
         return $response->withStatus(200)->withJson([
-            'path' => sprintf("/transactions/%d.png", $transactionEvidence['id']),
+            'path' => sprintf("/transactions/%d.png", (int) $transactionEvidence['id']),
         ]);
     }
 
@@ -1377,7 +1378,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson(['transaction_evidence_id' => $transactionEvidence['id']]);
+        return $response->withStatus(200)->withJson(['transaction_evidence_id' => (int) $transactionEvidence['id']]);
     }
 
     public function complete(Request $request, Response $response, array $args)
@@ -1514,7 +1515,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson(['transaction_evidence_id' => $transactionEvidence['id']]);
+        return $response->withStatus(200)->withJson(['transaction_evidence_id' => (int) $transactionEvidence['id']]);
     }
 
     public function bump(Request $request, Response $response, array $args)
@@ -1608,10 +1609,10 @@ class Service
         }
 
         return $response->withStatus(200)->withJson([
-            'item_id' => $item['id'],
-            'item_price' => $item['price'],
-            'item_created_at' => $item['created_at'],
-            'item_updated_at' => $item['updated_at'],
+            'item_id' => (int) $item['id'],
+            'item_price' => (int) $item['price'],
+            'item_created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
+            'item_updated_at' => (new \DateTime($item['updated_at']))->getTimestamp(),
         ]);
     }
 }
