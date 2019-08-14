@@ -49,6 +49,8 @@ const (
 
 	ItemsPerPage        = 48
 	TransactionsPerPage = 10
+
+	BcryptCost = 10
 )
 
 var (
@@ -1397,7 +1399,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
 		tx.Rollback()
 		return
 	}
@@ -1527,7 +1529,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
 		tx.Rollback()
 		return
 	}
@@ -1547,7 +1549,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	shipping := Shipping{}
 	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		outputErrorMsg(w, http.StatusNotFound, "shippings not found")
 		tx.Rollback()
 		return
 	}
@@ -1634,7 +1636,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "transaction_evidence not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidence not found")
 		return
 	}
 	if err != nil {
@@ -1672,7 +1674,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "db not found")
+		outputErrorMsg(w, http.StatusBadRequest, "shippings not found")
 		tx.Rollback()
 		return
 	}
@@ -1938,7 +1940,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	// last_bump + 3s > now
 	if seller.LastBump.Add(BumpChargeSeconds).After(now) {
-		outputErrorMsg(w, http.StatusBadRequest, "Bump not allowed")
+		outputErrorMsg(w, http.StatusForbidden, "Bump not allowed")
 		tx.Rollback()
 		return
 	}
@@ -2078,12 +2080,12 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 	password := rr.Password
 
 	if accountName == "" || password == "" || address == "" {
-		outputErrorMsg(w, http.StatusInternalServerError, "all parameters are required")
+		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
 
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
 		log.Println(err)
 
