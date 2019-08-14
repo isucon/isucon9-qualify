@@ -89,7 +89,10 @@ class Service
 
         $user_id = $this->session->get('user_id');
         $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
-        $sth->execute([$user_id]);
+        $r = $sth->execute([$user_id]);
+        if ($r === false) {
+            throw new \PDOException($sth->errorInfo());
+        }
         $user = $sth->fetch(PDO::FETCH_ASSOC);
 
         if ($user === false) {
@@ -103,7 +106,10 @@ class Service
     private function getUserSimpleByID($id)
     {
         $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
-        $sth->execute([$id]);
+        $r = $sth->execute([$id]);
+        if ($r === false) {
+            throw new \PDOException($sth->errorInfo());
+        }
         $user = $sth->fetch(PDO::FETCH_ASSOC);
         if ($user === false) {
             return false;
@@ -118,7 +124,10 @@ class Service
     private function getCategoryByID($id)
     {
         $sth = $this->dbh->prepare('SELECT * FROM `categories` WHERE `id` = ?');
-        $sth->execute([$id]);
+        $r = $sth->execute([$id]);
+        if ($r === false) {
+            throw new \PDOException($sth->errorInfo());
+        }
         $category = $sth->fetch(PDO::FETCH_ASSOC);
         if ($category === false) {
             return false;
@@ -142,21 +151,27 @@ class Service
             if ($itemId !== "" && $createdAt > 0) {
                 // paging
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
-                $sth->execute([
+                $r = $sth->execute([
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_SOLD_OUT,
                     (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
                 ]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             } else {
                 // 1st page
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
-                $sth->execute([
+                $r = $sth->execute([
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_SOLD_OUT,
                     self::ITEM_PER_PAGE + 1,
                 ]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             }
             $items = $sth->fetchAll(PDO::FETCH_ASSOC);
 
@@ -215,7 +230,10 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT id FROM `categories` WHERE parent_id=?');
-            $sth->execute([$rootCategoryId]);
+            $r = $sth->execute([$rootCategoryId]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $result = $sth->fetchAll(PDO::FETCH_ASSOC);
             $categoryIds = [];
             foreach ($result as $r) {
@@ -229,7 +247,7 @@ class Service
                 // paging
                 $in = str_repeat('?,', count($categoryIds) - 1) . '?';
                 $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?");
-                $sth->execute(array_merge(
+                $r = $sth->execute(array_merge(
                     [self::ITEM_STATUS_ON_SALE, self::ITEM_STATUS_SOLD_OUT],
                     $categoryIds,
                     [
@@ -238,15 +256,21 @@ class Service
                         self::ITEM_PER_PAGE + 1,
                     ]
                 ));
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             } else {
                 // 1st page
                 $in = str_repeat('?,', count($categoryIds) - 1) . '?';
                 $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) ORDER BY created_at DESC, id DESC LIMIT ?");
-                $sth->execute(array_merge(
+                $r = $sth->execute(array_merge(
                     [self::ITEM_STATUS_ON_SALE, self::ITEM_STATUS_SOLD_OUT],
                     $categoryIds,
                     [self::ITEM_PER_PAGE + 1]
                 ));
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             }
             $items = $sth->fetchAll(PDO::FETCH_ASSOC);
 
@@ -309,7 +333,7 @@ class Service
             if ($itemId !== "" && $createdAt > 0) {
                 // paging
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
-                $sth->execute([
+                $r = $sth->execute([
                     $user['id'],
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_TRADING,
@@ -318,16 +342,22 @@ class Service
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
                 ]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             } else {
                 // 1st page
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
-                $sth->execute([
+                $r = $sth->execute([
                     $user['id'],
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_TRADING,
                     self::ITEM_STATUS_SOLD_OUT,
                     self::ITEM_PER_PAGE + 1,
                 ]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             }
             $items = $sth->fetchAll(PDO::FETCH_ASSOC);
 
@@ -402,7 +432,7 @@ class Service
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE '.
                     '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? '.
                     'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
-                $sth->execute([
+                $r = $sth->execute([
                    $user['id'],
                    $user['id'],
                    self::ITEM_STATUS_ON_SALE,
@@ -414,12 +444,15 @@ class Service
                     $itemId,
                     self::TRANSACTIONS_PER_PAGE +1,
                 ]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             } else {
                 // 1st page
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE ' .
                     '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) ' .
                     'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
-                $sth->execute([
+                $r = $sth->execute([
                     $user['id'],
                     $user['id'],
                     self::ITEM_STATUS_ON_SALE,
@@ -429,6 +462,9 @@ class Service
                     self::ITEM_STATUS_STOP,
                     self::TRANSACTIONS_PER_PAGE + 1,
                 ]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
             }
             $items = $sth->fetchAll(PDO::FETCH_ASSOC);
             $itemDetails = [];
@@ -467,7 +503,10 @@ class Service
                 }
 
                 $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?');
-                $sth->execute([$payload->item_id]);
+                $r = $sth->execute([$payload->item_id]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
                 $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
                 if ($transactionEvidence === false) {
                     $this->dbh->rollBack();
@@ -476,7 +515,10 @@ class Service
 
                 if ($transactionEvidence['id'] > 0) {
                     $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?');
-                    $sth->execute([$payload->item_id]);
+                    $r = $sth->execute([$payload->item_id]);
+                    if ($r === false) {
+                        throw new \PDOException($sth->errorInfo());
+                    }
                     $shipping = $sth->fetch(PDO::FETCH_ASSOC);
                     if ($shipping === false) {
                         $this->dbh->rollBack();
@@ -541,8 +583,11 @@ class Service
         }
 
         try {
-            $sth = $this->dbh->prepare('INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `num_sell_items`) VALUES (?, ?, ?, ?)');
-            $sth->execute([$payload->account_name, $hashedPassword, $payload->address, 0]);
+            $sth = $this->dbh->prepare('INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)');
+            $r = $sth->execute([$payload->account_name, $hashedPassword, $payload->address]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $userId = $this->dbh->lastInsertId();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -567,15 +612,22 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `account_name` = ?');
-            $sth->execute([$payload->account_name]);
+            $r = $sth->execute([$payload->account_name]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $user = $sth->fetch(PDO::FETCH_ASSOC);
+
+            if ($user === false) {
+                return $response->withStatus(401)->withJson(['error' => 'アカウント名かパスワードが間違えています']);
+            }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
         if (! password_verify($payload->password, $user['hashed_password'])) {
-            return $response->withStatus(500)->withJson(['error' => 'crypt error']);
+            return $response->withStatus(401)->withJson(['error' => 'アカウント名かパスワードが間違えています']);
         }
 
         $this->session->set('user_id', $user['id']);
@@ -605,11 +657,17 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
+        $categories = $this->dbh->query('SELECT * FROM `categories`', PDO::FETCH_ASSOC);
+        if ($categories === false) {
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
         unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
         return $response->withStatus(200)->withJson(
             [
                 'csrf_token' => $token,
-                'user' => $user
+                'user' => $user,
+                'categories' => $categories,
             ]
         );
     }
@@ -630,14 +688,20 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ?');
-            $sth->execute([$itemId]);
+            $r = $sth->execute([$itemId]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 return $response->withStatus(404)->withJson(['error' => 'item not found']);
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
-            $sth->execute([$item['seller_id']]);
+            $r = $sth->execute([$item['seller_id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $seller = $sth->fetch(PDO::FETCH_ASSOC);
             if ($seller === false) {
                 return $response->withStatus(404)->withJson(['error' => 'seller not found']);
@@ -648,7 +712,10 @@ class Service
 
             if (($user['id'] === $item['seller']['id'] || $user['id'] === $item['buyer_id']) && $item['buyer_id'] !== 0) {
                 $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
-                $sth->execute([$item['buyer_id']]);
+                $r = $sth->execute([$item['buyer_id']]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
                 $buyer = $sth->fetch(PDO::FETCH_ASSOC);
                 if ($buyer === false) {
                     return $response->withStatus(404)->withJson(['error' => 'buyer not found']);
@@ -705,7 +772,10 @@ class Service
         try {
             $this->dbh->beginTransaction();
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$user['id']]);
+            $r = $sth->execute([$user['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $seller = $sth->fetch(PDO::FETCH_ASSOC);
             if ($seller === false) {
                 $this->dbh->rollBack();
@@ -714,7 +784,7 @@ class Service
             }
 
             $sth = $this->dbh->prepare('INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`, `category_id`) VALUES (?, ?, ?, ?, ?, ?)');
-            $sth->execute([
+            $r = $sth->execute([
                 $seller['id'],
                 self::ITEM_STATUS_ON_SALE,
                 $payload->name,
@@ -722,14 +792,20 @@ class Service
                 $payload->description,
                 $payload->category_id
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $itemId = $this->dbh->lastInsertId();
 
             $sth = $this->dbh->prepare('UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?');
-            $sth->execute([
+            $r = $sth->execute([
                 $seller['num_sell_items']+1,
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $seller['id']
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
             $this->logger->error($e->getMessage());
@@ -769,7 +845,10 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ?');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->logger->warning('item not found', ['id' => $payload->item_id]);
@@ -782,7 +861,10 @@ class Service
 
             $this->dbh->beginTransaction();
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
 
             if ($item['status'] !== self::ITEM_STATUS_ON_SALE) {
@@ -791,7 +873,18 @@ class Service
             }
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?');
-            $sth->execute([$payload->price, (new \DateTime())->format(self::DATETIME_SQL_FORMAT), $payload->item_id]);
+            $r = $sth->execute([$payload->price, (new \DateTime())->format(self::DATETIME_SQL_FORMAT), $payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+
+            $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ?');
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+            $item = $sth->fetch(PDO::FETCH_ASSOC);
+
             $this->dbh->commit();
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
@@ -799,7 +892,64 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson([
+            'item_id' => $item['id'],
+            'item_price' => $item['price'],
+            'item_created_at' => $item['created_at'],
+            'item_updated_at' => $item['updated_at'],
+        ]);
+    }
+
+    public function qrcode(Request $request, Response $response, array $args)
+    {
+        $transactionEvidenceId = (int) $args['id'];
+        try {
+            $seller = $this->getCurrentUser();
+        } catch (\DomainException $e) {
+            $this->logger->warning('user not found');
+            return $response->withStatus(404)->withJson(['error' => 'user not found']);
+        } catch (\Exception $e) {
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
+        try {
+            $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ?');
+            $r = $sth->execute([$transactionEvidenceId]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+            $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
+            if ($transactionEvidence === false) {
+                return $response->withStatus(404)->withJson(['error' => 'transaction_evidences not found']);
+            }
+
+            if ($transactionEvidence['seller_id'] !== $seller['id']) {
+                return $response->withStatus(403)->withJson(['error' => '権限がありません']);
+            }
+
+            $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?');
+            $r = $sth->execute([$transactionEvidence['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+            $shipping = $sth->fetch(PDO::FETCH_ASSOC);
+            if ($shipping === false) {
+                return $response->withStatus(404)->withJson(['error' => 'shippings not found']);
+            }
+
+            if ($shipping['status'] !== self::SHIPPING_STATUS_WAIT_PICKUP && $shipping['status'] !== self::SHIPPING_STATUS_SHIPPING) {
+                return $response->withStatus(403)->withJson(['error' => 'qrcode not available']);
+            }
+
+            if (empty($shipping['img_binary'])) {
+                return $response->withStatus(500)->withJson(['error' => 'empty qrcode image']);
+            }
+        } catch (\PDOException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(500)->withJson(['error' => 'db error']);
+        }
+
+        return $response->withHeader('Content-Type', 'image/png')->getBody()->write($shipping['img_binary']);
     }
 
     public function buy(Request $request, Response $response, array $args)
@@ -828,7 +978,10 @@ class Service
             $this->dbh->beginTransaction();
 
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
@@ -846,7 +999,10 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$item['seller_id']]);
+            $r = $sth->execute([$item['seller_id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $seller = $sth->fetch(PDO::FETCH_ASSOC);
             if ($seller === false) {
                 $this->dbh->rollBack();
@@ -863,7 +1019,7 @@ class Service
                 '`item_id`, `item_name`, `item_price`, `item_description`, '.
                 '`item_category_id`, `item_root_category_id`) '.
                 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            $sth->execute([
+            $r = $sth->execute([
                 $item['seller_id'],
                 $buyer['id'],
                 self::TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING,
@@ -874,15 +1030,21 @@ class Service
                 $category['id'],
                 $category['parent_id'],
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $transactionEvidenceId = $this->dbh->lastInsertId();
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?');
-            $sth->execute([
+            $r = $sth->execute([
                 $buyer['id'],
                 self::ITEM_STATUS_TRADING,
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $item['id'],
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $client = new Client();
             $res = $client->post(
@@ -944,9 +1106,9 @@ class Service
 
             $sth = $this->dbh->prepare('INSERT INTO `shippings` '.
                 '(`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, '.
-                '`to_address`, `to_name`, `from_address`, `from_name`, `img_name`) '.
-                ' VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-            $sth->execute([
+                '`to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) '.
+                'VALUES (?,?,?,?,?,?,?,?,?,?,?)');
+            $r = $sth->execute([
                 $transactionEvidenceId,
                 self::SHIPPING_STATUS_INITIAL,
                 $item['name'],
@@ -957,8 +1119,11 @@ class Service
                 $buyer['account_name'],
                 $seller['address'],
                 $seller['account_name'],
-                ""
+                "",
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $this->dbh->commit();
         } catch (\PDOException $e) {
@@ -994,7 +1159,10 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 return $response->withStatus(404)->withJson(['error' => 'transaction_evidences not found']);
@@ -1006,7 +1174,10 @@ class Service
 
             $this->dbh->beginTransaction();
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
@@ -1019,7 +1190,10 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$transactionEvidence['id']]);
+            $r = $sth->execute([$transactionEvidence['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 $this->dbh->rollBack();
@@ -1032,17 +1206,15 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE');
-            $sth->execute([$transactionEvidence['id']]);
+            $r = $sth->execute([$transactionEvidence['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $shipping = $sth->fetch(PDO::FETCH_ASSOC);
             if ($shipping === false) {
                 $this->dbh->rollBack();
                 return $response->withStatus(404)->withJson(['error' => 'shippings not found']);
             }
-
-            $bytes = random_bytes(16);
-            $imgName = bin2hex($bytes);
-            $path = $this->settings['app']['upload_path'] . $imgName . '.png';
-            $resource = fopen($path, 'w');
 
             $client = new \GuzzleHttp\Client();
             $r = $client->post(
@@ -1050,10 +1222,8 @@ class Service
                 [
                     'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                     'json' => ['reserve_id' => $shipping['reserve_id']],
-                    'sink' => $resource,
                 ]
             );
-            fclose($resource);
             if ($r->getStatusCode() !== 200) {
                 $this->logger->error($r->getReasonPhrase());
                 $this->dbh->rollBack();
@@ -1061,13 +1231,16 @@ class Service
             }
 
 
-            $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_name` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
-            $sth->execute([
+            $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
+            $r = $sth->execute([
                 self::SHIPPING_STATUS_WAIT_PICKUP,
-                $imgName,
+                (string) $r->getBody(),
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id']
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $this->dbh->commit();
         } catch (\PDOException $e) {
@@ -1076,7 +1249,7 @@ class Service
         }
 
         return $response->withStatus(200)->withJson([
-            'url' => sprintf("http://%s/upload/%s.png", $request->getServerParam('HTTP_HOST'), $imgName),
+            'path' => sprintf("/transactions/%d.png", $transactionEvidence['id']),
         ]);
     }
 
@@ -1104,7 +1277,10 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 return $response->withStatus(404)->withJson(['error' => 'transaction_evidence not found']);
@@ -1117,7 +1293,10 @@ class Service
             $this->dbh->beginTransaction();
 
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
@@ -1130,7 +1309,10 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$transactionEvidence['id']]);
+            $r = $sth->execute([$transactionEvidence['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 $this->dbh->rollBack();
@@ -1143,7 +1325,10 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE');
-            $sth->execute([$transactionEvidence['id']]);
+            $r = $sth->execute([$transactionEvidence['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $shipping = $sth->fetch(PDO::FETCH_ASSOC);
             if ($shipping === false) {
                 $this->dbh->rollBack();
@@ -1163,22 +1348,28 @@ class Service
             $shippingResponse = json_decode($r->getBody());
             if (! ($shippingResponse->status === self::SHIPPING_STATUS_DONE || $shippingResponse->status === self::SHIPPING_STATUS_SHIPPING)) {
                 $this->dbh->rollBack();
-                return $response->withStatus(500)->withJson(['error' => 'shipment service側で配送中か配送完了になっていません']);
+                return $response->withStatus(403)->withJson(['error' => 'shipment service側で配送中か配送完了になっていません']);
             }
 
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
-            $sth->execute([
+            $r = $sth->execute([
                 $shippingResponse->status,
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id'],
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $sth = $this->dbh->prepare('UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?');
-            $sth->execute([
+            $r = $sth->execute([
                 self::TRANSACTION_EVIDENCE_STATUS_WAIT_DONE,
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id'],
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $this->dbh->commit();
         } catch (\PDOException $e) {
@@ -1186,7 +1377,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson(['transaction_evidence_id' => $transactionEvidence['id']]);
     }
 
     public function complete(Request $request, Response $response, array $args)
@@ -1213,7 +1404,10 @@ class Service
 
         try {
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 return $response->withStatus(404)->withJson(['error' => 'transaction_evidence not found']);
@@ -1226,7 +1420,10 @@ class Service
             $this->dbh->beginTransaction();
 
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
@@ -1239,7 +1436,10 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$transactionEvidence['id']]);
+            $r = $sth->execute([$transactionEvidence['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 $this->dbh->rollBack();
@@ -1252,7 +1452,10 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE');
-            $sth->execute([$transactionEvidence['id']]);
+            $r = $sth->execute([$transactionEvidence['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $shipping = $sth->fetch(PDO::FETCH_ASSOC);
             if ($shipping === false) {
                 $this->dbh->rollBack();
@@ -1276,25 +1479,34 @@ class Service
             }
 
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
-            $sth->execute([
+            $r = $sth->execute([
                 self::SHIPPING_STATUS_DONE,
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id'],
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $sth = $this->dbh->prepare('UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?');
-            $sth->execute([
+            $r = $sth->execute([
                 self::TRANSACTION_EVIDENCE_STATUS_DONE,
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id'],
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?');
-            $sth->execute([
+            $r = $sth->execute([
                 self::ITEM_STATUS_SOLD_OUT,
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $item['id'],
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $this->dbh->commit();
         } catch (\PDOException $e) {
@@ -1302,7 +1514,7 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson(['transaction_evidence_id' => $transactionEvidence['id']]);
     }
 
     public function bump(Request $request, Response $response, array $args)
@@ -1331,7 +1543,10 @@ class Service
             $this->dbh->beginTransaction();
 
             $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$payload->item_id]);
+            $r = $sth->execute([$payload->item_id]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
@@ -1344,7 +1559,10 @@ class Service
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE');
-            $sth->execute([$user['id']]);
+            $r = $sth->execute([$user['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
             $seller = $sth->fetch(PDO::FETCH_ASSOC);
             if ($seller === false) {
                 $this->dbh->rollBack();
@@ -1359,16 +1577,29 @@ class Service
             }
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `created_at`=? WHERE id=?');
-            $sth->execute([
+            $r = $sth->execute([
                 $now->format(self::DATETIME_SQL_FORMAT),
                 $item['id']
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
 
             $sth = $this->dbh->prepare('UPDATE `users` SET `last_bump`=? WHERE id=?');
-            $sth->execute([
+            $r = $sth->execute([
                 $now->format(self::DATETIME_SQL_FORMAT),
                 $user['id']
             ]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+
+            $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `id` = ?');
+            $r = $sth->execute([$item['id']]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+            $item = $sth->fetch(PDO::FETCH_ASSOC);
 
             $this->dbh->commit();
         } catch (\PDOException $e) {
@@ -1376,6 +1607,11 @@ class Service
             return $response->withStatus(500)->withJson(['error' => 'db error']);
         }
 
-        return $response->withStatus(200)->withJson([]);
+        return $response->withStatus(200)->withJson([
+            'item_id' => $item['id'],
+            'item_price' => $item['price'],
+            'item_created_at' => $item['created_at'],
+            'item_updated_at' => $item['updated_at'],
+        ]);
     }
 }

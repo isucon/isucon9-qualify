@@ -22,6 +22,7 @@ return function (App $app) {
     $app->post('/ship', \App\Service::class . ':ship');
     $app->post('/ship_done', \App\Service::class . ':ship_done');
     $app->post('/complete', \App\Service::class . ':complete');
+    $app->get('/transactions/{id}.png', \App\Service::class . ':qrcode');
     $app->post('/bump', \App\Service::class . ':bump');
     $app->get('/settings', \App\Service::class . ':settings');
     $app->post('/login', \App\Service::class . ':login');
@@ -44,7 +45,6 @@ return function (App $app) {
             'ico' => 'image/x-icon',
             'js' => 'application/javascript',
             'json' => 'application/json ',
-            'png' => 'image/png',
             'map' => 'application/json ', // source map, main.js.map
         ];
 
