@@ -61,3 +61,51 @@ func Verify() *fails.Critical {
 
 	return critical
 }
+
+func Validation(critical *fails.Critical) {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		check(critical)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		load(critical)
+	}()
+
+	wg.Wait()
+}
+
+func check(critical *fails.Critical) {
+	var wg sync.WaitGroup
+
+	user1, user2, user3 := asset.GetRandomUser(), asset.GetRandomUser(), asset.GetRandomUser()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := irregularLoginWrongPassword(user3)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := irregularSellAndBuy(user2, user1, user3)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Wait()
+}
+
+func load(critical *fails.Critical) {}
+
+func FinalCheck(critical *fails.Critical) {}
