@@ -3,6 +3,7 @@
 use Slim\App;
 use Slim\Http\Request;
 use Slim\Http\Response;
+use Slim\Http\StatusCode;
 
 return function (App $app) {
     $container = $app->getContainer();
@@ -35,7 +36,7 @@ return function (App $app) {
         $path = $template . $args['name'];
 
         if (! is_readable($path)) {
-            return $response->withStatus(404);
+            return $response->withStatus(StatusCode::HTTP_NOT_FOUND);
         }
 
         // find webapp/public -type d -name '.git' -prune -o -type f -exec basename {} \; | grep -o '\.[^.]*$' | sort | uniq | grep -v git
@@ -43,6 +44,7 @@ return function (App $app) {
             'css' => 'text/css',
             'html' => 'text/html',
             'ico' => 'image/x-icon',
+            'png' => 'image/png',
             'js' => 'application/javascript',
             'json' => 'application/json ',
             'map' => 'application/json ', // source map, main.js.map
