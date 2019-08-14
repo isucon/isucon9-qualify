@@ -66,8 +66,8 @@ export const routes: route = {
     getPath: () => '/buy/complete',
   },
   transaction: {
-    path: '/transactions/:transaction_id',
-    getPath: (transactionId: number) => `/transactions/${transactionId}`,
+    path: '/transactions/:item_id',
+    getPath: (itemId: number) => `/transactions/${itemId}`,
   },
   user: {
     path: '/users/:user_id',

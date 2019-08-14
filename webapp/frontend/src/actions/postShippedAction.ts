@@ -1,4 +1,3 @@
-import { AuthStatusState } from '../reducers/authStatusReducer';
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
@@ -9,8 +8,7 @@ export const POST_SHIPPED_START = 'POST_SHIPPED_START';
 export const POST_SHIPPED_SUCCESS = 'POST_SHIPPED_SUCCESS';
 export const POST_SHIPPED_FAIL = 'POST_SHIPPED_FAIL';
 
-export type State = void | AuthStatusState;
-type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>;
+type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
 
 export function postShippedAction(itemId: number): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
