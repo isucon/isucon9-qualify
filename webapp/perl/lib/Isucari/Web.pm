@@ -21,7 +21,7 @@ use Isucari::API;
 
 our $ITEM_MIN_PRICE    = 100;
 our $ITEM_MAX_PRICE    = 1000000;
-our $ITEM_PRICE_ERRMSG = "商品価格は100円以上、1,000,000円以下にしてください";
+our $ITEM_PRICE_ERRMSG = "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください";
 
 our $ITEM_STATUS_ON_SALE  = "on_sale";
 our $ITEM_STATUS_TRADING = "trading";

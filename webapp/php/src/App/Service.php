@@ -754,7 +754,7 @@ class Service
 
         if ($payload->price < self::MIN_ITEM_PRICE || $payload->price > self::MAX_ITEM_PRICE) {
             $this->logger->info($payload->price);
-            return $response->withStatus(400)->withJson(['error' => '商品価格は100円以上、1,000,000円以下にしてください']);
+            return $response->withStatus(400)->withJson(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']);
         }
 
         $category = $this->getCategoryByID($payload->category_id);
@@ -833,7 +833,7 @@ class Service
         }
 
         if ($payload->price < self::MIN_ITEM_PRICE || $payload->price > self::MAX_ITEM_PRICE) {
-            return $response->withStatus(400)->withJson(['error' => '商品価格は100円以上、1,000,000円以下にしてください']);
+            return $response->withStatus(400)->withJson(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']);
         }
 
         try {
