@@ -61,6 +61,7 @@ class Service
 
     private const ITEM_PER_PAGE = 48;
     private const TRANSACTIONS_PER_PAGE = 10;
+    private const BCRYPT_COST = 10;
 
     // constructor receives container instance
     public function __construct(ContainerInterface $container)
@@ -574,10 +575,10 @@ class Service
         }
 
         if (empty($payload->account_name) || empty($payload->address) || empty($payload->password)) {
-            return $response->withStatus(500)->withJson(['error' => 'all parameters are required']);
+            return $response->withStatus(400)->withJson(['error' => 'all parameters are required']);
         }
 
-        $hashedPassword = password_hash($payload->password, PASSWORD_BCRYPT, ['cost' => 10]);
+        $hashedPassword = password_hash($payload->password, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]);
         if ($hashedPassword === false) {
             return $response->withStatus(500)->withJson(['error' => 'error']);
         }
@@ -1573,7 +1574,7 @@ class Service
             $now = new \DateTime();
             if ((new \DateTime($seller['last_bump']))->getTimestamp() + self::BUMP_CHARGE_SECONDS > $now->getTimestamp()) {
                 $this->dbh->rollBack();
-                return $response->withStatus(400)->withJson(['error' => 'Bump not allowed']);
+                return $response->withStatus(403)->withJson(['error' => 'Bump not allowed']);
             }
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `created_at`=? WHERE id=?');
