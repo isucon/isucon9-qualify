@@ -166,3 +166,12 @@ export interface ShipReq {
 export interface ShipRes {
   path: string;
 }
+/**
+ * POST /ship_done
+ */
+export interface ShipDoneReq {
+  item_id: number;
+}
+export interface ShipDoneRes {
+  transaction_evidence_id: string;
+}
