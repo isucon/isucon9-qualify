@@ -1,5 +1,5 @@
 import { AppState } from '../index';
-import { AnyAction, Dispatch } from 'redux';
+import { AnyAction } from 'redux';
 import { connect } from 'react-redux';
 import BuyerComponent from '../components/Transaction/BuyerComponent';
 import { postShippedAction } from '../actions/postShippedAction';
