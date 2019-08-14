@@ -91,7 +91,7 @@ class ItemBuyFormComponent extends React.Component<
           src={item.thumbnailUrl}
         />
         <Typography variant="h4">{item.name}</Typography>
-        <Typography variant="h5">{`¥${item.price}`}</Typography>
+        <Typography variant="h5">{`${item.price}ｲｽｺｲﾝ`}</Typography>
         <form className={classes.form} noValidate>
           <TextField
             variant="outlined"
