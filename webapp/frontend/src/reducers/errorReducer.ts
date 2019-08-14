@@ -17,6 +17,7 @@ import {
   PostShippedFailAction,
 } from '../actions/postShippedAction';
 import { PostShippedDoneFailAction } from '../actions/postShippedDoneAction';
+import { PostCompleteFailAction } from '../actions/postCompleteAction';
 
 export const NoError = 'NO_ERROR';
 export const NotFoundError = 'NOT_FOUND';
@@ -41,7 +42,8 @@ type errorActions =
   | FetchItemFailAction
   | FetchSettingsFailAction
   | PostShippedFailAction
-  | PostShippedDoneFailAction;
+  | PostShippedDoneFailAction
+  | PostCompleteFailAction;
 
 const error = (
   state: ErrorState = initialState,

@@ -175,3 +175,12 @@ export interface ShipDoneReq {
 export interface ShipDoneRes {
   transaction_evidence_id: string;
 }
+/**
+ * POST /complete
+ */
+export interface CompleteReq {
+  item_id: number;
+}
+export interface CompleteRes {
+  transaction_evidence_id: string;
+}
