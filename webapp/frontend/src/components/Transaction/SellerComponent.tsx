@@ -21,7 +21,7 @@ const useStyles = makeStyles(theme => ({
 type Props = {
   itemId: number;
   transactionEvidenceId: number;
-  postShipped: (itemId: number) => void;
+  postShippedDone: (itemId: number) => void;
   transactionStatus: TransactionStatus;
   shippingStatus: ShippingStatus;
 };
@@ -29,7 +29,7 @@ type Props = {
 const SellerComponent: React.FC<Props> = ({
   itemId,
   transactionEvidenceId,
-  postShipped,
+  postShippedDone,
   transactionStatus,
   shippingStatus,
 }) => {
@@ -47,7 +47,7 @@ const SellerComponent: React.FC<Props> = ({
       <WaitShipping
         itemId={itemId}
         transactionEvidenceId={transactionEvidenceId}
-        postShipped={postShipped}
+        postShippedDone={postShippedDone}
       />
     );
   }

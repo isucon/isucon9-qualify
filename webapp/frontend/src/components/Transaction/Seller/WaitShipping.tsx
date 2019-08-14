@@ -8,19 +8,19 @@ const useStyles = makeStyles(theme => ({}));
 type Props = {
   itemId: number;
   transactionEvidenceId: number;
-  postShipped: (itemId: number) => void;
+  postShippedDone: (itemId: number) => void;
 };
 
 const WaitShipping: React.FC<Props> = ({
   itemId,
   transactionEvidenceId,
-  postShipped,
+  postShippedDone,
 }) => {
   const classes = useStyles();
 
   const qrCodeUrl = `/transactions/${transactionEvidenceId}.png`;
   const onClick = (e: React.MouseEvent) => {
-    postShipped(itemId);
+    postShippedDone(itemId);
   };
 
   return (
