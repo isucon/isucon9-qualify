@@ -16,4 +16,13 @@ export interface ItemData {
   createdAt: number;
 }
 
+export type TimelineItem = {
+  id: number;
+  status: ItemStatus;
+  name: string;
+  price: number;
+  thumbnailUrl: string;
+  createdAt: number;
+};
+
 export type ItemStatus = 'on_sale' | 'trading' | 'sold_out' | 'stop' | 'cancel';

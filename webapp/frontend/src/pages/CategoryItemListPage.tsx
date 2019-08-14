@@ -9,6 +9,9 @@ import { StyleRules } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import LoadingComponent from '../components/LoadingComponent';
 import Typography from '@material-ui/core/Typography/Typography';
+import { RouteComponentProps } from 'react-router';
+import InternalServerErrorPage from './error/InternalServerErrorPage';
+import validator from 'validator';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
@@ -21,25 +24,43 @@ const styles = (theme: Theme): StyleRules =>
     },
   });
 
-interface ItemListPageProps extends WithStyles<typeof styles> {
+interface CategoryItemListPageProps extends WithStyles<typeof styles> {
   loading: boolean;
-  load: () => void;
+  load: (categoryId: number) => void;
   items: TimelineItem[];
   hasNext: boolean;
+  categoryId: number;
+  categoryName: string;
   loadMore: (page: number) => void;
 }
 
-type Props = ItemListPageProps & ErrorProps;
+type Props = CategoryItemListPageProps &
+  RouteComponentProps<{ category_id: string }> &
+  ErrorProps;
 
-class ItemListPage extends React.Component<Props> {
+type State = {
+  categoryIdIsValid: boolean;
+};
+
+class CategoryItemListPage extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.props.load();
+    const categoryId = this.props.match.params.category_id;
+    const categoryIdIsValid = validator.isNumeric(categoryId);
+
+    if (categoryIdIsValid) {
+      this.props.load(Number(categoryId));
+    }
+
+    this.state = {
+      categoryIdIsValid,
+    };
   }
 
   render() {
-    const { classes, loading, items } = this.props;
+    const { classes, loading, items, categoryName } = this.props;
+    const { categoryIdIsValid } = this.state;
 
     const Content: React.FC<{}> = () =>
       items.length === 0 ? (
@@ -48,6 +69,7 @@ class ItemListPage extends React.Component<Props> {
         </div>
       ) : (
         <div className={classes.root}>
+          <Typography variant="h6">{categoryName}の新着商品</Typography>
           <ItemListComponent {...this.props} />
           <SellingButtonContainer />
         </div>
@@ -55,10 +77,18 @@ class ItemListPage extends React.Component<Props> {
 
     return (
       <BasePageContainer>
-        {loading ? <LoadingComponent /> : <Content />}
+        {!categoryIdIsValid ? (
+          <InternalServerErrorPage />
+        ) : loading ? (
+          <LoadingComponent />
+        ) : (
+          <Content />
+        )}
       </BasePageContainer>
     );
   }
 }
 
-export default PageComponentWithError<any>()(withStyles(styles)(ItemListPage));
+export default PageComponentWithError<any>()(
+  withStyles(styles)(CategoryItemListPage),
+);

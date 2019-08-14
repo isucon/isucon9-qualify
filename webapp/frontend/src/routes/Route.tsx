@@ -15,6 +15,7 @@ import AuthRoute from '../containers/AuthContainer';
 import NonAuthRoute from '../containers/NonAuthContainer';
 import NotFoundPage from '../pages/error/NotFoundPage';
 import TopPage from '../pages/TopPage';
+import CategoryItemListPageContainer from '../containers/CategoryItemListPageContainer';
 
 interface route {
   [name: string]: {
@@ -88,6 +89,11 @@ export const AppRoute: React.FC = () => {
         exact
         path={routes.timeline.path}
         component={ItemListPageContainer}
+      />
+      <AuthRoute
+        exact
+        path={routes.categoryTimeline.path}
+        component={CategoryItemListPageContainer}
       />
       <AuthRoute exact path={routes.sell.path} component={SellPage} />
       <AuthRoute exact path={routes.item.path} component={ItemPageContainer} />
