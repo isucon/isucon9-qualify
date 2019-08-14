@@ -6,12 +6,22 @@ import Button from '@material-ui/core/Button';
 const useStyles = makeStyles(theme => ({}));
 
 type Props = {
-  qrCodeUrl: string;
-  postShipped: (e: React.MouseEvent) => void;
+  item: number;
+  transactionEvidenceId: number;
+  postShipped: (itemId: number) => void;
 };
 
-const WaitShipping: React.FC<Props> = ({ qrCodeUrl, postShipped }) => {
+const WaitShipping: React.FC<Props> = ({
+  itemId,
+  transactionEvidenceId,
+  postShipped,
+}) => {
   const classes = useStyles();
+
+  const qrCodeUrl = `/transactions/${transactionEvidenceId}.png`;
+  const onClick = (e: React.MouseEvent) => {
+    postShipped(itemId);
+  };
 
   return (
     <React.Fragment>
@@ -20,7 +30,7 @@ const WaitShipping: React.FC<Props> = ({ qrCodeUrl, postShipped }) => {
         配達員にこちらのQRコードを見せて発送した後、下記の発送完了を押してください
       </Typography>
       <img src={qrCodeUrl} alt="QRコード" />
-      <Button onClick={postShipped}>発送完了</Button>
+      <Button onClick={onClick}>発送完了</Button>
     </React.Fragment>
   );
 };
