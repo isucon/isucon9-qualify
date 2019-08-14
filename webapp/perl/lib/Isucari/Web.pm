@@ -76,7 +76,7 @@ sub encrypt_password {
 
 sub check_password {
     my ($plain_password, $hashed_password) = @_;
-    if ($hashed_password =~ m!^\$2a\$\d{2}\$([A-Za-z0-9+\\.]{22})!) {
+    if ($hashed_password =~ m!^\$2a\$\d{2}\$(.+)$!) {
         return encrypt_password($plain_password, $1) eq $hashed_password;
     }
     die "crypt_error";
@@ -479,9 +479,7 @@ get '/users/transactions.json' => sub {
                 $self->api_client->shipment_status("http://localhost:7000", {reserve_id => number $shipping->{reserve_id}});
             };
             if ($@) {
-                my $msg = $@;
-                $msg =~ s/\n/ /gms;
-                warn $msg;
+                warn $@;
                 return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "failed to request to shipment service");
             }
 
@@ -649,10 +647,6 @@ post '/buy' => [qw/allow_json_request/] => sub {
         return $self->error_with_msg($c, HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
     }
 
-    if (!$token) {
-        return $self->error_with_msg($c, HTTP_BAD_REQUEST, 'token error');
-    }
-
     my $buyer = $self->getUser($c);
     if (!$buyer) {
         return $self->error_with_msg($c, HTTP_NOT_FOUND, 'user not found');
@@ -699,7 +693,7 @@ post '/buy' => [qw/allow_json_request/] => sub {
 
     $dbh->query(
         'UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?',
-        $buyer->{ID},
+        $buyer->{id},
         $ITEM_STATUS_TRADING,
         mysql_datetime_from_unix(time),
         $target_item->{id},
@@ -709,11 +703,12 @@ post '/buy' => [qw/allow_json_request/] => sub {
         $self->api_client->shipment_create("http://localhost:7000", {
             to_address   => $buyer->{address},
             to_name      => $buyer->{account_name},
-            from_address => $seller->{Address},
+            from_address => $seller->{address},
             from_name    => $seller->{account_name}
         });
     };
     if ($@) {
+        warn $@;
         return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "failed to request to shipment service");
     }
 
@@ -726,6 +721,7 @@ post '/buy' => [qw/allow_json_request/] => sub {
         })
     };
     if ($@) {
+        warn $@;
         return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "payment service is failed");
     }
 
@@ -964,7 +960,7 @@ post '/ship_done' => [qw/allow_json_request/] => sub {
     }
 
     my $ssr = eval {
-        $self->api_client->shipping_status(
+        $self->api_client->shipment_status(
             "http://localhost:7000",
             {reserve_id => $shipping->{reserve_id}},
         )
@@ -1053,7 +1049,7 @@ post '/complete' => [qw/allow_json_request/] => sub {
     }
 
     my $ssr = eval {
-        $self->api_client->shipping_status(
+        $self->api_client->shipment_status(
             "http://localhost:7000",
             {reserve_id => $shipping->{reserve_id}},
         );

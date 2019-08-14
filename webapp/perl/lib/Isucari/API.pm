@@ -21,16 +21,18 @@ sub ua {
 }
 
 sub payment_token {
-    my ($self,$shipment_url,$param) = @_;
+    my ($self,$payment_url,$param) = @_;
     my $json = JSON::encode_json($param);
 
-    my $req = HTTP::Request->new(POST => $shipment_url . "/create");
+    my $req = HTTP::Request->new(POST => $payment_url . "/token");
     $req->header("Content-Type", "application/json");
     $req->content($json);
 
     my $res = $self->ua->request($req);
     if ($res->code != 200) {
-        die $res->code . ':' . $res->content;
+        my $msg = $res->code . ':' . $res->content;
+        $msg =~ s/\n$//gms;
+        die $msg;
     }
 
     return JSON::decode_json($res->content);
@@ -47,7 +49,9 @@ sub shipment_create {
 
     my $res = $self->ua->request($req);
     if ($res->code != 200) {
-        die $res->code . ':' . $res->content;
+        my $msg = $res->code . ':' . $res->content;
+        $msg =~ s/\n$//gms;
+        die $msg;
     }
 
     return JSON::decode_json($res->content);
@@ -65,7 +69,9 @@ sub shipment_request {
 
     my $res = $self->ua->request($req);
     if ($res->code != 200) {
-        die $res->code . ':' . $res->content;
+        my $msg = $res->code . ':' . $res->content;
+        $msg =~ s/\n$//gms;
+        die $msg;
     }
 
     return $res->content;
@@ -82,7 +88,9 @@ sub shipment_status {
 
     my $res = $self->ua->request($req);
     if ($res->code != 200) {
-        die $res->code . ':' . $res->content;
+        my $msg = $res->code . ':' . $res->content;
+        $msg =~ s/\n$//gms;
+        die $msg;
     }
 
     return JSON::decode_json($res->content);
