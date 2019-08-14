@@ -6,7 +6,6 @@ import SellPage from '../pages/SellPage';
 import ItemEditPage from '../pages/ItemEditPage';
 import ItemBuyPage from '../pages/ItemBuyPage';
 import UserSettingPage from '../pages/UserSettingPage';
-import BuyCompletePage from '../pages/BuyComplete';
 import ItemPageContainer from '../containers/ItemPageContainer';
 import ItemListPageContainer from '../containers/ItemListPageContainer';
 import TransactionPageContainer from '../containers/TransactionPageContainer';
@@ -16,6 +15,7 @@ import NonAuthRoute from '../containers/NonAuthContainer';
 import NotFoundPage from '../pages/error/NotFoundPage';
 import TopPage from '../pages/TopPage';
 import CategoryItemListPageContainer from '../containers/CategoryItemListPageContainer';
+import BuyCompleteContainer from '../containers/BuyCompleteContainer';
 
 interface route {
   [name: string]: {
@@ -102,7 +102,7 @@ export const AppRoute: React.FC = () => {
       <AuthRoute
         exact
         path={routes.buyComplete.path}
-        component={BuyCompletePage}
+        component={BuyCompleteContainer}
       />
       <AuthRoute
         exact

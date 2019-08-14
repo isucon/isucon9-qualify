@@ -81,6 +81,10 @@ class ItemPage extends React.Component<Props> {
   render() {
     const { classes, item, loading, viewer } = this.props;
 
+    if (loading) {
+      return <LoadingComponent />;
+    }
+
     let onClick: (e: React.MouseEvent) => void = this._onClickBuyButton;
     let buttonText: string = '購入';
     let disableButton: boolean = false;
@@ -113,88 +117,80 @@ class ItemPage extends React.Component<Props> {
 
     return (
       <BasePageContainer>
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <React.Fragment>
-            Item Page
-            <Typography className={classes.title} variant="h3">
-              {item.name}
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item>
-                <img
-                  className={classes.itemImage}
-                  alt={item.name}
-                  src={item.thumbnailUrl}
-                />
-              </Grid>
-              <Grid item xs={12} sm container>
-                <Grid item xs container direction="column" spacing={2}>
-                  <Grid item xs>
-                    <div className={classes.descSection}>
-                      <Typography variant="h4">商品説明</Typography>
-                      <Divider className={classes.divider} variant="middle" />
-                      <Typography variant="body1">
-                        {item.description}
-                      </Typography>
-                    </div>
+        Item Page
+        <Typography className={classes.title} variant="h3">
+          {item.name}
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item>
+            <img
+              className={classes.itemImage}
+              alt={item.name}
+              src={item.thumbnailUrl}
+            />
+          </Grid>
+          <Grid item xs={12} sm container>
+            <Grid item xs container direction="column" spacing={2}>
+              <Grid item xs>
+                <div className={classes.descSection}>
+                  <Typography variant="h4">商品説明</Typography>
+                  <Divider className={classes.divider} variant="middle" />
+                  <Typography variant="body1">{item.description}</Typography>
+                </div>
 
-                    <div className={classes.descSection}>
-                      <Typography variant="h4">カテゴリ</Typography>
-                      <Divider className={classes.divider} variant="middle" />
-                      <Typography variant="body1">
-                        <Link
-                          to={routes.categoryTimeline.getPath(
-                            item.category.parentId,
-                          )}
-                        >
-                          {item.category.parentCategoryName}
-                        </Link>{' '}
-                        > {item.category.categoryName}
-                      </Typography>
-                    </div>
+                <div className={classes.descSection}>
+                  <Typography variant="h4">カテゴリ</Typography>
+                  <Divider className={classes.divider} variant="middle" />
+                  <Typography variant="body1">
+                    <Link
+                      to={routes.categoryTimeline.getPath(
+                        item.category.parentId,
+                      )}
+                    >
+                      {item.category.parentCategoryName}
+                    </Link>{' '}
+                    > {item.category.categoryName}
+                  </Typography>
+                </div>
 
-                    <div className={classes.descSection}>
-                      <Typography variant="h4">出品者</Typography>
-                      <Divider className={classes.divider} variant="middle" />
-                      <Grid
-                        container
-                        direction="row"
-                        justify="center"
-                        alignItems="center"
-                        wrap="nowrap"
-                        spacing={2}
+                <div className={classes.descSection}>
+                  <Typography variant="h4">出品者</Typography>
+                  <Divider className={classes.divider} variant="middle" />
+                  <Grid
+                    container
+                    direction="row"
+                    justify="center"
+                    alignItems="center"
+                    wrap="nowrap"
+                    spacing={2}
+                  >
+                    <Grid item>
+                      <RouteLink
+                        className={classes.link}
+                        to={routes.user.getPath(item.sellerId)}
                       >
-                        <Grid item>
-                          <RouteLink
-                            className={classes.link}
-                            to={routes.user.getPath(item.sellerId)}
-                          >
-                            <Avatar className={classes.avatar}>
-                              {item.seller.accountName.charAt(0)}
-                            </Avatar>
-                          </RouteLink>
-                        </Grid>
-                        <Grid item xs>
-                          <Typography variant="body1">
-                            {item.seller.accountName}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </div>
+                        <Avatar className={classes.avatar}>
+                          {item.seller.accountName.charAt(0)}
+                        </Avatar>
+                      </RouteLink>
+                    </Grid>
+                    <Grid item xs>
+                      <Typography variant="body1">
+                        {item.seller.accountName}
+                      </Typography>
+                    </Grid>
                   </Grid>
-                </Grid>
+                </div>
               </Grid>
             </Grid>
-            <ItemFooterComponent
-              price={item.price}
-              onClick={onClick}
-              buttonText={buttonText}
-              disabled={disableButton}
-            />
-          </React.Fragment>
-        )}
+          </Grid>
+        </Grid>
+        <ItemFooterComponent
+          price={item.price}
+          onClick={onClick}
+          buttonText={buttonText}
+          disabled={disableButton}
+        />
       </BasePageContainer>
     );
   }
