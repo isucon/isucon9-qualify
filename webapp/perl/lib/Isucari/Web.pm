@@ -833,7 +833,7 @@ post '/ship' => [qw/allow_json_request/] => sub {
 
     my $seller = $self->getUser($c);
     if (!$seller) {
-        return $self->error_with_msg($c, 404, 'user not found');
+        return $self->error_with_msg($c, HTTP_NOT_FOUND, 'user not found');
     }
 
     my $transaction_evidence = $self->dbh->select_row(
@@ -911,12 +911,12 @@ post '/ship_done' => [qw/allow_json_request/] => sub {
     my $item_id    = $c->req->body_parameters->get('item_id') // "";
 
     if ($csrf_token ne $self->getCSRFToken($c)) {
-        return $self->error_with_msg($c, 422, 'csrf token error');
+        return $self->error_with_msg($c, HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
     }
 
     my $seller = $self->getUser($c);
     if (!$seller) {
-        return $self->error_with_msg($c, 404, 'user not found');
+        return $self->error_with_msg($c, HTTP_NOT_FOUND, 'user not found');
     }
 
     my $transaction_evidence = $self->dbh->select_row(
@@ -924,10 +924,10 @@ post '/ship_done' => [qw/allow_json_request/] => sub {
         $item_id
     );
     if (!$transaction_evidence) {
-        return $self->error_with_msg($c, 404, 'transaction_evidences not found');
+        return $self->error_with_msg($c, HTTP_NOT_FOUND, 'transaction_evidences not found');
     }
     if ($transaction_evidence->{seller_id} != $seller->{id}) {
-        return $self->error_with_msg($c, 403, "権限がありません");
+        return $self->error_with_msg($c, HTTP_FORBIDDEN, "権限がありません");
     }
 
     my $dbh = $self->dbh;
@@ -1000,12 +1000,12 @@ post '/complete' => [qw/allow_json_request/] => sub {
     my $item_id    = $c->req->body_parameters->get('item_id') // "";
 
     if ($csrf_token ne $self->getCSRFToken($c)) {
-        return $self->error_with_msg($c, 422, 'csrf token error');
+        return $self->error_with_msg($c, HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
     }
 
     my $buyer = $self->getUser($c);
     if (!$buyer) {
-        return $self->error_with_msg($c, 404, 'user not found');
+        return $self->error_with_msg($c, HTTP_NOT_FOUND, 'user not found');
     }
 
     my $transaction_evidence = $self->dbh->select_row(
@@ -1094,7 +1094,7 @@ get '/transactions/{transaction_evidence_id}.png' => sub {
 
     my $seller = $self->getUser($c);
     if (!$seller) {
-        return $self->error_with_msg($c, 404, 'user not found');
+        return $self->error_with_msg($c, HTTP_NOT_FOUND, 'user not found');
     }
 
     my $transaction_evidence = $self->dbh->select_row(
@@ -1102,7 +1102,7 @@ get '/transactions/{transaction_evidence_id}.png' => sub {
         $transaction_evidence_id,
     );
     if (!$transaction_evidence) {
-        return $self->error_with_msg($c, HTTP_BAD_REQUEST, "transaction_evidence not found");
+        return $self->error_with_msg($c, HTTP_NOT_FOUND, "transaction_evidence not found");
     }
     if ($transaction_evidence->{seller_id} != $seller->{id}) {
         return $self->error_with_msg($c, HTTP_FORBIDDEN, '権限がありません');
@@ -1135,12 +1135,12 @@ post '/bump' => [qw/allow_json_request/] => sub {
     my $item_id    = $c->req->body_parameters->get('item_id') // "";
 
     if ($csrf_token ne $self->getCSRFToken($c)) {
-        return $self->error_with_msg($c, 422, 'csrf token error');
+        return $self->error_with_msg($c, HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
     }
 
     my $user = $self->getUser($c);
     if (!$user) {
-        return $self->error_with_msg($c, 404, 'user not found');
+        return $self->error_with_msg($c, HTTP_NOT_FOUND, 'user not found');
     }
 
     my $dbh = $self->dbh;
