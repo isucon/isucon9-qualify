@@ -68,7 +68,7 @@ sub shipment_request {
         die $res->code . ':' . $res->content;
     }
 
-    return JSON::decode_json($res->content);
+    return $res->content;
 }
 
 sub shipment_status {

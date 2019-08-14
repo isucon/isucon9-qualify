@@ -12,6 +12,7 @@ use Plack::Session;
 use Time::Moment;
 use File::Spec;
 use HTTP::Date qw//;
+use HTTP::Status qw/:constants/;
 use Crypt::Eksblowfish::Bcrypt qw/bcrypt/;
 use Crypt::OpenSSL::Random;
 use Digest::SHA;
@@ -198,11 +199,11 @@ get '/new_items.json' => sub {
     for my $item (@$items) {
         my $seller = $self->getUserSimpleByID($item->{seller_id});
         if (!$seller) {
-            $c->halt(404,"seller not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "seller not found"); #XXX
         }
         my $category = $self->getCategoryByID($item->{category_id});
 		if (!$category) {
-            $c->halt(404,"category not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "category not found"); #XXX
 		}
         push @item_simples, +{
             id => number $item->{id},
@@ -238,7 +239,7 @@ get '/new_items/{root_category_id}.json' => sub {
 
     my $root_category = $self->getCategoryByID($root_category_id);
     if (!$root_category) {
-        $c->halt(404,"root category not found"); #XXX
+        $c->halt(HTTP_NOT_FOUND, "root category not found"); #XXX
     }
 
     my $categories = $self->dbh->select_all('SELECT id FROM `categories` WHERE parent_id=?', $root_category_id);
@@ -270,11 +271,11 @@ get '/new_items/{root_category_id}.json' => sub {
     for my $item (@$items) {
         my $seller = $self->getUserSimpleByID($item->{seller_id});
         if (!$seller) {
-            $c->halt(404,"seller not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "seller not found"); #XXX
         }
         my $category = $self->getCategoryByID($item->{category_id});
 		if (!$category) {
-            $c->halt(404,"category not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "category not found"); #XXX
 		}
         push @item_simples, +{
             id => number $item->{id},
@@ -312,7 +313,7 @@ get '/users/{user_id}.json' => sub {
 
     my $user_simple = $self->getUserSimpleByID($user_id);
     if (!$user_simple) {
-        $c->halt(404,'user not found'); #XXX
+        $c->halt(HTTP_NOT_FOUND, 'user not found'); #XXX
     }
 
     my $items = [];
@@ -341,11 +342,11 @@ get '/users/{user_id}.json' => sub {
     for my $item (@$items) {
         my $seller = $self->getUserSimpleByID($item->{seller_id});
         if (!$seller) {
-            $c->halt(404,"seller not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "seller not found"); #XXX
         }
         my $category = $self->getCategoryByID($item->{category_id});
 		if (!$category) {
-            $c->halt(404,"category not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "category not found"); #XXX
 		}
         push @item_simples, +{
             id => number $item->{id},
@@ -378,7 +379,7 @@ get '/users/transactions.json' => sub {
     my ($self, $c) = @_;
     my $user = $self->getUser($c);
     if (!$user) {
-        $c->halt(404, 'user not found');
+        $c->halt(HTTP_NOT_FOUND, 'user not found');
     }
     my $item_id = $c->req->parameters->get('item_id');
     my $created_at = $c->req->parameters->get('created_at');
@@ -420,11 +421,11 @@ get '/users/transactions.json' => sub {
     for my $item (@$items) {
         my $seller = $self->getUserSimpleByID($item->{seller_id});
         if (!$seller) {
-            $c->halt(404,"seller not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "seller not found"); #XXX
         }
         my $category = $self->getCategoryByID($item->{category_id});
         if (!$category) {
-            $c->halt(404,"category not found"); #XXX
+            $c->halt(HTTP_NOT_FOUND, "category not found"); #XXX
         }
 
         my $item_detail = +{
@@ -448,7 +449,7 @@ get '/users/transactions.json' => sub {
         if ($item->{buyer_id} != 0) {
             my $buyer = $self->getUserSimpleByID($item->{buyer_id});
             if (!$buyer) {
-                $c->halt(404, 'buyer not found'); # XXX
+                $c->halt(HTTP_NOT_FOUND, 'buyer not found'); # XXX
             }
             $item_detail->{buyer_id} = number $item->{buyer_id};
             $item_detail->{buyer} = $buyer;
@@ -465,7 +466,7 @@ get '/users/transactions.json' => sub {
                 $transaction_evidence->{id}
             );
             if (!$shipping) {
-                $c->halt(404,'shipping not found'); #XXX
+                $c->halt(HTTP_NOT_FOUND, 'shipping not found'); #XXX
             }
 
             my $ssr = eval {
@@ -475,7 +476,7 @@ get '/users/transactions.json' => sub {
                 my $msg = $@;
                 $msg =~ s/\n/ /gms;
                 warn $msg;
-                $c->halt(500, "failed to request to shipment service"); #XXX
+                $c->halt(HTTP_INTERNAL_SERVER_ERROR, "failed to request to shipment service"); #XXX
             }
 
             $item_detail->{transaction_evidence_id} = numner $transaction_evidence->{id};
@@ -507,21 +508,21 @@ get '/items/{item_id}.json' => sub {
 
     my $user = $self->getUser($c);
     if (!$user) {
-        $c->halt(404, 'user not found');
+        $c->halt(HTTP_NOT_FOUND, 'user not found');
     }
 
     my $item = $self->dbh->select_row('SELECT * FROM `items` WHERE `id` = ?', $item_id);
     if (!$item) {
-        $c->halt(404, 'item not found');
+        $c->halt(HTTP_NOT_FOUND, 'item not found');
     }
 
     my $seller = $self->getUserSimpleByID($item->{seller_id});
     if (!$seller) {
-        $c->halt(404,"seller not found"); #XXX
+        $c->halt(HTTP_NOT_FOUND,"seller not found"); #XXX
     }
     my $category = $self->getCategoryByID($item->{category_id});
     if (!$category) {
-        $c->halt(404,"category not found"); #XXX
+        $c->halt(HTTP_NOT_FOUND, "category not found"); #XXX
     }
 
     my $item_detail = +{
@@ -546,7 +547,7 @@ get '/items/{item_id}.json' => sub {
     if (($user->{id} == $item->{seller_id} || $user->{id} == $item->{buyer_id}) && $item->{buyer_id} != 0) {
         my $buyer = $self->getUserSimpleByID($item->{buyer_id});
         if (!$buyer) {
-            $c->halt(404, 'buyer not found'); # XXX
+            $c->halt(HTTP_NOT_FOUND, 'buyer not found'); # XXX
         }
         $item_detail->{buyer_id} = $item->{buyer_id};
         $item_detail->{buyer} = $buyer;
@@ -562,7 +563,7 @@ get '/items/{item_id}.json' => sub {
                 $transaction_evidence->{id}
             );
             if (!$shipping) {
-                $c->halt(404,'shipping not found'); #XXX
+                $c->halt(HTTP_NOT_FOUND,'shipping not found'); #XXX
             }
 
             $item_detail->{transaction_evidence_id} = number $transaction_evidence->{id};
@@ -579,29 +580,29 @@ get '/items/{item_id}.json' => sub {
 post '/items/edit' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
 
-    my $csrf_token = $c->req->body_parameters->get('csrf_token');
-	my $item_id    = $c->req->body_parameters->get('item_id');
-	my $price      = $c->req->body_parameters->get('price');
+    my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
+	my $item_id    = $c->req->body_parameters->get('item_id') // "";
+	my $price      = $c->req->body_parameters->get('price') // 0;
 
-    if $csrf_token ne $self->getCSRFToken($c) {
-        $c->halt(422, 'csrf token error');
+    if ($csrf_token ne $self->getCSRFToken($c)) {
+        $c->halt(HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
     }
 
     if ($price < $ITEM_MIN_PRICE || $price > $ITEM_MAX_PRICE) {
-        $c->halt(400, $ITEM_PRICE_ERRMSG);
+        $c->halt(HTTP_BAD_REQUEST, $ITEM_PRICE_ERRMSG);
 	}
 
     my $seller = $self->getUser($c);
-    if (!$user) {
-        $c->halt(404, 'user not found');
+    if (!$seller) {
+        $c->halt(HTTP_NOT_FOUND, 'user not found');
     }
 
     my $target_item = $self->dbh->select_row('SELECT * FROM `items` WHERE `id` = ?', $item_id);
     if (!$target_item) {
-        $c->halt(404, 'item not found');
+        $c->halt(HTTP_NOT_FOUND, 'item not found');
     }
     if ($target_item->{seller_id} != $seller->{id}) {
-        $c->halt(403, "自分の商品以外は編集できません");
+        $c->halt(HTTP_FORBIDDEN, "自分の商品以外は編集できません");
     }
 
     my $dbh = $self->dbh;
@@ -609,7 +610,7 @@ post '/items/edit' => [qw/allow_json_request/] => sub {
     $target_item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
 
     if ($target_item->{status} ne $ITEM_STATUS_ON_SALE) {
-        $c->halt(403, "販売中の商品以外編集できません");
+        $c->halt(HTTP_FORBIDDEN, "販売中の商品以外編集できません");
 	}
 
     $dbh->query(
@@ -634,21 +635,21 @@ post '/items/edit' => [qw/allow_json_request/] => sub {
 # postBuy
 post '/buy' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
-    my $csrf_token = $c->req->body_parameters->get('csrf_token');
-    my $item_id    = $c->req->body_parameters->get('item_id');
-    my $token    = $c->req->body_parameters->get('token');
+    my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
+    my $item_id    = $c->req->body_parameters->get('item_id') // "";
+    my $token    = $c->req->body_parameters->get('token') // "";
 
     if ($csrf_token ne $self->getCSRFToken($c)) {
-        $c->halt(422, 'csrf token error');
+        $c->halt(HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
     }
 
     if (!$token) {
-        $c->halt(400, 'token error');
+        $c->halt(HTTP_BAD_REQUEST, 'token error');
     }
 
     my $buyer = $self->getUser($c);
     if (!$buyer) {
-        $c->halt(404, 'user not found');
+        $c->halt(HTTP_NOT_FOUND, 'user not found');
     }
 
     my $dbh = $self->dbh;
@@ -656,23 +657,23 @@ post '/buy' => [qw/allow_json_request/] => sub {
 
     my $target_item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
     if (!$target_item) {
-        $c->halt(404, 'item not found');
+        $c->halt(HTTP_NOT_FOUND, 'item not found');
     }
     if ($target_item->{status} ne $ITEM_STATUS_ON_SALE) {
-        $c->halt(403, "item is not for sale");
+        $c->halt(HTTP_FORBIDDEN, "item is not for sale");
 	}
     if ($target_item->{seller_id} == $buyer->{id}) {
-        $c->halt(403, "自分の商品は買えません")
+        $c->halt(HTTP_FORBIDDEN, "自分の商品は買えません")
     }
 
     my $seller = $dbh->select_row('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', $target_item->{seller_id});
     if (!$seller) {
-        $c->halt(404, 'seller not found');
+        $c->halt(HTTP_NOT_FOUND, 'seller not found');
     }
 
     my $category = $self->getCategoryByID($target_item->{category_id});
     if (!$category) {
-        $c->halt(404, 'category id error');
+        $c->halt(HTTP_NOT_FOUND, 'category id error');
     }
 
     $dbh->query(
@@ -707,7 +708,7 @@ post '/buy' => [qw/allow_json_request/] => sub {
         });
     };
     if ($@) {
-        $c->halt(500, "failed to request to shipment service");
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, "failed to request to shipment service");
     }
 
     my $pstr = eval {
@@ -719,19 +720,19 @@ post '/buy' => [qw/allow_json_request/] => sub {
         })
     };
     if ($@) {
-        $c->halt(500, "payment service is failed");
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, "payment service is failed");
     }
 
     if ($pstr->{status} eq "invalid") {
-        $c->halt(400, "カード情報に誤りがあります");
+        $c->halt(HTTP_BAD_REQUEST, "カード情報に誤りがあります");
 	}
 
 	if ($pstr->{status} eq "fail") {
-        $c->halt(400, "カードの残高が足りません");
+        $c->halt(HTTP_BAD_REQUEST, "カードの残高が足りません");
 	}
 
 	if ($pstr->{status} ne "ok") {
-        $c->halt(400, "想定外のエラー");
+        $c->halt(HTTP_BAD_REQUEST, "想定外のエラー");
 	}
 
     $dbh->query(
@@ -758,43 +759,461 @@ post '/buy' => [qw/allow_json_request/] => sub {
 # postSell
 post '/sell' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+    my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
+    my $name    = $c->req->body_parameters->get('name') // "";
+    my $price    = $c->req->body_parameters->get('price') // 0;
+    my $description    = $c->req->body_parameters->get('description') // "";
+    my $category_id    = $c->req->body_parameters->get('category_id') // 0;
+
+    if ($csrf_token ne $self->getCSRFToken($c)) {
+        $c->halt(HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
+    }
+
+    if ($name eq "" || $description eq "" || $price == 0 || $category_id == 0) {
+        $c->halt(HTTP_BAD_REQUEST, "all parameters are required");
+	}
+
+    if ($price < $ITEM_MIN_PRICE || $price > $ITEM_MAX_PRICE) {
+        $c->halt(HTTP_BAD_REQUEST, $ITEM_PRICE_ERRMSG);
+	}
+
+    my $category = $self->getCategoryByID($category_id);
+    if (!$category) {
+        $c->halt(HTTP_BAD_REQUEST, "incorrect category id");
+    }
+
+    my $user = $self->getUser($c);
+    if (!$user) {
+        $c->halt(HTTP_NOT_FOUND, 'user not found');
+    }
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+
+    my $seller = $dbh->select_row('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', $user->{id});
+    if (!$seller) {
+        $c->halt(HTTP_NOT_FOUND, 'seller not found');
+    }
+
+    $dbh->query(
+        'INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)',
+        $seller->{id},
+        $ITEM_STATUS_ON_SALE,
+        $name,
+        $price,
+        $description,
+        $category->{id},
+    );
+    my $item_id = $dbh->last_insert_id();
+
+    $dbh->query(
+        'UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?',
+        $seller->{num_sell_items} + 1,
+        mysql_datetime_from_unix(time),
+        $seller->{id},
+    );
+
+    $txn->commit();
+
+    $c->render_json({id => $item_id});
 };
 
 # postShip
 post '/ship' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+    my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
+    my $item_id    = $c->req->body_parameters->get('item_id') // "";
+
+    if ($csrf_token ne $self->getCSRFToken($c)) {
+        $c->halt(HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
+    }
+
+    my $seller = $self->getUser($c);
+    if (!$seller) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $transaction_evidence = $self->dbh->select_row(
+        'SELECT * FROM `transaction_evidences` WHERE `item_id` = ?',
+        $item_id,
+    );
+    if (!$transaction_evidence) {
+        $c->halt(HTTP_NOT_FOUND, "transaction_evidences not found");
+    }
+
+    if ($transaction_evidence->{seller_id} != $seller->{id}) {
+        $c->halt(HTTP_FORBIDDEN, '権限がありません');
+    }
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+
+    my $item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
+    if (!$item_id) {
+        $c->halt(HTTP_NOT_FOUND, 'item not found');
+    }
+    if ($item->{status} ne $ITEM_STATUS_TRADING) {
+        $c->halt(HTTP_FORBIDDEN, "商品が取引中ではありません");
+    }
+
+    my $target_transaction_evidence = $dbh->select_row(
+        'SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE',
+        $transaction_evidence->{id}
+    );
+    if (!$target_transaction_evidence) {
+        $c->halt(HTTP_NOT_FOUND, 'transaction_evidences not found');
+    }
+    if ($target_transaction_evidence->{status} ne $TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING) {
+        $c->halt(HTTP_FORBIDDEN, "準備ができていません");
+    }
+
+    my $shipping = $dbh->select_row(
+        'SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE',
+        $target_transaction_evidence->{id},
+    );
+    if (!$shipping) {
+        $c->halt(HTTP_NOT_FOUND, 'shipping not found');
+    }
+
+    my $img_binary = eval {
+        $self->api_client->shipment_request(
+            "http://localhost:7000",
+            {reserve_id => $shipping->{reserve_id}}
+            );
+    };
+    if ($@) {
+        warn $@;
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, 'failed to request to shipment service');
+    }
+
+    $dbh->query(
+        'UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?',
+        $SHIPPINGS_STATUS_WAIT_PICKUP,
+        $img_binary,
+        mysql_datetime_from_unix(time),
+        $target_transaction_evidence->{id},
+    );
+
+    $txn->commit();
+
+    $c->render_json({
+        path => sprintf('/transactions/%d.png', $target_transaction_evidence->{id})
+    })
 };
 
 # postShipDone
 post '/ship_done' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+    my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
+    my $item_id    = $c->req->body_parameters->get('item_id') // "";
+
+    if ($csrf_token ne $self->getCSRFToken($c)) {
+        $c->halt(422, 'csrf token error');
+    }
+
+    my $seller = $self->getUser($c);
+    if (!$seller) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $transaction_evidence = $self->dbh->select_row(
+        'SELECT * FROM `transaction_evidences` WHERE `item_id` = ?',
+        $item_id
+    );
+    if (!$transaction_evidence) {
+        $c->halt(404, 'transaction_evidences not found');
+    }
+    if ($transaction_evidence->{seller_id} != $seller->{id}) {
+        $c->halt(403, "権限がありません");
+    }
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+
+    my $item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
+    if (!$item_id) {
+        $c->halt(HTTP_NOT_FOUND, 'item not found');
+    }
+    if ($item->{status} ne $ITEM_STATUS_TRADING) {
+        $c->halt(HTTP_FORBIDDEN, "商品が取引中ではありません");
+    }
+
+    my $target_transaction_evidence = $dbh->select_row(
+        'SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE',
+        $transaction_evidence->{id}
+    );
+    if (!$target_transaction_evidence) {
+        $c->halt(HTTP_NOT_FOUND, 'transaction_evidences not found');
+    }
+    if ($target_transaction_evidence->{status} ne $TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING) {
+        $c->halt(HTTP_FORBIDDEN, "準備ができていません");
+    }
+
+    my $shipping = $dbh->select_row(
+        'SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE',
+        $target_transaction_evidence->{id},
+    );
+    if (!$shipping) {
+        $c->halt(HTTP_NOT_FOUND, 'shipping not found');
+    }
+
+    my $ssr = eval {
+        $self->api_client->shipping_status(
+            "http://localhost:7000",
+            {reserve_id => $shipping->{reserve_id}},
+        )
+    };
+    if ($@) {
+        warn $@;
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, "failed to request to shipment service");
+    }
+    if (!($ssr->{status} eq $SHIPPINGS_STATUS_SHIPPING || $ssr->{status} eq $SHIPPINGS_STATUS_DONE)) {
+        $c->halt(HTTP_FORBIDDEN, 'shipment service側で配送中か配送完了になっていません');
+    }
+
+    my $now = time;
+    $dbh->query(
+        'UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?',
+        $ssr->{status},
+        mysql_datetime_from_unix($now),
+        $target_transaction_evidence->{id},
+    );
+
+    $dbh->query(
+        'UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?',
+        $TRANSACTION_EVIDENCE_STATUS_WAIT_DONE,
+        mysql_datetime_from_unix($now),
+        $target_transaction_evidence->{id},
+    );
+
+    $txn->commit();
+    $c->render_json({transaction_evidence_id => $target_transaction_evidence->{id}})
 };
 
 # postComplete
 post '/complete' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+    my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
+    my $item_id    = $c->req->body_parameters->get('item_id') // "";
+
+    if ($csrf_token ne $self->getCSRFToken($c)) {
+        $c->halt(422, 'csrf token error');
+    }
+
+    my $buyer = $self->getUser($c);
+    if (!$buyer) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $transaction_evidence = $self->dbh->select_row(
+        'SELECT * FROM `transaction_evidences` WHERE `item_id` = ?',
+        $item_id,
+    );
+    if (!$transaction_evidence) {
+        $c->halt(HTTP_BAD_REQUEST, "transaction_evidence not found");
+    }
+    if ($transaction_evidence->{buyer_id} != $buyer->{id}) {
+        $c->halt(HTTP_FORBIDDEN, '権限がありません');
+    }
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+
+    my $item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
+    if (!$item_id) {
+        $c->halt(HTTP_NOT_FOUND, 'item not found');
+    }
+    if ($item->{status} ne $ITEM_STATUS_TRADING) {
+        $c->halt(HTTP_FORBIDDEN, "商品が取引中ではありません");
+    }
+
+    my $target_transaction_evidence = $dbh->select_row(
+        'SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE',
+        $transaction_evidence->{id}
+    );
+    if (!$target_transaction_evidence) {
+        $c->halt(HTTP_NOT_FOUND, 'transaction_evidences not found');
+    }
+    if ($target_transaction_evidence->{status} ne $TRANSACTION_EVIDENCE_STATUS_WAIT_DONE) {
+        $c->halt(HTTP_FORBIDDEN, "準備ができていません");
+    }
+
+    my $shipping = $dbh->select_row(
+        'SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE',
+        $target_transaction_evidence->{id},
+    );
+    if (!$shipping) {
+        $c->halt(HTTP_NOT_FOUND, 'shipping not found');
+    }
+
+    my $ssr = eval {
+        $self->api_client->shipping_status(
+            "http://localhost:7000",
+            {reserve_id => $shipping->{reserve_id}},
+        );
+    };
+    if ($@) {
+        warn $@;
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, 'failed to request to shipment service');
+    }
+    if (!($ssr->{status} eq $SHIPPINGS_STATUS_DONE)) {
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, "shipment service側で配送完了になっていません");
+    }
+
+    my $now = time;
+    $dbh->query(
+        'UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?',
+        $SHIPPINGS_STATUS_DONE,
+        mysql_datetime_from_unix($now),
+        $target_transaction_evidence->{id},
+    );
+    $dbh->query(
+        'UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?',
+        $TRANSACTION_EVIDENCE_STATUS_DONE,
+        mysql_datetime_from_unix($now),
+        $target_transaction_evidence->{id},
+    );
+    $dbh->query(
+        'UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?',
+        $ITEM_STATUS_SOLD_OUT,
+        mysql_datetime_from_unix($now),
+        $item->{id}
+    );
+
+    $txn->commit();
+    $c->render_json({transaction_evidence_id => $target_transaction_evidence->{id}});
 };
 
 # getQRCode
 get '/transactions/{transaction_evidence_id}.png' => sub {
     my ($self, $c) = @_;
+    my $transaction_evidence_id = $c->args->{transaction_evidence_id};
+
+    my $seller = $self->getUser($c);
+    if (!$seller) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $transaction_evidence = $self->dbh->select_row(
+        'SELECT * FROM `transaction_evidences` WHERE `id` = ?',
+        $transaction_evidence_id,
+    );
+    if (!$transaction_evidence) {
+        $c->halt(HTTP_BAD_REQUEST, "transaction_evidence not found");
+    }
+    if ($transaction_evidence->{seller_id} != $seller->{id}) {
+        $c->halt(HTTP_FORBIDDEN, '権限がありません');
+    }
+
+    my $shipping = $self->dbh->select_row(
+        'SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?',
+        $transaction_evidence->{id},
+    );
+    if (!$shipping) {
+        $c->halt(HTTP_NOT_FOUND, 'shippings not found');
+    }
+
+    if ($shipping->{status} ne $SHIPPINGS_STATUS_WAIT_PICKUP && $shipping->{status} ne $SHIPPINGS_STATUS_SHIPPING) {
+        $c->halt(HTTP_FORBIDDEN, 'qrcode not available');
+    }
+
+    if (length($shipping->{img_binary}) == 0) {
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, 'empty qrcode image');
+    }
+
+    $c->res->content_type('image/png');
+    return $shipping->{img_binary};
 };
 
 # postBump
 post '/bump' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
+    my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
+    my $item_id    = $c->req->body_parameters->get('item_id') // "";
+
+    if ($csrf_token ne $self->getCSRFToken($c)) {
+        $c->halt(422, 'csrf token error');
+    }
+
+    my $user = $self->getUser($c);
+    if (!$user) {
+        $c->halt(404, 'user not found');
+    }
+
+    my $dbh = $self->dbh;
+    my $txn = $dbh->txn_scope();
+
+    my $target_item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', $item_id);
+    if (!$target_item) {
+        $c->halt(HTTP_NOT_FOUND, 'item not found');
+    }
+    if ($target_item->{seller_id} != $user->{id}) {
+        $c->halt(HTTP_FORBIDDEN, '自分の商品以外は編集できません');
+    }
+
+    my $seller = $dbh->select_row('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', $user->{id});
+    if (!$seller) {
+        $c->halt(HTTP_NOT_FOUND, 'user not found');
+    }
+
+    my $now = time;
+    if (unix_from_mysql_datetime($seller->{last_bump}) + $BUMP_CHARGE_SECONDS > $now) {
+        $c->halt(HTTP_BAD_REQUEST, 'Bump not allowed')
+    }
+
+    $dbh->query(
+        'UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?',
+        mysql_datetime_from_unix($now),
+        mysql_datetime_from_unix($now),
+        $target_item->{id},
+    );
+
+    $dbh->query(
+        'UPDATE `users` SET `last_bump`=? WHERE id=?',
+        mysql_datetime_from_unix($now),
+        $seller->{id},
+    );
+
+    my $item = $dbh->select_row('SELECT * FROM `items` WHERE `id` = ?', $target_item->{id});
+
+    $txn->commit();
+    $c->render_json({
+        item_id => $item->{id},
+        item_price => $item->{price},
+        item_created_at => unix_from_mysql_datetime($item->{created_at}),
+        item_updated_at => unix_from_mysql_datetime($item->{updated_at}),
+    });
 };
 
 # getSettings
 get '/settings' => sub {
     my ($self, $c) = @_;
+
+    my $response = {};
+    my $user = $self->getUser($c);
+    if (!$user) {
+        $response->{user} = {
+            id => $user->{id},
+            account_name => $user->{account_name},
+            address => $user->{address},
+            num_sell_items => $user->{num_sell_items},
+        };
+    }
+
+    my $csrf_token = $self->getCSRFToken($c);
+    $response->{csrf_token} = $csrf_token;
+
+    my $categories = $self->dbh->select_all('SELECT * FROM `categories`');
+    $response->{categories} = $categories;
+
+    $c->render_json($response);
 };
 
 # postLogin
 post '/login' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
-    my $account_name = $c->req->body_parameters->get('account_name');
-    my $password = $c->req->body_parameters->get('password');
+    my $account_name = $c->req->body_parameters->get('account_name') // "";
+    my $password = $c->req->body_parameters->get('password') // "";
 
     if (!$account_name || !$password) {
         $c->halt(400,'all parameters are required'); #XXX
@@ -831,9 +1250,31 @@ post '/login' => [qw/allow_json_request/] => sub {
 # postRegister
 post '/register' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
-};
 
-# XXX mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
+    my $account_name = $c->req->body_parameters->get('account_name') // "";
+    my $address = $c->req->body_parameters->get('address') // "";
+    my $password = $c->req->body_parameters->get('password') // "";
+
+    if ($account_name eq "" || $password eq "" || $address eq "") {
+        $c->halt(HTTP_INTERNAL_SERVER_ERROR, 'all parameters are required');
+    }
+
+    my $hashed_password = encrypt_password($password);
+
+    $self->dbh->query(
+        'INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)',
+        $account_name,
+        $hashed_password,
+        $address,
+    );
+    my $user_id = $self->dbh->last_insert_id();
+
+    $c->render_json({
+        id => $user_id,
+        account_name => $account_name,
+        Address => $address
+    });
+};
 
 
 1;
