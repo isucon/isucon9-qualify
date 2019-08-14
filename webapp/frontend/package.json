@@ -29,7 +29,7 @@
     "deploy:clean": "node ./tool/clean.js",
     "deploy:copy": "cp -r build/* ../public/",
     "deploy": "npm run build && npm run deploy:clean && npm run deploy:copy",
-    "fix": "prettier --write ./src/**/*.{ts,tsx}",
+    "fix": "prettier --write './src/**/*.{ts,tsx}'",
     "lint": "npm run fix && eslint",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
