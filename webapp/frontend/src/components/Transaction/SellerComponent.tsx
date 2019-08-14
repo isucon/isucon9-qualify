@@ -2,7 +2,6 @@ import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import { TransactionStatus } from '../../dataObjects/transaction';
 import { ShippingStatus } from '../../dataObjects/shipping';
-import { Typography } from '@material-ui/core';
 import Initial from './Seller/Initial';
 import WaitShipping from './Seller/WaitShipping';
 import WaitDone from './Seller/WaitDone';
@@ -20,11 +19,17 @@ const useStyles = makeStyles(theme => ({
 }));
 
 type Props = {
+  itemId: number;
+  transactionEvidenceId: number;
+  postShipped: (itemId: number) => void;
   transactionStatus: TransactionStatus;
   shippingStatus: ShippingStatus;
 };
 
 const SellerComponent: React.FC<Props> = ({
+  itemId,
+  transactionEvidenceId,
+  postShipped,
   transactionStatus,
   shippingStatus,
 }) => {
@@ -34,14 +39,18 @@ const SellerComponent: React.FC<Props> = ({
     return <Initial />;
   }
 
-  /**
   if (
     shippingStatus === 'wait_pickup' &&
     transactionStatus === 'wait_shipping'
   ) {
-    return <WaitShipping qrCodeUrl={'test'} postShipped={() => {}} />;
+    return (
+      <WaitShipping
+        itemId={itemId}
+        transactionEvidenceId={transactionEvidenceId}
+        postShipped={postShipped}
+      />
+    );
   }
-   */
 
   if (transactionStatus === 'wait_done') {
     return <WaitDone />;
