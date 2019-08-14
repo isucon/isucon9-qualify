@@ -301,6 +301,7 @@ func main() {
 
 	mux := goji.NewMux()
 
+	// API
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
 	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
