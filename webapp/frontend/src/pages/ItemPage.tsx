@@ -90,7 +90,7 @@ class ItemPage extends React.Component<Props> {
     let disableButton: boolean = false;
 
     // 自分の商品で出品中なら編集画面へ遷移
-    if (viewer.userId === item.sellerId && item.status !== 'on_sale') {
+    if (viewer.userId === item.sellerId && item.status === 'on_sale') {
       onClick = this._onClickItemEditButton;
       buttonText = '商品編集';
     }
