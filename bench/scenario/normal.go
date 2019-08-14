@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -12,6 +13,8 @@ const (
 	CorrectCardNumber = "AAAAAAAA"
 	FailedCardNumber  = "FA10AAAA"
 	IsucariShopID     = "11"
+
+	ItemsPerPage = 48
 )
 
 func sellAndBuy(user1, user2 asset.AppUser) error {
@@ -101,7 +104,7 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	return nil
 }
 
-func bump(user1, user2 asset.AppUser) error {
+func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
 		return err
@@ -140,9 +143,31 @@ func bump(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	err = s1.Bump(asset.Items[user1.ID][0].ID)
+	_, err = s1.Bump(asset.GetUserItemsFirst(user1.ID))
 	if err != nil {
 		return err
+	}
+
+	hasNext, items, err := s2.NewItems()
+	if err != nil {
+		return err
+	}
+
+	if !hasNext {
+		return fails.NewError(nil, "/new_items.jsonのhas_nextがfalseです")
+	}
+
+	if len(items) != ItemsPerPage-1 {
+		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", ItemsPerPage-1, len(items)))
+	}
+
+	// 簡易チェック
+	createdAt := items[0].CreatedAt
+	for _, item := range items {
+		if createdAt < item.CreatedAt {
+			return fails.NewError(nil, "/new_items.jsonはcreated_at順である必要があります")
+		}
+		createdAt = item.CreatedAt
 	}
 
 	return nil
