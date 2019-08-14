@@ -5,14 +5,13 @@ import Grid from '@material-ui/core/Grid';
 import Divider from '@material-ui/core/Divider';
 import Avatar from '@material-ui/core/Avatar';
 import { Link, Link as RouteLink, RouteComponentProps } from 'react-router-dom';
-import AppBar from '@material-ui/core/AppBar';
-import Button from '@material-ui/core/Button';
 import { routes } from '../routes/Route';
 import { StyleRules } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import BasePageContainer from '../containers/BasePageContainer';
 import LoadingComponent from '../components/LoadingComponent';
+import ItemFooterComponent from '../components/ItemFooterComponent';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
@@ -37,13 +36,6 @@ const styles = (theme: Theme): StyleRules =>
     },
     link: {
       textDecoration: 'none',
-    },
-    appBar: {
-      top: 'auto',
-      bottom: 0,
-    },
-    buyButton: {
-      margin: theme.spacing(1),
     },
   });
 
@@ -150,22 +142,11 @@ class ItemPage extends React.Component<Props> {
                 </Grid>
               </Grid>
             </Grid>
-            <AppBar color="primary" position="fixed" className={classes.appBar}>
-              <Grid container spacing={2} direction="row" alignItems="center">
-                <Grid item>
-                  <Typography variant="h5">{item.price}ｲｽｺｲﾝ</Typography>
-                </Grid>
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    className={classes.buyButton}
-                    onClick={this._onClickBuyButton}
-                  >
-                    購入
-                  </Button>
-                </Grid>
-              </Grid>
-            </AppBar>
+            <ItemFooterComponent
+              price={item.price}
+              onClick={this._onClickBuyButton}
+              buttonText={'購入'}
+            />
           </React.Fragment>
         )}
       </BasePageContainer>
