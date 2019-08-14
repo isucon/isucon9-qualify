@@ -31,7 +31,7 @@ const ItemComponent: React.FC<ItemComponentProps> = ({
       <RouteLink to={routes.item.getPath(itemId)}>
         <img className={classes.itemImage} src={imageUrl} alt={title} />
       </RouteLink>
-      <GridListTileBar title={title} subtitle={`¥${price}`} />
+      <GridListTileBar title={title} subtitle={`${price}ｲｽｺｲﾝ`} />
     </Card>
   );
 };

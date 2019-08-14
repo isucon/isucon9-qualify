@@ -153,7 +153,7 @@ class ItemPage extends React.Component<Props> {
             <AppBar color="primary" position="fixed" className={classes.appBar}>
               <Grid container spacing={2} direction="row" alignItems="center">
                 <Grid item>
-                  <Typography variant="h5">¥{item.price}</Typography>
+                  <Typography variant="h5">{item.price}ｲｽｺｲﾝ</Typography>
                 </Grid>
                 <Grid item>
                   <Button
