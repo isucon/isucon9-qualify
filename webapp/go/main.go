@@ -254,9 +254,7 @@ func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-}
 
-func readTopTemplate() {
 	templates = template.Must(template.ParseFiles(
 		"../public/index.html",
 	))
@@ -305,7 +303,7 @@ func main() {
 
 	mux := goji.NewMux()
 
-	mux.HandleFunc(pat.Get("/"), getTop)
+	// API
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
 	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
@@ -322,8 +320,22 @@ func main() {
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
+	// Frontend
+	mux.HandleFunc(pat.Get("/"), getIndex)
+	mux.HandleFunc(pat.Get("/login"), getIndex)
+	mux.HandleFunc(pat.Get("/register"), getIndex)
+	mux.HandleFunc(pat.Get("/timeline"), getIndex)
+	mux.HandleFunc(pat.Get("/categories/:category_id/items"), getIndex)
+	mux.HandleFunc(pat.Get("/sell"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id/buy"), getIndex)
+	mux.HandleFunc(pat.Get("/buy/complete"), getIndex)
+	mux.HandleFunc(pat.Get("/transactions/:transaction_id"), getIndex)
+	mux.HandleFunc(pat.Get("/users/:user_id"), getIndex)
+	mux.HandleFunc(pat.Get("/users/setting"), getIndex)
+	// Assets
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
-
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 
@@ -387,8 +399,7 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 	return category, err
 }
 
-func getTop(w http.ResponseWriter, r *http.Request) {
-	readTopTemplate()
+func getIndex(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", struct{}{})
 }
 
