@@ -171,7 +171,7 @@ sub create_user {
         account_name => string $name,
         plain_passwd => string $passwd,
         address      => string $address,
-        created_at   => string $created_at,
+        created_at   => number $created_at,
         num_sell_items => number 0,
     };
 }
@@ -187,7 +187,7 @@ sub flush_users {
             encrypt_password($user->{plain_passwd}),
             $user->{address},
             $user->{num_sell_items},
-            $user->{created_at}
+            format_mysql($user->{created_at})
         );
         if (@insert_users > 200) {
             print $sql_fh q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`num_sell_items`,`created_at`) VALUES ! . join(", ", @insert_users) . ";\n";
@@ -206,11 +206,11 @@ sub flush_users {
     my @dummy_users = map { chomp $_; [ split /\t/, $_, 3] } <$fh>;
 
     # For demo
-    create_user(1, 'isudemo1', 'isudemo1', '東京都港区6-11-1', '2019-09-06 00:00:00');
-    create_user(2, 'isudemo2', 'isudemo2', '東京都新宿区4-1-6', '2019-09-06 00:00:01');
-    create_user(3, 'isudemo3', 'isudemo3', '東京都伊洲根9-4000', '2019-09-06 00:00:02');
+    create_user(1, 'isudemo1', 'isudemo1', '東京都港区6-11-1', 1565398800);
+    create_user(2, 'isudemo2', 'isudemo2', '東京都新宿区4-1-6', 1565398801);
+    create_user(3, 'isudemo3', 'isudemo3', '東京都伊洲根9-4000', 1565398802);
 
-    my $base_time = 1567695603; #2019-09-06 00:00:03
+    my $base_time = 1565398803; #2019-08-10 10:00:03
     srand(1565458009);
     for (my $i=4;$i<=$NUM_USER_GENERATE;$i++) {
         my $dummy_user = $dummy_users[$i];
@@ -225,7 +225,7 @@ sub flush_users {
             $id,
             gen_passwd($id),
             $address,
-            format_mysql($base_time+$i)
+            $base_time+$i
         );
     }
 }
@@ -266,12 +266,12 @@ sub insert_items {
         price     => number $price,
         description => string $description,
         category_id => number $category_id,
-        created_at  => string $created_at,
-        updated_at  => string $updated_at
+        created_at  => number $created_at,
+        updated_at  => number $updated_at
     })."\n";
 
     $description =~ s/\n/\\n/g;
-    push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $name, $price, $description, $category_id, $created_at, $updated_at);
+    push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $name, $price, $description, $category_id, format_mysql($created_at), format_mysql($updated_at));
 
     $users{$seller_id}->{num_sell_items}++;
 
@@ -301,11 +301,11 @@ sub insert_te {
         item_description      => string $item_description,
         item_category_id      => number $item_category_id,
         item_root_category_id => number $item_root_category_id,
-        created_at            => string $created_at,
-        updated_at            => string $updated_at
+        created_at            => number $created_at,
+        updated_at            => number $updated_at
     })."\n";
 
-    push @insert_te, sprintf(q!(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $item_id, $item_name, $item_price, $item_description, $item_category_id, $item_root_category_id, $created_at, $updated_at);
+    push @insert_te, sprintf(q!(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $item_id, $item_name, $item_price, $item_description, $item_category_id, $item_root_category_id, format_mysql($created_at), format_mysql($updated_at));
 }
 
 sub flush_te {
@@ -329,12 +329,12 @@ sub insert_shippings {
             from_address => string $from_address,
             from_name => string $from_name,
             img_binary => string "", # XXX
-            created_at => string $created_at,
-            updated_at => string $updated_at,
+            created_at => number $created_at,
+            updated_at => number $updated_at,
         })."\n";
     }
     {
-        push @insert_shippings, sprintf(q!(%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s')!, $transaction_evidence_id, $status, $item_name, $item_id, $reserve_id, $reserve_time, $to_address, $to_name, $from_address, $from_name, $img_binary, $created_at, $updated_at);
+        push @insert_shippings, sprintf(q!(%d, '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s')!, $transaction_evidence_id, $status, $item_name, $item_id, $reserve_id, $reserve_time, $to_address, $to_name, $from_address, $from_name, $img_binary, format_mysql($created_at), format_mysql($updated_at));
     }
 }
 sub flush_shippings {
@@ -344,13 +344,13 @@ sub flush_shippings {
 }
 
 {
-    my $base_time = 1567702867; #2019-09-06 02:01:07
+    my $base_time = 1565575207; #2019-08-12 11:00:07
     srand(1565358009);
 
     my $te_id = 0;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
-        my $t_sell = $base_time+rand(10)-5;
-        my $t_buy = $t_sell + rand(10) + 60;
+        my $t_sell = $base_time+int(rand(10))-5;
+        my $t_buy = $t_sell + int(rand(10)) + 60;
         my $t_done = $t_buy + 10;
 
         my $name = gen_text(8,0),;
@@ -380,8 +380,8 @@ sub flush_shippings {
                 $description,
                 $category->[0],
                 $category->[1],
-                format_mysql($t_buy),
-                format_mysql($t_done)
+                $t_buy,
+                $t_done
             );
 
             insert_shippings(
@@ -396,8 +396,8 @@ sub flush_shippings {
                 $users{$seller}->{address},
                 $users{$seller}->{account_name},
                 "", # XXX img_binary
-                format_mysql($t_buy),
-                format_mysql($t_done)
+                $t_buy,
+                $t_done
             );
         }
 
@@ -410,8 +410,8 @@ sub flush_shippings {
             $BASE_PRICE,
             $description,
             $category->[0],
-            format_mysql($t_sell),
-            format_mysql($t_done)
+            $t_sell,
+            $t_done
         );
 
         $base_time++;
