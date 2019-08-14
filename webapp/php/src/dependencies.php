@@ -1,6 +1,5 @@
 <?php
 
-use App\Environment;
 use Psr\Container\ContainerInterface;
 use Slim\App;
 
