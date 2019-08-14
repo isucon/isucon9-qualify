@@ -319,19 +319,19 @@ func main() {
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
 	// Frontend
-	mux.HandleFunc(pat.Get("/"), getAssets)
-	mux.HandleFunc(pat.Get("/login"), getAssets)
-	mux.HandleFunc(pat.Get("/register"), getAssets)
-	mux.HandleFunc(pat.Get("/timeline"), getAssets)
-	mux.HandleFunc(pat.Get("/categories/:category_id/items"), getAssets)
-	mux.HandleFunc(pat.Get("/sell"), getAssets)
-	mux.HandleFunc(pat.Get("/items/:item_id"), getAssets)
-	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getAssets)
-	mux.HandleFunc(pat.Get("/items/:item_id/buy"), getAssets)
-	mux.HandleFunc(pat.Get("/buy/complete"), getAssets)
-	mux.HandleFunc(pat.Get("/transactions/:transaction_id"), getAssets)
-	mux.HandleFunc(pat.Get("/users/:user_id"), getAssets)
-	mux.HandleFunc(pat.Get("/users/setting"), getAssets)
+	mux.HandleFunc(pat.Get("/"), getIndex)
+	mux.HandleFunc(pat.Get("/login"), getIndex)
+	mux.HandleFunc(pat.Get("/register"), getIndex)
+	mux.HandleFunc(pat.Get("/timeline"), getIndex)
+	mux.HandleFunc(pat.Get("/categories/:category_id/items"), getIndex)
+	mux.HandleFunc(pat.Get("/sell"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id/buy"), getIndex)
+	mux.HandleFunc(pat.Get("/buy/complete"), getIndex)
+	mux.HandleFunc(pat.Get("/transactions/:transaction_id"), getIndex)
+	mux.HandleFunc(pat.Get("/users/:user_id"), getIndex)
+	mux.HandleFunc(pat.Get("/users/setting"), getIndex)
 	// Assets
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 	log.Fatal(http.ListenAndServe(":8000", mux))
@@ -397,7 +397,7 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 	return category, err
 }
 
-func getAssets(w http.ResponseWriter, r *http.Request) {
+func getIndex(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", struct{}{})
 }
 
