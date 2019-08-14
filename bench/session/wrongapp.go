@@ -14,7 +14,7 @@ import (
 const (
 	ItemMinPrice    = 100
 	ItemMaxPrice    = 1000000
-	ItemPriceErrMsg = "商品価格は100円以上、1,000,000円以下にしてください"
+	ItemPriceErrMsg = "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください"
 )
 
 type resErr struct {
@@ -124,7 +124,7 @@ func (s *Session) SellWithWrongPrice(name string, price int, description string,
 	}
 
 	if re.Error != ItemPriceErrMsg {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: 商品価格は100円以上、1,000,000円以下しか出品できません")
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: 商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下しか出品できません")
 	}
 
 	return nil

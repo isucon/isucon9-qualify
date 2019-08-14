@@ -25,7 +25,7 @@ const (
 
 	ItemMinPrice    = 100
 	ItemMaxPrice    = 1000000
-	ItemPriceErrMsg = "商品価格は100円以上、1,000,000円以下にしてください"
+	ItemPriceErrMsg = "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください"
 
 	ItemStatusOnSale  = "on_sale"
 	ItemStatusTrading = "trading"
