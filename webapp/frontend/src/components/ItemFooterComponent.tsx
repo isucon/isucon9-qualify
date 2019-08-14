@@ -19,12 +19,14 @@ type Props = {
   price: number;
   onClick: (e: React.MouseEvent) => void;
   buttonText: string;
+  disabled: boolean;
 };
 
 const ItemFooterComponent: React.FC<Props> = ({
   price,
   onClick,
   buttonText,
+  disabled,
 }) => {
   const classes = useStyles();
 
@@ -39,6 +41,7 @@ const ItemFooterComponent: React.FC<Props> = ({
             variant="contained"
             className={classes.buyButton}
             onClick={onClick}
+            disabled={disabled}
           >
             {buttonText}
           </Button>

@@ -42,8 +42,13 @@ const styles = (theme: Theme): StyleRules =>
 interface ItemPageProps extends WithStyles<typeof styles> {
   loading: boolean;
   item: ItemData;
+  viewer: {
+    userId: number;
+  };
   load: (itemId: string) => void;
   onClickBuy: (itemId: number) => void;
+  onClickItemEdit: (itemId: number) => void;
+  onClickTransaction: (itemId: number) => void;
 }
 
 type Props = ItemPageProps &
@@ -63,8 +68,48 @@ class ItemPage extends React.Component<Props> {
     this.props.onClickBuy(this.props.item.id);
   }
 
+  _onClickItemEditButton(e: React.MouseEvent) {
+    e.preventDefault();
+    this.props.onClickItemEdit(this.props.item.id);
+  }
+
+  _onClickTransaction(e: React.MouseEvent) {
+    e.preventDefault();
+    this.props.onClickTransaction(this.props.item.id);
+  }
+
   render() {
-    const { classes, item, loading } = this.props;
+    const { classes, item, loading, viewer } = this.props;
+
+    let onClick: (e: React.MouseEvent) => void = this._onClickBuyButton;
+    let buttonText: string = '購入';
+    let disableButton: boolean = false;
+
+    // 自分の商品で出品中なら編集画面へ遷移
+    if (viewer.userId === item.sellerId && item.status !== 'on_sale') {
+      onClick = this._onClickItemEditButton;
+      buttonText = '商品編集';
+    }
+
+    // 出品者 or 購入者で取引中なら取引画面へのボタンを追加
+    if (
+      (viewer.userId === item.sellerId || viewer.userId === item.buyerId) &&
+      item.status === 'trading'
+    ) {
+      onClick = this._onClickTransaction;
+      buttonText = '取引画面';
+    }
+
+    // 商品が出品中でなく、出品者でも購入者でもない場合は売り切れ
+    if (
+      item.status !== 'on_sale' &&
+      viewer.userId !== item.sellerId &&
+      viewer.userId !== item.buyerId
+    ) {
+      onClick = (e: React.MouseEvent) => {};
+      buttonText = '売り切れ';
+      disableButton = true;
+    }
 
     return (
       <BasePageContainer>
@@ -144,8 +189,9 @@ class ItemPage extends React.Component<Props> {
             </Grid>
             <ItemFooterComponent
               price={item.price}
-              onClick={this._onClickBuyButton}
-              buttonText={'購入'}
+              onClick={onClick}
+              buttonText={buttonText}
+              disabled={disableButton}
             />
           </React.Fragment>
         )}
