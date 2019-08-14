@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -303,7 +304,6 @@ func main() {
 
 	mux := goji.NewMux()
 
-	mux.HandleFunc(pat.Get("/"), getTop)
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
 	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
@@ -320,7 +320,7 @@ func main() {
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
-	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
+	mux.HandleFunc(pat.Get("/*"), getAssets)
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
@@ -385,9 +385,18 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 	return category, err
 }
 
-func getTop(w http.ResponseWriter, r *http.Request) {
-	readTopTemplate()
-	templates.ExecuteTemplate(w, "index.html", struct{}{})
+func getAssets(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	re, _ := regexp.Compile("^.*\\.(js|css|json|png)$")
+
+	fmt.Println(path)
+	if !re.MatchString(path) {
+		readTopTemplate()
+		templates.ExecuteTemplate(w, "index.html", struct{}{})
+		return
+	}
+
+	http.FileServer(http.Dir("../public")).ServeHTTP(w, r)
 }
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
