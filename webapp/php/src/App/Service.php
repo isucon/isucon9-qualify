@@ -33,6 +33,11 @@ class Service
      */
     private $settings;
 
+    /**
+     * @var \Slim\Views\PhpRenderer
+     */
+    private $renderer;
+
     private const DATETIME_SQL_FORMAT = 'Y-m-d h:i:s';
 
     private const ITEM_STATUS_ON_SALE = 'on_sale';
@@ -71,6 +76,7 @@ class Service
         $this->dbh = $container->get('dbh');
         $this->session = $container->get('session');
         $this->settings = $container->get('settings');
+        $this->renderer = $container->get('renderer');
     }
 
     private function jsonPayload(Request $request)
@@ -142,6 +148,11 @@ class Service
             $category['parent_category_name'] = $parent['category_name'];
         }
         return $category;
+    }
+
+    public function index(Request $request, Response $response, array $args)
+    {
+        return $this->renderer->render($response, 'index.html');
     }
 
     public function new_items(Request $request, Response $response, array $args)
