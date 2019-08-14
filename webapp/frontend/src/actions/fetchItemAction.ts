@@ -56,6 +56,9 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
               categoryName: body.category.category_name,
               parentCategoryName: body.category.parent_category_name,
             },
+            transactionEvidenceId: body.transaction_evidence_id,
+            transactionEvidenceStatus: body.transaction_evidence_status,
+            shippingStatus: body.shipping_status,
             createdAt: body.created_at,
           }),
         );
@@ -66,8 +69,7 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
   };
 }
 
-export interface FetchItemStartAction
-  extends Action<typeof FETCH_ITEM_START> {}
+export interface FetchItemStartAction extends Action<typeof FETCH_ITEM_START> {}
 
 const fetchItemStartAction = (): FetchItemStartAction => {
   return {
@@ -82,9 +84,7 @@ export interface FetchItemSuccessAction
   };
 }
 
-const fetchItemSuccessAction = (
-  item: ItemData,
-): FetchItemSuccessAction => {
+const fetchItemSuccessAction = (item: ItemData): FetchItemSuccessAction => {
   return {
     type: FETCH_ITEM_SUCCESS,
     payload: {
@@ -93,8 +93,7 @@ const fetchItemSuccessAction = (
   };
 };
 
-export interface FetchItemFailAction
-  extends Action<typeof FETCH_ITEM_FAIL> {}
+export interface FetchItemFailAction extends Action<typeof FETCH_ITEM_FAIL> {}
 
 const fetchItemFailAction = (): FetchItemFailAction => {
   return {

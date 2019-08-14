@@ -1,5 +1,7 @@
 import { UserData } from './user';
 import { Category } from './category';
+import { TransactionStatus } from './transaction';
+import { ShippingStatus } from './shipping';
 
 export interface ItemData {
   id: number;
@@ -13,6 +15,9 @@ export interface ItemData {
   description: string;
   thumbnailUrl: string;
   category: Category;
+  transactionEvidenceId?: number;
+  transactionEvidenceStatus?: TransactionStatus;
+  shippingStatus?: ShippingStatus;
   createdAt: number;
 }
 
