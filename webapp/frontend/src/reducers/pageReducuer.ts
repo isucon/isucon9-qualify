@@ -3,21 +3,41 @@ import {
   FETCH_ITEM_PAGE_FAIL,
   FETCH_ITEM_PAGE_START,
   FETCH_ITEM_PAGE_SUCCESS,
+  FetchItemPageFailAction,
+  FetchItemPageStartAction,
+  FetchItemPageSuccessAction,
 } from '../actions/fetchItemPageAction';
 import {
   FETCH_SETTINGS_FAIL,
   FETCH_SETTINGS_START,
   FETCH_SETTINGS_SUCCESS,
+  FetchSettingsFailAction,
+  FetchSettingsStartAction,
+  FetchSettingsSuccessAction,
 } from '../actions/settingsAction';
 import {
   FETCH_TIMELINE_FAIL,
   FETCH_TIMELINE_START,
   FETCH_TIMELINE_SUCCESS,
+  FetchTimelineFailAction,
+  FetchTimelineStartAction,
+  FetchTimelineSuccessAction,
 } from '../actions/fetchTimelineAction';
 import { LOCATION_CHANGE, LocationChangeAction } from 'connected-react-router';
 import { routes } from '../routes/Route';
 
-type Actions = LocationChangeAction | AnyAction;
+type Actions =
+  | LocationChangeAction
+  | FetchItemPageStartAction
+  | FetchItemPageSuccessAction
+  | FetchItemPageFailAction
+  | FetchTimelineStartAction
+  | FetchTimelineSuccessAction
+  | FetchTimelineFailAction
+  | FetchSettingsStartAction
+  | FetchSettingsSuccessAction
+  | FetchSettingsFailAction
+  | AnyAction;
 
 export interface PageState {
   isLoading: boolean;
@@ -53,8 +73,10 @@ const page = (state: PageState = initialState, action: Actions): PageState => {
       return { ...state, isLoading: false };
     case LOCATION_CHANGE:
       const {
-        location: { pathname },
-      } = action.payload;
+        payload: {
+          location: { pathname },
+        },
+      } = action as LocationChangeAction; // TODO なんでasつけないと動かないん？
 
       switch (pathname) {
         case routes.timeline.path:
