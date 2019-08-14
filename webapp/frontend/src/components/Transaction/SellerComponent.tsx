@@ -34,12 +34,14 @@ const SellerComponent: React.FC<Props> = ({
     return <Initial />;
   }
 
+  /**
   if (
     shippingStatus === 'wait_pickup' &&
     transactionStatus === 'wait_shipping'
   ) {
     return <WaitShipping qrCodeUrl={'test'} postShipped={() => {}} />;
   }
+   */
 
   if (transactionStatus === 'wait_done') {
     return <WaitDone />;

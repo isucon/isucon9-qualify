@@ -6,7 +6,7 @@ import Button from '@material-ui/core/Button';
 const useStyles = makeStyles(theme => ({}));
 
 type Props = {
-  item: number;
+  itemId: number;
   transactionEvidenceId: number;
   postShipped: (itemId: number) => void;
 };

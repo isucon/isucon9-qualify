@@ -12,6 +12,10 @@ import {
   FETCH_SETTINGS_FAIL,
   FetchSettingsFailAction,
 } from '../actions/settingsAction';
+import {
+  POST_SHIPPED_FAIL,
+  PostShippedFailAction,
+} from '../actions/postShippedAction';
 
 export const NoError = 'NO_ERROR';
 export const NotFoundError = 'NOT_FOUND';
@@ -34,7 +38,8 @@ type errorActions =
   | NotFoundErrorAction
   | InternalServerErrorAction
   | FetchItemFailAction
-  | FetchSettingsFailAction;
+  | FetchSettingsFailAction
+  | PostShippedFailAction;
 
 const error = (
   state: ErrorState = initialState,
@@ -46,6 +51,7 @@ const error = (
     case INTERNAL_SERVER_ERROR:
     case FETCH_ITEM_FAIL:
     case FETCH_SETTINGS_FAIL:
+    case POST_SHIPPED_FAIL:
       return { errorType: InternalServerError, errorCode: 500 };
     default:
       return { errorType: NoError };

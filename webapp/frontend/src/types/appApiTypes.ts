@@ -156,3 +156,13 @@ export interface NewCategoryItemRes {
   has_next: boolean;
   items: ItemSimple[];
 }
+
+/**
+ * POST /ship
+ */
+export interface ShipReq {
+  item_id: number;
+}
+export interface ShipRes {
+  path: string;
+}
