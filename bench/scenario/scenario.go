@@ -30,8 +30,7 @@ func Verify() *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
-		// bumpするためにはそのユーザーのItemIDが必要
-		err := bump(user1, user2)
+		err := bumpAndNewItems(user1, user2)
 		if err != nil {
 			critical.Add(err)
 		}

@@ -56,17 +56,17 @@ func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) 
 		return nil, fmt.Errorf("client: missing url")
 	}
 
-	appParsedURL, err := url.ParseRequestURI(appURL)
+	appParsedURL, err := urlParse(appURL)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to parse url: %s: %w", appURL, err)
 	}
 
-	paymentParsedURL, err := url.ParseRequestURI(paymentURL)
+	paymentParsedURL, err := urlParse(paymentURL)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to parse url: %s: %w", paymentURL, err)
 	}
 
-	shipmentParsedURL, err := url.ParseRequestURI(shipmentURL)
+	shipmentParsedURL, err := urlParse(shipmentURL)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to parse url: %s: %w", shipmentURL, err)
 	}
@@ -75,6 +75,22 @@ func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) 
 		AppURL:      appParsedURL,
 		PaymentURL:  paymentParsedURL,
 		ShipmentURL: shipmentParsedURL,
+	}, nil
+}
+
+func urlParse(ref string) (*url.URL, error) {
+	u, err := url.Parse(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Host == "" {
+		return nil, fmt.Errorf("host is empty")
+	}
+
+	return &url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
 	}, nil
 }
 
