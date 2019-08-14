@@ -5,9 +5,9 @@ import {
   NotFoundErrorAction,
 } from '../actions/errorAction';
 import {
-  FETCH_ITEM_PAGE_FAIL,
-  FetchItemPageFailAction,
-} from '../actions/fetchItemPageAction';
+  FETCH_ITEM_FAIL,
+  FetchItemFailAction,
+} from '../actions/fetchItemAction';
 import {
   FETCH_SETTINGS_FAIL,
   FetchSettingsFailAction,
@@ -33,7 +33,7 @@ const initialState: ErrorState = {
 type errorActions =
   | NotFoundErrorAction
   | InternalServerErrorAction
-  | FetchItemPageFailAction
+  | FetchItemFailAction
   | FetchSettingsFailAction;
 
 const error = (
@@ -44,7 +44,7 @@ const error = (
     case NOT_FOUND_ERROR:
       return { errorType: NotFoundError, errorCode: 404 };
     case INTERNAL_SERVER_ERROR:
-    case FETCH_ITEM_PAGE_FAIL:
+    case FETCH_ITEM_FAIL:
     case FETCH_SETTINGS_FAIL:
       return { errorType: InternalServerError, errorCode: 500 };
     default:

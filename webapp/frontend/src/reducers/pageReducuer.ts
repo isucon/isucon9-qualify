@@ -1,12 +1,12 @@
 import { AnyAction } from 'redux';
 import {
-  FETCH_ITEM_PAGE_FAIL,
-  FETCH_ITEM_PAGE_START,
-  FETCH_ITEM_PAGE_SUCCESS,
-  FetchItemPageFailAction,
-  FetchItemPageStartAction,
-  FetchItemPageSuccessAction,
-} from '../actions/fetchItemPageAction';
+  FETCH_ITEM_FAIL,
+  FETCH_ITEM_START,
+  FETCH_ITEM_SUCCESS,
+  FetchItemFailAction,
+  FetchItemStartAction,
+  FetchItemSuccessAction,
+} from '../actions/fetchItemAction';
 import {
   FETCH_SETTINGS_FAIL,
   FETCH_SETTINGS_START,
@@ -28,9 +28,9 @@ import { routes } from '../routes/Route';
 
 type Actions =
   | LocationChangeAction
-  | FetchItemPageStartAction
-  | FetchItemPageSuccessAction
-  | FetchItemPageFailAction
+  | FetchItemStartAction
+  | FetchItemSuccessAction
+  | FetchItemFailAction
   | FetchTimelineStartAction
   | FetchTimelineSuccessAction
   | FetchTimelineFailAction
@@ -41,24 +41,24 @@ type Actions =
 
 export interface PageState {
   isLoading: boolean;
-  isItemPageLoading: boolean;
+  isItemLoading: boolean;
   isTimelineLoading: boolean;
 }
 
 const initialState: PageState = {
   isLoading: true,
-  isItemPageLoading: true,
+  isItemLoading: true,
   isTimelineLoading: true,
 };
 
 const page = (state: PageState = initialState, action: Actions): PageState => {
   switch (action.type) {
     // Item page
-    case FETCH_ITEM_PAGE_START:
-      return { ...state, isItemPageLoading: true };
-    case FETCH_ITEM_PAGE_SUCCESS:
-    case FETCH_ITEM_PAGE_FAIL:
-      return { ...state, isItemPageLoading: false };
+    case FETCH_ITEM_START:
+      return { ...state, isItemLoading: true };
+    case FETCH_ITEM_SUCCESS:
+    case FETCH_ITEM_FAIL:
+      return { ...state, isItemLoading: false };
     // Timeline
     case FETCH_TIMELINE_START:
       return { ...state, isTimelineLoading: true };
