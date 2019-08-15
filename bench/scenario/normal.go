@@ -240,3 +240,108 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 
 	return nil
 }
+
+func newCategoryItems(user1 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	seller, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(seller) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	category := asset.GetRandomRootCategory()
+
+	hasNext, rootCategoryName, items, err := s1.NewCategoryItems(category.ID)
+	if err != nil {
+		return err
+	}
+
+	if !hasNext {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
+	}
+
+	if len(items) != ItemsPerPage-1 {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, ItemsPerPage-1, len(items)))
+	}
+
+	if rootCategoryName != category.CategoryName {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのカテゴリ名が間違えています", category.ID))
+	}
+
+	// 簡易チェック
+	createdAt := items[0].CreatedAt
+	for _, item := range items {
+		if createdAt < item.CreatedAt {
+			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID))
+		}
+
+		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
+		}
+
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
+			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
+			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
+		}
+
+		createdAt = item.CreatedAt
+	}
+
+	targetItemID, targetItemCreatedAt := items[len(items)-1].ID, items[len(items)-1].CreatedAt
+
+	hasNext, rootCategoryName, items, err = s1.NewCategoryItemsWithItemIDAndCreatedAt(category.ID, targetItemID, targetItemCreatedAt)
+	if err != nil {
+		return err
+	}
+
+	if !hasNext {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
+	}
+
+	if len(items) != ItemsPerPage-1 {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, ItemsPerPage-1, len(items)))
+	}
+
+	if rootCategoryName != category.CategoryName {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのカテゴリ名が間違えています", category.ID))
+	}
+
+	// 簡易チェック
+	createdAt = items[0].CreatedAt
+	for _, item := range items {
+		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
+			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのitem_idとcreated_atが正しく動作していません", category.ID))
+		}
+
+		if createdAt < item.CreatedAt {
+			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID))
+		}
+
+		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
+		}
+
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
+			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
+			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
+		}
+
+		createdAt = item.CreatedAt
+	}
+
+	return nil
+}

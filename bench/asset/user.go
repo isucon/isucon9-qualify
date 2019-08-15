@@ -32,6 +32,13 @@ type AppItem struct {
 	CreatedAt   int64  `json:"created_at"`
 }
 
+type AppCategory struct {
+	ID                 int    `json:"id"`
+	ParentID           int    `json:"parent_id"`
+	CategoryName       string `json:"category_name"`
+	ParentCategoryName string `json:"parent_category_name,omitempty"`
+}
+
 var (
 	users     []AppUser
 	items     map[string]AppItem
@@ -125,4 +132,13 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 	item.CreatedAt = createdAt
 
 	items[key] = item
+}
+
+func GetRandomRootCategory() AppCategory {
+	return AppCategory{
+		ID:                 1,
+		ParentID:           0,
+		CategoryName:       "ソファー",
+		ParentCategoryName: "ソファー",
+	}
 }
