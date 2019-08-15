@@ -17,19 +17,12 @@ const useStyles = makeStyles(theme => ({
 interface ItemListPageProps {
   items: TimelineItem[];
   hasNext: boolean;
-  categoryId?: number;
-  loadMore: (
-    createdAt: number,
-    itemId: number,
-    categoryId: number | undefined,
-    page: number,
-  ) => void;
+  loadMore: (page: number) => void;
 }
 
 const ItemListComponent: React.FC<ItemListPageProps> = function({
   items,
   hasNext,
-  categoryId,
   loadMore,
 }: ItemListPageProps) {
   const classes = useStyles();
@@ -49,17 +42,10 @@ const ItemListComponent: React.FC<ItemListPageProps> = function({
     );
   }
 
-  const lastItem = items[items.length - 1];
-
   return (
     <InfiniteScroll
       pageStart={0}
-      loadMore={loadMore.bind(
-        null,
-        lastItem.createdAt,
-        lastItem.id,
-        categoryId,
-      )}
+      loadMore={loadMore}
       hasMore={hasNext}
       loader={<CircularProgress />}
     >

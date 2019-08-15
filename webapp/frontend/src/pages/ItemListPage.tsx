@@ -26,7 +26,7 @@ interface ItemListPageProps extends WithStyles<typeof styles> {
   load: () => void;
   items: TimelineItem[];
   hasNext: boolean;
-  loadMore: (page: number) => void;
+  loadMore: (createdAt: number, itemId: number, page: number) => void;
 }
 
 type Props = ItemListPageProps & ErrorProps;
@@ -39,7 +39,9 @@ class ItemListPage extends React.Component<Props> {
   }
 
   render() {
-    const { classes, loading, items } = this.props;
+    const { classes, loading, items, loadMore, hasNext } = this.props;
+    const lastItem = items[items.length - 1];
+    const loadMoreItems = loadMore.bind(null, lastItem.createdAt, lastItem.id);
 
     const Content: React.FC<{}> = () =>
       items.length === 0 ? (
@@ -48,7 +50,11 @@ class ItemListPage extends React.Component<Props> {
         </div>
       ) : (
         <div className={classes.root}>
-          <ItemListComponent {...this.props} />
+          <ItemListComponent
+            items={items}
+            loadMore={loadMoreItems}
+            hasNext={hasNext}
+          />
           <SellingButtonContainer />
         </div>
       );
