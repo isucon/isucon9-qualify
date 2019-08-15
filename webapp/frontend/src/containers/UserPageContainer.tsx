@@ -8,7 +8,7 @@ import { fetchTransactionsAction } from '../actions/fetchTransactionsAction';
 import { fetchUserItemsAction } from '../actions/fetchUserItemsAction';
 
 const mapStateToProps = (state: AppState) => ({
-  loading: true, // TODO state.page.isLoading,
+  loading: state.page.isUserPageLoading,
   loggedInUserId: state.authStatus.userId,
   items: state.userItems.items,
   itemsHasNext: state.userItems.hasNext,

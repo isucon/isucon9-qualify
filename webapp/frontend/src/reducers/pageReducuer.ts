@@ -43,12 +43,14 @@ export interface PageState {
   isLoading: boolean;
   isItemLoading: boolean;
   isTimelineLoading: boolean;
+  isUserPageLoading: boolean;
 }
 
 const initialState: PageState = {
   isLoading: true,
   isItemLoading: true,
   isTimelineLoading: true,
+  isUserPageLoading: true,
 };
 
 const page = (state: PageState = initialState, action: Actions): PageState => {
@@ -80,7 +82,7 @@ const page = (state: PageState = initialState, action: Actions): PageState => {
 
       switch (pathname) {
         case routes.timeline.path:
-          // TODO カテゴリ新着のチェックもここに入る
+          // TODO カテゴリ新着, ユーザページのチェックもここに入る
           return { ...state, isTimelineLoading: true };
         default:
           return { ...state };
