@@ -97,11 +97,12 @@ func GetUserItemsFirst(sellerID int64) int64 {
 	return userItems[sellerID][0]
 }
 
-func GetItem(sellerID, itemID int64) AppItem {
+func GetItem(sellerID, itemID int64) (AppItem, bool) {
 	muItem.RLock()
 	defer muItem.RUnlock()
 
-	return items[fmt.Sprintf("%d_%d", sellerID, itemID)]
+	i, ok := items[fmt.Sprintf("%d_%d", sellerID, itemID)]
+	return i, ok
 }
 
 func SetItemPrice(sellerID int64, itemID int64, price int) {

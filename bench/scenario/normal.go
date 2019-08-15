@@ -14,6 +14,12 @@ const (
 	FailedCardNumber  = "FA10AAAA"
 	IsucariShopID     = "11"
 
+	ItemStatusOnSale  = "on_sale"
+	ItemStatusTrading = "trading"
+	ItemStatusSoldOut = "sold_out"
+	ItemStatusStop    = "stop"
+	ItemStatusCancel  = "cancel"
+
 	ItemsPerPage = 48
 )
 
@@ -143,10 +149,13 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	_, err = s1.Bump(asset.GetUserItemsFirst(user1.ID))
+	targetItemID := asset.GetUserItemsFirst(user1.ID)
+	newCreatedAt, err := s1.Bump(targetItemID)
 	if err != nil {
 		return err
 	}
+
+	asset.SetItemCreatedAt(user1.ID, targetItemID, newCreatedAt)
 
 	hasNext, items, err := s2.NewItems()
 	if err != nil {
@@ -163,11 +172,32 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 
 	// 簡易チェック
 	createdAt := items[0].CreatedAt
+	found := false
 	for _, item := range items {
 		if createdAt < item.CreatedAt {
 			return fails.NewError(nil, "/new_items.jsonはcreated_at順である必要があります")
 		}
+
+		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+			return fails.NewError(nil, "/new_items.jsonは販売中か売り切れの商品しか出してはいけません")
+		}
+
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
+			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
+			return fails.NewError(nil, "/new_items.jsonで返している商品の情報に誤りがあります")
+		}
+
+		if targetItemID == item.ID {
+			found = true
+		}
+
 		createdAt = item.CreatedAt
+	}
+
+	if !found {
+		// Verifyでしかできない確認
+		return fails.NewError(nil, "/new_items.jsonにバンプした商品が表示されていません")
 	}
 
 	return nil
