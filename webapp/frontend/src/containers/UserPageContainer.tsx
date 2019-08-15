@@ -1,16 +1,17 @@
 import { connect } from 'react-redux';
 import { AppState } from '../index';
-import { mockItems, mockUser } from '../mocks';
+import { mockUser } from '../mocks';
 import UserPage from '../pages/UserPage';
 import { ThunkDispatch } from 'redux-thunk';
 import { AnyAction } from 'redux';
 import { fetchTransactionsAction } from '../actions/fetchTransactionsAction';
+import { fetchUserItemsAction } from '../actions/fetchUserItemsAction';
 
 const mapStateToProps = (state: AppState) => ({
   loading: true, // TODO state.page.isLoading,
   loggedInUserId: state.authStatus.userId,
-  items: mockItems, // TODO
-  itemsHasNext: false, // TODO
+  items: state.userItems.items,
+  itemsHasNext: state.userItems.hasNext,
   transactions: state.transactions.items,
   transactionsHasNext: state.transactions.hasNext,
   user: mockUser, // TODO
@@ -28,7 +29,7 @@ const mapDispatchToProps = (
     createdAt: number,
     page: number,
   ) => {
-    // TODO
+    dispatch(fetchUserItemsAction(userId, itemId, createdAt));
   },
   transactionsLoadMore: (itemId: number, createdAt: number, page: number) => {
     dispatch(fetchTransactionsAction(itemId, createdAt));
