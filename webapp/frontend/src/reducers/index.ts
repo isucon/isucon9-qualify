@@ -2,6 +2,7 @@ import { combineReducers } from 'redux';
 import authStatus from './authStatusReducer';
 import formError from './formErrorReducer';
 import viewingItem from './viewingItemReducer';
+import viewingUser from './viewingUserReducer';
 import error from './errorReducer';
 import page from './pageReducuer';
 import buyPage from './buyPageReducer';
@@ -18,6 +19,7 @@ export default (history: History) =>
     authStatus,
     formError,
     viewingItem,
+    viewingUser,
     error,
     page,
     buyPage,
