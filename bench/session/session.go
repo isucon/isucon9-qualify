@@ -126,6 +126,23 @@ func (s *Session) newGetRequest(u *url.URL, spath string) (*http.Request, error)
 	return req, nil
 }
 
+func (s *Session) newGetRequestWithQuery(u *url.URL, spath string, q url.Values) (*http.Request, error) {
+	if len(spath) > 0 {
+		u.Path = spath
+	}
+
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", userAgent)
+
+	return req, nil
+}
+
 func (s *Session) newPostRequest(u *url.URL, spath, contentType string, body io.Reader) (*http.Request, error) {
 	u.Path = spath
 

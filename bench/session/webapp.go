@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -460,6 +461,36 @@ func (s *Session) Bump(itemID int64) (int64, error) {
 
 func (s *Session) NewItems() (hasNext bool, items []ItemSimple, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/new_items.json")
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /new_items.json: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /new_items.json: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /new_items.json: "+msg)
+	}
+
+	rni := resNewItems{}
+	err = json.NewDecoder(res.Body).Decode(&rni)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /new_items.json: JSONデコードに失敗しました")
+	}
+
+	return rni.HasNext, rni.Items, nil
+}
+
+func (s *Session) NewItemsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNext bool, items []ItemSimple, err error) {
+	q := url.Values{}
+	q.Set("item_id", strconv.FormatInt(itemID, 10))
+	q.Set("created_at", strconv.FormatInt(createdAt, 10))
+
+	req, err := s.newGetRequestWithQuery(ShareTargetURLs.AppURL, "/new_items.json", q)
 	if err != nil {
 		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /new_items.json: リクエストに失敗しました")
 	}
