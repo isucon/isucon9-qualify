@@ -1,11 +1,11 @@
 import { connect } from 'react-redux';
 import { AppState } from '../index';
-import { mockUser } from '../mocks';
 import UserPage from '../pages/UserPage';
 import { ThunkDispatch } from 'redux-thunk';
 import { AnyAction } from 'redux';
 import { fetchTransactionsAction } from '../actions/fetchTransactionsAction';
 import { fetchUserItemsAction } from '../actions/fetchUserItemsAction';
+import { fetchUserPageDataAction } from '../actions/fetchUserPageDataAction';
 
 const mapStateToProps = (state: AppState) => ({
   loading: state.page.isUserPageLoading,
@@ -14,14 +14,14 @@ const mapStateToProps = (state: AppState) => ({
   itemsHasNext: state.userItems.hasNext,
   transactions: state.transactions.items,
   transactionsHasNext: state.transactions.hasNext,
-  user: mockUser, // TODO
+  user: state.viewingUser.user,
   errorType: state.error.errorType,
 });
 const mapDispatchToProps = (
   dispatch: ThunkDispatch<AppState, undefined, AnyAction>,
 ) => ({
-  load: (userId: number) => {
-    // TODO
+  load: (userId: number, isMyPage: boolean) => {
+    dispatch(fetchUserPageDataAction(userId, isMyPage));
   },
   itemsLoadMore: (
     userId: number,

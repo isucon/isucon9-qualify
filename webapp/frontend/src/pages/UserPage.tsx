@@ -36,7 +36,7 @@ const styles = (theme: Theme): StyleRules =>
 
 interface UserPageProps extends WithStyles<typeof styles> {
   loading: boolean;
-  load: (userId: number) => void;
+  load: (userId: number, isMyPage: boolean) => void;
   loggedInUserId: number;
   items: ItemData[];
   itemsHasNext: boolean;
@@ -67,11 +67,14 @@ type State = {
 class UserPage extends React.Component<Props, State> {
   private ITEM_LIST_TAB = 0;
   private TRANSACTION_LIST_TAB = 1;
+  private readonly isMyPage: boolean;
 
   constructor(props: Props) {
     super(props);
 
-    this.props.load(Number(this.props.match.params.user_id));
+    const pageUserId = Number(this.props.match.params.user_id);
+    this.isMyPage = this.props.loggedInUserId === pageUserId;
+    this.props.load(pageUserId, this.isMyPage);
     this.state = {
       tabValue: this.ITEM_LIST_TAB,
     };
@@ -133,9 +136,8 @@ class UserPage extends React.Component<Props, State> {
   }
 
   render() {
-    const { loading, user, loggedInUserId, classes } = this.props;
+    const { loading, user, classes } = this.props;
     const { tabValue } = this.state;
-    const isMyPage = loggedInUserId === user.id;
 
     if (loading) {
       return <LoadingComponent />;
@@ -143,7 +145,6 @@ class UserPage extends React.Component<Props, State> {
 
     return (
       <BasePageContainer>
-        <p>User Page</p>
         <Grid
           container
           direction="row"
@@ -165,7 +166,7 @@ class UserPage extends React.Component<Props, State> {
         <AppBar className={classes.tab}>
           <Tabs value={tabValue} onChange={this._handleChange}>
             <Tab label="出品商品" id="tab--item-list" />
-            {isMyPage && <Tab label="取引一覧" id="tab--item-list" />}
+            {this.isMyPage && <Tab label="取引一覧" id="tab--item-list" />}
           </Tabs>
         </AppBar>
         <div
@@ -175,7 +176,7 @@ class UserPage extends React.Component<Props, State> {
         >
           {this._getItemList()}
         </div>
-        {isMyPage && (
+        {this.isMyPage && (
           <div
             className={classes.list}
             id="tab--transactions-list"

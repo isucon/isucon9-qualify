@@ -25,6 +25,13 @@ import {
 } from '../actions/fetchTimelineAction';
 import { LOCATION_CHANGE, LocationChangeAction } from 'connected-react-router';
 import { routes } from '../routes/Route';
+import {
+  Actions as FetchUserPageActions,
+  FETCH_USER_PAGE_DATA_FAIL,
+  FETCH_USER_PAGE_DATA_START,
+  FETCH_USER_PAGE_DATA_SUCCESS,
+} from '../actions/fetchUserPageDataAction';
+import { FETCH_USER_ITEMS_START } from '../actions/fetchUserItemsAction';
 
 type Actions =
   | LocationChangeAction
@@ -37,6 +44,7 @@ type Actions =
   | FetchSettingsStartAction
   | FetchSettingsSuccessAction
   | FetchSettingsFailAction
+  | FetchUserPageActions
   | AnyAction;
 
 export interface PageState {
@@ -73,6 +81,13 @@ const page = (state: PageState = initialState, action: Actions): PageState => {
     case FETCH_SETTINGS_SUCCESS:
     case FETCH_SETTINGS_FAIL:
       return { ...state, isLoading: false };
+    // User page
+    case FETCH_USER_PAGE_DATA_START:
+      return { ...state, isUserPageLoading: true };
+    case FETCH_USER_PAGE_DATA_SUCCESS:
+    case FETCH_USER_PAGE_DATA_FAIL:
+      return { ...state, isUserPageLoading: false };
+    // Location change
     case LOCATION_CHANGE:
       const {
         payload: {
