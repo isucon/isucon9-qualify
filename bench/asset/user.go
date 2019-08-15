@@ -21,15 +21,15 @@ type AppUser struct {
 }
 
 type AppItem struct {
-	ID          int64     `json:"id"`
-	SellerID    int64     `json:"seller_id"`
-	BuyerID     int64     `json:"buyer_id"`
-	Status      string    `json:"status"`
-	Name        string    `json:"name"`
-	Price       int       `json:"price"`
-	Description string    `json:"description"`
-	CategoryID  int       `json:"category_id"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          int64  `json:"id"`
+	SellerID    int64  `json:"seller_id"`
+	BuyerID     int64  `json:"buyer_id"`
+	Status      string `json:"status"`
+	Name        string `json:"name"`
+	Price       int    `json:"price"`
+	Description string `json:"description"`
+	CategoryID  int    `json:"category_id"`
+	CreatedAt   int64  `json:"created_at"`
 }
 
 var (
@@ -115,7 +115,7 @@ func SetItemPrice(sellerID int64, itemID int64, price int) {
 	items[key] = item
 }
 
-func SetItemCreatedAt(sellerID int64, itemID int64, createdAt time.Time) {
+func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 	muItem.Lock()
 	defer muItem.Unlock()
 
