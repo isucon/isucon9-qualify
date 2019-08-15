@@ -29,10 +29,7 @@ const TransactionComponent: React.FC<Props> = ({ item }) => {
           <CardMedia image={item.thumbnailUrl} title={item.name} />
           <CardContent>
             <Typography>{item.name}</Typography>
-            <TransactionLabel
-              transactionStatus={item.transactionEvidenceStatus}
-              shippingStatus={item.shippingStatus}
-            />
+            <TransactionLabel itemStatus={item.status} />
           </CardContent>
         </Card>
       </RouteLink>

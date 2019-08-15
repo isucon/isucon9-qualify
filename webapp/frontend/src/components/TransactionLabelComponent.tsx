@@ -1,10 +1,15 @@
 import React from 'react';
 import makeStyles from '@material-ui/core/styles/makeStyles';
-import { TransactionStatus } from '../dataObjects/transaction';
-import { ShippingStatus } from '../dataObjects/shipping';
 import Paper from '@material-ui/core/Paper/Paper';
+import { ItemStatus } from '../dataObjects/item';
 
 const useStyles = makeStyles(theme => ({
+  normalLabel: {
+    width: '30px',
+    height: '30px',
+    color: theme.palette.secondary.light,
+    backgroundColor: theme.palette.secondary.main,
+  },
   soldOutLabel: {
     width: '30px',
     height: '30px',
@@ -20,21 +25,32 @@ const useStyles = makeStyles(theme => ({
 }));
 
 type Props = {
-  transactionStatus: TransactionStatus;
-  shippingStatus: ShippingStatus;
+  itemStatus: ItemStatus;
 };
 
-const TransactionLabel: React.FC<Props> = ({
-  transactionStatus,
-  shippingStatus,
-}: Props) => {
-  const classes = useStyles();
-
-  if (transactionStatus === 'done' && shippingStatus === 'done') {
-    return <Paper className={classes.soldOutLabel}>売却済</Paper>;
+function getLabelByStatus(
+  status: ItemStatus,
+): [string, 'normalLabel' | 'soldOutLabel' | 'tradingLabel'] {
+  switch (status) {
+    case 'on_sale':
+      return ['出品中', 'normalLabel'];
+    case 'trading':
+      return ['取引中', 'tradingLabel'];
+    case 'sold_out':
+      return ['売却済', 'soldOutLabel'];
+    case 'stop':
+      return ['出品停止中', 'normalLabel'];
+    case 'cancel':
+      return ['キャンセル', 'normalLabel'];
   }
+}
 
-  return <Paper className={classes.tradingLabel}>取引中</Paper>;
+const TransactionLabel: React.FC<Props> = ({ itemStatus }) => {
+  const classes = useStyles();
+  const [labelName, classKey] = getLabelByStatus(itemStatus);
+  const className = classes[classKey];
+
+  return <Paper className={className}>{labelName}</Paper>;
 };
 
 export { TransactionLabel };
