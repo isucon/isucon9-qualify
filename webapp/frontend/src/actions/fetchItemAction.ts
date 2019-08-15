@@ -5,6 +5,7 @@ import { GetItemRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { ItemData } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
+import { FormErrorState } from '../reducers/formErrorReducer';
 
 export const FETCH_ITEM_START = 'FETCH_ITEM_START';
 export const FETCH_ITEM_SUCCESS = 'FETCH_ITEM_SUCCESS';
@@ -64,7 +65,11 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
         );
       })
       .catch((err: Error) => {
-        dispatch(fetchItemFailAction());
+        dispatch(
+          fetchItemFailAction({
+            error: err.message,
+          }),
+        );
       });
   };
 }
@@ -93,10 +98,13 @@ const fetchItemSuccessAction = (item: ItemData): FetchItemSuccessAction => {
   };
 };
 
-export interface FetchItemFailAction extends Action<typeof FETCH_ITEM_FAIL> {}
+export interface FetchItemFailAction extends Action<typeof FETCH_ITEM_FAIL> {
+  payload: FormErrorState;
+}
 
-const fetchItemFailAction = (): FetchItemFailAction => {
+const fetchItemFailAction = (newError: FormErrorState): FetchItemFailAction => {
   return {
     type: FETCH_ITEM_FAIL,
+    payload: newError,
   };
 };

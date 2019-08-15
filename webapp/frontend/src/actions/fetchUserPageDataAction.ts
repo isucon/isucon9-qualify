@@ -12,6 +12,7 @@ import { TimelineItem, TransactionItem } from '../dataObjects/item';
 import { UserData } from '../dataObjects/user';
 import { ShippingStatus } from '../dataObjects/shipping';
 import { TransactionStatus } from '../dataObjects/transaction';
+import { FormErrorState } from '../reducers/formErrorReducer';
 
 export const FETCH_USER_PAGE_DATA_START = 'FETCH_USER_PAGE_DATA_START';
 export const FETCH_USER_PAGE_DATA_SUCCESS = 'FETCH_USER_PAGE_DATA_SUCCESS';
@@ -118,7 +119,11 @@ export function fetchUserPageDataAction(
         );
       })
       .catch((err: Error) => {
-        dispatch(fetchUserPageDataFailAction());
+        dispatch(
+          fetchUserPageDataFailAction({
+            error: err.message,
+          }),
+        );
       });
   };
 }
@@ -157,10 +162,15 @@ const fetchUserPageDataSuccessAction = (payload: {
 };
 
 export interface FetchUserPageDataFailAction
-  extends Action<typeof FETCH_USER_PAGE_DATA_FAIL> {}
+  extends Action<typeof FETCH_USER_PAGE_DATA_FAIL> {
+  payload: FormErrorState;
+}
 
-const fetchUserPageDataFailAction = (): FetchUserPageDataFailAction => {
+const fetchUserPageDataFailAction = (
+  newError: FormErrorState,
+): FetchUserPageDataFailAction => {
   return {
     type: FETCH_USER_PAGE_DATA_FAIL,
+    payload: newError,
   };
 };

@@ -11,6 +11,7 @@ import { TransactionItem } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
 import { TransactionStatus } from '../dataObjects/transaction';
 import { ShippingStatus } from '../dataObjects/shipping';
+import { FormErrorState } from '../reducers/formErrorReducer';
 
 export const FETCH_TRANSACTIONS_START = 'FETCH_TRANSACTIONS_START';
 export const FETCH_TRANSACTIONS_SUCCESS = 'FETCH_TRANSACTIONS_SUCCESS';
@@ -68,7 +69,11 @@ export function fetchTransactionsAction(
         );
       })
       .catch((err: Error) => {
-        dispatch(fetchTransactionsFailAction());
+        dispatch(
+          fetchTransactionsFailAction({
+            error: err.message,
+          }),
+        );
       });
   };
 }
@@ -101,10 +106,15 @@ const fetchTransactionsSuccessAction = (payload: {
 };
 
 export interface FetchTransactionsFailAction
-  extends Action<typeof FETCH_TRANSACTIONS_FAIL> {}
+  extends Action<typeof FETCH_TRANSACTIONS_FAIL> {
+  payload: FormErrorState;
+}
 
-const fetchTransactionsFailAction = (): FetchTransactionsFailAction => {
+const fetchTransactionsFailAction = (
+  newErrors: FormErrorState,
+): FetchTransactionsFailAction => {
   return {
     type: FETCH_TRANSACTIONS_FAIL,
+    payload: newErrors,
   };
 };

@@ -69,10 +69,10 @@ export interface RegisterFailAction {
 }
 
 export function registerFailAction(
-  newErros: FormErrorState,
+  newErrors: FormErrorState,
 ): RegisterFailAction {
   return {
     type: REGISTER_FAIL,
-    payload: newErros,
+    payload: newErrors,
   };
 }

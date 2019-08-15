@@ -5,6 +5,7 @@ import { ItemSimple, UserItemsReq, UserItemsRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
+import { FormErrorState } from '../reducers/formErrorReducer';
 
 export const FETCH_USER_ITEMS_START = 'FETCH_USER_ITEMS_START';
 export const FETCH_USER_ITEMS_SUCCESS = 'FETCH_USER_ITEMS_SUCCESS';
@@ -62,7 +63,11 @@ export function fetchUserItemsAction(
         );
       })
       .catch((err: Error) => {
-        dispatch(fetchUserItemsFailAction());
+        dispatch(
+          fetchUserItemsFailAction({
+            error: err.message,
+          }),
+        );
       });
   };
 }
@@ -95,10 +100,15 @@ const fetchUserItemsSuccessAction = (payload: {
 };
 
 export interface FetchUserItemsFailAction
-  extends Action<typeof FETCH_USER_ITEMS_FAIL> {}
+  extends Action<typeof FETCH_USER_ITEMS_FAIL> {
+  payload: FormErrorState;
+}
 
-const fetchUserItemsFailAction = (): FetchUserItemsFailAction => {
+const fetchUserItemsFailAction = (
+  newError: FormErrorState,
+): FetchUserItemsFailAction => {
   return {
     type: FETCH_USER_ITEMS_FAIL,
+    payload: newError,
   };
 };

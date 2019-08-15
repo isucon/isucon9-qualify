@@ -65,10 +65,10 @@ export interface PostShippedDoneFailAction
 }
 
 export function postShippedDoneFailAction(
-  newErros: FormErrorState,
+  newErrors: FormErrorState,
 ): PostShippedDoneFailAction {
   return {
     type: POST_SHIPPED_DONE_FAIL,
-    payload: newErros,
+    payload: newErrors,
   };
 }

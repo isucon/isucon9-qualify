@@ -10,6 +10,7 @@ import {
 import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
+import { FormErrorState } from '../reducers/formErrorReducer';
 
 export const FETCH_TIMELINE_START = 'FETCH_TIMELINE_START';
 export const FETCH_TIMELINE_SUCCESS = 'FETCH_TIMELINE_SUCCESS';
@@ -75,7 +76,11 @@ export function fetchTimelineAction(
         );
       })
       .catch((err: Error) => {
-        dispatch(fetchTimelineFailAction());
+        dispatch(
+          fetchTimelineFailAction({
+            error: err.message,
+          }),
+        );
       });
   };
 }
@@ -112,10 +117,15 @@ const fetchTimelineSuccessAction = (payload: {
 };
 
 export interface FetchTimelineFailAction
-  extends Action<typeof FETCH_TIMELINE_FAIL> {}
+  extends Action<typeof FETCH_TIMELINE_FAIL> {
+  payload: FormErrorState;
+}
 
-const fetchTimelineFailAction = (): FetchTimelineFailAction => {
+const fetchTimelineFailAction = (
+  newErrors: FormErrorState,
+): FetchTimelineFailAction => {
   return {
     type: FETCH_TIMELINE_FAIL,
+    payload: newErrors,
   };
 };
