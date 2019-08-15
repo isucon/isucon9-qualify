@@ -193,3 +193,16 @@ export interface UserTransactionsRes {
   has_next: boolean;
   items: ItemDetail[];
 }
+/**
+ * GET /users/:user_id.json
+ * ユーザの出品商品一覧
+ */
+export interface UserItemsReq {
+  item_id?: number;
+  created_at?: number;
+}
+export interface UserItemsRes {
+  user: UserSimple;
+  has_next: boolean;
+  items: ItemSimple[];
+}
