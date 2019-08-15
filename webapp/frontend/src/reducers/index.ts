@@ -7,6 +7,7 @@ import page from './pageReducuer';
 import buyPage from './buyPageReducer';
 import categories from './categoriesReducer';
 import timeline from './timelineReducer';
+import transactions from './transactionsReducer';
 import { connectRouter } from 'connected-react-router';
 import { History } from 'history';
 
@@ -21,4 +22,5 @@ export default (history: History) =>
     buyPage,
     categories,
     timeline,
+    transactions,
   });
