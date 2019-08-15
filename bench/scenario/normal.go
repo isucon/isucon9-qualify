@@ -200,5 +200,43 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 		return fails.NewError(nil, "/new_items.jsonにバンプした商品が表示されていません")
 	}
 
+	targetItemID, targetItemCreatedAt := items[len(items)-1].ID, items[len(items)-1].CreatedAt
+
+	hasNext, items, err = s2.NewItemsWithItemIDAndCreatedAt(targetItemID, targetItemCreatedAt)
+	if err != nil {
+		return err
+	}
+
+	if !hasNext {
+		return fails.NewError(nil, "/new_items.jsonのhas_nextがfalseです")
+	}
+
+	if len(items) != ItemsPerPage-1 {
+		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", ItemsPerPage-1, len(items)))
+	}
+
+	createdAt = items[0].CreatedAt
+	for _, item := range items {
+		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
+			return fails.NewError(nil, "/new_items.jsonのitem_idとcreated_atが正しく動作していません")
+		}
+
+		if createdAt < item.CreatedAt {
+			return fails.NewError(nil, "/new_items.jsonはcreated_at順である必要があります")
+		}
+
+		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+			return fails.NewError(nil, "/new_items.jsonは販売中か売り切れの商品しか出してはいけません")
+		}
+
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
+			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
+			return fails.NewError(nil, "/new_items.jsonで返している商品の情報に誤りがあります")
+		}
+
+		createdAt = item.CreatedAt
+	}
+
 	return nil
 }
