@@ -1,0 +1,8 @@
+diff a/webapp/frontend/src/pages/ItemListPage.tsx b/webapp/frontend/src/pages/ItemListPage.tsx	(rejected hunks)
+@@ -48,5 +44 @@ class ItemListPage extends React.Component<Props> {
+-    const loadMoreItems = loadMore.bind(
+-      null,
+-      lastItem.createdAt,
+-      lastItem.id,
+-    );
++    const loadMoreItems = loadMore.bind(null, lastItem.createdAt, lastItem.id);

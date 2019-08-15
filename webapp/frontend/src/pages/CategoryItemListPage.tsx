@@ -75,20 +75,24 @@ class CategoryItemListPage extends React.Component<Props, State> {
     } = this.props;
     const { categoryIdIsValid } = this.state;
 
-    const lastItem = items[items.length - 1];
-    const loadMoreItems = loadMore.bind(
-      null,
-      lastItem.createdAt,
-      lastItem.id,
-      categoryId,
-    );
+    const Content: React.FC<{}> = () => {
+      if (items.length === 0) {
+        return (
+          <div className={classes.root}>
+            <Typography variant="h5">出品されている商品はありません</Typography>
+          </div>
+        );
+      }
 
-    const Content: React.FC<{}> = () =>
-      items.length === 0 ? (
-        <div className={classes.root}>
-          <Typography variant="h5">出品されている商品はありません</Typography>
-        </div>
-      ) : (
+      const lastItem = items[items.length - 1];
+      const loadMoreItems = loadMore.bind(
+        null,
+        lastItem.createdAt,
+        lastItem.id,
+        categoryId,
+      );
+
+      return (
         <div className={classes.root}>
           <Typography variant="h6">{categoryName}の新着商品</Typography>
           <ItemListComponent
@@ -99,6 +103,7 @@ class CategoryItemListPage extends React.Component<Props, State> {
           <SellingButtonContainer />
         </div>
       );
+    };
 
     return (
       <BasePageContainer>

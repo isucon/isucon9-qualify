@@ -40,15 +40,23 @@ class ItemListPage extends React.Component<Props> {
 
   render() {
     const { classes, loading, items, loadMore, hasNext } = this.props;
-    const lastItem = items[items.length - 1];
-    const loadMoreItems = loadMore.bind(null, lastItem.createdAt, lastItem.id);
 
-    const Content: React.FC<{}> = () =>
-      items.length === 0 ? (
-        <div className={classes.root}>
-          <Typography variant="h5">出品されている商品はありません</Typography>
-        </div>
-      ) : (
+    const Content: React.FC<{}> = () => {
+      if (items.length === 0) {
+        return (
+          <div className={classes.root}>
+            <Typography variant="h5">出品されている商品はありません</Typography>
+          </div>
+        );
+      }
+
+      const lastItem = items[items.length - 1];
+      const loadMoreItems = loadMore.bind(
+        null,
+        lastItem.createdAt,
+        lastItem.id,
+      );
+      return (
         <div className={classes.root}>
           <ItemListComponent
             items={items}
@@ -58,6 +66,7 @@ class ItemListPage extends React.Component<Props> {
           <SellingButtonContainer />
         </div>
       );
+    };
 
     return (
       <BasePageContainer>
