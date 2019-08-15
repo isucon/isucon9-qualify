@@ -41,6 +41,24 @@ export type ItemSimple = {
   created_at: number;
 };
 
+export type ItemDetail = {
+  id: number;
+  seller_id: number;
+  seller: UserSimple;
+  buyer_id?: number;
+  buyer?: UserData;
+  status: ItemStatus;
+  name: string;
+  price: number;
+  description: string;
+  category_id: number;
+  category: Category;
+  transaction_evidence_id?: number;
+  transaction_evidence_status?: TransactionStatus;
+  shipping_status?: ShippingStatus;
+  created_at: number;
+};
+
 /**
  * POST /register
  */
@@ -68,27 +86,7 @@ export interface LoginRes {
 /**
  * GET /item
  */
-export interface GetItemRes {
-  id: number;
-  seller_id: number;
-  seller: {
-    id: number;
-    account_name: string;
-    num_sell_items: number;
-  };
-  buyer_id: number;
-  buyer?: UserData;
-  status: ItemStatus;
-  name: string;
-  price: number;
-  description: string;
-  category_id: number;
-  category: Category;
-  transaction_evidence_id?: number;
-  transaction_evidence_status?: TransactionStatus;
-  shipping_status?: ShippingStatus;
-  created_at: number;
-}
+export interface GetItemRes extends ItemDetail {}
 
 /**
  * POST /sell
@@ -183,4 +181,15 @@ export interface CompleteReq {
 }
 export interface CompleteRes {
   transaction_evidence_id: string;
+}
+/**
+ * GET /users/transactions.json
+ */
+export interface UserTransactionsReq {
+  item_id?: number;
+  created_at?: number;
+}
+export interface UserTransactionsRes {
+  has_next: boolean;
+  items: ItemDetail[];
 }
