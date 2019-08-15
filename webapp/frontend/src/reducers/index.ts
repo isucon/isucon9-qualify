@@ -8,6 +8,7 @@ import buyPage from './buyPageReducer';
 import categories from './categoriesReducer';
 import timeline from './timelineReducer';
 import transactions from './transactionsReducer';
+import userItems from './userItemsReducer';
 import { connectRouter } from 'connected-react-router';
 import { History } from 'history';
 
@@ -23,4 +24,5 @@ export default (history: History) =>
     categories,
     timeline,
     transactions,
+    userItems,
   });
