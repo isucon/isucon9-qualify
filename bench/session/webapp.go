@@ -609,7 +609,7 @@ func (s *Session) UsersTransactions() (hasNext bool, items []ItemDetail, err err
 }
 
 func (s *Session) UserItems(userID int64) (hasNext bool, user *UserSimple, items []ItemSimple, err error) {
-	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("GET /users/%d.json", userID))
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/users/%d.json", userID))
 	if err != nil {
 		return false, nil, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /users/%d.json: リクエストに失敗しました", userID))
 	}
@@ -632,4 +632,29 @@ func (s *Session) UserItems(userID int64) (hasNext bool, user *UserSimple, items
 	}
 
 	return rui.HasNext, rui.User, rui.Items, nil
+}
+
+func (s *Session) Item(itemID int64) (item *ItemDetail, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/items/%d.json", itemID))
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: リクエストに失敗しました", itemID))
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: リクエストに失敗しました", itemID))
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: "+msg, itemID))
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&item)
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: JSONデコードに失敗しました", itemID))
+	}
+
+	return item, nil
 }
