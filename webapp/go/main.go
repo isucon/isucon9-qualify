@@ -456,6 +456,9 @@ func postInitilize(w http.ResponseWriter, r *http.Request) {
 		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
 		return
 	}
+
+	// TODO initilize data
+
 	_, err = dbx.Exec(
 		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
 		"payment_service_url",
@@ -476,8 +479,6 @@ func postInitilize(w http.ResponseWriter, r *http.Request) {
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
-
-	// TODO initilize data
 
 	res := resInitilize{}
 	// Campaign 実施時は true にする
