@@ -17,15 +17,16 @@ export function listItemAction(
   description: string,
   price: number,
   categoryId: number,
+  image: Blob,
 ): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-    const payload: SellReq = {
-      name,
-      description,
-      price,
-      category_id: categoryId,
-    };
-    AppClient.post('/sell', payload)
+    const body = new FormData();
+    body.append('name', name);
+    body.append('description', description);
+    body.append('price', price.toString());
+    body.append('category_id', categoryId.toString());
+    body.append('image', 'TODO: image');
+    AppClient.postFormData('/sell', body)
       .then((response: Response) => {
         if (!response.ok) {
           throw new Error('HTTP status not 200');

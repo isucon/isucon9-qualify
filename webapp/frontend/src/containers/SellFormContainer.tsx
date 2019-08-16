@@ -25,8 +25,9 @@ const mapDispatchToProps = (
     description: string,
     price: number,
     categoryId: number,
+    image: Blob,
   ) => {
-    dispatch(listItemAction(name, description, price, categoryId));
+    dispatch(listItemAction(name, description, price, categoryId, image));
   },
 });
 
