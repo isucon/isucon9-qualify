@@ -53,7 +53,7 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 }
 
 func (s *Session) ShipmentAccept(surl *url.URL) error {
-	req, err := s.newGetRequest(surl, "")
+	req, err := s.newGetRequest(*surl, "")
 	if err != nil {
 		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: リクエストに失敗しました")
 	}
