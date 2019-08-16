@@ -41,6 +41,24 @@ export type ItemSimple = {
   created_at: number;
 };
 
+export type ItemDetail = {
+  id: number;
+  seller_id: number;
+  seller: UserSimple;
+  buyer_id?: number;
+  buyer?: UserData;
+  status: ItemStatus;
+  name: string;
+  price: number;
+  description: string;
+  category_id: number;
+  category: Category;
+  transaction_evidence_id?: number;
+  transaction_evidence_status?: TransactionStatus;
+  shipping_status?: ShippingStatus;
+  created_at: number;
+};
+
 /**
  * POST /register
  */
@@ -68,27 +86,7 @@ export interface LoginRes {
 /**
  * GET /item
  */
-export interface GetItemRes {
-  id: number;
-  seller_id: number;
-  seller: {
-    id: number;
-    account_name: string;
-    num_sell_items: number;
-  };
-  buyer_id: number;
-  buyer?: UserData;
-  status: ItemStatus;
-  name: string;
-  price: number;
-  description: string;
-  category_id: number;
-  category: Category;
-  transaction_evidence_id?: number;
-  transaction_evidence_status?: TransactionStatus;
-  shipping_status?: ShippingStatus;
-  created_at: number;
-}
+export interface GetItemRes extends ItemDetail {}
 
 /**
  * POST /sell
@@ -153,6 +151,58 @@ export interface NewCategoryItemReq extends NewItemReq {}
 export interface NewCategoryItemRes {
   root_category_id?: number;
   root_category_name?: string;
+  has_next: boolean;
+  items: ItemSimple[];
+}
+
+/**
+ * POST /ship
+ */
+export interface ShipReq {
+  item_id: number;
+}
+export interface ShipRes {
+  path: string;
+}
+/**
+ * POST /ship_done
+ */
+export interface ShipDoneReq {
+  item_id: number;
+}
+export interface ShipDoneRes {
+  transaction_evidence_id: string;
+}
+/**
+ * POST /complete
+ */
+export interface CompleteReq {
+  item_id: number;
+}
+export interface CompleteRes {
+  transaction_evidence_id: string;
+}
+/**
+ * GET /users/transactions.json
+ */
+export interface UserTransactionsReq {
+  item_id?: number;
+  created_at?: number;
+}
+export interface UserTransactionsRes {
+  has_next: boolean;
+  items: ItemDetail[];
+}
+/**
+ * GET /users/:user_id.json
+ * ユーザの出品商品一覧
+ */
+export interface UserItemsReq {
+  item_id?: number;
+  created_at?: number;
+}
+export interface UserItemsRes {
+  user: UserSimple;
   has_next: boolean;
   items: ItemSimple[];
 }

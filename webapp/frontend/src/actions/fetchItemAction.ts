@@ -5,17 +5,18 @@ import { GetItemRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { ItemData } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
+import { FormErrorState } from '../reducers/formErrorReducer';
 
-export const FETCH_ITEM_PAGE_START = 'FETCH_ITEM_PAGE_START';
-export const FETCH_ITEM_PAGE_SUCCESS = 'FETCH_ITEM_PAGE_SUCCESS';
-export const FETCH_ITEM_PAGE_FAIL = 'FETCH_ITEM_PAGE_FAIL';
+export const FETCH_ITEM_START = 'FETCH_ITEM_START';
+export const FETCH_ITEM_SUCCESS = 'FETCH_ITEM_SUCCESS';
+export const FETCH_ITEM_FAIL = 'FETCH_ITEM_FAIL';
 
 type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
 
-export function fetchItemPageAction(itemId: string): ThunkResult<void> {
+export function fetchItemAction(itemId: string): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
     Promise.resolve(() => {
-      dispatch(fetchItemPageStartAction());
+      dispatch(fetchItemStartAction());
     })
       .then(() => AppClient.get(`/items/${itemId}.json`))
       .then((response: Response) => {
@@ -34,7 +35,7 @@ export function fetchItemPageAction(itemId: string): ThunkResult<void> {
       })
       .then((body: GetItemRes) => {
         dispatch(
-          fetchItemPageSuccessAction({
+          fetchItemSuccessAction({
             id: body.id,
             status: body.status,
             sellerId: body.seller_id,
@@ -56,48 +57,54 @@ export function fetchItemPageAction(itemId: string): ThunkResult<void> {
               categoryName: body.category.category_name,
               parentCategoryName: body.category.parent_category_name,
             },
+            transactionEvidenceId: body.transaction_evidence_id,
+            transactionEvidenceStatus: body.transaction_evidence_status,
+            shippingStatus: body.shipping_status,
             createdAt: body.created_at,
           }),
         );
       })
       .catch((err: Error) => {
-        dispatch(fetchItemPageFailAction());
+        dispatch(
+          fetchItemFailAction({
+            error: err.message,
+          }),
+        );
       });
   };
 }
 
-export interface FetchItemPageStartAction
-  extends Action<typeof FETCH_ITEM_PAGE_START> {}
+export interface FetchItemStartAction extends Action<typeof FETCH_ITEM_START> {}
 
-const fetchItemPageStartAction = (): FetchItemPageStartAction => {
+const fetchItemStartAction = (): FetchItemStartAction => {
   return {
-    type: FETCH_ITEM_PAGE_START,
+    type: FETCH_ITEM_START,
   };
 };
 
-export interface FetchItemPageSuccessAction
-  extends Action<typeof FETCH_ITEM_PAGE_SUCCESS> {
+export interface FetchItemSuccessAction
+  extends Action<typeof FETCH_ITEM_SUCCESS> {
   payload: {
     item: ItemData;
   };
 }
 
-const fetchItemPageSuccessAction = (
-  item: ItemData,
-): FetchItemPageSuccessAction => {
+const fetchItemSuccessAction = (item: ItemData): FetchItemSuccessAction => {
   return {
-    type: FETCH_ITEM_PAGE_SUCCESS,
+    type: FETCH_ITEM_SUCCESS,
     payload: {
       item,
     },
   };
 };
 
-export interface FetchItemPageFailAction
-  extends Action<typeof FETCH_ITEM_PAGE_FAIL> {}
+export interface FetchItemFailAction extends Action<typeof FETCH_ITEM_FAIL> {
+  payload: FormErrorState;
+}
 
-const fetchItemPageFailAction = (): FetchItemPageFailAction => {
+const fetchItemFailAction = (newError: FormErrorState): FetchItemFailAction => {
   return {
-    type: FETCH_ITEM_PAGE_FAIL,
+    type: FETCH_ITEM_FAIL,
+    payload: newError,
   };
 };

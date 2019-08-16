@@ -1,57 +1,54 @@
 import React from 'react';
-import { TimelineItem } from '../dataObjects/item';
+import { TransactionItem } from '../dataObjects/item';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import GridList from '@material-ui/core/GridList';
-import { ItemComponent } from './ItemComponent';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
 import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
+import { TransactionComponent } from './TransactionComponent';
 
 const useStyles = makeStyles(theme => ({
   grid: {
-    width: '300px',
+    width: '900px',
     height: '300px',
   },
 }));
 
-interface ItemListPageProps {
-  items: TimelineItem[];
+interface Props {
+  items: TransactionItem[];
   hasNext: boolean;
-  loadMore: (page: number) => void;
+  loadMore: (createdAt: number, itemId: number, page: number) => void;
 }
 
-const ItemListComponent: React.FC<ItemListPageProps> = function({
+const TransactionListComponent: React.FC<Props> = function({
   items,
   hasNext,
   loadMore,
-}: ItemListPageProps) {
+}: Props) {
   const classes = useStyles();
 
-  const itemComponents = [];
+  const transactionsComponents = [];
 
   for (const item of items) {
-    itemComponents.push(
+    transactionsComponents.push(
       <GridListTile className={classes.grid} key={item.id}>
-        <ItemComponent
-          itemId={item.id}
-          imageUrl={item.thumbnailUrl}
-          title={item.name}
-          price={item.price}
-        />
+        <TransactionComponent item={item} />
       </GridListTile>,
     );
   }
 
+  const lastItem = items[items.length - 1];
+
   return (
     <InfiniteScroll
       pageStart={0}
-      loadMore={loadMore}
+      loadMore={loadMore.bind(null, lastItem.createdAt, lastItem.id)}
       hasMore={hasNext}
       loader={<CircularProgress />}
     >
-      <GridList cols={3}>{itemComponents}</GridList>
+      <GridList cols={1}>{transactionsComponents}</GridList>
     </InfiniteScroll>
   );
 };
 
-export { ItemListComponent };
+export { TransactionListComponent };

@@ -26,7 +26,7 @@ const timeline = (
 ): TimelineState => {
   switch (action.type) {
     case LOCATION_CHANGE:
-      // MEMO: ページ遷移したらリセットする
+      // MEMO: ページ遷移したら再度APIを叩かせるようにリセットする
       return initialState;
     case FETCH_TIMELINE_SUCCESS:
       const { payload } = action;

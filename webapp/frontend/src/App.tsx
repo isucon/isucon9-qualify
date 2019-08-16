@@ -24,28 +24,8 @@ const routes: Array<{
     pageName: 'Timeline page',
   },
   {
-    path: '/items/:item_id',
-    pageName: 'Item page',
-  },
-  {
     path: '/items/:item_id/edit',
     pageName: 'Item edit page',
-  },
-  {
-    path: '/items/:item_id/buy',
-    pageName: 'Item buy page',
-  },
-  {
-    path: '/buy/complete',
-    pageName: 'Buying complete page',
-  },
-  {
-    path: '/sell',
-    pageName: 'Sell page',
-  },
-  {
-    path: '/transactions/:transaction_id',
-    pageName: 'Transaction page',
   },
   {
     path: '/users/:user_id',

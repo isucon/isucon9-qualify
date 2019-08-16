@@ -31,7 +31,12 @@ interface CategoryItemListPageProps extends WithStyles<typeof styles> {
   hasNext: boolean;
   categoryId: number;
   categoryName: string;
-  loadMore: (page: number) => void;
+  loadMore: (
+    createdAt: number,
+    itemId: number,
+    categoryId: number,
+    page: number,
+  ) => void;
 }
 
 type Props = CategoryItemListPageProps &
@@ -59,21 +64,46 @@ class CategoryItemListPage extends React.Component<Props, State> {
   }
 
   render() {
-    const { classes, loading, items, categoryName } = this.props;
+    const {
+      classes,
+      loading,
+      items,
+      categoryId,
+      categoryName,
+      loadMore,
+      hasNext,
+    } = this.props;
     const { categoryIdIsValid } = this.state;
 
-    const Content: React.FC<{}> = () =>
-      items.length === 0 ? (
-        <div className={classes.root}>
-          <Typography variant="h5">出品されている商品はありません</Typography>
-        </div>
-      ) : (
+    const Content: React.FC<{}> = () => {
+      if (items.length === 0) {
+        return (
+          <div className={classes.root}>
+            <Typography variant="h5">出品されている商品はありません</Typography>
+          </div>
+        );
+      }
+
+      const lastItem = items[items.length - 1];
+      const loadMoreItems = loadMore.bind(
+        null,
+        lastItem.createdAt,
+        lastItem.id,
+        categoryId,
+      );
+
+      return (
         <div className={classes.root}>
           <Typography variant="h6">{categoryName}の新着商品</Typography>
-          <ItemListComponent {...this.props} />
+          <ItemListComponent
+            items={items}
+            hasNext={hasNext}
+            loadMore={loadMoreItems}
+          />
           <SellingButtonContainer />
         </div>
       );
+    };
 
     return (
       <BasePageContainer>
