@@ -1054,7 +1054,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		Name:        item.Name,
 		Price:       item.Price,
 		Description: item.Description,
-		ImageUrl:    item.ImageName,
+		ImageUrl:    getImageUrl(item.ImageName),
 		CategoryID:  item.CategoryID,
 		// TransactionEvidenceID
 		// TransactionEvidenceStatus
