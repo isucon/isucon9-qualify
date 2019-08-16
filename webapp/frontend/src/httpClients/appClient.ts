@@ -29,33 +29,33 @@ class AppClient {
     });
   }
 
-  async post(
-    path: string,
-    params: any = {},
-    type: 'json' | 'form' = 'json',
-  ): Promise<Response> {
-    let contentType: string = 'application/json';
-
-    if (type === 'json') {
-      contentType = 'application/json';
-    } else if (type === 'form') {
-      contentType = 'multipart/form-data';
-    }
-
+  async post(path: string, params: any = {}): Promise<Response> {
     let requestOption: RequestInit = {
       method: 'POST',
       mode: 'same-origin',
       headers: Object.assign({}, this.defaultHeaders, {
-        'Content-Type': contentType,
+        'Content-Type': 'application/json',
       }),
       credentials: 'same-origin',
     };
 
     params.csrf_token = await this.getCsrfToken();
 
-    if (params) {
-      requestOption.body = JSON.stringify(params);
-    }
+    return await fetch(`${this.baseUrl}${path}`, requestOption);
+  }
+
+  async postFormData(path: string, body: FormData): Promise<Response> {
+    let requestOption: RequestInit = {
+      method: 'POST',
+      mode: 'same-origin',
+      headers: Object.assign({}, this.defaultHeaders, {
+        'Content-Type': 'multipart/form-data',
+      }),
+      credentials: 'same-origin',
+    };
+
+    body.append('csrf_token', await this.getCsrfToken());
+    requestOption.body = body;
 
     return await fetch(`${this.baseUrl}${path}`, requestOption);
   }
