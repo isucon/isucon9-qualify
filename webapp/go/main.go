@@ -1896,14 +1896,14 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categoryID, err := strconv.ParseInt(categoryIDStr, 10, 64)
+	categoryID, err := strconv.Atoi(categoryIDStr)
 
 	if err != nil || categoryID < 0 {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "category id error")
 		return
 	}
 
-	price, err := strconv.ParseInt(priceStr, 10, 64)
+	price, err := strconv.Atoi(priceStr)
 
 	if err != nil {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "price error")
@@ -1927,7 +1927,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := getCategoryByID(dbx, int(categoryID))
+	category, err := getCategoryByID(dbx, categoryID)
 	if err != nil || category.ParentID == 0 {
 		log.Print(categoryID, category)
 		outputErrorMsg(w, http.StatusBadRequest, "Incorrect category ID")
@@ -1940,13 +1940,18 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	img, err := ioutil.ReadFile(header.Filename)
+	img, err := ioutil.ReadAll(f)
 	if err != nil {
-		outputErrorMsg(w, http.StatusUnprocessableEntity, "image error")
+		outputErrorMsg(w, http.StatusBadRequest, "image error")
 		return
 	}
 	imgName := secureRandomStr(16)
-	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s.png", imgName), img, 0644)
+	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s", imgName), img, 0644)
+
+	if err != nil {
+		outputErrorMsg(w, http.StatusInternalServerError, "Saving image failed")
+		return
+	}
 
 	tx := dbx.MustBegin()
 
