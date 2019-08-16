@@ -23,6 +23,15 @@ const (
 	ItemsPerPage = 48
 )
 
+func initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
+	s1, err := session.NewSession()
+	if err != nil {
+		return false, err
+	}
+
+	return s1.Initialize(paymentServiceURL, shipmentServiceURL)
+}
+
 func sellAndBuy(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
