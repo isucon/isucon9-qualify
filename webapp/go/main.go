@@ -1872,33 +1872,26 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func postSell(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	form := r.PostForm
+	rs := reqSell{}
 
-	csrfToken := form.Get("csrf_token")
-	name := form.Get("name")
-	description := form.Get("description")
-	priceStr := form.Get("price")
-	categoryIDStr := form.Get("category_id")
+	err := json.NewDecoder(r.Body).Decode(&rs)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
+		return
+	}
+
+	csrfToken := rs.CSRFToken
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
+
 		return
 	}
 
-	categoryID, err := strconv.ParseInt(categoryIDStr, 10, 64)
-
-	if err != nil || categoryID < 0 {
-		outputErrorMsg(w, http.StatusUnprocessableEntity, "category id error")
-		return
-	}
-
-	price, err := strconv.ParseInt(priceStr, 10, 64)
-
-	if err != nil {
-		outputErrorMsg(w, http.StatusUnprocessableEntity, "price error")
-		return
-	}
+	name := rs.Name
+	price := rs.Price
+	description := rs.Description
+	categoryID := rs.CategoryID
 
 	// For test purpose, use 13 as default category
 	if categoryID == 0 {
@@ -1917,7 +1910,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := getCategoryByID(dbx, int(categoryID))
+	category, err := getCategoryByID(dbx, categoryID)
 	if err != nil || category.ParentID == 0 {
 		log.Print(categoryID, category)
 		outputErrorMsg(w, http.StatusBadRequest, "Incorrect category ID")
