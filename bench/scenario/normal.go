@@ -147,6 +147,29 @@ func transactionEvidence(user1 asset.AppUser) error {
 		}
 	}
 
+	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
+
+	_, items, err = s1.UsersTransactionsWithItemIDAndCreatedAt(targetItemID, targetItemCreatedAt)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
+			return fails.NewError(nil, "/users/transactions.jsonのitem_idとcreated_atが正しく動作していません")
+		}
+
+		if item.TransactionEvidenceID == 0 {
+			// TODO: check
+			continue
+		}
+
+		ate := asset.GetTransactionEvidence(item.TransactionEvidenceID)
+		if item.TransactionEvidenceStatus != ate.Status {
+			return fails.NewError(nil, "/users/transactions.jsonのステータスに誤りがあります")
+		}
+	}
+
 	return nil
 }
 
