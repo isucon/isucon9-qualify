@@ -49,9 +49,9 @@ class AppClient {
     let requestOption: RequestInit = {
       method: 'POST',
       mode: 'same-origin',
-      headers: Object.assign({}, this.defaultHeaders, {
-        'Content-Type': 'multipart/form-data',
-      }),
+      // MEMO: The reason why we should not set Content-Type header by ourselves
+      // https://stackoverflow.com/questions/39280438/fetch-missing-boundary-in-multipart-form-data-post
+      headers: this.defaultHeaders,
       credentials: 'same-origin',
     };
 
