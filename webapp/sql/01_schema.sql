@@ -1,7 +1,7 @@
 use `isucari`;
 
-DROP TABLE IF EXISTS `settings`;
-CREATE TABLE settings (
+DROP TABLE IF EXISTS `configs`;
+CREATE TABLE configs (
     name VARCHAR(191) NOT NULL PRIMARY KEY,
     val VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;

@@ -62,7 +62,7 @@ var (
 	store     sessions.Store
 )
 
-type Setting struct {
+type Config struct {
 	Name string `json:"name" db:"name"`
 	Val  string `json:"val" db:"val"`
 }
@@ -415,14 +415,14 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 	return category, err
 }
 
-func getSettingsByName(name string) (string, error) {
-	setting := Setting{}
-	err := dbx.Get(&setting, "SELECT * FROM `settings` WHERE `name` = ?", name)
-	return setting.Val, err
+func getConfigByName(name string) (string, error) {
+	config := Config{}
+	err := dbx.Get(&config, "SELECT * FROM `configs` WHERE `name` = ?", name)
+	return config.Val, err
 }
 
 func getPaymentServiceURL() string {
-	val, _ := getSettingsByName("payment_service_url")
+	val, _ := getConfigByName("payment_service_url")
 	if val == "" {
 		return DefaultPaymentServiceURL
 	}
@@ -430,7 +430,7 @@ func getPaymentServiceURL() string {
 }
 
 func getShipmentServiceURL() string {
-	val, _ := getSettingsByName("shipment_service_url")
+	val, _ := getConfigByName("shipment_service_url")
 	if val == "" {
 		return DefaultShipmentServiceURL
 	}
@@ -450,7 +450,7 @@ func postInitilize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = dbx.Exec(
-		"INSERT INTO `settings` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
 		"payment_service_url",
 		ri.PaymentServiceURL,
 	)
@@ -460,7 +460,7 @@ func postInitilize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = dbx.Exec(
-		"INSERT INTO `settings` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
 		"shipment_service_url",
 		ri.ShipmentServiceURL,
 	)
