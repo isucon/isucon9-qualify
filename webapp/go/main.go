@@ -93,6 +93,7 @@ type Item struct {
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
 	Description string    `json:"description" db:"description"`
+	ImageName   string    `json:"image_name" db:"image_name"`
 	CategoryID  int       `json:"category_id" db:"category_id"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
@@ -105,6 +106,7 @@ type ItemSimple struct {
 	Status     string      `json:"status"`
 	Name       string      `json:"name"`
 	Price      int         `json:"price"`
+	ImageUrl   string      `json:"image_url"`
 	CategoryID int         `json:"category_id"`
 	Category   *Category   `json:"category"`
 	CreatedAt  int64       `json:"created_at"`
@@ -120,6 +122,7 @@ type ItemDetail struct {
 	Name                      string      `json:"name"`
 	Price                     int         `json:"price"`
 	Description               string      `json:"description"`
+	ImageUrl                  string      `json:"image_url"`
 	CategoryID                int         `json:"category_id"`
 	Category                  *Category   `json:"category"`
 	TransactionEvidenceID     int64       `json:"transaction_evidence_id,omitempty"`
@@ -137,6 +140,7 @@ type TransactionEvidence struct {
 	ItemName           string    `json:"item_name" db:"item_name"`
 	ItemPrice          int       `json:"item_price" db:"item_price"`
 	ItemDescription    string    `json:"item_description" db:"item_description"`
+	ItemImageUrl       string    `json:"image_url" db:"image_name"`
 	ItemCategoryID     int       `json:"item_category_id" db:"item_category_id"`
 	ItemRootCategoryID int       `json:"item_root_category_id" db:"item_root_category_id"`
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
@@ -225,14 +229,6 @@ type reqBuy struct {
 
 type resBuy struct {
 	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
-}
-
-type reqSell struct {
-	CSRFToken   string `json:"csrf_token"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int    `json:"price"`
-	CategoryID  int    `json:"category_id"`
 }
 
 type resSell struct {
@@ -574,6 +570,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageUrl:   getImageUrl(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -700,6 +697,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageUrl:   getImageUrl(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -808,6 +806,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageUrl:   getImageUrl(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -929,6 +928,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			Name:        item.Name,
 			Price:       item.Price,
 			Description: item.Description,
+			ImageUrl:    getImageUrl(item.ImageName),
 			CategoryID:  item.CategoryID,
 			// TransactionEvidenceID
 			// TransactionEvidenceStatus
@@ -1055,6 +1055,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		Name:        item.Name,
 		Price:       item.Price,
 		Description: item.Description,
+		ImageUrl:    item.ImageName,
 		CategoryID:  item.CategoryID,
 		// TransactionEvidenceID
 		// TransactionEvidenceStatus
@@ -1963,12 +1964,13 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
 		price,
 		description,
+		imgName,
 		category.ID,
 	)
 	if err != nil {
@@ -2281,4 +2283,8 @@ func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
 	json.NewEncoder(w).Encode(struct {
 		Error string `json:"error"`
 	}{Error: msg})
+}
+
+func getImageUrl(imageName string) string {
+	return fmt.Sprintf("/upload/%s", imageName)
 }
