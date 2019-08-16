@@ -172,6 +172,11 @@ type resNewItems struct {
 	Items            []ItemSimple `json:"items"`
 }
 
+type resTransactions struct {
+	HasNext bool         `json:"has_next"`
+	Items   []ItemDetail `json:"items"`
+}
+
 func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	b, _ := json.Marshal(reqLogin{
 		AccountName: accountName,
@@ -569,4 +574,30 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, ite
 	}
 
 	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
+}
+
+func (s *Session) UsersTransactions() (hasNext bool, items []ItemDetail, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/users/transactions.json")
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json "+msg)
+	}
+
+	rt := resTransactions{}
+	err = json.NewDecoder(res.Body).Decode(&rt)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json JSONデコードに失敗しました")
+	}
+
+	return rt.HasNext, rt.Items, nil
 }

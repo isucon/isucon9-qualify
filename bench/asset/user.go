@@ -39,14 +39,30 @@ type AppCategory struct {
 	ParentCategoryName string `json:"parent_category_name,omitempty"`
 }
 
+type AppTransactionEvidence struct {
+	ID                 int64  `json:"id"`
+	SellerID           int64  `json:"seller_id"`
+	BuyerID            int64  `json:"buyer_id"`
+	Status             string `json:"status"`
+	ItemID             int64  `json:"item_id"`
+	ItemName           string `json:"item_name"`
+	ItemPrice          int    `json:"item_price"`
+	ItemDescription    string `json:"item_description"`
+	ItemCategoryID     int    `json:"item_category_id"`
+	ItemRootCategoryID int    `json:"item_root_category_id"`
+	CreatedAt          int64  `json:"created_at"`
+	UpdatedAt          int64  `json:"updated_at"`
+}
+
 var (
-	users          []AppUser
-	items          map[string]AppItem
-	categories     map[int]AppCategory
-	rootCategories []AppCategory
-	userItems      map[int64][]int64
-	muItem         sync.RWMutex
-	indexUser      int32
+	users                []AppUser
+	items                map[string]AppItem
+	categories           map[int]AppCategory
+	rootCategories       []AppCategory
+	userItems            map[int64][]int64
+	transactionEvidences map[int64]AppTransactionEvidence
+	muItem               sync.RWMutex
+	indexUser            int32
 )
 
 func init() {
@@ -55,6 +71,7 @@ func init() {
 	categories = make(map[int]AppCategory)
 	rootCategories = make([]AppCategory, 0, 10)
 	userItems = make(map[int64][]int64)
+	transactionEvidences = make(map[int64]AppTransactionEvidence)
 
 	f, err := os.Open("initial-data/result/users_json.txt")
 	if err != nil {
@@ -112,6 +129,23 @@ func init() {
 	}
 	f.Close()
 
+	f, err = os.Open("initial-data/result/transaction_evidences_json.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner = bufio.NewScanner(f)
+	te := AppTransactionEvidence{}
+
+	for scanner.Scan() {
+		err := json.Unmarshal([]byte(scanner.Text()), &te)
+		if err != nil {
+			log.Fatal(err)
+		}
+		transactionEvidences[te.ID] = te
+	}
+	f.Close()
+
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
 }
@@ -161,4 +195,8 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 
 func GetRandomRootCategory() AppCategory {
 	return rootCategories[rand.Intn(len(rootCategories))]
+}
+
+func GetTransactionEvidence(id int64) AppTransactionEvidence {
+	return transactionEvidences[id]
 }
