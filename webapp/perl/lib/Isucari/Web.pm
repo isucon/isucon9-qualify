@@ -161,7 +161,7 @@ sub getCategoryByID {
     if ($category->{parent_id} != 0) {
         my $parent_category = $self->getCategoryByID($category->{parent_id});
         return unless $parent_category;
-        $category->{parent_category_name} = $parent_category->{name};
+        $category->{parent_category_name} = $parent_category->{category_name};
     }
     return +{
         id => number $category->{id},
@@ -364,7 +364,7 @@ get '/new_items/{root_category_id:\d+}.json' => sub {
 
     $c->render_json({
         root_category_id => number $root_category->{id},
-        root_category_name => $root_category->{name},
+        root_category_name => $root_category->{category_name},
         items => \@item_simples,
         has_next => bool $has_next
     });
