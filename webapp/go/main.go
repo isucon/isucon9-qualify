@@ -258,9 +258,10 @@ type reqBump struct {
 }
 
 type resSetting struct {
-	CSRFToken  string     `json:"csrf_token"`
-	User       *User      `json:"user,omitempty"`
-	Categories []Category `json:"categories"`
+	CSRFToken         string     `json:"csrf_token"`
+	PaymentServiceURL string     `json:"payment_service_url"`
+	User              *User      `json:"user,omitempty"`
+	Categories        []Category `json:"categories"`
 }
 
 func init() {
@@ -2077,6 +2078,8 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	if errMsg == "" {
 		ress.User = &user
 	}
+
+	ress.PaymentServiceURL = getPaymentServiceURL()
 
 	categories := []Category{}
 
