@@ -3,7 +3,7 @@ import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { push } from 'connected-react-router';
 import { AnyAction } from 'redux';
-import { SellReq, SellRes } from '../types/appApiTypes';
+import { SellRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
 
 export const SELLING_ITEM_SUCCESS = 'SELLING_ITEM_SUCCESS';

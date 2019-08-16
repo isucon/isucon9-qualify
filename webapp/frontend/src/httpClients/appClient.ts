@@ -40,6 +40,7 @@ class AppClient {
     };
 
     params.csrf_token = await this.getCsrfToken();
+    requestOption.body = JSON.stringify(params);
 
     return await fetch(`${this.baseUrl}${path}`, requestOption);
   }
