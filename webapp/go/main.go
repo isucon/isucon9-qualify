@@ -23,6 +23,9 @@ import (
 const (
 	sessionName = "session_isucari"
 
+	DefaultPaymentServiceURL  = "http://localhost:5555"
+	DefaultShipmentServiceURL = "http://localhost:7000"
+
 	ItemMinPrice    = 100
 	ItemMaxPrice    = 1000000
 	ItemPriceErrMsg = "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください"
@@ -58,6 +61,11 @@ var (
 	dbx       *sqlx.DB
 	store     sessions.Store
 )
+
+type Config struct {
+	Name string `json:"name" db:"name"`
+	Val  string `json:"val" db:"val"`
+}
 
 type User struct {
 	ID             int64     `json:"id" db:"id"`
@@ -156,6 +164,15 @@ type Category struct {
 	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
 }
 
+type reqInitilize struct {
+	PaymentServiceURL  string `json:"payment_service_url"`
+	ShipmentServiceURL string `json:"shipment_service_url"`
+}
+
+type resInitilize struct {
+	IsCampaign bool `json:"is_campaign"`
+}
+
 type resNewItems struct {
 	RootCategoryID   int          `json:"root_category_id,omitempty"`
 	RootCategoryName string       `json:"root_category_name,omitempty"`
@@ -245,9 +262,10 @@ type reqBump struct {
 }
 
 type resSetting struct {
-	CSRFToken  string     `json:"csrf_token"`
-	User       *User      `json:"user,omitempty"`
-	Categories []Category `json:"categories"`
+	CSRFToken         string     `json:"csrf_token"`
+	PaymentServiceURL string     `json:"payment_service_url"`
+	User              *User      `json:"user,omitempty"`
+	Categories        []Category `json:"categories"`
 }
 
 func init() {
@@ -304,6 +322,7 @@ func main() {
 	mux := goji.NewMux()
 
 	// API
+	mux.HandleFunc(pat.Post("/initilize"), postInitilize)
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
 	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
@@ -320,6 +339,7 @@ func main() {
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
+	mux.HandleFunc(pat.Get("/reports.json"), getReports)
 	// Frontend
 	mux.HandleFunc(pat.Get("/"), getIndex)
 	mux.HandleFunc(pat.Get("/login"), getIndex)
@@ -399,8 +419,73 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 	return category, err
 }
 
+func getConfigByName(name string) (string, error) {
+	config := Config{}
+	err := dbx.Get(&config, "SELECT * FROM `configs` WHERE `name` = ?", name)
+	if err != nil {
+		log.Print(err)
+	}
+	return config.Val, err
+}
+
+func getPaymentServiceURL() string {
+	val, _ := getConfigByName("payment_service_url")
+	if val == "" {
+		return DefaultPaymentServiceURL
+	}
+	return val
+}
+
+func getShipmentServiceURL() string {
+	val, _ := getConfigByName("shipment_service_url")
+	if val == "" {
+		return DefaultShipmentServiceURL
+	}
+	return val
+}
+
 func getIndex(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", struct{}{})
+}
+
+func postInitilize(w http.ResponseWriter, r *http.Request) {
+	ri := reqInitilize{}
+
+	err := json.NewDecoder(r.Body).Decode(&ri)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
+		return
+	}
+
+	// TODO initilize data
+
+	_, err = dbx.Exec(
+		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+		"payment_service_url",
+		ri.PaymentServiceURL,
+	)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	_, err = dbx.Exec(
+		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+		"shipment_service_url",
+		ri.ShipmentServiceURL,
+	)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	res := resInitilize{}
+	// Campaign 実施時は true にする
+	res.IsCampaign = false
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(res)
 }
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
@@ -873,7 +958,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 				tx.Rollback()
 				return
 			}
-			ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
+			ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
 				ReserveID: shipping.ReserveID,
 			})
 			if err != nil {
@@ -1271,7 +1356,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scr, err := APIShipmentCreate("http://localhost:7000", &APIShipmentCreateReq{
+	scr, err := APIShipmentCreate(getShipmentServiceURL(), &APIShipmentCreateReq{
 		ToAddress:   buyer.Address,
 		ToName:      buyer.AccountName,
 		FromAddress: seller.Address,
@@ -1285,7 +1370,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pstr, err := APIPaymentToken("http://localhost:5555", &APIPaymentServiceTokenReq{
+	pstr, err := APIPaymentToken(getPaymentServiceURL(), &APIPaymentServiceTokenReq{
 		ShopID: PaymentServiceIsucariShopID,
 		Token:  rb.Token,
 		APIKey: PaymentServiceIsucariAPIKey,
@@ -1441,7 +1526,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	img, err := APIShipmentRequest("http://localhost:7000", &APIShipmentRequestReq{
+	img, err := APIShipmentRequest(getShipmentServiceURL(), &APIShipmentRequestReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
@@ -1571,7 +1656,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
+	ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
@@ -1711,7 +1796,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
+	ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
@@ -2007,6 +2092,8 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		ress.User = &user
 	}
 
+	ress.PaymentServiceURL = getPaymentServiceURL()
+
 	categories := []Category{}
 
 	err := dbx.Select(&categories, "SELECT * FROM `categories`")
@@ -2142,6 +2229,11 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(u)
+}
+
+// TODO: select * from transaction_evidences
+func getReports(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 }
 
 func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
