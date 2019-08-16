@@ -607,6 +607,10 @@ class Service
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
 
+        $this->session->set('user_id', $userId);
+        $bytes = random_bytes(20);
+        $this->session->set('csrf_token', bin2hex($bytes));
+
         return $response->withJson(['id' => $userId, 'account_name' => $payload->account_name, 'address' => $payload->address]);
     }
 
