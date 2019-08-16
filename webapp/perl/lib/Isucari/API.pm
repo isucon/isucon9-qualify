@@ -80,7 +80,7 @@ sub shipment_request {
 sub shipment_status {
     my ($self,$shipment_url,$param) = @_;
     my $json = JSON::encode_json($param);
-warn $json, $shipment_url;
+
     my $req = HTTP::Request->new(GET => $shipment_url . "/status");
     $req->header("Content-Type", "application/json");
     $req->header("Authorization", $ISUCARI_API_TOKEN);
