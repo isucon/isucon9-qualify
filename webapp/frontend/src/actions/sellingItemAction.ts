@@ -25,7 +25,7 @@ export function listItemAction(
     body.append('description', description);
     body.append('price', price.toString());
     body.append('category_id', categoryId.toString());
-    body.append('image', 'TODO: image');
+    body.append('image', image);
     AppClient.postFormData('/sell', body)
       .then((response: Response) => {
         if (!response.ok) {
