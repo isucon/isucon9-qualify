@@ -110,6 +110,100 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	return nil
 }
 
+func transactionEvidence(user1 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	user, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(user) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	_, items, err := s1.UsersTransactions()
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		if item.TransactionEvidenceID == 0 {
+			// TODO: check
+			continue
+		}
+
+		ate := asset.GetTransactionEvidence(item.TransactionEvidenceID)
+		if item.TransactionEvidenceStatus != ate.Status {
+			return fails.NewError(nil, "/users/transactions.jsonのステータスに誤りがあります")
+		}
+	}
+
+	return nil
+}
+
+func userItemsAndItem(user1, user2 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	viewer, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(viewer) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	_, user, items, err := s1.UserItems(user2.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		aItem, ok := asset.GetItem(user.ID, item.ID)
+		if !ok {
+			return fails.NewError(nil, fmt.Sprintf("/users/%d.jsonに存在しない商品が返ってきています", user2.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return fails.NewError(nil, fmt.Sprintf("/users/%d.jsonの商品の名前が間違えています", user2.ID))
+		}
+	}
+
+	targetItemID := asset.GetUserItemsFirst(user2.ID)
+	item, err := s1.Item(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	aItem, ok := asset.GetItem(user2.ID, targetItemID)
+	if !ok {
+		return fails.NewError(nil, fmt.Sprintf("/items/%d.jsonに存在しない商品が返ってきています", targetItemID))
+	}
+
+	if !(item.Description == aItem.Description) {
+		return fails.NewError(nil, fmt.Sprintf("/items/%d.jsonの商品説明が間違っています", targetItemID))
+	}
+
+	return nil
+}
+
 func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
@@ -237,6 +331,38 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 
 		createdAt = item.CreatedAt
 	}
+
+	return nil
+}
+
+func itemEdit(user1 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	seller, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(seller) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	targetItemID := asset.GetUserItemsFirst(user1.ID)
+	price := 110
+	_, err = s1.ItemEdit(targetItemID, price)
+	if err != nil {
+		return err
+	}
+
+	asset.SetItemPrice(user1.ID, targetItemID, price)
 
 	return nil
 }

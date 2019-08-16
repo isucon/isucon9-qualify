@@ -46,6 +46,37 @@ func Verify() *fails.Critical {
 		}
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
+		err := itemEdit(user1)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
+		err := transactionEvidence(user1)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
+		user2 := asset.GetRandomUser()
+		err := userItemsAndItem(user1, user2)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
 	user3 := asset.GetRandomUser()
 
 	wg.Add(1)

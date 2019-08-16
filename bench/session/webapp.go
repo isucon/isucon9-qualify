@@ -126,6 +126,12 @@ type reqLogin struct {
 	Password    string `json:"password"`
 }
 
+type reqItemEdit struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+	ItemPrice int    `json:"item_price"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -170,6 +176,17 @@ type resNewItems struct {
 	RootCategoryName string       `json:"root_category_name,omitempty"`
 	HasNext          bool         `json:"has_next"`
 	Items            []ItemSimple `json:"items"`
+}
+
+type resTransactions struct {
+	HasNext bool         `json:"has_next"`
+	Items   []ItemDetail `json:"items"`
+}
+
+type resUserItems struct {
+	User    *UserSimple  `json:"user"`
+	HasNext bool         `json:"has_next"`
+	Items   []ItemSimple `json:"items"`
 }
 
 func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
@@ -459,6 +476,37 @@ func (s *Session) Bump(itemID int64) (int64, error) {
 	return rie.ItemCreatedAt, nil
 }
 
+func (s *Session) ItemEdit(itemID int64, price int) (int, error) {
+	b, _ := json.Marshal(reqItemEdit{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+		ItemPrice: price,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/items/edit", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: "+msg)
+	}
+
+	rie := &resItemEdit{}
+	err = json.NewDecoder(res.Body).Decode(rie)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: JSONデコードに失敗しました")
+	}
+
+	return rie.ItemPrice, nil
+}
+
 func (s *Session) NewItems() (hasNext bool, items []ItemSimple, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/new_items.json")
 	if err != nil {
@@ -569,4 +617,81 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, ite
 	}
 
 	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
+}
+
+func (s *Session) UsersTransactions() (hasNext bool, items []ItemDetail, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/users/transactions.json")
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json "+msg)
+	}
+
+	rt := resTransactions{}
+	err = json.NewDecoder(res.Body).Decode(&rt)
+	if err != nil {
+		return false, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), "GET /users/transactions.json JSONデコードに失敗しました")
+	}
+
+	return rt.HasNext, rt.Items, nil
+}
+
+func (s *Session) UserItems(userID int64) (hasNext bool, user *UserSimple, items []ItemSimple, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/users/%d.json", userID))
+	if err != nil {
+		return false, nil, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /users/%d.json: リクエストに失敗しました", userID))
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return false, nil, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /users/%d.json: リクエストに失敗しました", userID))
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return false, nil, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /users/%d.json: "+msg, userID))
+	}
+
+	rui := resUserItems{}
+	err = json.NewDecoder(res.Body).Decode(&rui)
+	if err != nil {
+		return false, nil, nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /users/%d.json: JSONデコードに失敗しました", userID))
+	}
+
+	return rui.HasNext, rui.User, rui.Items, nil
+}
+
+func (s *Session) Item(itemID int64) (item *ItemDetail, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/items/%d.json", itemID))
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: リクエストに失敗しました", itemID))
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: リクエストに失敗しました", itemID))
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: "+msg, itemID))
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&item)
+	if err != nil {
+		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /items/%d.json: JSONデコードに失敗しました", itemID))
+	}
+
+	return item, nil
 }
