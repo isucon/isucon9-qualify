@@ -514,3 +514,59 @@ func (s *Session) NewItemsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNe
 
 	return rni.HasNext, rni.Items, nil
 }
+
+func (s *Session) NewCategoryItems(rootCategoryID int) (hasNext bool, rootCategoryName string, items []ItemSimple, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/new_items/%d.json", rootCategoryID))
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: "+msg, rootCategoryID))
+	}
+
+	rni := resNewItems{}
+	err = json.NewDecoder(res.Body).Decode(&rni)
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: JSONデコードに失敗しました", rootCategoryID))
+	}
+
+	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
+}
+
+func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, itemID, createdAt int64) (hasNext bool, rootCategoryName string, items []ItemSimple, err error) {
+	q := url.Values{}
+	q.Set("item_id", strconv.FormatInt(itemID, 10))
+	q.Set("created_at", strconv.FormatInt(createdAt, 10))
+
+	req, err := s.newGetRequestWithQuery(ShareTargetURLs.AppURL, fmt.Sprintf("/new_items/%d.json", rootCategoryID), q)
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: "+msg, rootCategoryID))
+	}
+
+	rni := resNewItems{}
+	err = json.NewDecoder(res.Body).Decode(&rni)
+	if err != nil {
+		return false, "", nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET /new_items/%d.json: JSONデコードに失敗しました", rootCategoryID))
+	}
+
+	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
+}
