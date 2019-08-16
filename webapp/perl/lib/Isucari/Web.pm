@@ -208,11 +208,11 @@ get '/transactions/{transaction_id}' => $get_index;
 get '/users/{user_id}' => $get_index;
 get '/users/setting' => $get_index;
 
-# postInitilize
-post '/initilize' => [qw/allow_json_request/] => sub {
+# postInitialize
+post '/initialize' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
 
-    # TODO initilize data
+    # TODO initialize data
 
     for my $name (qw/payment_service_url shipment_service_url/) {
         $self->dbh->query(
