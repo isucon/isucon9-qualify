@@ -168,13 +168,26 @@ sub getCategoryByID {
     };
 }
 
-# getTop
-get '/' => sub {
+# Frontend: getIndex
+my $get_index = sub {
     my ( $self, $c )  = @_;
     open(my $fh, File::Spec->catfile($self->root_dir,'public/index.html')) or die $!;
     my $html = do {local $/; <$fh>};
     return $html;
 };
+get '/' => $get_index;
+get '/login' => $get_index;
+get '/register' => $get_index;
+get '/timeline' => $get_index;
+get '/categories/{category_id}/items' => $get_index;
+get '/sell' => $get_index;
+get '/items/{item_id}' => $get_index;
+get '/items/{item_id}/edit' => $get_index;
+get '/items/{item_id}/buy' => $get_index;
+get '/buy/complete' => $get_index;
+get '/transactions/{transaction_id}' => $get_index;
+get '/users/{user_id}' => $get_index;
+get '/users/setting' => $get_index;
 
 # getNewItems
 get '/new_items.json' => sub {
