@@ -165,12 +165,12 @@ type Category struct {
 	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
 }
 
-type reqInitilize struct {
+type reqInitialize struct {
 	PaymentServiceURL  string `json:"payment_service_url"`
 	ShipmentServiceURL string `json:"shipment_service_url"`
 }
 
-type resInitilize struct {
+type resInitialize struct {
 	IsCampaign bool `json:"is_campaign"`
 }
 
@@ -323,7 +323,7 @@ func main() {
 	mux := goji.NewMux()
 
 	// API
-	mux.HandleFunc(pat.Post("/initilize"), postInitilize)
+	mux.HandleFunc(pat.Post("/initialize"), postInitialize)
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
 	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
@@ -453,8 +453,8 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", struct{}{})
 }
 
-func postInitilize(w http.ResponseWriter, r *http.Request) {
-	ri := reqInitilize{}
+func postInitialize(w http.ResponseWriter, r *http.Request) {
+	ri := reqInitialize{}
 
 	err := json.NewDecoder(r.Body).Decode(&ri)
 	if err != nil {
@@ -492,7 +492,7 @@ func postInitilize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := resInitilize{}
+	res := resInitialize{}
 	// Campaign 実施時は true にする
 	res.IsCampaign = false
 
