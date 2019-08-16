@@ -40,16 +40,20 @@ type AppCategory struct {
 }
 
 var (
-	users     []AppUser
-	items     map[string]AppItem
-	userItems map[int64][]int64
-	muItem    sync.RWMutex
-	indexUser int32
+	users          []AppUser
+	items          map[string]AppItem
+	categories     map[int]AppCategory
+	rootCategories []AppCategory
+	userItems      map[int64][]int64
+	muItem         sync.RWMutex
+	indexUser      int32
 )
 
 func init() {
 	users = make([]AppUser, 0, 100)
 	items = make(map[string]AppItem)
+	categories = make(map[int]AppCategory)
+	rootCategories = make([]AppCategory, 0, 10)
 	userItems = make(map[int64][]int64)
 
 	f, err := os.Open("initial-data/result/users_json.txt")
@@ -84,6 +88,27 @@ func init() {
 		}
 		items[fmt.Sprintf("%d_%d", item.SellerID, item.ID)] = item
 		userItems[item.SellerID] = append(userItems[item.SellerID], item.ID)
+	}
+	f.Close()
+
+	f, err = os.Open("initial-data/result/category_json.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner = bufio.NewScanner(f)
+	category := AppCategory{}
+
+	for scanner.Scan() {
+		err := json.Unmarshal([]byte(scanner.Text()), &category)
+		if err != nil {
+			log.Fatal(err)
+		}
+		categories[category.ID] = category
+
+		if category.ParentID == 0 {
+			rootCategories = append(rootCategories, category)
+		}
 	}
 	f.Close()
 
@@ -135,10 +160,5 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 }
 
 func GetRandomRootCategory() AppCategory {
-	return AppCategory{
-		ID:                 1,
-		ParentID:           0,
-		CategoryName:       "ソファー",
-		ParentCategoryName: "ソファー",
-	}
+	return rootCategories[rand.Intn(len(rootCategories))]
 }
