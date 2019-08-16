@@ -1873,7 +1873,13 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func postSell(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	err := r.ParseMultipartForm(1024 * 500) // 500 KB
+
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "parse form data error")
+		return
+	}
+
 	form := r.PostForm
 
 	csrfToken := form.Get("csrf_token")
@@ -1886,7 +1892,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	defer f.Close()
 
 	if err != nil {
-		outputErrorMsg(w, http.StatusUnprocessableEntity, "image error")
+		outputErrorMsg(w, http.StatusBadRequest, "image error")
 		return
 	}
 
@@ -1968,7 +1974,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
