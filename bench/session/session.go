@@ -24,9 +24,9 @@ type Session struct {
 }
 
 type TargetURLs struct {
-	AppURL      *url.URL
-	PaymentURL  *url.URL
-	ShipmentURL *url.URL
+	AppURL      url.URL
+	PaymentURL  url.URL
+	ShipmentURL url.URL
 }
 
 var (
@@ -72,9 +72,9 @@ func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) 
 	}
 
 	return &TargetURLs{
-		AppURL:      appParsedURL,
-		PaymentURL:  paymentParsedURL,
-		ShipmentURL: shipmentParsedURL,
+		AppURL:      *appParsedURL,
+		PaymentURL:  *paymentParsedURL,
+		ShipmentURL: *shipmentParsedURL,
 	}, nil
 }
 
@@ -111,7 +111,7 @@ func NewSession() (*Session, error) {
 	return s, nil
 }
 
-func (s *Session) newGetRequest(u *url.URL, spath string) (*http.Request, error) {
+func (s *Session) newGetRequest(u url.URL, spath string) (*http.Request, error) {
 	if len(spath) > 0 {
 		u.Path = spath
 	}
@@ -126,7 +126,7 @@ func (s *Session) newGetRequest(u *url.URL, spath string) (*http.Request, error)
 	return req, nil
 }
 
-func (s *Session) newGetRequestWithQuery(u *url.URL, spath string, q url.Values) (*http.Request, error) {
+func (s *Session) newGetRequestWithQuery(u url.URL, spath string, q url.Values) (*http.Request, error) {
 	if len(spath) > 0 {
 		u.Path = spath
 	}
@@ -143,7 +143,7 @@ func (s *Session) newGetRequestWithQuery(u *url.URL, spath string, q url.Values)
 	return req, nil
 }
 
-func (s *Session) newPostRequest(u *url.URL, spath, contentType string, body io.Reader) (*http.Request, error) {
+func (s *Session) newPostRequest(u url.URL, spath, contentType string, body io.Reader) (*http.Request, error) {
 	u.Path = spath
 
 	req, err := http.NewRequest(http.MethodPost, u.String(), body)
