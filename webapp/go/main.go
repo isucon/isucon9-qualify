@@ -169,6 +169,10 @@ type reqInitilize struct {
 	ShipmentServiceURL string `json:"shipment_service_url"`
 }
 
+type resInitilize struct {
+	IsCampaign bool `json:"is_campaign"`
+}
+
 type resNewItems struct {
 	RootCategoryID   int          `json:"root_category_id,omitempty"`
 	RootCategoryName string       `json:"root_category_name,omitempty"`
@@ -473,9 +477,13 @@ func postInitilize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	res := resInitilize{}
+	// Campaign 実施時は true にする
+	res.IsCampaign = false
+
 	// TODO initilize data
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-	json.NewEncoder(w).Encode(struct{}{})
+	json.NewEncoder(w).Encode(res)
 }
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
