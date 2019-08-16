@@ -306,8 +306,8 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 		return fails.NewError(nil, "/new_items.jsonのhas_nextがfalseです")
 	}
 
-	if len(items) != asset.ItemsPerPage-1 {
-		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage-1, len(items)))
+	if len(items) != asset.ItemsPerPage {
+		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items)))
 	}
 
 	// 簡易チェック
@@ -347,8 +347,8 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	if hasNext && (len(items) != asset.ItemsPerPage-1) {
-		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage-1, len(items)))
+	if hasNext && (len(items) != asset.ItemsPerPage) {
+		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items)))
 	}
 
 	createdAt = items[0].CreatedAt
@@ -440,8 +440,8 @@ func newCategoryItems(user1 asset.AppUser) error {
 		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
 	}
 
-	if len(items) != asset.ItemsPerPage-1 {
-		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage-1, len(items)))
+	if len(items) != asset.ItemsPerPage {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items)))
 	}
 
 	if rootCategoryName != category.CategoryName {
@@ -479,8 +479,8 @@ func newCategoryItems(user1 asset.AppUser) error {
 		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
 	}
 
-	if len(items) != asset.ItemsPerPage-1 {
-		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage-1, len(items)))
+	if len(items) != asset.ItemsPerPage {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items)))
 	}
 
 	if rootCategoryName != category.CategoryName {
