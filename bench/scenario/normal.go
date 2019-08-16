@@ -186,7 +186,29 @@ func userItemsAndItem(user1, user2 asset.AppUser) error {
 		}
 	}
 
-	targetItemID := asset.GetUserItemsFirst(user2.ID)
+	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
+
+	_, user, items, err = s1.UserItemsWithItemIDAndCreatedAt(user2.ID, targetItemID, targetItemCreatedAt)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
+			return fails.NewError(nil, fmt.Sprintf("/users/%d.jsonのitem_idとcreated_atが正しく動作していません", user2.ID))
+		}
+
+		aItem, ok := asset.GetItem(user.ID, item.ID)
+		if !ok {
+			return fails.NewError(nil, fmt.Sprintf("/users/%d.jsonに存在しない商品が返ってきています", user2.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return fails.NewError(nil, fmt.Sprintf("/users/%d.jsonの商品の名前が間違えています", user2.ID))
+		}
+	}
+
+	targetItemID = asset.GetUserItemsFirst(user2.ID)
 	item, err := s1.Item(targetItemID)
 	if err != nil {
 		return err
@@ -294,18 +316,14 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 		return fails.NewError(nil, "/new_items.jsonにバンプした商品が表示されていません")
 	}
 
-	targetItemID, targetItemCreatedAt := items[len(items)-1].ID, items[len(items)-1].CreatedAt
+	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
 
 	hasNext, items, err = s2.NewItemsWithItemIDAndCreatedAt(targetItemID, targetItemCreatedAt)
 	if err != nil {
 		return err
 	}
 
-	if !hasNext {
-		return fails.NewError(nil, "/new_items.jsonのhas_nextがfalseです")
-	}
-
-	if len(items) != ItemsPerPage-1 {
+	if hasNext && (len(items) != ItemsPerPage-1) {
 		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", ItemsPerPage-1, len(items)))
 	}
 
