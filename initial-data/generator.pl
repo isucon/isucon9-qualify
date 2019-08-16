@@ -328,7 +328,7 @@ sub insert_shippings {
             to_name => string $to_name,
             from_address => string $from_address,
             from_name => string $from_name,
-            img_binary => string "", # XXX
+            img_binary => string "", # delete from JSON
             created_at => number $created_at,
             updated_at => number $updated_at,
         })."\n";
@@ -389,7 +389,7 @@ sub flush_shippings {
                 'done',
                 $name,
                 $i,
-                "0000000000", # XXX reserve_id
+                sprintf("%010d", int(rand(10000000000))),
                 $t_buy,
                 $users{$buyer}->{address},
                 $users{$buyer}->{account_name},
