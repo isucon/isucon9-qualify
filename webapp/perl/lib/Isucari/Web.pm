@@ -1285,6 +1285,10 @@ post '/register' => [qw/allow_json_request/] => sub {
     );
     my $user_id = $self->dbh->last_insert_id();
 
+    my $session = Plack::Session->new($c->env);
+    $session->set('user_id' => $user_id);
+    $session->set('csrf_token' => secure_random_str(20));
+
     $c->render_json({
         id => $user_id,
         account_name => $account_name,
