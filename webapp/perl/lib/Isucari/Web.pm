@@ -1207,7 +1207,7 @@ get '/settings' => sub {
 
     my $response = {};
     my $user = $self->getUser($c);
-    if (!$user) {
+    if ($user) {
         $response->{user} = {
             id => $user->{id},
             account_name => $user->{account_name},
