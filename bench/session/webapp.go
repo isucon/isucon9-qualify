@@ -113,6 +113,15 @@ type Category struct {
 	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
 }
 
+type reqInitialize struct {
+	PaymentServiceURL  string `json:"payment_service_url"`
+	ShipmentServiceURL string `json:"shipment_service_url"`
+}
+
+type resInitialize struct {
+	IsCampaign bool `json:"is_campaign"`
+}
+
 type resSetting struct {
 	CSRFToken string `json:"csrf_token"`
 }
@@ -187,6 +196,36 @@ type resUserItems struct {
 	User    *UserSimple  `json:"user"`
 	HasNext bool         `json:"has_next"`
 	Items   []ItemSimple `json:"items"`
+}
+
+func (s *Session) Initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
+	b, _ := json.Marshal(reqInitialize{
+		PaymentServiceURL:  paymentServiceURL,
+		ShipmentServiceURL: shipmentServiceURL,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/initialize", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return false, fails.NewError(err, "POST /initialize: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return false, fails.NewError(err, "POST /initialize: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return false, fails.NewError(err, "POST /initialize: "+msg)
+	}
+
+	ri := resInitialize{}
+	err = json.NewDecoder(res.Body).Decode(&ri)
+	if err != nil {
+		return false, fails.NewError(err, "POST /initialize: JSONデコードに失敗しました")
+	}
+
+	return ri.IsCampaign, nil
 }
 
 func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {

@@ -7,7 +7,15 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/fails"
 )
 
-func Initialize() {
+func Initialize() *fails.Critical {
+	critical := fails.NewCritical()
+
+	_, err := initialize("", "")
+	if err != nil {
+		critical.Add(err)
+	}
+
+	return critical
 }
 
 func Verify() *fails.Critical {
