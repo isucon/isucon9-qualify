@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -30,6 +32,17 @@ const (
 
 	IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0"
 )
+
+type AppShipping struct {
+	TransactionEvidenceID int64  `json:"transaction_evidence_id" db:"transaction_evidence_id"`
+	Status                string `json:"status" db:"status"`
+	ReserveID             string `json:"reserve_id" db:"reserve_id"`
+	ReserveTime           int64  `json:"reserve_time" db:"reserve_time"`
+	ToAddress             string `json:"to_address" db:"to_address"`
+	ToName                string `json:"to_name" db:"to_name"`
+	FromAddress           string `json:"from_address" db:"from_address"`
+	FromName              string `json:"from_name" db:"from_name"`
+}
 
 type shipment struct {
 	ToAddress   string `json:"to_address"`
@@ -96,12 +109,18 @@ func (c *shipmentStore) SetStatus(key string, status string) (shipment, bool) {
 	return value, true
 }
 
+func (c *shipmentStore) ForceSet(key string, value shipment) {
+	c.Lock()
+	c.items[key] = value
+	c.Unlock()
+}
+
 func (c *shipmentStore) Get(key string) (shipment, bool) {
 	c.Lock()
 	defer c.Unlock()
 
 	v, found := c.items[key]
-	if v.Status == StatusShipping && time.Now().After(v.DoneDatetime) {
+	if v.Status == StatusShipping && !v.DoneDatetime.IsZero() && time.Now().After(v.DoneDatetime) {
 		v.Status = StatusDone
 	}
 
@@ -130,6 +149,31 @@ func NewShipment() *ServerShipment {
 	s := &ServerShipment{}
 
 	s.shipmentCache = NewShipmentStore()
+
+	f, err := os.Open("initial-data/result/shippings_json.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(f)
+	ship := AppShipping{}
+
+	for scanner.Scan() {
+		err := json.Unmarshal([]byte(scanner.Text()), &ship)
+		if err != nil {
+			log.Fatal(err)
+		}
+		s.shipmentCache.ForceSet(ship.ReserveID, shipment{
+			ToAddress:       ship.ToAddress,
+			ToName:          ship.ToName,
+			FromAddress:     ship.FromAddress,
+			FromName:        ship.FromName,
+			Status:          ship.Status,
+			ReserveDatetime: time.Unix(ship.ReserveTime, 0),
+		})
+	}
+	f.Close()
+
 	s.mux = http.NewServeMux()
 
 	s.mux.Handle("/create", apply(http.HandlerFunc(s.createHandler), s.withDelay(), s.withIPRestriction()))

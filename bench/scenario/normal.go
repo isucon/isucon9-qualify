@@ -110,6 +110,46 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	return nil
 }
 
+func transactionEvidence(user1 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	user, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(user) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	_, items, err := s1.UsersTransactions()
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		if item.TransactionEvidenceID == 0 {
+			// TODO: check
+			continue
+		}
+
+		ate := asset.GetTransactionEvidence(item.TransactionEvidenceID)
+		if item.TransactionEvidenceStatus != ate.Status {
+			return fails.NewError(nil, "/users/transactions.jsonのステータスに誤りがあります")
+		}
+	}
+
+	return nil
+}
+
 func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
