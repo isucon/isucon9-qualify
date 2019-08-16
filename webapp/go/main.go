@@ -477,11 +477,12 @@ func postInitilize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO initilize data
+
 	res := resInitilize{}
 	// Campaign 実施時は true にする
 	res.IsCampaign = false
 
-	// TODO initilize data
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(res)
 }
