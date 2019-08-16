@@ -2207,6 +2207,16 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		AccountName: accountName,
 		Address:     address,
 	}
+
+	session := getSession(r)
+	session.Values["user_id"] = u.ID
+	session.Values["csrf_token"] = secureRandomStr(20)
+	if err = session.Save(r, w); err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(u)
 }

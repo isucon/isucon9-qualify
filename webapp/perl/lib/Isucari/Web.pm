@@ -1207,7 +1207,7 @@ get '/settings' => sub {
 
     my $response = {};
     my $user = $self->getUser($c);
-    if (!$user) {
+    if ($user) {
         $response->{user} = {
             id => $user->{id},
             account_name => $user->{account_name},
@@ -1284,6 +1284,10 @@ post '/register' => [qw/allow_json_request/] => sub {
         $address,
     );
     my $user_id = $self->dbh->last_insert_id();
+
+    my $session = Plack::Session->new($c->env);
+    $session->set('user_id' => $user_id);
+    $session->set('csrf_token' => secure_random_str(20));
 
     $c->render_json({
         id => $user_id,
