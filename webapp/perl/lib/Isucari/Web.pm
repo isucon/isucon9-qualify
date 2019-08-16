@@ -19,6 +19,9 @@ use Digest::SHA;
 
 use Isucari::API;
 
+our $DEFAULT_PAYMENT_SERVICE_URL  = "http://localhost:5555";
+our $DEFAULT_SHIPMENT_SERVICE_URL = "http://localhost:7000";
+
 our $ITEM_MIN_PRICE    = 100;
 our $ITEM_MAX_PRICE    = 1000000;
 our $ITEM_PRICE_ERRMSG = "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください";
@@ -168,6 +171,22 @@ sub getCategoryByID {
     };
 }
 
+sub getConfigByName {
+    my ($self, $name) = @_;
+    my $row = $self->dbh->select_row('SELECT * FROM `configs` WHERE `name` = ?', $name);
+    return unless $row;
+    $row->{val};
+}
+sub getPaymentServiceURL {
+    my $self = shift;
+    $self->getConfigByName('payment_service_url') || $DEFAULT_PAYMENT_SERVICE_URL;
+
+}
+sub getShipmentServiceURL {
+    my $self = shift;
+    $self->getConfigByName('shipment_service_url') || $DEFAULT_SHIPMENT_SERVICE_URL;
+}
+
 # Frontend: getIndex
 my $get_index = sub {
     my ( $self, $c )  = @_;
@@ -188,6 +207,28 @@ get '/buy/complete' => $get_index;
 get '/transactions/{transaction_id}' => $get_index;
 get '/users/{user_id}' => $get_index;
 get '/users/setting' => $get_index;
+
+# postInitilize
+post '/initilize' => [qw/allow_json_request/] => sub {
+    my ($self, $c) = @_;
+
+    # TODO initilize data
+
+    for my $name (qw/payment_service_url shipment_service_url/) {
+        $self->dbh->query(
+            'INSERT INTO `configs` (name, val) VALUES (?,?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)',
+            $name,
+            $c->req->body_parameters->get($name) // ""
+        );
+    }
+
+    # Campaign 実施時は 1 にする
+    my $is_campaign = 0;
+
+    $c->render_json({
+        is_campaign => bool $is_campaign
+    });
+};
 
 # getNewItems
 get '/new_items.json' => sub {
@@ -490,7 +531,7 @@ get '/users/transactions.json' => sub {
             }
 
             my $ssr = eval {
-                $self->api_client->shipment_status("http://localhost:7000", {reserve_id => number $shipping->{reserve_id}});
+                $self->api_client->shipment_status($self->getShipmentServiceURL(), {reserve_id => number $shipping->{reserve_id}});
             };
             if ($@) {
                 warn $@;
@@ -714,7 +755,7 @@ post '/buy' => [qw/allow_json_request/] => sub {
     );
 
     my $scr = eval{
-        $self->api_client->shipment_create("http://localhost:7000", {
+        $self->api_client->shipment_create($self->getShipmentServiceURL(), {
             to_address   => $buyer->{address},
             to_name      => $buyer->{account_name},
             from_address => $seller->{address},
@@ -727,7 +768,7 @@ post '/buy' => [qw/allow_json_request/] => sub {
     }
 
     my $pstr = eval {
-        $self->api_client->payment_token("http://localhost:5555", {
+        $self->api_client->payment_token($self->getPaymentServiceURL(), {
             shop_id => $PAYMENT_SERVICE_ISUCARI_SHOPID,
             token   => $token,
             api_key => $PAYMENT_SERVICE_ISUCARI_APIKEY,
@@ -893,7 +934,7 @@ post '/ship' => [qw/allow_json_request/] => sub {
 
     my $img_binary = eval {
         $self->api_client->shipment_request(
-            "http://localhost:7000",
+            $self->getShipmentServiceURL(),
             {reserve_id => $shipping->{reserve_id}}
             );
     };
@@ -975,7 +1016,7 @@ post '/ship_done' => [qw/allow_json_request/] => sub {
 
     my $ssr = eval {
         $self->api_client->shipment_status(
-            "http://localhost:7000",
+            $self->getShipmentServiceURL(),
             {reserve_id => $shipping->{reserve_id}},
         )
     };
@@ -1064,7 +1105,7 @@ post '/complete' => [qw/allow_json_request/] => sub {
 
     my $ssr = eval {
         $self->api_client->shipment_status(
-            "http://localhost:7000",
+            $self->getShipmentServiceURL(),
             {reserve_id => $shipping->{reserve_id}},
         );
     };
@@ -1216,6 +1257,8 @@ get '/settings' => sub {
         };
     }
 
+    $response->{payment_service_url} = $self->getPaymentServiceURL();
+
     my $csrf_token = $self->getCSRFToken($c);
     $response->{csrf_token} = $csrf_token;
 
@@ -1296,5 +1339,11 @@ post '/register' => [qw/allow_json_request/] => sub {
     });
 };
 
+# getReports
+# TODO: select * from transaction_evidences
+get '/reports.json' => [qw/allow_json_request/] => sub {
+    my ($self, $c) = @_;
+    $c->render_json({});
+};
 
 1;
