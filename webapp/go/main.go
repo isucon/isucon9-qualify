@@ -582,7 +582,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0 : ItemsPerPage-1]
+		itemSimples = itemSimples[0:ItemsPerPage]
 	}
 
 	rni := resNewItems{
@@ -708,7 +708,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0 : ItemsPerPage-1]
+		itemSimples = itemSimples[0:ItemsPerPage]
 	}
 
 	rni := resNewItems{
@@ -816,7 +816,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0 : ItemsPerPage-1]
+		itemSimples = itemSimples[0:ItemsPerPage]
 	}
 
 	rui := resUserItems{
@@ -993,7 +993,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemDetails) > TransactionsPerPage {
 		hasNext = true
-		itemDetails = itemDetails[0 : TransactionsPerPage-1]
+		itemDetails = itemDetails[0:TransactionsPerPage]
 	}
 
 	rts := resTransactions{
