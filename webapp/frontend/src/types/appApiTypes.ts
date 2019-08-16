@@ -36,6 +36,7 @@ export type ItemSimple = {
   status: ItemStatus;
   name: string;
   price: number;
+  image_url: string;
   category_id: number;
   category: Category;
   created_at: number;
@@ -51,6 +52,7 @@ export type ItemDetail = {
   name: string;
   price: number;
   description: string;
+  image_url: string;
   category_id: number;
   category: Category;
   transaction_evidence_id?: number;

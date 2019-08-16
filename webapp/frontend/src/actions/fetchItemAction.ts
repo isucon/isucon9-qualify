@@ -48,8 +48,7 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
             buyer: body.buyer,
             name: body.name,
             price: body.price,
-            thumbnailUrl:
-              'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png', // TODO
+            thumbnailUrl: body.image_url,
             description: body.description,
             category: {
               id: body.category.id,
