@@ -12,6 +12,16 @@ import (
 	"time"
 )
 
+const (
+	ItemStatusOnSale  = "on_sale"
+	ItemStatusTrading = "trading"
+	ItemStatusSoldOut = "sold_out"
+	ItemStatusStop    = "stop"
+	ItemStatusCancel  = "cancel"
+
+	ItemsPerPage = 48
+)
+
 type AppUser struct {
 	ID           int64  `json:"id"`
 	AccountName  string `json:"account_name"`
@@ -104,7 +114,9 @@ func init() {
 			log.Fatal(err)
 		}
 		items[fmt.Sprintf("%d_%d", item.SellerID, item.ID)] = item
-		userItems[item.SellerID] = append(userItems[item.SellerID], item.ID)
+		if item.Status == ItemStatusOnSale {
+			userItems[item.SellerID] = append(userItems[item.SellerID], item.ID)
+		}
 	}
 	f.Close()
 

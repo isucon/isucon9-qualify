@@ -13,14 +13,6 @@ const (
 	CorrectCardNumber = "AAAAAAAA"
 	FailedCardNumber  = "FA10AAAA"
 	IsucariShopID     = "11"
-
-	ItemStatusOnSale  = "on_sale"
-	ItemStatusTrading = "trading"
-	ItemStatusSoldOut = "sold_out"
-	ItemStatusStop    = "stop"
-	ItemStatusCancel  = "cancel"
-
-	ItemsPerPage = 48
 )
 
 func initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
@@ -314,8 +306,8 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 		return fails.NewError(nil, "/new_items.jsonのhas_nextがfalseです")
 	}
 
-	if len(items) != ItemsPerPage-1 {
-		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", ItemsPerPage-1, len(items)))
+	if len(items) != asset.ItemsPerPage-1 {
+		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage-1, len(items)))
 	}
 
 	// 簡易チェック
@@ -326,7 +318,7 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 			return fails.NewError(nil, "/new_items.jsonはcreated_at順である必要があります")
 		}
 
-		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
 			return fails.NewError(nil, "/new_items.jsonは販売中か売り切れの商品しか出してはいけません")
 		}
 
@@ -355,8 +347,8 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	if hasNext && (len(items) != ItemsPerPage-1) {
-		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", ItemsPerPage-1, len(items)))
+	if hasNext && (len(items) != asset.ItemsPerPage-1) {
+		return fails.NewError(nil, fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage-1, len(items)))
 	}
 
 	createdAt = items[0].CreatedAt
@@ -369,7 +361,7 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 			return fails.NewError(nil, "/new_items.jsonはcreated_at順である必要があります")
 		}
 
-		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
 			return fails.NewError(nil, "/new_items.jsonは販売中か売り切れの商品しか出してはいけません")
 		}
 
@@ -448,8 +440,8 @@ func newCategoryItems(user1 asset.AppUser) error {
 		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
 	}
 
-	if len(items) != ItemsPerPage-1 {
-		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, ItemsPerPage-1, len(items)))
+	if len(items) != asset.ItemsPerPage-1 {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage-1, len(items)))
 	}
 
 	if rootCategoryName != category.CategoryName {
@@ -463,7 +455,7 @@ func newCategoryItems(user1 asset.AppUser) error {
 			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID))
 		}
 
-		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
 			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
 		}
 
@@ -487,8 +479,8 @@ func newCategoryItems(user1 asset.AppUser) error {
 		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
 	}
 
-	if len(items) != ItemsPerPage-1 {
-		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, ItemsPerPage-1, len(items)))
+	if len(items) != asset.ItemsPerPage-1 {
+		return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage-1, len(items)))
 	}
 
 	if rootCategoryName != category.CategoryName {
@@ -506,7 +498,7 @@ func newCategoryItems(user1 asset.AppUser) error {
 			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID))
 		}
 
-		if item.Status != ItemStatusOnSale && item.Status != ItemStatusSoldOut {
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
 			return fails.NewError(nil, fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
 		}
 
