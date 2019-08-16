@@ -161,7 +161,7 @@ sub getCategoryByID {
     if ($category->{parent_id} != 0) {
         my $parent_category = $self->getCategoryByID($category->{parent_id});
         return unless $parent_category;
-        $category->{parent_category_name} = $parent_category->{name};
+        $category->{parent_category_name} = $parent_category->{category_name};
     }
     return +{
         id => number $category->{id},
@@ -198,14 +198,14 @@ get '/' => $get_index;
 get '/login' => $get_index;
 get '/register' => $get_index;
 get '/timeline' => $get_index;
-get '/categories/{category_id}/items' => $get_index;
+get '/categories/{category_id:\d+}/items' => $get_index;
 get '/sell' => $get_index;
-get '/items/{item_id}' => $get_index;
-get '/items/{item_id}/edit' => $get_index;
-get '/items/{item_id}/buy' => $get_index;
+get '/items/{item_id:\d+}' => $get_index;
+get '/items/{item_id:\d+}/edit' => $get_index;
+get '/items/{item_id:\d+}/buy' => $get_index;
 get '/buy/complete' => $get_index;
-get '/transactions/{transaction_id}' => $get_index;
-get '/users/{user_id}' => $get_index;
+get '/transactions/{transaction_id:\d+}' => $get_index;
+get '/users/{user_id:\d+}' => $get_index;
 get '/users/setting' => $get_index;
 
 # postInitialize
@@ -213,6 +213,11 @@ post '/initialize' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
 
     # TODO initialize data
+    my $ret = system+File::Spec->catfile($self->root_dir, "../sql/init.sh");
+    if ( $ret != 0 ) {
+        return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "exec init.sh error");
+    }
+
 
     for my $name (qw/payment_service_url shipment_service_url/) {
         $self->dbh->query(
@@ -287,12 +292,12 @@ get '/new_items.json' => sub {
 
     $c->render_json({
         items => \@item_simples,
-        hax_next => bool $has_next
+        has_next => bool $has_next
     });
 };
 
 # getNewCategoryItems
-get '/new_items/{root_category_id}.json' => sub {
+get '/new_items/{root_category_id:\d+}.json' => sub {
     my ($self, $c) = @_;
     my $root_category_id = $c->args->{root_category_id};
     my $item_id = $c->req->parameters->get('item_id');
@@ -359,14 +364,14 @@ get '/new_items/{root_category_id}.json' => sub {
 
     $c->render_json({
         root_category_id => number $root_category->{id},
-        root_category_name => $root_category->{name},
+        root_category_name => $root_category->{category_name},
         items => \@item_simples,
-        hax_next => bool $has_next
+        has_next => bool $has_next
     });
 };
 
 # getUserItems
-get '/users/{user_id}.json' => sub {
+get '/users/{user_id:\d+}.json' => sub {
     my ($self, $c) = @_;
     my $user_id = $c->args->{user_id};
     my $item_id = $c->req->parameters->get('item_id');
@@ -431,7 +436,7 @@ get '/users/{user_id}.json' => sub {
     $c->render_json({
         user => $user_simple,
         items => \@item_simples,
-        hax_next => bool $has_next
+        has_next => bool $has_next
     });
 };
 
@@ -531,14 +536,17 @@ get '/users/transactions.json' => sub {
             }
 
             my $ssr = eval {
-                $self->api_client->shipment_status($self->getShipmentServiceURL(), {reserve_id => number $shipping->{reserve_id}});
+                $self->api_client->shipment_status(
+                    $self->getShipmentServiceURL(),
+                    {reserve_id => string $shipping->{reserve_id}}
+                );
             };
             if ($@) {
                 warn $@;
                 return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "failed to request to shipment service");
             }
 
-            $item_detail->{transaction_evidence_id} = numner $transaction_evidence->{id};
+            $item_detail->{transaction_evidence_id} = number $transaction_evidence->{id};
             $item_detail->{transaction_evidence_status} = $transaction_evidence->{status};
             $item_detail->{shipping_status} = $ssr->{status};
         }
@@ -556,12 +564,12 @@ get '/users/transactions.json' => sub {
 
     $c->render_json({
         items => \@item_details,
-        hax_next => bool $has_next
+        has_next => bool $has_next
     });
 };
 
 # getItem
-get '/items/{item_id}.json' => sub {
+get '/items/{item_id:\d+}.json' => sub {
     my ($self, $c) = @_;
     my $item_id = $c->args->{item_id};
 
@@ -641,7 +649,7 @@ post '/items/edit' => [qw/allow_json_request/] => sub {
 
     my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
 	my $item_id    = $c->req->body_parameters->get('item_id') // "";
-	my $price      = $c->req->body_parameters->get('price') // 0;
+	my $price      = $c->req->body_parameters->get('item_price') // 0;
 
     if ($csrf_token ne $self->getCSRFToken($c)) {
         return $self->error_with_msg($c, HTTP_UNPROCESSABLE_ENTITY, 'csrf token error');
@@ -935,7 +943,7 @@ post '/ship' => [qw/allow_json_request/] => sub {
     my $img_binary = eval {
         $self->api_client->shipment_request(
             $self->getShipmentServiceURL(),
-            {reserve_id => $shipping->{reserve_id}}
+            {reserve_id => string $shipping->{reserve_id}}
             );
     };
     if ($@) {
@@ -1017,7 +1025,7 @@ post '/ship_done' => [qw/allow_json_request/] => sub {
     my $ssr = eval {
         $self->api_client->shipment_status(
             $self->getShipmentServiceURL(),
-            {reserve_id => $shipping->{reserve_id}},
+            {reserve_id => string $shipping->{reserve_id}},
         )
     };
     if ($@) {
@@ -1106,7 +1114,7 @@ post '/complete' => [qw/allow_json_request/] => sub {
     my $ssr = eval {
         $self->api_client->shipment_status(
             $self->getShipmentServiceURL(),
-            {reserve_id => $shipping->{reserve_id}},
+            {reserve_id => string $shipping->{reserve_id}},
         );
     };
     if ($@) {
@@ -1142,7 +1150,7 @@ post '/complete' => [qw/allow_json_request/] => sub {
 };
 
 # getQRCode
-get '/transactions/{transaction_evidence_id}.png' => sub {
+get '/transactions/{transaction_evidence_id:\d+}.png' => sub {
     my ($self, $c) = @_;
     my $transaction_evidence_id = $c->args->{transaction_evidence_id};
 
