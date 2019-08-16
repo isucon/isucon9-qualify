@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -1881,6 +1882,14 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	priceStr := form.Get("price")
 	categoryIDStr := form.Get("category_id")
 
+	f, header, err := r.FormFile("image")
+	defer f.Close()
+
+	if err != nil {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "image error")
+		return
+	}
+
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
 		return
@@ -1929,6 +1938,14 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		outputErrorMsg(w, errCode, errMsg)
 		return
 	}
+
+	img, err := ioutil.ReadFile(header.Filename)
+	if err != nil {
+		outputErrorMsg(w, http.StatusUnprocessableEntity, "image error")
+		return
+	}
+	imgName := secureRandomStr(16)
+	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s.png", imgName), img, 0644)
 
 	tx := dbx.MustBegin()
 
