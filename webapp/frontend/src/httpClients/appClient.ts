@@ -29,12 +29,24 @@ class AppClient {
     });
   }
 
-  async post(path: string, params: any = {}): Promise<Response> {
+  async post(
+    path: string,
+    params: any = {},
+    type: 'json' | 'form' = 'json',
+  ): Promise<Response> {
+    let contentType: string = 'application/json';
+
+    if (type === 'json') {
+      contentType = 'application/json';
+    } else if (type === 'form') {
+      contentType = 'multipart/form-data';
+    }
+
     let requestOption: RequestInit = {
       method: 'POST',
       mode: 'same-origin',
       headers: Object.assign({}, this.defaultHeaders, {
-        'Content-Type': 'application/json',
+        'Content-Type': contentType,
       }),
       credentials: 'same-origin',
     };
