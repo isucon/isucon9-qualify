@@ -733,7 +733,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := query.Get("item_id")
 	var itemID int64
 	if itemIDStr != "" {
-		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+		itemID, err = strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
 			return
@@ -743,7 +743,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	createdAtStr := query.Get("created_at")
 	var createdAt int64
 	if createdAtStr != "" {
-		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		createdAt, err = strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
 			return
