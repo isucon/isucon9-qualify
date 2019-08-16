@@ -150,6 +150,45 @@ func transactionEvidence(user1 asset.AppUser) error {
 	return nil
 }
 
+func userItems(user1, user2 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	viewer, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(viewer) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	_, user, items, err := s1.UserItems(user2.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		aItem, ok := asset.GetItem(user.ID, item.ID)
+		if !ok {
+			return fails.NewError(nil, fmt.Sprintf("/users/%d.jsonに存在しない商品が返ってきています", user2.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return fails.NewError(nil, fmt.Sprintf("/users/%d.jsonの商品の名前が間違えています", user2.ID))
+		}
+	}
+
+	return nil
+}
+
 func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {
