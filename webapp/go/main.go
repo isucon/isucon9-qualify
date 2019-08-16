@@ -140,7 +140,6 @@ type TransactionEvidence struct {
 	ItemName           string    `json:"item_name" db:"item_name"`
 	ItemPrice          int       `json:"item_price" db:"item_price"`
 	ItemDescription    string    `json:"item_description" db:"item_description"`
-	ItemImageUrl       string    `json:"image_url" db:"image_name"`
 	ItemCategoryID     int       `json:"item_category_id" db:"item_category_id"`
 	ItemRootCategoryID int       `json:"item_root_category_id" db:"item_root_category_id"`
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
@@ -1883,7 +1882,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	priceStr := form.Get("price")
 	categoryIDStr := form.Get("category_id")
 
-	f, header, err := r.FormFile("image")
+	f, _, err := r.FormFile("image")
 	defer f.Close()
 
 	if err != nil {
