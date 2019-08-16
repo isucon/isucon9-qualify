@@ -335,6 +335,38 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	return nil
 }
 
+func itemEdit(user1 asset.AppUser) error {
+	s1, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	seller, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return err
+	}
+
+	if !user1.Equal(seller) {
+		return fails.NewError(nil, "ログインが失敗しています")
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return err
+	}
+
+	targetItemID := asset.GetUserItemsFirst(user1.ID)
+	price := 110
+	_, err = s1.ItemEdit(targetItemID, price)
+	if err != nil {
+		return err
+	}
+
+	asset.SetItemPrice(user1.ID, targetItemID, price)
+
+	return nil
+}
+
 func newCategoryItems(user1 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {

@@ -126,6 +126,12 @@ type reqLogin struct {
 	Password    string `json:"password"`
 }
 
+type reqItemEdit struct {
+	CSRFToken string `json:"csrf_token"`
+	ItemID    int64  `json:"item_id"`
+	ItemPrice int    `json:"item_price"`
+}
+
 type reqBuy struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -468,6 +474,37 @@ func (s *Session) Bump(itemID int64) (int64, error) {
 	}
 
 	return rie.ItemCreatedAt, nil
+}
+
+func (s *Session) ItemEdit(itemID int64, price int) (int, error) {
+	b, _ := json.Marshal(reqItemEdit{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+		ItemPrice: price,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/items/edit", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: リクエストに失敗しました")
+	}
+
+	res, err := s.Do(req)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: リクエストに失敗しました")
+	}
+	defer res.Body.Close()
+
+	msg, err := checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: "+msg)
+	}
+
+	rie := &resItemEdit{}
+	err = json.NewDecoder(res.Body).Decode(rie)
+	if err != nil {
+		return 0, fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /items/edit: JSONデコードに失敗しました")
+	}
+
+	return rie.ItemPrice, nil
 }
 
 func (s *Session) NewItems() (hasNext bool, items []ItemSimple, err error) {

@@ -50,6 +50,16 @@ func Verify() *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1 := asset.GetRandomUser()
+		err := itemEdit(user1)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
 		err := transactionEvidence(user1)
 		if err != nil {
 			critical.Add(err)
