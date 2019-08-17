@@ -43,6 +43,7 @@ type Item struct {
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
 	Description string    `json:"description" db:"description"`
+	ImageName   string    `json:"image_name" db:"image_name"`
 	CategoryID  int       `json:"category_id" db:"category_id"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
@@ -55,6 +56,7 @@ type ItemSimple struct {
 	Status     string      `json:"status"`
 	Name       string      `json:"name"`
 	Price      int         `json:"price"`
+	ImageURL   string      `json:"image_url"`
 	CategoryID int         `json:"category_id"`
 	Category   *Category   `json:"category"`
 	CreatedAt  int64       `json:"created_at"`
@@ -70,6 +72,7 @@ type ItemDetail struct {
 	Name                      string      `json:"name"`
 	Price                     int         `json:"price"`
 	Description               string      `json:"description"`
+	ImageURL                  string      `json:"image_url"`
 	CategoryID                int         `json:"category_id"`
 	Category                  *Category   `json:"category"`
 	TransactionEvidenceID     int64       `json:"transaction_evidence_id,omitempty"`
