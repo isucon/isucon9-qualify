@@ -39,6 +39,10 @@ $ ./bin/shipment
 ## ベンチマーカー実行方法
 
 ```
+# 初期データ作成
+$ cd initial-data
+$ make
+
 $ make
 $ ./bin/benchmarker
 ```
