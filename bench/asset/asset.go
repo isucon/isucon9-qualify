@@ -38,6 +38,7 @@ type AppItem struct {
 	Name        string `json:"name"`
 	Price       int    `json:"price"`
 	Description string `json:"description"`
+	ImageName   string `json:"image_name"`
 	CategoryID  int    `json:"category_id"`
 	CreatedAt   int64  `json:"created_at"`
 }
