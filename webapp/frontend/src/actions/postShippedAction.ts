@@ -3,6 +3,7 @@ import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action, AnyAction } from 'redux';
 import { ShipReq, ShipRes } from '../types/appApiTypes';
+import { fetchItemAction } from './fetchItemAction';
 
 export const POST_SHIPPED_START = 'POST_SHIPPED_START';
 export const POST_SHIPPED_SUCCESS = 'POST_SHIPPED_SUCCESS';
@@ -30,6 +31,9 @@ export function postShippedAction(itemId: number): ThunkResult<void> {
       })
       .then((body: ShipRes) => {
         dispatch(postShippedSuccessAction());
+      })
+      .then(() => {
+        dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {
         dispatch(

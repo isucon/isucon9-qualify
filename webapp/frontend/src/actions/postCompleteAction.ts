@@ -3,6 +3,7 @@ import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action, AnyAction } from 'redux';
 import { CompleteReq, CompleteRes } from '../types/appApiTypes';
+import { fetchItemAction } from './fetchItemAction';
 
 export const POST_COMPLETE_START = 'POST_COMPLETE_START';
 export const POST_COMPLETE_SUCCESS = 'POST_COMPLETE_SUCCESS';
@@ -30,6 +31,9 @@ export function postCompleteAction(itemId: number): ThunkResult<void> {
       })
       .then((body: CompleteRes) => {
         dispatch(postCompleteSuccessAction());
+      })
+      .then(() => {
+        dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {
         dispatch(

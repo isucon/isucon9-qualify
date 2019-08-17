@@ -28,9 +28,10 @@ export function fetchTimelineAction(
   categoryId?: number,
 ): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, Actions>) => {
-    Promise.resolve(() => {
-      dispatch(fetchTimelineStartAction());
-    })
+    Promise.resolve()
+      .then(() => {
+        dispatch(fetchTimelineStartAction());
+      })
       .then(() => {
         let getParams: NewItemReq = {
           item_id: itemId,

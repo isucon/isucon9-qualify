@@ -21,6 +21,7 @@ const useStyles = makeStyles(theme => ({
 type Props = {
   itemId: number;
   transactionEvidenceId: number;
+  postShipped: (itemId: number) => void;
   postShippedDone: (itemId: number) => void;
   transactionStatus: TransactionStatus;
   shippingStatus: ShippingStatus;
@@ -29,6 +30,7 @@ type Props = {
 const SellerComponent: React.FC<Props> = ({
   itemId,
   transactionEvidenceId,
+  postShipped,
   postShippedDone,
   transactionStatus,
   shippingStatus,
@@ -36,7 +38,7 @@ const SellerComponent: React.FC<Props> = ({
   const classes = useStyles();
 
   if (shippingStatus === 'initial' && transactionStatus === 'wait_shipping') {
-    return <Initial />;
+    return <Initial itemId={itemId} postShipped={postShipped} />;
   }
 
   if (

@@ -28,9 +28,10 @@ export function fetchTransactionsAction(
   createdAt?: number,
 ): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, Actions>) => {
-    Promise.resolve(() => {
-      dispatch(fetchTransactionsStartAction());
-    })
+    Promise.resolve()
+      .then(() => {
+        dispatch(fetchTransactionsStartAction());
+      })
       .then(() => {
         return AppClient.get('/users/transactions.json', {
           item_id: itemId,

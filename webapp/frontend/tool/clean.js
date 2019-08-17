@@ -1,3 +1,4 @@
+const path = require('path');
 const rimraf = require('rimraf');
 
-rimraf('../public/**/!(upload/**)', {}, () => {});
+rimraf.sync(`${__dirname}/../../public/**/{*.png,*.json,*.js,*.html,static/**}`);

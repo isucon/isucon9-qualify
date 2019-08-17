@@ -61,6 +61,8 @@ class ItemPage extends React.Component<Props> {
 
     this.props.load(this.props.match.params.item_id);
     this._onClickBuyButton = this._onClickBuyButton.bind(this);
+    this._onClickItemEditButton = this._onClickItemEditButton.bind(this);
+    this._onClickTransaction = this._onClickTransaction.bind(this);
   }
 
   _onClickBuyButton(e: React.MouseEvent) {
@@ -95,10 +97,10 @@ class ItemPage extends React.Component<Props> {
       buttonText = '商品編集';
     }
 
-    // 出品者 or 購入者で取引中なら取引画面へのボタンを追加
+    // 出品者 or 購入者で取引中か売り切れなら取引画面へのボタンを追加
     if (
       (viewer.userId === item.sellerId || viewer.userId === item.buyerId) &&
-      item.status === 'trading'
+      (item.status === 'trading' || item.status === 'sold_out')
     ) {
       onClick = this._onClickTransaction;
       buttonText = '取引画面';
@@ -117,7 +119,6 @@ class ItemPage extends React.Component<Props> {
 
     return (
       <BasePageContainer>
-        Item Page
         <Typography className={classes.title} variant="h3">
           {item.name}
         </Typography>

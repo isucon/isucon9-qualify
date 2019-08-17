@@ -29,7 +29,7 @@ class BasePageComponent extends React.Component<Props> {
   render() {
     return (
       <MuiThemeProvider theme={themeInstance}>
-        <Container maxWidth="lg">
+        <Container maxWidth="md">
           {this.props.loading ? (
             <LoadingComponent />
           ) : (
