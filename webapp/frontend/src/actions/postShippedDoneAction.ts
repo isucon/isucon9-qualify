@@ -3,8 +3,6 @@ import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action, AnyAction } from 'redux';
 import { ShipDoneReq, ShipDoneRes } from '../types/appApiTypes';
-import { push } from 'connected-react-router';
-import { routes } from '../routes/Route';
 import { fetchItemAction } from './fetchItemAction';
 
 export const POST_SHIPPED_DONE_START = 'POST_SHIPPED_DONE_START';
@@ -20,7 +18,7 @@ export function postShippedDoneAction(itemId: number): ThunkResult<void> {
         dispatch(postShippedDoneStartAction());
       })
       .then(() => {
-        return AppClient.post('/ship', {
+        return AppClient.post('/ship_done', {
           item_id: itemId,
         } as ShipDoneReq);
       })
@@ -33,6 +31,8 @@ export function postShippedDoneAction(itemId: number): ThunkResult<void> {
       })
       .then((body: ShipDoneRes) => {
         dispatch(postShippedDoneSuccessAction());
+      })
+      .then(() => {
         dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {

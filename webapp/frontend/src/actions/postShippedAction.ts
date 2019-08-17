@@ -31,6 +31,8 @@ export function postShippedAction(itemId: number): ThunkResult<void> {
       })
       .then((body: ShipRes) => {
         dispatch(postShippedSuccessAction());
+      })
+      .then(() => {
         dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {

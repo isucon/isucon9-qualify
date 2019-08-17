@@ -24,7 +24,7 @@ export type Actions =
   | FetchUserPageDataFailAction;
 type ThunkResult<R> = ThunkAction<R, void, undefined, Actions>;
 
-async function fetchUserPaggeData(
+async function fetchUserPageData(
   userId: number,
   isMyPage: boolean,
 ): Promise<[UserItemsRes, UserTransactionsRes | undefined]> {
@@ -64,11 +64,12 @@ export function fetchUserPageDataAction(
   isMyPage: boolean,
 ): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, Actions>) => {
-    Promise.resolve(() => {
-      dispatch(fetchUserPageDataStartAction());
-    })
+    Promise.resolve()
       .then(() => {
-        return fetchUserPaggeData(userId, isMyPage);
+        dispatch(fetchUserPageDataStartAction());
+      })
+      .then(() => {
+        return fetchUserPageData(userId, isMyPage);
       })
       .then((res: [UserItemsRes, UserTransactionsRes | undefined]) => {
         const userPageData = res[0];

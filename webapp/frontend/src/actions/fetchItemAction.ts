@@ -15,9 +15,10 @@ type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
 
 export function fetchItemAction(itemId: string): ThunkResult<void> {
   return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
-    Promise.resolve(() => {
-      dispatch(fetchItemStartAction());
-    })
+    Promise.resolve()
+      .then(() => {
+        dispatch(fetchItemStartAction());
+      })
       .then(() => AppClient.get(`/items/${itemId}.json`))
       .then((response: Response) => {
         if (!response.ok) {
