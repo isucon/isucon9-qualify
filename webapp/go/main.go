@@ -122,7 +122,7 @@ type ItemDetail struct {
 	Name                      string      `json:"name"`
 	Price                     int         `json:"price"`
 	Description               string      `json:"description"`
-	ImageUrl                  string      `json:"image_url"`
+	ImageURL                  string      `json:"image_url"`
 	CategoryID                int         `json:"category_id"`
 	Category                  *Category   `json:"category"`
 	TransactionEvidenceID     int64       `json:"transaction_evidence_id,omitempty"`
@@ -927,7 +927,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			Name:        item.Name,
 			Price:       item.Price,
 			Description: item.Description,
-			ImageUrl:    getImageURL(item.ImageName),
+			ImageURL:    getImageURL(item.ImageName),
 			CategoryID:  item.CategoryID,
 			// TransactionEvidenceID
 			// TransactionEvidenceStatus
@@ -1054,7 +1054,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		Name:        item.Name,
 		Price:       item.Price,
 		Description: item.Description,
-		ImageUrl:    getImageURL(item.ImageName),
+		ImageURL:    getImageURL(item.ImageName),
 		CategoryID:  item.CategoryID,
 		// TransactionEvidenceID
 		// TransactionEvidenceStatus
@@ -1937,7 +1937,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	img, err := ioutil.ReadAll(f)
 	if err != nil {
 		log.Print(err)
-		outputErrorMsg(w, http.StatusBadRequest, "image error")
+		outputErrorMsg(w, http.StatusInternalServerError, "image error")
 		return
 	}
 
