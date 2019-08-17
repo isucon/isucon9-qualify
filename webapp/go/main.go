@@ -1905,11 +1905,6 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For test purpose, use 13 as default category
-	if categoryID == 0 {
-		categoryID = 13
-	}
-
 	if name == "" || description == "" || price == 0 || categoryID == 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
 
