@@ -1873,28 +1873,19 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func postSell(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(1024 * 500) // 500 KB
-
-	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "parse form data error")
-		return
-	}
-
-	form := r.PostForm
-
-	csrfToken := form.Get("csrf_token")
-	name := form.Get("name")
-	description := form.Get("description")
-	priceStr := form.Get("price")
-	categoryIDStr := form.Get("category_id")
+	csrfToken := r.FormValue("csrf_token")
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	priceStr := r.FormValue("price")
+	categoryIDStr := r.FormValue("category_id")
 
 	f, _, err := r.FormFile("image")
-	defer f.Close()
-
 	if err != nil {
+		log.Print(err)
 		outputErrorMsg(w, http.StatusBadRequest, "image error")
 		return
 	}
+	defer f.Close()
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
@@ -1902,14 +1893,12 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	categoryID, err := strconv.Atoi(categoryIDStr)
-
 	if err != nil || categoryID < 0 {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "category id error")
 		return
 	}
 
 	price, err := strconv.Atoi(priceStr)
-
 	if err != nil {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "price error")
 		return
@@ -1947,13 +1936,15 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	img, err := ioutil.ReadAll(f)
 	if err != nil {
+		log.Print(err)
 		outputErrorMsg(w, http.StatusBadRequest, "image error")
 		return
 	}
+
 	imgName := secureRandomStr(16)
 	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s", imgName), img, 0644)
-
 	if err != nil {
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "Saving image failed")
 		return
 	}

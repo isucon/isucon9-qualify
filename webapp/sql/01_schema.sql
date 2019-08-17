@@ -26,7 +26,7 @@ CREATE TABLE `items` (
   `name` varchar(191) NOT NULL,
   `price` int unsigned NOT NULL,
   `description` text NOT NULL,
-  `image_name` varchar(100) NOT NULL,
+  `image_name` varchar(191) NOT NULL,
   `category_id` int unsigned NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
