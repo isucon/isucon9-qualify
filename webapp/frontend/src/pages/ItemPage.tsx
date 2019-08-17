@@ -97,10 +97,10 @@ class ItemPage extends React.Component<Props> {
       buttonText = '商品編集';
     }
 
-    // 出品者 or 購入者で取引中なら取引画面へのボタンを追加
+    // 出品者 or 購入者で取引中か売り切れなら取引画面へのボタンを追加
     if (
       (viewer.userId === item.sellerId || viewer.userId === item.buyerId) &&
-      item.status === 'trading'
+      (item.status === 'trading' || item.status === 'sold_out')
     ) {
       onClick = this._onClickTransaction;
       buttonText = '取引画面';
