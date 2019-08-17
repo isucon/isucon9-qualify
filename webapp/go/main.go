@@ -1944,7 +1944,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	ext := filepath.Ext(header.Filename)
 
-	if !(ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif") {
+	if !(ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif") {
 		outputErrorMsg(w, http.StatusBadRequest, "unsupported image format error")
 		return
 	}
