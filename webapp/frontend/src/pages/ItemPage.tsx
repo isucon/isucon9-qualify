@@ -119,7 +119,6 @@ class ItemPage extends React.Component<Props> {
 
     return (
       <BasePageContainer>
-        Item Page
         <Typography className={classes.title} variant="h3">
           {item.name}
         </Typography>
