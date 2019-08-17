@@ -1943,7 +1943,17 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ext := filepath.Ext(header.Filename)
-	imgName := fmt.Sprintf("%s.%s", secureRandomStr(16), ext)
+
+	if !(ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif") {
+		outputErrorMsg(w, http.StatusBadRequest, "unsupported image format error")
+		return
+	}
+
+	if ext == "jpeg" {
+		ext = "jpg"
+	}
+
+	imgName := fmt.Sprintf("%s%s", secureRandomStr(16), ext)
 	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s", imgName), img, 0644)
 	if err != nil {
 		log.Print(err)
