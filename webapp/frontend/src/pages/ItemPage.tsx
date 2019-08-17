@@ -61,6 +61,8 @@ class ItemPage extends React.Component<Props> {
 
     this.props.load(this.props.match.params.item_id);
     this._onClickBuyButton = this._onClickBuyButton.bind(this);
+    this._onClickItemEditButton = this._onClickItemEditButton.bind(this);
+    this._onClickTransaction = this._onClickTransaction.bind(this);
   }
 
   _onClickBuyButton(e: React.MouseEvent) {
