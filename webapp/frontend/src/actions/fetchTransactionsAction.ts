@@ -60,8 +60,7 @@ export function fetchTransactionsAction(
               transactionEvidenceStatus: item.transaction_evidence_status as TransactionStatus, // MEMO API will return this value for this endpoint
               shippingStatus: item.shipping_status as ShippingStatus, // MEMO API will return this value for this endpoint
               name: item.name,
-              thumbnailUrl:
-                'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png', // TODO
+              thumbnailUrl: item.image_url,
               createdAt: item.created_at,
             })),
             hasNext: body.has_next,

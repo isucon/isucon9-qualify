@@ -31,7 +31,6 @@ import {
   FETCH_USER_PAGE_DATA_START,
   FETCH_USER_PAGE_DATA_SUCCESS,
 } from '../actions/fetchUserPageDataAction';
-import { FETCH_USER_ITEMS_START } from '../actions/fetchUserItemsAction';
 
 type Actions =
   | LocationChangeAction

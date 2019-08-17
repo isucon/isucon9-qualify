@@ -40,10 +40,23 @@ class AppClient {
     };
 
     params.csrf_token = await this.getCsrfToken();
+    requestOption.body = JSON.stringify(params);
 
-    if (params) {
-      requestOption.body = JSON.stringify(params);
-    }
+    return await fetch(`${this.baseUrl}${path}`, requestOption);
+  }
+
+  async postFormData(path: string, body: FormData): Promise<Response> {
+    let requestOption: RequestInit = {
+      method: 'POST',
+      mode: 'same-origin',
+      // MEMO: The reason why we should not set Content-Type header by ourselves
+      // https://stackoverflow.com/questions/39280438/fetch-missing-boundary-in-multipart-form-data-post
+      headers: this.defaultHeaders,
+      credentials: 'same-origin',
+    };
+
+    body.append('csrf_token', await this.getCsrfToken());
+    requestOption.body = body;
 
     return await fetch(`${this.baseUrl}${path}`, requestOption);
   }

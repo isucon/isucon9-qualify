@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -92,6 +94,7 @@ type Item struct {
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
 	Description string    `json:"description" db:"description"`
+	ImageName   string    `json:"image_name" db:"image_name"`
 	CategoryID  int       `json:"category_id" db:"category_id"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
@@ -104,6 +107,7 @@ type ItemSimple struct {
 	Status     string      `json:"status"`
 	Name       string      `json:"name"`
 	Price      int         `json:"price"`
+	ImageURL   string      `json:"image_url"`
 	CategoryID int         `json:"category_id"`
 	Category   *Category   `json:"category"`
 	CreatedAt  int64       `json:"created_at"`
@@ -119,6 +123,7 @@ type ItemDetail struct {
 	Name                      string      `json:"name"`
 	Price                     int         `json:"price"`
 	Description               string      `json:"description"`
+	ImageURL                  string      `json:"image_url"`
 	CategoryID                int         `json:"category_id"`
 	Category                  *Category   `json:"category"`
 	TransactionEvidenceID     int64       `json:"transaction_evidence_id,omitempty"`
@@ -224,14 +229,6 @@ type reqBuy struct {
 
 type resBuy struct {
 	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
-}
-
-type reqSell struct {
-	CSRFToken   string `json:"csrf_token"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int    `json:"price"`
-	CategoryID  int    `json:"category_id"`
 }
 
 type resSell struct {
@@ -573,6 +570,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -699,6 +697,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -807,6 +806,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -928,6 +928,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			Name:        item.Name,
 			Price:       item.Price,
 			Description: item.Description,
+			ImageURL:    getImageURL(item.ImageName),
 			CategoryID:  item.CategoryID,
 			// TransactionEvidenceID
 			// TransactionEvidenceStatus
@@ -1054,6 +1055,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		Name:        item.Name,
 		Price:       item.Price,
 		Description: item.Description,
+		ImageURL:    getImageURL(item.ImageName),
 		CategoryID:  item.CategoryID,
 		// TransactionEvidenceID
 		// TransactionEvidenceStatus
@@ -1872,26 +1874,36 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func postSell(w http.ResponseWriter, r *http.Request) {
-	rs := reqSell{}
+	csrfToken := r.FormValue("csrf_token")
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	priceStr := r.FormValue("price")
+	categoryIDStr := r.FormValue("category_id")
 
-	err := json.NewDecoder(r.Body).Decode(&rs)
+	f, header, err := r.FormFile("image")
 	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
+		log.Print(err)
+		outputErrorMsg(w, http.StatusBadRequest, "image error")
 		return
 	}
-
-	csrfToken := rs.CSRFToken
+	defer f.Close()
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
-
 		return
 	}
 
-	name := rs.Name
-	price := rs.Price
-	description := rs.Description
-	categoryID := rs.CategoryID
+	categoryID, err := strconv.Atoi(categoryIDStr)
+	if err != nil || categoryID < 0 {
+		outputErrorMsg(w, http.StatusBadRequest, "category id error")
+		return
+	}
+
+	price, err := strconv.Atoi(priceStr)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "price error")
+		return
+	}
 
 	// For test purpose, use 13 as default category
 	if categoryID == 0 {
@@ -1923,6 +1935,32 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	img, err := ioutil.ReadAll(f)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "image error")
+		return
+	}
+
+	ext := filepath.Ext(header.Filename)
+
+	if !(ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif") {
+		outputErrorMsg(w, http.StatusBadRequest, "unsupported image format error")
+		return
+	}
+
+	if ext == "jpeg" {
+		ext = "jpg"
+	}
+
+	imgName := fmt.Sprintf("%s%s", secureRandomStr(16), ext)
+	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s", imgName), img, 0644)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "Saving image failed")
+		return
+	}
+
 	tx := dbx.MustBegin()
 
 	seller := User{}
@@ -1939,12 +1977,13 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
 		price,
 		description,
+		imgName,
 		category.ID,
 	)
 	if err != nil {
@@ -2257,4 +2296,8 @@ func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
 	json.NewEncoder(w).Encode(struct {
 		Error string `json:"error"`
 	}{Error: msg})
+}
+
+func getImageURL(imageName string) string {
+	return fmt.Sprintf("/upload/%s", imageName)
 }

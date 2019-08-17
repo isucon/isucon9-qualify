@@ -54,8 +54,7 @@ export function fetchUserItemsAction(
               status: item.status,
               name: item.name,
               price: item.price,
-              thumbnailUrl:
-                'https://i.gyazo.com/c61ab08bca188410e81dbdcf7684e07e.png', // TODO
+              thumbnailUrl: item.image_url,
               createdAt: item.created_at,
             })),
             hasNext: body.has_next,

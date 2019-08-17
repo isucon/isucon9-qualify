@@ -38,6 +38,7 @@ interface SellFormComponentProps extends WithStyles<typeof styles> {
     description: string,
     price: number,
     categoryId: number,
+    image: Blob,
   ) => void;
   error?: string;
   categories: {
@@ -51,6 +52,7 @@ interface SellFormComponentState {
   description: string;
   price: number;
   selectedCategoryId: number;
+  image?: Blob;
   categoryError?: string;
 }
 
@@ -69,6 +71,7 @@ class SellFormComponent extends React.Component<
     };
 
     this._onSubmit = this._onSubmit.bind(this);
+    this._onImageChange = this._onImageChange.bind(this);
     this._onChangeName = this._onChangeName.bind(this);
     this._onChangeDescription = this._onChangeDescription.bind(this);
     this._onChangeCategory = this._onChangeCategory.bind(this);
@@ -77,7 +80,7 @@ class SellFormComponent extends React.Component<
 
   _onSubmit(e: React.MouseEvent) {
     e.preventDefault();
-    const { name, description, price, selectedCategoryId } = this.state;
+    const { name, description, price, selectedCategoryId, image } = this.state;
 
     if (!selectedCategoryId) {
       this.setState({
@@ -86,7 +89,20 @@ class SellFormComponent extends React.Component<
       return;
     }
 
-    this.props.sellItem(name, description, price, selectedCategoryId);
+    if (image === undefined) {
+      this.setState({
+        categoryError: '画像をアップロードしてください',
+      });
+      return;
+    }
+
+    this.props.sellItem(name, description, price, selectedCategoryId, image);
+  }
+
+  _onImageChange(image: Blob) {
+    this.setState({
+      image,
+    });
   }
 
   _onChangeName(e: React.ChangeEvent<HTMLInputElement>) {
@@ -137,7 +153,7 @@ class SellFormComponent extends React.Component<
           出品ページ
         </Typography>
         <form className={classes.form} noValidate>
-          <ItemImageUploadComponent />
+          <ItemImageUploadComponent onImageChange={this._onImageChange} />
 
           <TextField
             variant="outlined"
