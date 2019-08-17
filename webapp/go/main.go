@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -1879,7 +1880,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	priceStr := r.FormValue("price")
 	categoryIDStr := r.FormValue("category_id")
 
-	f, _, err := r.FormFile("image")
+	f, header, err := r.FormFile("image")
 	if err != nil {
 		log.Print(err)
 		outputErrorMsg(w, http.StatusBadRequest, "image error")
@@ -1941,7 +1942,8 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgName := secureRandomStr(16)
+	ext := filepath.Ext(header.Filename)
+	imgName := fmt.Sprintf("%s.%s", secureRandomStr(16), ext)
 	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s", imgName), img, 0644)
 	if err != nil {
 		log.Print(err)
