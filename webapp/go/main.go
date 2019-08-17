@@ -106,7 +106,7 @@ type ItemSimple struct {
 	Status     string      `json:"status"`
 	Name       string      `json:"name"`
 	Price      int         `json:"price"`
-	ImageUrl   string      `json:"image_url"`
+	ImageURL   string      `json:"image_url"`
 	CategoryID int         `json:"category_id"`
 	Category   *Category   `json:"category"`
 	CreatedAt  int64       `json:"created_at"`
@@ -569,7 +569,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
-			ImageUrl:   getImageUrl(item.ImageName),
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -696,7 +696,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
-			ImageUrl:   getImageUrl(item.ImageName),
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -805,7 +805,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
-			ImageUrl:   getImageUrl(item.ImageName),
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -927,7 +927,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			Name:        item.Name,
 			Price:       item.Price,
 			Description: item.Description,
-			ImageUrl:    getImageUrl(item.ImageName),
+			ImageUrl:    getImageURL(item.ImageName),
 			CategoryID:  item.CategoryID,
 			// TransactionEvidenceID
 			// TransactionEvidenceStatus
@@ -1054,7 +1054,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		Name:        item.Name,
 		Price:       item.Price,
 		Description: item.Description,
-		ImageUrl:    getImageUrl(item.ImageName),
+		ImageUrl:    getImageURL(item.ImageName),
 		CategoryID:  item.CategoryID,
 		// TransactionEvidenceID
 		// TransactionEvidenceStatus
@@ -2286,6 +2286,6 @@ func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
 	}{Error: msg})
 }
 
-func getImageUrl(imageName string) string {
+func getImageURL(imageName string) string {
 	return fmt.Sprintf("/upload/%s", imageName)
 }
