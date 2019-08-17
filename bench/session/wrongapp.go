@@ -5,7 +5,11 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"golang.org/x/xerrors"
@@ -61,14 +65,38 @@ func (s *Session) LoginWithWrongPassword(accountName, password string) error {
 }
 
 func (s *Session) SellWithWrongCSRFToken(name string, price int, description string, categoryID int) error {
-	b, _ := json.Marshal(reqSell{
-		CSRFToken:   secureRandomStr(20),
-		Name:        name,
-		Price:       price,
-		Description: description,
-		CategoryID:  categoryID,
-	})
-	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/json", bytes.NewBuffer(b))
+	file, err := os.Open("webapp/public/upload/sample.jpg")
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: 画像のOpenに失敗しました")
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "sample.jpg")
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+	}
+
+	writer.WriteField("csrf_token", secureRandomStr(20))
+	writer.WriteField("name", name)
+	writer.WriteField("description", description)
+	writer.WriteField("price", strconv.Itoa(price))
+	writer.WriteField("category_id", strconv.Itoa(categoryID))
+
+	contentType := writer.FormDataContentType()
+
+	err = writer.Close()
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+	}
+
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", contentType, body)
 	if err != nil {
 		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
 	}
@@ -94,14 +122,38 @@ func (s *Session) SellWithWrongCSRFToken(name string, price int, description str
 }
 
 func (s *Session) SellWithWrongPrice(name string, price int, description string, categoryID int) error {
-	b, _ := json.Marshal(reqSell{
-		CSRFToken:   s.csrfToken,
-		Name:        name,
-		Price:       price,
-		Description: description,
-		CategoryID:  categoryID,
-	})
-	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/json", bytes.NewBuffer(b))
+	file, err := os.Open("webapp/public/upload/sample.jpg")
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: 画像のOpenに失敗しました")
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "sample.jpg")
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+	}
+
+	writer.WriteField("csrf_token", s.csrfToken)
+	writer.WriteField("name", name)
+	writer.WriteField("description", description)
+	writer.WriteField("price", strconv.Itoa(price))
+	writer.WriteField("category_id", strconv.Itoa(categoryID))
+
+	contentType := writer.FormDataContentType()
+
+	err = writer.Close()
+	if err != nil {
+		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+	}
+
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", contentType, body)
 	if err != nil {
 		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
 	}
