@@ -1894,13 +1894,13 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	categoryID, err := strconv.Atoi(categoryIDStr)
 	if err != nil || categoryID < 0 {
-		outputErrorMsg(w, http.StatusUnprocessableEntity, "category id error")
+		outputErrorMsg(w, http.StatusBadRequest, "category id error")
 		return
 	}
 
 	price, err := strconv.Atoi(priceStr)
 	if err != nil {
-		outputErrorMsg(w, http.StatusUnprocessableEntity, "price error")
+		outputErrorMsg(w, http.StatusBadRequest, "price error")
 		return
 	}
 
