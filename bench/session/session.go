@@ -1,6 +1,7 @@
 package session
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -25,6 +26,7 @@ type Session struct {
 
 type TargetURLs struct {
 	AppURL      url.URL
+	TargetHost  string
 	PaymentURL  url.URL
 	ShipmentURL url.URL
 }
@@ -33,9 +35,9 @@ var (
 	ShareTargetURLs *TargetURLs
 )
 
-func SetShareTargetURLs(appURL, paymentURL, shipmentURL string) error {
+func SetShareTargetURLs(appURL, targetHost, paymentURL, shipmentURL string) error {
 	var err error
-	ShareTargetURLs, err = newTargetURLs(appURL, paymentURL, shipmentURL)
+	ShareTargetURLs, err = newTargetURLs(appURL, targetHost, paymentURL, shipmentURL)
 	if err != nil {
 		return err
 	}
@@ -43,7 +45,7 @@ func SetShareTargetURLs(appURL, paymentURL, shipmentURL string) error {
 	return nil
 }
 
-func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) {
+func newTargetURLs(appURL, targetHost, paymentURL, shipmentURL string) (*TargetURLs, error) {
 	if len(appURL) == 0 {
 		return nil, fmt.Errorf("client: missing url")
 	}
@@ -73,6 +75,7 @@ func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) 
 
 	return &TargetURLs{
 		AppURL:      *appParsedURL,
+		TargetHost:  targetHost,
 		PaymentURL:  *paymentParsedURL,
 		ShipmentURL: *shipmentParsedURL,
 	}, nil
@@ -99,9 +102,14 @@ func NewSession() (*Session, error) {
 
 	s := &Session{
 		httpClient: &http.Client{
-			Transport: &http.Transport{},
-			Jar:       jar,
-			Timeout:   time.Duration(DefaultAPITimeout) * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					// HTTPの時は無視されるだけ
+					ServerName: ShareTargetURLs.TargetHost,
+				},
+			},
+			Jar:     jar,
+			Timeout: time.Duration(DefaultAPITimeout) * time.Second,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return fmt.Errorf("redirect attempted")
 			},
@@ -121,6 +129,7 @@ func (s *Session) newGetRequest(u url.URL, spath string) (*http.Request, error) 
 		return nil, err
 	}
 
+	req.Host = ShareTargetURLs.TargetHost
 	req.Header.Set("User-Agent", userAgent)
 
 	return req, nil
@@ -138,6 +147,7 @@ func (s *Session) newGetRequestWithQuery(u url.URL, spath string, q url.Values) 
 		return nil, err
 	}
 
+	req.Host = ShareTargetURLs.TargetHost
 	req.Header.Set("User-Agent", userAgent)
 
 	return req, nil
@@ -151,6 +161,7 @@ func (s *Session) newPostRequest(u url.URL, spath, contentType string, body io.R
 		return nil, err
 	}
 
+	req.Host = ShareTargetURLs.TargetHost
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("User-Agent", userAgent)
 
