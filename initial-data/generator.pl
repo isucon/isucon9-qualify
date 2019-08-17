@@ -255,7 +255,7 @@ my @insert_items;
 my @insert_te;
 my @insert_shippings;
 sub insert_items {
-    my ($id, $seller_id, $buyer_id, $status, $name, $price, $description, $category_id, $created_at, $updated_at) = @_;
+    my ($id, $seller_id, $buyer_id, $status, $name, $price, $description, $image_name, $category_id, $created_at, $updated_at) = @_;
 
     print $items_fh JSON::encode_json({
         id        => number $id,
@@ -265,13 +265,14 @@ sub insert_items {
         name      => string $name,
         price     => number $price,
         description => string $description,
+        image_name  => string $image_name,
         category_id => number $category_id,
         created_at  => number $created_at,
         updated_at  => number $updated_at
     })."\n";
 
     $description =~ s/\n/\\n/g;
-    push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $name, $price, $description, $category_id, format_mysql($created_at), format_mysql($updated_at));
+    push @insert_items, sprintf(q!(%d, %d, %d, '%s', '%s', %d, '%s', '%s', %d, '%s', '%s')!, $id, $seller_id, $buyer_id, $status, $name, $price, $description, $image_name, $category_id, format_mysql($created_at), format_mysql($updated_at));
 
     $users{$seller_id}->{num_sell_items}++;
 
@@ -281,7 +282,7 @@ sub insert_items {
 
 }
 sub flush_items {
-    print $sql_fh q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
+    print $sql_fh q!INSERT INTO `items` (`id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`description`,`image_name`,`category_id`,`created_at`,`updated_at`) VALUES ! . join(", ", @insert_items) . ";\n";
     @insert_items = ();
     flush_te();
     flush_shippings();
@@ -409,6 +410,7 @@ sub flush_shippings {
             $name,
             $BASE_PRICE,
             $description,
+            'sample.jpg', # temporary
             $category->[0],
             $t_sell,
             $t_done
