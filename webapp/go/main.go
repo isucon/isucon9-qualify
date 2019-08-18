@@ -1944,8 +1944,8 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ext == "jpeg" {
-		ext = "jpg"
+	if ext == ".jpeg" {
+		ext = ".jpg"
 	}
 
 	imgName := fmt.Sprintf("%s%s", secureRandomStr(16), ext)
