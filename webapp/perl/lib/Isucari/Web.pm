@@ -9,13 +9,14 @@ use JSON::XS 3.00;
 use JSON::Types;
 use DBIx::Sunny;
 use Plack::Session;
-use Time::Moment;
 use File::Spec;
 use HTTP::Date qw//;
 use HTTP::Status qw/:constants/;
 use Crypt::Eksblowfish::Bcrypt qw/bcrypt/;
 use Crypt::OpenSSL::Random;
 use Digest::SHA;
+use File::Basename;
+use File::Copy;
 
 use Isucari::API;
 
@@ -89,6 +90,11 @@ sub check_password {
 sub secure_random_str {
     my $length = shift || 16;
     unpack("H*",Crypt::OpenSSL::Random::random_bytes($length))
+}
+
+sub get_image_url {
+    my $image_name = shift;
+    sprintf("/upload/%s", $image_name)
 }
 
 sub error_with_msg {
@@ -278,6 +284,7 @@ get '/new_items.json' => sub {
             status => $item->{status},
             name => $item->{name},
             price => number $item->{price},
+            image_url => get_image_url($item->{image_name}),
             category_id => number $item->{category_id},
             category => $category,
             created_at => number unix_from_mysql_datetime($item->{created_at}),
@@ -350,6 +357,7 @@ get '/new_items/{root_category_id:\d+}.json' => sub {
             status => $item->{status},
             name => $item->{name},
             price => number $item->{price},
+            image_url => get_image_url($item->{image_name}),
             category_id => number $item->{category_id},
             category => $category,
             created_at => number unix_from_mysql_datetime($item->{created_at}),
@@ -421,6 +429,7 @@ get '/users/{user_id:\d+}.json' => sub {
             status => $item->{status},
             name => $item->{name},
             price => number $item->{price},
+            image_url => get_image_url($item->{image_name}),
             category_id => number $item->{category_id},
             category => $category,
             created_at => number unix_from_mysql_datetime($item->{created_at}),
@@ -504,6 +513,7 @@ get '/users/transactions.json' => sub {
             name => $item->{name},
             price => number $item->{price},
             description => $item->{description},
+            image_url => get_image_url($item->{image_name}),
             category_id => number $item->{category_id},
             # transaction_evidence_id
             # transaction_evidence_status
@@ -602,6 +612,7 @@ get '/items/{item_id:\d+}.json' => sub {
         name => $item->{name},
         price => number $item->{price},
         description => $item->{description},
+        image_url => get_image_url($item->{image_name}),
         category_id => number $item->{category_id},
         # transaction_evidence_id
         # transaction_evidence_status
@@ -822,7 +833,7 @@ post '/buy' => [qw/allow_json_request/] => sub {
 };
 
 # postSell
-post '/sell' => [qw/allow_json_request/] => sub {
+post '/sell' => sub {
     my ($self, $c) = @_;
     my $csrf_token = $c->req->body_parameters->get('csrf_token') // "";
     my $name    = $c->req->body_parameters->get('name') // "";
@@ -847,6 +858,21 @@ post '/sell' => [qw/allow_json_request/] => sub {
         return $self->error_with_msg($c, HTTP_BAD_REQUEST, "incorrect category id");
     }
 
+    my $upload = $c->req->uploads->{'image'};
+    my ($filename, $dirs, $ext) = fileparse($upload->basename,qr/\.[^.]*/);
+    if ($ext ne ".jpg" && $ext ne ".jpeg" && $ext ne ".png" && $ext ne ".gif") {
+        return $self->error_with_msg($c, HTTP_BAD_REQUEST, "unsupported image format error");
+    }
+    if ($ext eq ".jpeg") {
+        $ext = ".jpg"
+    }
+
+    my $image_name = sprintf("%s%s", secure_random_str(16), $ext);
+    if (!copy($upload->path, File::Spec->catfile($self->root_dir,'public/upload',$image_name))) {
+        warn $!;
+        return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "Saving image failed");
+    }
+
     my $user = $self->getUser($c);
     if (!$user) {
         return $self->error_with_msg($c, HTTP_NOT_FOUND, 'user not found');
@@ -861,12 +887,13 @@ post '/sell' => [qw/allow_json_request/] => sub {
     }
 
     $dbh->query(
-        'INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)',
         $seller->{id},
         $ITEM_STATUS_ON_SALE,
         $name,
         $price,
         $description,
+        $image_name,
         $category->{id},
     );
     my $item_id = $dbh->last_insert_id();
