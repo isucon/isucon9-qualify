@@ -9,6 +9,7 @@ return function (App $app) {
     $container = $app->getContainer();
 
     // API
+    $app->post('/initialize', \App\Service::class . ':initialize');
     $app->get('/new_items.json', \App\Service::class . ':new_items');
     $app->get('/new_items/{id}.json', \App\Service::class . ':new_category_items');
     $app->get('/users/{id}.json', \App\Service::class . ':user_items');

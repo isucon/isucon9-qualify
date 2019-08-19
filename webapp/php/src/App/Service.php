@@ -156,6 +156,36 @@ class Service
         return sprintf("/upload/%s", $name);
     }
 
+    public function initialize(Request $request, Response $response, array $args)
+    {
+        try {
+            $payload = $this->jsonPayload($request);
+        } catch (\InvalidArgumentException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+        }
+
+        exec('../sql/init.sh');
+
+        try {
+            $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
+            $r = $sth->execute(["payment_service_url", $payload->payment_service_url]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+
+            $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
+            $r = $sth->execute(["shipment_service_url", $payload->shipment_service_url]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+        } catch (\PDOException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+        }
+        return $response->withJson(["is_campaign" => false]);
+    }
+
     public function index(Request $request, Response $response, array $args)
     {
         return $this->renderer->render($response, 'index.html');
