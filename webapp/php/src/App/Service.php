@@ -6,6 +6,7 @@ namespace App;
 use GuzzleHttp\Client;
 use PDO;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\UploadedFileInterface;
 use Psr\Log\LoggerInterface;
 use Slim\Http\Request;
 use Slim\Http\Response;
@@ -150,6 +151,41 @@ class Service
         return $category;
     }
 
+    private function getImageUrl($name)
+    {
+        return sprintf("/upload/%s", $name);
+    }
+
+    public function initialize(Request $request, Response $response, array $args)
+    {
+        try {
+            $payload = $this->jsonPayload($request);
+        } catch (\InvalidArgumentException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+        }
+
+        exec('../sql/init.sh');
+
+        try {
+            $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
+            $r = $sth->execute(["payment_service_url", $payload->payment_service_url]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+
+            $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
+            $r = $sth->execute(["shipment_service_url", $payload->shipment_service_url]);
+            if ($r === false) {
+                throw new \PDOException($sth->errorInfo());
+            }
+        } catch (\PDOException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+        }
+        return $response->withJson(["is_campaign" => false]);
+    }
+
     public function index(Request $request, Response $response, array $args)
     {
         return $this->renderer->render($response, 'index.html');
@@ -206,6 +242,7 @@ class Service
                   'status' => $item['status'],
                   'name' => $item['name'],
                   'price' => (int) $item['price'],
+                  'image_url' => $this->getImageUrl($item['img_name']),
                   'category_id' => (int) $item['category_id'],
                   'category' => $category,
                   'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -215,7 +252,7 @@ class Service
             $hasNext = false;
             if (count($itemSimples) > self::ITEM_PER_PAGE) {
                 $hasNext = true;
-                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE-1);
+                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -305,6 +342,7 @@ class Service
                     'status' => $item['status'],
                     'name' => $item['name'],
                     'price' => $item['price'],
+                    'image_url' => $this->getImageUrl($item['img_name']),
                     'category_id' => $item['category_id'],
                     'category' => $category,
                     'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -314,7 +352,7 @@ class Service
             $hasNext = false;
             if (count($itemSimples) > self::ITEM_PER_PAGE) {
                 $hasNext = true;
-                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE-1);
+                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -392,6 +430,7 @@ class Service
                     'status' => $item['status'],
                     'name' => $item['name'],
                     'price' => $item['price'],
+                    'image_url' => $this->getImageUrl($item['img_name']),
                     'category_id' => $item['category_id'],
                     'category' => $category,
                     'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -401,7 +440,7 @@ class Service
             $hasNext = false;
             if (count($itemSimples) > self::ITEM_PER_PAGE) {
                 $hasNext = true;
-                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE-1);
+                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -500,6 +539,7 @@ class Service
                         'status' => $item['status'],
                         'name' => $item['name'],
                         'price' => (int) $item['price'],
+                        'image_url' => $this->getImageUrl($item['img_name']),
                         'category_id' => (int) $item['category_id'],
                         'category' => $category,
                         'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -563,7 +603,7 @@ class Service
             $hasNext = false;
             if (count($itemDetails) > self::TRANSACTIONS_PER_PAGE) {
                 $hasNext = true;
-                $itemDetails = array_slice($itemDetails, 0, self::TRANSACTIONS_PER_PAGE - 1);
+                $itemDetails = array_slice($itemDetails, 0, self::TRANSACTIONS_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
@@ -750,32 +790,51 @@ class Service
 
     public function sell(Request $request, Response $response, array $args)
     {
-        try {
-            $payload = $this->jsonPayload($request);
-        } catch (\InvalidArgumentException $e) {
-            $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
-        }
+        $csrf_token = $request->getParam('csrf_token', '');
+        $name = $request->getParam('name', '');
+        $description = $request->getParam('description', '');
+        $price = (int) $request->getParam('price', 0);
+        $category_id = (int) $request->getParam('category_id', 0);
+        /** @var UploadedFileInterface[] $files */
+        $files = $request->getUploadedFiles();
 
-        if ($payload->csrf_token !== $this->session->get('csrf_token')) {
+        if ($csrf_token !== $this->session->get('csrf_token')) {
             return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
         }
 
-        // For test purpose, use 13 as default category
-        $payload->category_id = $payload->category_id ?? 13;
-
-        if (empty($payload->name) || empty($payload->description) || empty($payload->price) || $payload->price === 0 || empty($payload->category_id)) {
+        if (empty(name) || empty($description) || empty($price) || $price === 0 || empty($category_id)) {
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'all parameters are required']);
         }
 
-        if ($payload->price < self::MIN_ITEM_PRICE || $payload->price > self::MAX_ITEM_PRICE) {
-            $this->logger->info($payload->price);
+        if ($price < self::MIN_ITEM_PRICE || $price > self::MAX_ITEM_PRICE) {
+            $this->logger->info($price);
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']);
         }
 
-        $category = $this->getCategoryByID($payload->category_id);
+        $category = $this->getCategoryByID($category_id);
         if ($category === false) {
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'Incorrect category ID']);
+        }
+
+        if (! array_key_exists('images', $files)) {
+            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'image error']);
+        }
+        $image = $files['images'];
+        $ext = pathinfo($image->getClientFilename(), PATHINFO_EXTENSION);
+        if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
+            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'unsupported image format error']);
+        }
+        if ($ext === 'jpeg') {
+            $ext = 'jpg';
+        }
+
+        $bytes = random_bytes(16);
+        $imageName = bin2hex($bytes);
+        try {
+            $image->moveTo('../public/upload/' . $imageName);
+        } catch (\RuntimeException|\InvalidArgumentException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'Saving image failed']);
         }
 
         try {
@@ -801,14 +860,15 @@ class Service
                 return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
             }
 
-            $sth = $this->dbh->prepare('INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`, `category_id`) VALUES (?, ?, ?, ?, ?, ?)');
+            $sth = $this->dbh->prepare('INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`, `image_name`, `category_id`) VALUES (?, ?, ?, ?, ?, ?)');
             $r = $sth->execute([
                 $seller['id'],
                 self::ITEM_STATUS_ON_SALE,
-                $payload->name,
-                $payload->price,
-                $payload->description,
-                $payload->category_id
+                $name,
+                $price,
+                $description,
+                $imageName,
+                $category_id
             ]);
             if ($r === false) {
                 throw new \PDOException($sth->errorInfo());
