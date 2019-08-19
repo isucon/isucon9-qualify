@@ -7,18 +7,6 @@ import (
 	"github.com/morikuni/failure"
 )
 
-type Error struct {
-	Msg string
-	Err error
-}
-
-func (e *Error) Error() string {
-	if e.Err == nil {
-		return e.Msg
-	}
-	return e.Msg + ": " + e.Err.Error()
-}
-
 type Critical struct {
 	Msgs []string
 	mu   sync.Mutex
