@@ -86,7 +86,7 @@ func RunServer(paymentPort, shipmentPort int) error {
 
 	pay.SetDelay(200 * time.Millisecond)
 
-	ship := NewShipment()
+	ship := NewShipment(false)
 	serverShipment := &http.Server{
 		Handler: ship,
 	}

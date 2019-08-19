@@ -140,13 +140,16 @@ type createRes struct {
 }
 
 type ServerShipment struct {
+	debug         bool
 	shipmentCache *shipmentStore
 
 	Server
 }
 
-func NewShipment() *ServerShipment {
-	s := &ServerShipment{}
+func NewShipment(debug bool) *ServerShipment {
+	s := &ServerShipment{
+		debug: debug,
+	}
 
 	s.shipmentCache = NewShipmentStore()
 
@@ -288,7 +291,10 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 	u.RawQuery = q.Encode()
 
 	msg := u.String()
-	log.Print(msg)
+
+	if s.debug {
+		log.Print(msg)
+	}
 
 	qrCode, _ := qr.Encode(msg, qr.L, qr.Auto)
 	qrCode, _ = barcode.Scale(qrCode, 256, 256)
