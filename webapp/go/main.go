@@ -1823,7 +1823,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !(ssr.Status == ShippingsStatusDone) {
-		outputErrorMsg(w, http.StatusInternalServerError, "shipment service側で配送完了になっていません")
+		outputErrorMsg(w, http.StatusBadRequest, "shipment service側で配送完了になっていません")
 		tx.Rollback()
 		return
 	}
