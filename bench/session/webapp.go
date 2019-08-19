@@ -204,7 +204,6 @@ type resUserItems struct {
 }
 
 const (
-	EmptyCSRFToken failure.StringCode = "csrf token is empty"
 	ErrApplication failure.StringCode = "error application"
 )
 
@@ -292,7 +291,7 @@ func (s *Session) SetSettings() error {
 	}
 
 	if rs.CSRFToken == "" {
-		return failure.New(EmptyCSRFToken, failure.Message("GET /settings: csrf tokenが空でした"))
+		return failure.New(ErrApplication, failure.Message("GET /settings: csrf tokenが空でした"))
 	}
 
 	s.csrfToken = rs.CSRFToken
