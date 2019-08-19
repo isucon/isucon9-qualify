@@ -1,24 +1,19 @@
 - hosts: localhost
   user: root
   gather_facts: yes
-  vars_prompt:
-    - name: "target"
-      prompt: "Target: vagrant or local?"
-      default: "vagrant"
 
   roles:
     - bootstrap
-
-    - { role: vagrant-specific, when: target == "vagrant" }
+    - external.deploy
 
     - kernel-tune
     - nginx
     - nginx.log-format
     - golang
     - external.nginx
-    - external.benchmarker
     - external.shipment
     - external.payment
+    - external.benchmarker
     # TODO
     # - benchmark-worker
 
