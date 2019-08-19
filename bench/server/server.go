@@ -84,10 +84,14 @@ func RunServer(paymentPort, shipmentPort int) error {
 		Handler: pay,
 	}
 
+	pay.SetDelay(200 * time.Millisecond)
+
 	ship := NewShipment()
 	serverShipment := &http.Server{
 		Handler: ship,
 	}
+
+	ship.SetDelay(200 * time.Millisecond)
 
 	go func() {
 		log.Print(serverPayment.Serve(liPayment))

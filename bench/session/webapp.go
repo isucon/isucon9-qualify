@@ -508,6 +508,7 @@ func (s *Session) DecodeQRURL(apath string) (*url.URL, error) {
 		return nil, fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: QRコードの中身がURLではありません", apath))
 	}
 
+	// TODO: URLチェック
 	if sparsedURL.Host != ShareTargetURLs.ShipmentURL.Host {
 		return nil, fails.NewError(nil, fmt.Sprintf("GET %s: shipment serviceのドメイン以外のURLがQRコードに表示されています", apath))
 	}
