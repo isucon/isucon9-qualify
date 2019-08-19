@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ship := server.NewShipment()
+	ship := server.NewShipment(true)
 	serverShipment := &http.Server{
 		Handler: ship,
 	}
