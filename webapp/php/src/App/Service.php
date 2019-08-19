@@ -156,6 +156,38 @@ class Service
         return sprintf("/upload/%s", $name);
     }
 
+    private function getConfigByName($name)
+    {
+        $sth = $this->dbh->prepare('SELECT * FROM `configs` WHERE `name` = ?');
+        $r = $sth->execute([$name]);
+        if ($r === false) {
+            return "";
+        }
+        $config = $sth->fetchAll(PDO::FETCH_ASSOC);
+        if ($config === false) {
+            return "";
+        }
+        return $config;
+    }
+
+    private function getPaymentServiceURL()
+    {
+        $config = $this->getConfigByName('payment_service_url');
+        if (empty($config['val'])) {
+            return "http://localhost:5555";
+        }
+        return $config['val'];
+    }
+
+    private function getShipmentServiceURL()
+    {
+        $config = $this->getConfigByName('shipment_service_url');
+        if (empty($config['val'])) {
+            return "http://localhost:7000";
+        }
+        return $config['val'];
+    }
+
     public function initialize(Request $request, Response $response, array $args)
     {
         try {
@@ -242,7 +274,7 @@ class Service
                   'status' => $item['status'],
                   'name' => $item['name'],
                   'price' => (int) $item['price'],
-                  'image_url' => $this->getImageUrl($item['img_name']),
+                  'image_url' => $this->getImageUrl($item['image_name']),
                   'category_id' => (int) $item['category_id'],
                   'category' => $category,
                   'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -342,7 +374,7 @@ class Service
                     'status' => $item['status'],
                     'name' => $item['name'],
                     'price' => $item['price'],
-                    'image_url' => $this->getImageUrl($item['img_name']),
+                    'image_url' => $this->getImageUrl($item['image_name']),
                     'category_id' => $item['category_id'],
                     'category' => $category,
                     'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -430,7 +462,7 @@ class Service
                     'status' => $item['status'],
                     'name' => $item['name'],
                     'price' => $item['price'],
-                    'image_url' => $this->getImageUrl($item['img_name']),
+                    'image_url' => $this->getImageUrl($item['image_name']),
                     'category_id' => $item['category_id'],
                     'category' => $category,
                     'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -458,13 +490,6 @@ class Service
     public function transactions(Request $request, Response $response, array $args)
     {
         try {
-            $payload = $this->jsonPayload($request);
-        } catch (\InvalidArgumentException $e) {
-            $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
-        }
-
-        try {
             $user = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
@@ -473,13 +498,13 @@ class Service
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
 
-        $itemId = $request->getParam('item_id', null);
+        $itemId = (int) $request->getParam('item_id', 0);
         $createdAt = (int) $request->getParam('created_at', 0);
 
         try {
             $this->dbh->beginTransaction();
 
-            if ($itemId !== null && $createdAt > 0) {
+            if ($itemId !== 0 && $createdAt > 0) {
                 // paging
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE '.
                     '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? '.
@@ -492,7 +517,7 @@ class Service
                    self::ITEM_STATUS_SOLD_OUT,
                    self::ITEM_STATUS_CANCEL,
                    self::ITEM_STATUS_STOP,
-                    (new \DateTime($createdAt))->format(self::DATETIME_SQL_FORMAT),
+                    (new \DateTime())->setTimeStamp((int) $createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::TRANSACTIONS_PER_PAGE +1,
                 ]);
@@ -539,7 +564,7 @@ class Service
                         'status' => $item['status'],
                         'name' => $item['name'],
                         'price' => (int) $item['price'],
-                        'image_url' => $this->getImageUrl($item['img_name']),
+                        'image_url' => $this->getImageUrl($item['image_name']),
                         'category_id' => (int) $item['category_id'],
                         'category' => $category,
                         'created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
@@ -556,43 +581,42 @@ class Service
                 }
 
                 $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?');
-                $r = $sth->execute([$payload->item_id]);
+                $r = $sth->execute([$item['id']]);
                 if ($r === false) {
                     throw new \PDOException($sth->errorInfo());
                 }
+
                 $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
-                if ($transactionEvidence === false) {
-                    $this->dbh->rollBack();
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidences not found']);
-                }
+                if ($transactionEvidence !== false) {
+                    if ($transactionEvidence['id'] > 0) {
+                        $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?');
+                        $r = $sth->execute([$transactionEvidence['id']]);
+                        if ($r === false) {
+                            throw new \PDOException($sth->errorInfo());
+                        }
+                        $shipping = $sth->fetch(PDO::FETCH_ASSOC);
+                        if ($shipping === false) {
+                            $this->dbh->rollBack();
+                            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shipping not found']);
+                        }
 
-                if ($transactionEvidence['id'] > 0) {
-                    $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?');
-                    $r = $sth->execute([$payload->item_id]);
-                    if ($r === false) {
-                        throw new \PDOException($sth->errorInfo());
-                    }
-                    $shipping = $sth->fetch(PDO::FETCH_ASSOC);
-                    if ($shipping === false) {
-                        $this->dbh->rollBack();
-                        return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidences not found']);
-                    }
-
-                    $client = new Client();
-                    $r = $client->get('http://localhost:7000/status', [
+                        $client = new Client();
+                        $host = $this->getShipmentServiceURL();
+                        $r = $client->get($host . '/status', [
                             'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                             'json' => ['reserve_id' => $shipping['reserve_id']],
                         ]);
-                    if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
-                        $this->logger->error(($r->getReasonPhrase()));
-                        $this->dbh->rollBack();
-                        return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
-                    }
-                    $shippingResponse = json_decode($r->getBody());
+                        if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
+                            $this->logger->error(($r->getReasonPhrase()));
+                            $this->dbh->rollBack();
+                            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                        }
+                        $shippingResponse = json_decode($r->getBody());
 
-                    $detail['transaction_evidence_id'] = $transactionEvidence['id'];
-                    $detail['transaction_evidence_status'] = $transactionEvidence['status'];
-                    $detail['shipping_status'] = $shippingResponse->status;
+                        $detail['transaction_evidence_id'] = $transactionEvidence['id'];
+                        $detail['transaction_evidence_status'] = $transactionEvidence['status'];
+                        $detail['shipping_status'] = $shippingResponse->status;
+                    }
                 }
 
                 $itemDetails[] = $detail;
@@ -802,12 +826,11 @@ class Service
             return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
         }
 
-        if (empty(name) || empty($description) || empty($price) || $price === 0 || empty($category_id)) {
+        if (empty($name) || empty($description) || empty($price) || $price === 0 || empty($category_id)) {
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'all parameters are required']);
         }
 
         if ($price < self::MIN_ITEM_PRICE || $price > self::MAX_ITEM_PRICE) {
-            $this->logger->info($price);
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']);
         }
 
@@ -816,10 +839,10 @@ class Service
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'Incorrect category ID']);
         }
 
-        if (! array_key_exists('images', $files)) {
+        if (! array_key_exists('image', $files)) {
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'image error']);
         }
-        $image = $files['images'];
+        $image = $files['image'];
         $ext = pathinfo($image->getClientFilename(), PATHINFO_EXTENSION);
         if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'unsupported image format error']);
@@ -829,9 +852,9 @@ class Service
         }
 
         $bytes = random_bytes(16);
-        $imageName = bin2hex($bytes);
+        $imageName = sprintf("%s.%s", bin2hex($bytes), $ext);
         try {
-            $image->moveTo('../public/upload/' . $imageName);
+            $image->moveTo(sprintf('../public/upload/%s' . $imageName);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'Saving image failed']);
@@ -860,7 +883,7 @@ class Service
                 return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
             }
 
-            $sth = $this->dbh->prepare('INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`, `image_name`, `category_id`) VALUES (?, ?, ?, ?, ?, ?)');
+            $sth = $this->dbh->prepare('INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`, `image_name`, `category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)');
             $r = $sth->execute([
                 $seller['id'],
                 self::ITEM_STATUS_ON_SALE,
@@ -908,7 +931,7 @@ class Service
             return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
         }
 
-        if ($payload->price < self::MIN_ITEM_PRICE || $payload->price > self::MAX_ITEM_PRICE) {
+        if ($payload->item_price < self::MIN_ITEM_PRICE || $payload->item_price > self::MAX_ITEM_PRICE) {
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']);
         }
 
@@ -951,7 +974,7 @@ class Service
             }
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?');
-            $r = $sth->execute([$payload->price, (new \DateTime())->format(self::DATETIME_SQL_FORMAT), $payload->item_id]);
+            $r = $sth->execute([$payload->item_price, (new \DateTime())->format(self::DATETIME_SQL_FORMAT), $payload->item_id]);
             if ($r === false) {
                 throw new \PDOException($sth->errorInfo());
             }
@@ -1125,8 +1148,9 @@ class Service
             }
 
             $client = new Client();
+            $host = $this->getShipmentServiceURL();
             $res = $client->post(
-                'http://localhost:7000/create',
+                $host . '/create',
                 [
                     'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                     'json' => [
@@ -1144,8 +1168,9 @@ class Service
             }
             $shippingResponse = json_decode($res->getBody());
 
+            $host = $this->getPaymentServiceURL();
             $pres = $client->post(
-                'http://localhost:5555/token',
+                $host . '/token',
                 ['json' => [
                     'shop_id' => self::PAYMENT_SERVICE_ISUCARI_SHOP_ID,
                     'api_key' => self::PAYMENT_SERVICE_ISUCARI_API_KEY,
@@ -1295,8 +1320,9 @@ class Service
             }
 
             $client = new \GuzzleHttp\Client();
+            $host = $this->getShipmentServiceURL();
             $r = $client->post(
-                'http://localhost:7000/request',
+                $host . '/request',
                 [
                     'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                     'json' => ['reserve_id' => $shipping['reserve_id']],
@@ -1414,7 +1440,8 @@ class Service
             }
 
             $client = new Client();
-            $r = $client->get('http://localhost:7000/status', [
+            $host = $this->getShipmentServiceURL();
+            $r = $client->get($host . '/status', [
                 'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                 'json' => ['reserve_id' => $shipping['reserve_id']],
             ]);
@@ -1541,7 +1568,8 @@ class Service
             }
 
             $client = new Client();
-            $r = $client->post('http://localhost:7000/status', [
+            $host = $this->getShipmentServiceURL();
+            $r = $client->post($host . '/status', [
                 'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                 'json' => ['reserve_id' => $shipping['reserve_id']],
             ]);
