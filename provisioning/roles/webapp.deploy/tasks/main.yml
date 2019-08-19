@@ -18,10 +18,12 @@
       - "--exclude=.gitignore"
       - "--exclude=/go.mod"
       - "--exclude=/go.sum"
+      - "--exclude=bin"
       - "--exclude=bench"
       - "--exclude=cmd"
-      - "--exclude=LICENCE"
+      - "--exclude=LICENSE"
       - "--exclude=Makefile"
+      - "--exclude=README.md"
       - "--exclude=provisioning"
       - "--exclude=initial-data"
 
