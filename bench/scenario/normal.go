@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -103,7 +102,10 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	<-time.After(6 * time.Second)
+	ok := sShipment.ForceDone(surl.Query().Get("id"))
+	if !ok {
+		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
+	}
 
 	err = s2.Complete(targetItemID)
 	if err != nil {
