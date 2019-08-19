@@ -3,7 +3,6 @@ package scenario
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -204,10 +203,10 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	go func() {
-	}()
-
-	<-time.After(6 * time.Second)
+	ok := sShipment.ForceDone(surl.Query().Get("id"))
+	if !ok {
+		return failure.New(ErrScenario, failure.Message("okokoko"))
+	}
 
 	err = s2.Complete(targetItemID)
 	if err != nil {

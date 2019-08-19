@@ -68,15 +68,15 @@ func apply(h http.Handler, adapters ...Adapter) http.Handler {
 	return h
 }
 
-func RunServer(paymentPort, shipmentPort int) error {
+func RunServer(paymentPort, shipmentPort int) (*ServerShipment, error) {
 	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: paymentPort})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: shipmentPort})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pay := NewPayment()
@@ -101,5 +101,5 @@ func RunServer(paymentPort, shipmentPort int) error {
 		log.Print(serverShipment.Serve(liShipment))
 	}()
 
-	return nil
+	return ship, nil
 }

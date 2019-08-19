@@ -5,6 +5,7 @@ import (
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
+	"github.com/isucon/isucon9-qualify/bench/server"
 )
 
 func Initialize() *fails.Critical {
@@ -157,3 +158,11 @@ func check(critical *fails.Critical) {
 func load(critical *fails.Critical) {}
 
 func FinalCheck(critical *fails.Critical) {}
+
+var (
+	sShipment *server.ServerShipment
+)
+
+func SetShipment(ss *server.ServerShipment) {
+	sShipment = ss
+}
