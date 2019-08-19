@@ -215,7 +215,7 @@ class Service
             $hasNext = false;
             if (count($itemSimples) > self::ITEM_PER_PAGE) {
                 $hasNext = true;
-                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE-1);
+                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -314,7 +314,7 @@ class Service
             $hasNext = false;
             if (count($itemSimples) > self::ITEM_PER_PAGE) {
                 $hasNext = true;
-                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE-1);
+                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -401,7 +401,7 @@ class Service
             $hasNext = false;
             if (count($itemSimples) > self::ITEM_PER_PAGE) {
                 $hasNext = true;
-                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE-1);
+                $itemSimples = array_slice($itemSimples, 0, self::ITEM_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
@@ -563,7 +563,7 @@ class Service
             $hasNext = false;
             if (count($itemDetails) > self::TRANSACTIONS_PER_PAGE) {
                 $hasNext = true;
-                $itemDetails = array_slice($itemDetails, 0, self::TRANSACTIONS_PER_PAGE - 1);
+                $itemDetails = array_slice($itemDetails, 0, self::TRANSACTIONS_PER_PAGE);
             }
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
