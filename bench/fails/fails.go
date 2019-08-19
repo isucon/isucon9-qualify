@@ -3,6 +3,8 @@ package fails
 import (
 	"log"
 	"sync"
+
+	"github.com/morikuni/failure"
 )
 
 type Error struct {
@@ -15,20 +17,6 @@ func (e *Error) Error() string {
 		return e.Msg
 	}
 	return e.Msg + ": " + e.Err.Error()
-}
-
-func NewError(err error, msg string) *Error {
-	ferr := &Error{
-		Msg: msg,
-		Err: err,
-	}
-	if err != nil {
-		log.Printf("%s: %+v", msg, err)
-	} else {
-		log.Print(ferr)
-	}
-
-	return ferr
 }
 
 type Critical struct {
@@ -58,11 +46,11 @@ func (c *Critical) Add(err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if ferr, ok := err.(*Error); ok {
-		c.Msgs = append(c.Msgs, ferr.Msg)
-	} else {
-		log.Printf("%+v", err)
+	log.Printf("%+v", err)
 
+	if msg, ok := failure.MessageOf(err); ok {
+		c.Msgs = append(c.Msgs, msg)
+	} else {
 		c.Msgs = append(c.Msgs, "運営に連絡してください")
 	}
 }

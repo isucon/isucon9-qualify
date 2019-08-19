@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
-	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/session"
+	"github.com/morikuni/failure"
 )
 
 func irregularLoginWrongPassword(user1 asset.AppUser) error {
@@ -36,7 +36,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 	}
 
 	if !user1.Equal(seller) {
-		return fails.NewError(nil, "ログインが失敗しています")
+		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
 	}
 
 	err = s1.SetSettings()
@@ -76,7 +76,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 	}
 
 	if !user2.Equal(buyer) {
-		return fails.NewError(nil, "ログインが失敗しています")
+		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
 	}
 
 	err = s2.SetSettings()
@@ -120,7 +120,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 	}
 
 	if !user3.Equal(other) {
-		return fails.NewError(nil, "ログインが失敗しています")
+		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
 	}
 
 	err = s3.SetSettings()
