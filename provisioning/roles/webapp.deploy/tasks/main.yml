@@ -16,8 +16,8 @@
     rsync_opts:
       - "--exclude=.git"
       - "--exclude=.gitignore"
-      - "--exclude=go.mod"
-      - "--exclude=go.sum"
+      - "--exclude=/go.mod"
+      - "--exclude=/go.sum"
       - "--exclude=bench"
       - "--exclude=cmd"
       - "--exclude=LICENCE"
