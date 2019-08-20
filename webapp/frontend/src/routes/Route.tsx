@@ -109,12 +109,12 @@ export const AppRoute: React.FC = () => {
         path={routes.transaction.path}
         component={TransactionPageContainer}
       />
-      <AuthRoute exact path={routes.user.path} component={UserPageContainer} />
       <AuthRoute
         exact
         path={routes.userSetting.path}
         component={UserSettingPage}
       />
+      <AuthRoute exact path={routes.user.path} component={UserPageContainer} />
       <Route component={NotFoundPage} />
     </Switch>
   );
