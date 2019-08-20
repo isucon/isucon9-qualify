@@ -108,14 +108,13 @@ export interface ItemEditRes {
 /**
  * POST /sell
  */
-// Request
 export interface SellReq {
   name: string;
   price: number;
   description: string;
   category_id: number;
 }
-// Response
+
 export interface SellRes extends Response {
   id: number;
 }
@@ -123,7 +122,6 @@ export interface SellRes extends Response {
 /**
  * GET /settings
  */
-// Response
 export interface SettingsRes {
   csrf_token: string;
   user?: User;
@@ -133,7 +131,6 @@ export interface SettingsRes {
 /**
  * POST /buy
  */
-// Request
 export interface BuyReq {
   item_id: number;
   token: string;
