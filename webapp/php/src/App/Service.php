@@ -1581,7 +1581,7 @@ class Service
             $shippingResponse = json_decode($r->getBody());
             if ($shippingResponse->status !== self::SHIPPING_STATUS_DONE) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'shipment service側で配送完了になっていません']);
+                return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'shipment service側で配送完了になっていません']);
             }
 
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
