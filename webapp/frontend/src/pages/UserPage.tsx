@@ -12,7 +12,6 @@ import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import { RouteComponentProps } from 'react-router';
 import LoadingComponent from '../components/LoadingComponent';
 import { TransactionListComponent } from '../components/TransactionListComponent';
-import AppBar from '@material-ui/core/AppBar/AppBar';
 import Tabs from '@material-ui/core/Tabs/Tabs';
 import Tab from '@material-ui/core/Tab/Tab';
 import { StyleRules } from '@material-ui/core/styles';
@@ -163,12 +162,10 @@ class UserPage extends React.Component<Props, State> {
           </Grid>
         </Grid>
         <Divider variant="middle" />
-        <AppBar className={classes.tab}>
-          <Tabs value={tabValue} onChange={this._handleChange}>
-            <Tab label="出品商品" id="tab--item-list" />
-            {this.isMyPage && <Tab label="取引一覧" id="tab--item-list" />}
-          </Tabs>
-        </AppBar>
+        <Tabs value={tabValue} onChange={this._handleChange}>
+          <Tab label="出品商品" id="tab--item-list" />
+          {this.isMyPage && <Tab label="取引一覧" id="tab--item-list" />}
+        </Tabs>
         <div
           className={classes.list}
           id="tab--item-list"
