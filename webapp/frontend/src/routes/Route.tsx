@@ -5,11 +5,11 @@ import SignUpPage from '../pages/SignUpPage';
 import SellPage from '../pages/SellPage';
 import ItemEditPage from '../pages/ItemEditPage';
 import ItemBuyPage from '../pages/ItemBuyPage';
-import UserSettingPage from '../pages/UserSettingPage';
 import ItemPageContainer from '../containers/ItemPageContainer';
 import ItemListPageContainer from '../containers/ItemListPageContainer';
 import TransactionPageContainer from '../containers/TransactionPageContainer';
 import UserPageContainer from '../containers/UserPageContainer';
+import UserSettingPageContainer from '../containers/UserSettingPageContainer';
 import AuthRoute from '../containers/AuthContainer';
 import NonAuthRoute from '../containers/NonAuthContainer';
 import NotFoundPage from '../pages/error/NotFoundPage';
@@ -112,7 +112,7 @@ export const AppRoute: React.FC = () => {
       <AuthRoute
         exact
         path={routes.userSetting.path}
-        component={UserSettingPage}
+        component={UserSettingPageContainer}
       />
       <AuthRoute exact path={routes.user.path} component={UserPageContainer} />
       <Route component={NotFoundPage} />
