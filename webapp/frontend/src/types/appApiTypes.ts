@@ -91,6 +91,21 @@ export interface LoginRes {
 export interface GetItemRes extends ItemDetail {}
 
 /**
+ * POST /items/edit
+ */
+export interface ItemEditReq {
+  item_id: number;
+  item_price: number;
+}
+
+export interface ItemEditRes {
+  item_id: number;
+  item_price: number;
+  item_created_at: number;
+  item_updated_at: number;
+}
+
+/**
  * POST /sell
  */
 // Request
