@@ -854,7 +854,7 @@ class Service
         $bytes = random_bytes(16);
         $imageName = sprintf("%s.%s", bin2hex($bytes), $ext);
         try {
-            $image->moveTo(sprintf('../public/upload/%s' . $imageName);
+            $image->moveTo(sprintf('../public/upload/%s', $imageName));
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'Saving image failed']);

@@ -10,6 +10,14 @@ if (PHP_SAPI == 'cli-server') {
     }
 }
 
+// http://www.slimframework.com/docs/v3/handlers/php-error.html
+error_reporting(E_ALL);
+set_error_handler(function ($severity, $message, $file, $line) {
+    if (error_reporting() & $severity) {
+        throw new \ErrorException($message, 0, $severity, $file, $line);
+    }
+});
+
 // Instantiate the app
 $settings = require __DIR__ . '/../src/settings.php';
 $app = new \Slim\App($settings);
