@@ -176,6 +176,10 @@ func GetUserItemsFirst(sellerID int64) int64 {
 	return userItems[sellerID][0]
 }
 
+func GetUserItems(sellerID int64) []int64 {
+	return userItems[sellerID]
+}
+
 func GetItem(sellerID, itemID int64) (AppItem, bool) {
 	muItem.RLock()
 	defer muItem.RUnlock()

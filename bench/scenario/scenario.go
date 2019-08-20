@@ -180,12 +180,12 @@ func load(critical *fails.Critical) {
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
-				err := sellAndBuyWithLoginedSession(s1, s2)
+				err := sellNewCategoryBuyWithLoginedSession(s1, s2)
 				if err != nil {
 					critical.Add(err)
 				}
 
-				err = sellAndBuyWithLoginedSession(s2, s1)
+				err = sellNewCategoryBuyWithLoginedSession(s2, s1)
 				if err != nil {
 					critical.Add(err)
 				}

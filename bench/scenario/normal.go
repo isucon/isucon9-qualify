@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/server"
@@ -134,11 +135,17 @@ func loginedSession(user1 asset.AppUser) (*session.Session, error) {
 	return s1, nil
 }
 
-func sellAndBuyWithLoginedSession(s1, s2 *session.Session) error {
+func sellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
 	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
 	if err != nil {
 		return err
 	}
+
+	err = newCategoryItemsWithLoginedSession(s2)
+	if err != nil {
+		return err
+	}
+
 	token, err := s2.PaymentCard(CorrectCardNumber, IsucariShopID)
 	if err != nil {
 		return err
@@ -561,6 +568,55 @@ func newCategoryItems(user1 asset.AppUser) error {
 	createdAt = items[0].CreatedAt
 	for _, item := range items {
 		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
+			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのitem_idとcreated_atが正しく動作していません", category.ID)))
+		}
+
+		if createdAt < item.CreatedAt {
+			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID)))
+		}
+
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID)))
+		}
+
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
+			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
+			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID)))
+		}
+
+		createdAt = item.CreatedAt
+	}
+
+	return nil
+}
+
+func newCategoryItemsWithLoginedSession(s1 *session.Session) error {
+	uitems := asset.GetUserItems(s1.UserID)
+	tIndex := 0
+	if len(uitems) >= 2 {
+		tIndex = len(uitems) - rand.Intn(len(uitems)/2) - 1
+	}
+
+	targetItem, ok := asset.GetItem(s1.UserID, uitems[tIndex])
+	if !ok {
+		return failure.New(ErrScenario, failure.Message("/settingsのユーザーIDが存在しないIDです"))
+	}
+
+	category := asset.GetRandomRootCategory()
+	_, _, items, err := s1.NewCategoryItemsWithItemIDAndCreatedAt(category.ID, targetItem.ID, targetItem.CreatedAt)
+	if err != nil {
+		return err
+	}
+
+	if len(items) != asset.ItemsPerPage {
+		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items))))
+	}
+
+	// 簡易チェック
+	createdAt := items[0].CreatedAt
+	for _, item := range items {
+		if !(item.ID < targetItem.ID && item.CreatedAt <= targetItem.CreatedAt) {
 			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのitem_idとcreated_atが正しく動作していません", category.ID)))
 		}
 

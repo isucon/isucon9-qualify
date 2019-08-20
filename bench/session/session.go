@@ -20,6 +20,7 @@ const (
 )
 
 type Session struct {
+	UserID     int64
 	csrfToken  string
 	httpClient *http.Client
 }
