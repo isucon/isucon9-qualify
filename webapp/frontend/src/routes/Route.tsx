@@ -3,7 +3,6 @@ import { Route, Switch } from 'react-router-dom';
 import SignInPage from '../pages/SignInPage';
 import SignUpPage from '../pages/SignUpPage';
 import SellPage from '../pages/SellPage';
-import ItemEditPage from '../pages/ItemEditPage';
 import ItemBuyPage from '../pages/ItemBuyPage';
 import ItemPageContainer from '../containers/ItemPageContainer';
 import ItemListPageContainer from '../containers/ItemListPageContainer';
@@ -16,6 +15,7 @@ import NotFoundPage from '../pages/error/NotFoundPage';
 import TopPage from '../pages/TopPage';
 import CategoryItemListPageContainer from '../containers/CategoryItemListPageContainer';
 import BuyCompleteContainer from '../containers/BuyCompleteContainer';
+import ItemEditPageContainer from '../containers/ItemEditPageContainer';
 
 interface route {
   [name: string]: {
@@ -97,7 +97,11 @@ export const AppRoute: React.FC = () => {
       />
       <AuthRoute exact path={routes.sell.path} component={SellPage} />
       <AuthRoute exact path={routes.item.path} component={ItemPageContainer} />
-      <AuthRoute exact path={routes.itemEdit.path} component={ItemEditPage} />
+      <AuthRoute
+        exact
+        path={routes.itemEdit.path}
+        component={ItemEditPageContainer}
+      />
       <AuthRoute exact path={routes.buy.path} component={ItemBuyPage} />
       <AuthRoute
         exact

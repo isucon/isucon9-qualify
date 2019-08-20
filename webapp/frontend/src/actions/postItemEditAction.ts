@@ -3,6 +3,8 @@ import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action, AnyAction } from 'redux';
 import { ItemEditReq, ItemEditRes } from '../types/appApiTypes';
+import { push } from 'connected-react-router';
+import { routes } from '../routes/Route';
 
 export const POST_ITEM_EDIT_START = 'POST_ITEM_EDIT_START';
 export const POST_ITEM_EDIT_SUCCESS = 'POST_ITEM_EDIT_SUCCESS';
@@ -38,6 +40,9 @@ export function postItemEditAction(
       })
       .then((body: ItemEditRes) => {
         dispatch(postItemEditSuccessAction());
+      })
+      .then(() => {
+        dispatch(push(routes.item.getPath(itemId)));
       })
       .catch((err: Error) => {
         dispatch(
