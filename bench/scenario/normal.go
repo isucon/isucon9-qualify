@@ -115,6 +115,81 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	return nil
 }
 
+func loginedSession(user1 asset.AppUser) (*session.Session, error) {
+	s1, err := session.NewSession()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s1.Login(user1.AccountName, user1.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	if !user1.Equal(user) {
+		return nil, failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
+	}
+
+	err = s1.SetSettings()
+	if err != nil {
+		return nil, err
+	}
+
+	return s1, nil
+}
+
+func sellAndBuyWithLoginedSession(s1, s2 *session.Session) error {
+	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
+	if err != nil {
+		return err
+	}
+	token, err := s2.PaymentCard(CorrectCardNumber, IsucariShopID)
+	if err != nil {
+		return err
+	}
+	_, err = s2.Buy(targetItemID, token)
+	if err != nil {
+		return err
+	}
+
+	apath, err := s1.Ship(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	surl, err := s1.DecodeQRURL(apath)
+	if err != nil {
+		return err
+	}
+
+	s3, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	err = s3.ShipmentAccept(surl)
+	if err != nil {
+		return err
+	}
+
+	err = s1.ShipDone(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	ok := sShipment.ForceDone(surl.Query().Get("id"))
+	if !ok {
+		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
+	}
+
+	err = s2.Complete(targetItemID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func transactionEvidence(user1 asset.AppUser) error {
 	s1, err := session.NewSession()
 	if err != nil {

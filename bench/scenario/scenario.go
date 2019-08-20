@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"sync"
+	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -155,7 +156,46 @@ func check(critical *fails.Critical) {
 	wg.Wait()
 }
 
-func load(critical *fails.Critical) {}
+func load(critical *fails.Critical) {
+	var wg sync.WaitGroup
+
+	for i := 0; i < 30; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+			s1, err := loginedSession(user1)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := loginedSession(user2)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			for j := 0; j < 10; j++ {
+				ch := time.After(3 * time.Second)
+
+				err := sellAndBuyWithLoginedSession(s1, s2)
+				if err != nil {
+					critical.Add(err)
+				}
+
+				err = sellAndBuyWithLoginedSession(s2, s1)
+				if err != nil {
+					critical.Add(err)
+				}
+				<-ch
+			}
+		}()
+	}
+
+	wg.Wait()
+}
 
 func FinalCheck(critical *fails.Critical) {}
 
