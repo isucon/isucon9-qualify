@@ -201,8 +201,13 @@ func FinalCheck(critical *fails.Critical) {}
 
 var (
 	sShipment *server.ServerShipment
+	sPayment  *server.ServerPayment
 )
 
 func SetShipment(ss *server.ServerShipment) {
 	sShipment = ss
+}
+
+func SetPayment(sp *server.ServerPayment) {
+	sPayment = sp
 }
