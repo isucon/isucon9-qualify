@@ -4,6 +4,7 @@
 namespace App;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use PDO;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -602,10 +603,18 @@ class Service
 
                         $client = new Client();
                         $host = $this->getShipmentServiceURL();
-                        $r = $client->get($host . '/status', [
-                            'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
-                            'json' => ['reserve_id' => $shipping['reserve_id']],
-                        ]);
+                        try {
+                            $r = $client->get($host . '/status', [
+                                'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                                'json' => ['reserve_id' => $shipping['reserve_id']],
+                            ]);
+                        } catch (RequestException $e) {
+                            $this->dbh->rollBack();
+                            if ($e->hasResponse()) {
+                                $this->logger->error($e->getResponse()->getReasonPhrase());
+                            }
+                            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                        }
                         if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
                             $this->logger->error(($r->getReasonPhrase()));
                             $this->dbh->rollBack();
@@ -1149,18 +1158,26 @@ class Service
 
             $client = new Client();
             $host = $this->getShipmentServiceURL();
-            $res = $client->post(
-                $host . '/create',
-                [
-                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
-                    'json' => [
-                        'to_address' => $buyer['address'],
-                        'to_name' => $buyer['account_name'],
-                        'from_address' => $seller['address'],
-                        'from_name' => $seller['account_name'],
+            try {
+                $res = $client->post(
+                    $host . '/create',
+                    [
+                        'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                        'json' => [
+                            'to_address' => $buyer['address'],
+                            'to_name' => $buyer['account_name'],
+                            'from_address' => $seller['address'],
+                            'from_name' => $seller['account_name'],
+                        ]
                     ]
-                ]
-            );
+                );
+            } catch (RequestException $e) {
+                $this->dbh->rollBack();
+                if ($e->hasResponse()) {
+                    $this->logger->error($e->getResponse()->getReasonPhrase());
+                }
+                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+            }
             if ($res->getStatusCode() != StatusCode::HTTP_OK) {
                 $this->dbh->rollBack();
                 $this->logger->error($res->getReasonPhrase());
@@ -1169,15 +1186,23 @@ class Service
             $shippingResponse = json_decode($res->getBody());
 
             $host = $this->getPaymentServiceURL();
-            $pres = $client->post(
-                $host . '/token',
-                ['json' => [
-                    'shop_id' => self::PAYMENT_SERVICE_ISUCARI_SHOP_ID,
-                    'api_key' => self::PAYMENT_SERVICE_ISUCARI_API_KEY,
-                    'token' =>  $payload->token,
-                    'price' => $item['price'],
-                ]]
-            );
+            try {
+                $pres = $client->post(
+                    $host . '/token',
+                    ['json' => [
+                        'shop_id' => self::PAYMENT_SERVICE_ISUCARI_SHOP_ID,
+                        'api_key' => self::PAYMENT_SERVICE_ISUCARI_API_KEY,
+                        'token' => $payload->token,
+                        'price' => $item['price'],
+                    ]]
+                );
+            } catch (RequestException $e) {
+                $this->dbh->rollBack();
+                if ($e->hasResponse()) {
+                    $this->logger->error($e->getResponse()->getReasonPhrase());
+                }
+                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'payment service is failed']);
+            }
 
             if ($pres->getStatusCode() != StatusCode::HTTP_OK) {
                 $this->dbh->rollBack();
@@ -1319,15 +1344,23 @@ class Service
                 return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shippings not found']);
             }
 
-            $client = new \GuzzleHttp\Client();
+            $client = new Client();
             $host = $this->getShipmentServiceURL();
-            $r = $client->post(
-                $host . '/request',
-                [
-                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
-                    'json' => ['reserve_id' => $shipping['reserve_id']],
-                ]
-            );
+            try {
+                $r = $client->post(
+                    $host . '/request',
+                    [
+                        'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                        'json' => ['reserve_id' => $shipping['reserve_id']],
+                    ]
+                );
+            } catch (RequestException $e) {
+                $this->dbh->rollBack();
+                if ($e->hasResponse()) {
+                    $this->logger->error($e->getResponse()->getReasonPhrase());
+                }
+                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+            }
             if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
                 $this->logger->error($r->getReasonPhrase());
                 $this->dbh->rollBack();
@@ -1441,10 +1474,18 @@ class Service
 
             $client = new Client();
             $host = $this->getShipmentServiceURL();
-            $r = $client->get($host . '/status', [
-                'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
-                'json' => ['reserve_id' => $shipping['reserve_id']],
-            ]);
+            try {
+                $r = $client->get($host . '/status', [
+                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                    'json' => ['reserve_id' => $shipping['reserve_id']],
+                ]);
+            } catch (RequestException $e) {
+                $this->dbh->rollBack();
+                if ($e->hasResponse()) {
+                    $this->logger->error($e->getResponse()->getReasonPhrase());
+                }
+                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+            }
             if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
                 $this->logger->error($r->getReasonPhrase());
                 $this->dbh->rollBack();
@@ -1569,10 +1610,18 @@ class Service
 
             $client = new Client();
             $host = $this->getShipmentServiceURL();
-            $r = $client->post($host . '/status', [
-                'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
-                'json' => ['reserve_id' => $shipping['reserve_id']],
-            ]);
+            try {
+                $r = $client->post($host . '/status', [
+                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                    'json' => ['reserve_id' => $shipping['reserve_id']],
+                ]);
+            } catch (RequestException $e) {
+                $this->dbh->rollBack();
+                if ($e->hasResponse()) {
+                    $this->logger->error($e->getResponse()->getReasonPhrase());
+                }
+                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+            }
             if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
                 $this->logger->error($r->getReasonPhrase());
                 $this->dbh->rollBack();
