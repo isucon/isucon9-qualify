@@ -1347,11 +1347,12 @@ class Service
             $client = new Client();
             $host = $this->getShipmentServiceURL();
             try {
-                $r = $client->post(
+                $res = $client->post(
                     $host . '/request',
                     [
                         'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
                         'json' => ['reserve_id' => $shipping['reserve_id']],
+                        'stream' => true,
                     ]
                 );
             } catch (RequestException $e) {
@@ -1361,8 +1362,8 @@ class Service
                 }
                 return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
             }
-            if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
-                $this->logger->error($r->getReasonPhrase());
+            if ($res->getStatusCode() !== StatusCode::HTTP_OK) {
+                $this->logger->error($res->getReasonPhrase());
                 $this->dbh->rollBack();
                 return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
             }
@@ -1371,7 +1372,7 @@ class Service
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
             $r = $sth->execute([
                 self::SHIPPING_STATUS_WAIT_PICKUP,
-                (string) $r->getBody(),
+                $res->getBody(),
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id']
             ]);
