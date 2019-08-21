@@ -5,7 +5,6 @@ import (
 	"math/rand"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
-	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
 )
@@ -34,41 +33,8 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	if err != nil {
 		return err
 	}
-	token, err := s2.PaymentCard(CorrectCardNumber, IsucariShopID)
-	if err != nil {
-		return err
-	}
-	_, err = s2.Buy(targetItemID, token)
-	if err != nil {
-		return err
-	}
 
-	reserveID, apath, err := s1.Ship(targetItemID)
-	if err != nil {
-		return err
-	}
-
-	md5Str, err := s1.DownloadQRURL(apath)
-	if err != nil {
-		return err
-	}
-
-	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
-	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		return failure.New(ErrScenario, failure.Message("QRコードの画像に誤りがあります"))
-	}
-
-	err = s1.ShipDone(targetItemID)
-	if err != nil {
-		return err
-	}
-
-	ok := sShipment.ForceDone(reserveID)
-	if !ok {
-		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
-	}
-
-	err = s2.Complete(targetItemID)
+	err = buyComplete(s1, s2, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -87,41 +53,7 @@ func loadSellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
 		return err
 	}
 
-	token, err := s2.PaymentCard(CorrectCardNumber, IsucariShopID)
-	if err != nil {
-		return err
-	}
-	_, err = s2.Buy(targetItemID, token)
-	if err != nil {
-		return err
-	}
-
-	reserveID, apath, err := s1.Ship(targetItemID)
-	if err != nil {
-		return err
-	}
-
-	md5Str, err := s1.DownloadQRURL(apath)
-	if err != nil {
-		return err
-	}
-
-	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
-	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		return failure.New(ErrScenario, failure.Message("QRコードの画像に誤りがあります"))
-	}
-
-	err = s1.ShipDone(targetItemID)
-	if err != nil {
-		return err
-	}
-
-	ok := sShipment.ForceDone(reserveID)
-	if !ok {
-		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
-	}
-
-	err = s2.Complete(targetItemID)
+	err = buyComplete(s1, s2, targetItemID)
 	if err != nil {
 		return err
 	}
