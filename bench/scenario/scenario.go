@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/isucon/isucon9-qualify/bench/action"
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/server"
@@ -138,18 +139,30 @@ func check(critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := irregularLoginWrongPassword(user3)
-		if err != nil {
-			critical.Add(err)
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			err := irregularLoginWrongPassword(user3)
+			if err != nil {
+				critical.Add(err)
+			}
+
+			<-ch
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := irregularSellAndBuy(user2, user1, user3)
-		if err != nil {
-			critical.Add(err)
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			err := irregularSellAndBuy(user2, user1, user3)
+			if err != nil {
+				critical.Add(err)
+			}
+
+			<-ch
 		}
 	}()
 
@@ -165,13 +178,13 @@ func load(critical *fails.Critical) {
 			defer wg.Done()
 
 			user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
-			s1, err := loginedSession(user1)
+			s1, err := action.LoginedSession(user1)
 			if err != nil {
 				critical.Add(err)
 				return
 			}
 
-			s2, err := loginedSession(user2)
+			s2, err := action.LoginedSession(user2)
 			if err != nil {
 				critical.Add(err)
 				return
@@ -180,12 +193,12 @@ func load(critical *fails.Critical) {
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
-				err := sellNewCategoryBuyWithLoginedSession(s1, s2)
+				err := loadSellNewCategoryBuyWithLoginedSession(s1, s2)
 				if err != nil {
 					critical.Add(err)
 				}
 
-				err = sellNewCategoryBuyWithLoginedSession(s2, s1)
+				err = loadSellNewCategoryBuyWithLoginedSession(s2, s1)
 				if err != nil {
 					critical.Add(err)
 				}
