@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/morikuni/failure"
-	"github.com/tuotoo/qrcode"
 )
 
 type User struct {
@@ -170,7 +170,8 @@ type reqShip struct {
 }
 
 type resShip struct {
-	Path string `json:"path"`
+	Path      string `json:"path"`
+	ReserveID string `json:"reserve_id"`
 }
 
 type reqBump struct {
@@ -386,38 +387,42 @@ func (s *Session) Buy(itemID int64, token string) (int64, error) {
 	return rb.TransactionEvidenceID, nil
 }
 
-func (s *Session) Ship(itemID int64) (apath string, err error) {
+func (s *Session) Ship(itemID int64) (reserveID, apath string, err error) {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
+		return "", "", failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
+		return "", "", failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message("POST /ship: "+msg))
+		return "", "", failure.Wrap(err, failure.Message("POST /ship: "+msg))
 	}
 
 	rs := &resShip{}
 	err = json.NewDecoder(res.Body).Decode(rs)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message("POST /ship: JSONデコードに失敗しました"))
+		return "", "", failure.Wrap(err, failure.Message("POST /ship: JSONデコードに失敗しました"))
 	}
 
 	if len(rs.Path) == 0 {
-		return "", failure.New(ErrApplication, failure.Message("POST /ship: Pathが空です"))
+		return "", "", failure.New(ErrApplication, failure.Message("POST /ship: pathが空です"))
 	}
 
-	return rs.Path, nil
+	if len(rs.ReserveID) == 0 {
+		return "", "", failure.New(ErrApplication, failure.Message("POST /ship: reserve_idが空です"))
+	}
+
+	return rs.ReserveID, rs.Path, nil
 }
 
 func (s *Session) ShipDone(itemID int64) error {
@@ -478,45 +483,30 @@ func (s *Session) Complete(itemID int64) error {
 	return nil
 }
 
-func (s *Session) DecodeQRURL(apath string) (*url.URL, error) {
+func (s *Session) DownloadQRURL(apath string) (md5Str string, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
+		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
+		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: %s", apath, msg)))
+		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: %s", apath, msg)))
 	}
 
-	qrmatrix, err := qrcode.Decode(res.Body)
+	h := md5.New()
+	_, err = io.Copy(h, res.Body)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: QRコードがデコードできませんでした", apath)))
+		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: bodyの読み込みに失敗しました", apath)))
 	}
 
-	surl := qrmatrix.Content
-
-	if len(surl) == 0 {
-		return nil, failure.New(ErrApplication, failure.Message(fmt.Sprintf("GET %s: QRコードの中身が空です", apath)))
-	}
-
-	sparsedURL, err := url.ParseRequestURI(surl)
-	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: QRコードの中身がURLではありません", apath)))
-	}
-
-	// TODO: URLチェック
-	if sparsedURL.Host != ShareTargetURLs.ShipmentURL.Host {
-		return nil, failure.New(ErrApplication, failure.Message(fmt.Sprintf("GET %s: shipment serviceのドメイン以外のURLがQRコードに表示されています", apath)))
-	}
-
-	return sparsedURL, nil
+	return string(h.Sum(nil)), nil
 }
 
 func (s *Session) Bump(itemID int64) (int64, error) {

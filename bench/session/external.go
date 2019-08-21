@@ -3,9 +3,7 @@ package session
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/morikuni/failure"
 )
@@ -49,32 +47,4 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 	}
 
 	return rc.Token, nil
-}
-
-func (s *Session) ShipmentAccept(surl *url.URL) error {
-	surl.Host = ShareTargetURLs.ShipmentURL.Host
-	surl.Scheme = ShareTargetURLs.ShipmentURL.Scheme
-
-	req, err := s.newGetRequest(*surl, "")
-	if err != nil {
-		return failure.Wrap(err, failure.Message("[shipment service] /accept: リクエストに失敗しました"))
-	}
-
-	res, err := s.Do(req)
-	if err != nil {
-		return failure.Wrap(err, failure.Message("[shipment service] /accept: リクエストに失敗しました"))
-	}
-	defer res.Body.Close()
-
-	msg, err := checkStatusCode(res, http.StatusOK)
-	if err != nil {
-		return failure.Wrap(err, failure.Message("[shipment service] /accept: "+msg))
-	}
-
-	_, err = ioutil.ReadAll(res.Body)
-	if err != nil {
-		return failure.Wrap(err, failure.Message("[shipment service] /accept: bodyの読み込みに失敗しました"))
-	}
-
-	return nil
 }
