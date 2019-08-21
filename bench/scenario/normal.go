@@ -109,13 +109,8 @@ func transactionEvidence(user1 asset.AppUser) error {
 	return nil
 }
 
-func userItemsAndItem(user1, user2 asset.AppUser) error {
-	s1, err := LoginedSession(user1)
-	if err != nil {
-		return err
-	}
-
-	_, user, items, err := s1.UserItems(user2.ID)
+func userItemsAndItemWithLoginedSession(s1 *session.Session, userID int64) error {
+	_, user, items, err := s1.UserItems(userID)
 	if err != nil {
 		return err
 	}
@@ -123,43 +118,43 @@ func userItemsAndItem(user1, user2 asset.AppUser) error {
 	for _, item := range items {
 		aItem, ok := asset.GetItem(user.ID, item.ID)
 		if !ok {
-			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", user2.ID))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", userID))
 		}
 
 		if !(item.Name == aItem.Name) {
-			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonの商品の名前が間違えています", user2.ID))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonの商品の名前が間違えています", userID))
 		}
 	}
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
 
-	_, user, items, err = s1.UserItemsWithItemIDAndCreatedAt(user2.ID, targetItemID, targetItemCreatedAt)
+	_, user, items, err = s1.UserItemsWithItemIDAndCreatedAt(userID, targetItemID, targetItemCreatedAt)
 	if err != nil {
 		return err
 	}
 
 	for _, item := range items {
 		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
-			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonのitem_idとcreated_atが正しく動作していません", user2.ID))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonのitem_idとcreated_atが正しく動作していません", userID))
 		}
 
 		aItem, ok := asset.GetItem(user.ID, item.ID)
 		if !ok {
-			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", user2.ID))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", userID))
 		}
 
 		if !(item.Name == aItem.Name) {
-			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonの商品の名前が間違えています", user2.ID))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonの商品の名前が間違えています", userID))
 		}
 	}
 
-	targetItemID = asset.GetUserItemsFirst(user2.ID)
+	targetItemID = asset.GetUserItemsFirst(userID)
 	item, err := s1.Item(targetItemID)
 	if err != nil {
 		return err
 	}
 
-	aItem, ok := asset.GetItem(user2.ID, targetItemID)
+	aItem, ok := asset.GetItem(userID, targetItemID)
 	if !ok {
 		return failure.New(ErrScenario, failure.Messagef("/items/%d.jsonに存在しない商品が返ってきています", targetItemID))
 	}
