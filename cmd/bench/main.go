@@ -69,7 +69,7 @@ func main() {
 	scenario.Initialize()
 	log.Print("=== verify ===")
 
-	cerr := scenario.Verify()
+	cerr := scenario.Verify(context.Background())
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
 		log.Print("cause error!")

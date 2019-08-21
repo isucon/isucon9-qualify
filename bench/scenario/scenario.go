@@ -21,7 +21,7 @@ func Initialize() *fails.Critical {
 	return critical
 }
 
-func Verify() *fails.Critical {
+func Verify(ctx context.Context) *fails.Critical {
 	var wg sync.WaitGroup
 
 	critical := fails.NewCritical()
@@ -31,7 +31,7 @@ func Verify() *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sellAndBuy(user1, user2)
+		err := sellAndBuy(ctx, user1, user2)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -41,7 +41,7 @@ func Verify() *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
-		err := bumpAndNewItems(user1, user2)
+		err := bumpAndNewItems(ctx, user1, user2)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -51,7 +51,7 @@ func Verify() *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1 := asset.GetRandomUser()
-		err := newCategoryItems(user1)
+		err := newCategoryItems(ctx, user1)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -61,7 +61,7 @@ func Verify() *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1 := asset.GetRandomUser()
-		err := itemEdit(user1)
+		err := itemEdit(ctx, user1)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -71,7 +71,7 @@ func Verify() *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1 := asset.GetRandomUser()
-		err := transactionEvidence(user1)
+		err := transactionEvidence(ctx, user1)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -83,13 +83,13 @@ func Verify() *fails.Critical {
 		user1 := asset.GetRandomUser()
 		user2 := asset.GetRandomUser()
 
-		s1, err := LoginedSession(user1)
+		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		err = userItemsAndItemWithLoginedSession(s1, user2.ID)
+		err = userItemsAndItemWithLoginedSession(ctx, s1, user2.ID)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -100,7 +100,7 @@ func Verify() *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := irregularLoginWrongPassword(user3)
+		err := irregularLoginWrongPassword(ctx, user3)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -109,7 +109,7 @@ func Verify() *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := irregularSellAndBuy(user2, user1, user3)
+		err := irregularSellAndBuy(ctx, user2, user1, user3)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -160,7 +160,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
-			err := irregularLoginWrongPassword(user3)
+			err := irregularLoginWrongPassword(ctx, user3)
 			if err != nil {
 				critical.Add(err)
 			}
@@ -181,7 +181,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
-			err := irregularSellAndBuy(user2, user1, user3)
+			err := irregularSellAndBuy(ctx, user2, user1, user3)
 			if err != nil {
 				critical.Add(err)
 			}
@@ -207,13 +207,13 @@ func load(ctx context.Context, critical *fails.Critical) {
 			defer wg.Done()
 
 			user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
-			s1, err := LoginedSession(user1)
+			s1, err := LoginedSession(ctx, user1)
 			if err != nil {
 				critical.Add(err)
 				return
 			}
 
-			s2, err := LoginedSession(user2)
+			s2, err := LoginedSession(ctx, user2)
 			if err != nil {
 				critical.Add(err)
 				return
@@ -223,14 +223,14 @@ func load(ctx context.Context, critical *fails.Critical) {
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
-				err := loadSellNewCategoryBuyWithLoginedSession(s1, s2)
+				err := loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2)
 				if err != nil {
 					critical.Add(err)
 
 					goto Last
 				}
 
-				err = loadSellNewCategoryBuyWithLoginedSession(s2, s1)
+				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s2, s1)
 				if err != nil {
 					critical.Add(err)
 
@@ -254,13 +254,13 @@ func load(ctx context.Context, critical *fails.Critical) {
 			user1 := asset.GetRandomUser()
 			user2 := asset.GetRandomUser()
 
-			s1, err := LoginedSession(user1)
+			s1, err := LoginedSession(ctx, user1)
 			if err != nil {
 				critical.Add(err)
 				return
 			}
 
-			s2, err := LoginedSession(user2)
+			s2, err := LoginedSession(ctx, user2)
 			if err != nil {
 				critical.Add(err)
 				return
@@ -270,21 +270,21 @@ func load(ctx context.Context, critical *fails.Critical) {
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
-				targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
+				targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
 				if err != nil {
 					critical.Add(err)
 
 					goto Last
 				}
 
-				err = userItemsAndItemWithLoginedSession(s1, user2.ID)
+				err = userItemsAndItemWithLoginedSession(ctx, s1, user2.ID)
 				if err != nil {
 					critical.Add(err)
 
 					goto Last
 				}
 
-				err = buyComplete(s1, s2, targetItemID)
+				err = buyComplete(ctx, s1, s2, targetItemID)
 				if err != nil {
 					critical.Add(err)
 
