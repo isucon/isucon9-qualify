@@ -81,7 +81,14 @@ func Verify() *fails.Critical {
 		defer wg.Done()
 		user1 := asset.GetRandomUser()
 		user2 := asset.GetRandomUser()
-		err := userItemsAndItem(user1, user2)
+
+		s1, err := LoginedSession(user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = userItemsAndItemWithLoginedSession(s1, user2.ID)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -171,7 +178,7 @@ func check(critical *fails.Critical) {
 func load(critical *fails.Critical) {
 	var wg sync.WaitGroup
 
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -195,12 +202,62 @@ func load(critical *fails.Critical) {
 				err := loadSellNewCategoryBuyWithLoginedSession(s1, s2)
 				if err != nil {
 					critical.Add(err)
+					<-ch
+					continue
 				}
 
 				err = loadSellNewCategoryBuyWithLoginedSession(s2, s1)
 				if err != nil {
 					critical.Add(err)
+					<-ch
+					continue
 				}
+				<-ch
+			}
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			user1 := asset.GetRandomUser()
+			user2 := asset.GetRandomUser()
+
+			s1, err := LoginedSession(user1)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := LoginedSession(user2)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			for j := 0; j < 10; j++ {
+				ch := time.After(3 * time.Second)
+
+				targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
+				if err != nil {
+					critical.Add(err)
+					<-ch
+					continue
+				}
+
+				err = userItemsAndItemWithLoginedSession(s1, user2.ID)
+				if err != nil {
+					critical.Add(err)
+					<-ch
+					continue
+				}
+
+				err = buyComplete(s1, s2, targetItemID)
+				if err != nil {
+					critical.Add(err)
+				}
+
 				<-ch
 			}
 		}()
