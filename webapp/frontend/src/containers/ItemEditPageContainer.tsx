@@ -1,10 +1,10 @@
 import { connect } from 'react-redux';
-import ItemPage from '../pages/ItemPage';
 import { fetchItemAction } from '../actions/fetchItemAction';
 import { AppState } from '../index';
 import { postItemEditAction } from '../actions/postItemEditAction';
 import { ThunkDispatch } from 'redux-thunk';
 import { AnyAction } from 'redux';
+import ItemEditPage from '../pages/ItemEditPage';
 
 const mapStateToProps = (state: AppState) => ({
   loading: state.page.isItemLoading,
@@ -26,4 +26,4 @@ const mapDispatchToProps = (
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
-)(ItemPage);
+)(ItemEditPage);

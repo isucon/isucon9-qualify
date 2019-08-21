@@ -96,7 +96,6 @@ export const AppRoute: React.FC = () => {
         component={CategoryItemListPageContainer}
       />
       <AuthRoute exact path={routes.sell.path} component={SellPage} />
-      <AuthRoute exact path={routes.item.path} component={ItemPageContainer} />
       <AuthRoute
         exact
         path={routes.itemEdit.path}
@@ -108,6 +107,7 @@ export const AppRoute: React.FC = () => {
         path={routes.buyComplete.path}
         component={BuyCompleteContainer}
       />
+      <AuthRoute exact path={routes.item.path} component={ItemPageContainer} />{' '}
       <AuthRoute
         exact
         path={routes.transaction.path}
