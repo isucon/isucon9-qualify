@@ -1,20 +1,21 @@
 package server
 
 import (
+	"bufio"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"hash"
-	"image/png"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
-	"github.com/boombuler/barcode"
-	"github.com/boombuler/barcode/qr"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 var (
@@ -31,6 +32,17 @@ const (
 	IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0"
 )
 
+type AppShipping struct {
+	TransactionEvidenceID int64  `json:"transaction_evidence_id" db:"transaction_evidence_id"`
+	Status                string `json:"status" db:"status"`
+	ReserveID             string `json:"reserve_id" db:"reserve_id"`
+	ReserveTime           int64  `json:"reserve_time" db:"reserve_time"`
+	ToAddress             string `json:"to_address" db:"to_address"`
+	ToName                string `json:"to_name" db:"to_name"`
+	FromAddress           string `json:"from_address" db:"from_address"`
+	FromName              string `json:"from_name" db:"from_name"`
+}
+
 type shipment struct {
 	ToAddress   string `json:"to_address"`
 	ToName      string `json:"to_name"`
@@ -38,6 +50,7 @@ type shipment struct {
 	FromName    string `json:"from_name"`
 
 	Status          string    `json:"-"`
+	QRMD5           string    `json:"-"`
 	ReserveDatetime time.Time `json:"-"`
 	DoneDatetime    time.Time `json:"-"`
 }
@@ -87,13 +100,47 @@ func (c *shipmentStore) SetStatus(key string, status string) (shipment, bool) {
 		return shipment{}, false
 	}
 	value.Status = status
-	if status == StatusShipping {
-		value.DoneDatetime = time.Now().Add(5 * time.Second)
-	}
 
 	c.items[key] = value
 
 	return value, true
+}
+
+func (c *shipmentStore) SetQRMD5(key string, str string) (shipment, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	value, ok := c.items[key]
+	if !ok {
+		return shipment{}, false
+	}
+	value.QRMD5 = str
+
+	c.items[key] = value
+
+	return value, true
+}
+
+func (c *shipmentStore) SetStatusWithDone(key string, doneDatetime time.Time) (shipment, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	value, ok := c.items[key]
+	if !ok {
+		return shipment{}, false
+	}
+	value.Status = StatusShipping
+	value.DoneDatetime = doneDatetime
+
+	c.items[key] = value
+
+	return value, true
+}
+
+func (c *shipmentStore) ForceSet(key string, value shipment) {
+	c.Lock()
+	c.items[key] = value
+	c.Unlock()
 }
 
 func (c *shipmentStore) Get(key string) (shipment, bool) {
@@ -101,7 +148,7 @@ func (c *shipmentStore) Get(key string) (shipment, bool) {
 	defer c.Unlock()
 
 	v, found := c.items[key]
-	if v.Status == StatusShipping && time.Now().After(v.DoneDatetime) {
+	if v.Status == StatusShipping && !v.DoneDatetime.IsZero() && time.Now().After(v.DoneDatetime) {
 		v.Status = StatusDone
 	}
 
@@ -121,15 +168,43 @@ type createRes struct {
 }
 
 type ServerShipment struct {
+	debug         bool
 	shipmentCache *shipmentStore
 
 	Server
 }
 
-func NewShipment() *ServerShipment {
-	s := &ServerShipment{}
+func NewShipment(debug bool) *ServerShipment {
+	s := &ServerShipment{
+		debug: debug,
+	}
 
 	s.shipmentCache = NewShipmentStore()
+
+	f, err := os.Open("initial-data/result/shippings_json.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(f)
+	ship := AppShipping{}
+
+	for scanner.Scan() {
+		err := json.Unmarshal([]byte(scanner.Text()), &ship)
+		if err != nil {
+			log.Fatal(err)
+		}
+		s.shipmentCache.ForceSet(ship.ReserveID, shipment{
+			ToAddress:       ship.ToAddress,
+			ToName:          ship.ToName,
+			FromAddress:     ship.FromAddress,
+			FromName:        ship.FromName,
+			Status:          ship.Status,
+			ReserveDatetime: time.Unix(ship.ReserveTime, 0),
+		})
+	}
+	f.Close()
+
 	s.mux = http.NewServeMux()
 
 	s.mux.Handle("/create", apply(http.HandlerFunc(s.createHandler), s.withDelay(), s.withIPRestriction()))
@@ -244,12 +319,19 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 	u.RawQuery = q.Encode()
 
 	msg := u.String()
-	log.Print(msg)
 
-	qrCode, _ := qr.Encode(msg, qr.L, qr.Auto)
-	qrCode, _ = barcode.Scale(qrCode, 256, 256)
+	if s.debug {
+		log.Print(msg)
+	}
 
-	png.Encode(w, qrCode)
+	png, _ := qrcode.Encode(msg, qrcode.Low, 256)
+
+	h := md5.New()
+	h.Write(png)
+
+	s.shipmentCache.SetQRMD5(req.ReserveID, fmt.Sprintf("%x", h.Sum(nil)))
+
+	w.Write(png)
 }
 
 func (s *ServerShipment) acceptHandler(w http.ResponseWriter, r *http.Request) {
@@ -265,7 +347,7 @@ func (s *ServerShipment) acceptHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok := s.shipmentCache.SetStatus(id, StatusShipping)
+	_, ok := s.shipmentCache.SetStatusWithDone(id, time.Now().Add(5*time.Second))
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
@@ -320,4 +402,19 @@ func (s *ServerShipment) statusHandler(w http.ResponseWriter, r *http.Request) {
 	res.ReserveTime = ship.ReserveDatetime.Unix()
 
 	json.NewEncoder(w).Encode(res)
+}
+
+func (s *ServerShipment) ForceSetStatus(key string, status string) bool {
+	_, ok := s.shipmentCache.SetStatus(key, status)
+
+	return ok
+}
+
+func (s *ServerShipment) CheckQRMD5(key string, md5Str string) bool {
+	val, ok := s.shipmentCache.Get(key)
+	if !ok {
+		return false
+	}
+
+	return val.QRMD5 == md5Str
 }

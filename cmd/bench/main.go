@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"log"
 	"math/rand"
 	"os"
@@ -18,6 +19,13 @@ type Output struct {
 	Messages []string `json:"messages"`
 }
 
+type Config struct {
+	// PaymentPort    int
+	// ShipmentPort   int
+	TargetURLStr string
+	TargetHost   string
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -25,13 +33,30 @@ func init() {
 }
 
 func main() {
-	err := server.RunServer(5555, 7000)
+	flags := flag.NewFlagSet("isucon9q", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	conf := Config{}
+
+	flags.StringVar(&conf.TargetURLStr, "target-url", "http://127.0.0.1:8000", "target url")
+	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
+
+	err := flags.Parse(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	sp, ss, err := server.RunServer(5555, 7000)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scenario.SetShipment(ss)
+	scenario.SetPayment(sp)
+
 	err = session.SetShareTargetURLs(
-		"http://localhost:8000",
+		conf.TargetURLStr,
+		conf.TargetHost,
 		"http://localhost:5555",
 		"http://localhost:7000",
 	)
@@ -59,6 +84,26 @@ func main() {
 	}
 
 	log.Print("=== validation ===")
+
+	scenario.Validation(cerr)
+
+	criticalMsgs = cerr.GetMsgs()
+	if len(criticalMsgs) > 0 {
+		log.Print("cause error!")
+
+		output := Output{
+			Pass:     false,
+			Score:    0,
+			Messages: criticalMsgs,
+		}
+		json.NewEncoder(os.Stdout).Encode(output)
+
+		return
+	}
+
+	log.Print("=== final check ===")
+
+	scenario.FinalCheck(cerr)
 
 	output := Output{
 		Pass:  true,

@@ -5,16 +5,19 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"strconv"
 
-	"github.com/isucon/isucon9-qualify/bench/fails"
-	"golang.org/x/xerrors"
+	"github.com/morikuni/failure"
 )
 
 const (
 	ItemMinPrice    = 100
 	ItemMaxPrice    = 1000000
-	ItemPriceErrMsg = "商品価格は100円以上、1,000,000円以下にしてください"
+	ItemPriceErrMsg = "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください"
 )
 
 type resErr struct {
@@ -37,94 +40,142 @@ func (s *Session) LoginWithWrongPassword(accountName, password string) error {
 
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/login", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /login: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /login: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /login: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /login: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnauthorized)
+	err = checkStatusCode(res, http.StatusUnauthorized)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /login: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /login: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /login: JSONデコードに失敗しました"))
 	}
 
 	return nil
 }
 
 func (s *Session) SellWithWrongCSRFToken(name string, price int, description string, categoryID int) error {
-	b, _ := json.Marshal(reqSell{
-		CSRFToken:   secureRandomStr(20),
-		Name:        name,
-		Price:       price,
-		Description: description,
-		CategoryID:  categoryID,
-	})
-	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/json", bytes.NewBuffer(b))
+	file, err := os.Open("webapp/public/upload/sample.jpg")
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "sample.jpg")
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
+	}
+
+	writer.WriteField("csrf_token", secureRandomStr(20))
+	writer.WriteField("name", name)
+	writer.WriteField("description", description)
+	writer.WriteField("price", strconv.Itoa(price))
+	writer.WriteField("category_id", strconv.Itoa(categoryID))
+
+	contentType := writer.FormDataContentType()
+
+	err = writer.Close()
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
+	}
+
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", contentType, body)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /sell: JSONデコードに失敗しました"))
 	}
 
 	return nil
 }
 
 func (s *Session) SellWithWrongPrice(name string, price int, description string, categoryID int) error {
-	b, _ := json.Marshal(reqSell{
-		CSRFToken:   s.csrfToken,
-		Name:        name,
-		Price:       price,
-		Description: description,
-		CategoryID:  categoryID,
-	})
-	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", "application/json", bytes.NewBuffer(b))
+	file, err := os.Open("webapp/public/upload/sample.jpg")
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "sample.jpg")
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
+	}
+
+	writer.WriteField("csrf_token", s.csrfToken)
+	writer.WriteField("name", name)
+	writer.WriteField("description", description)
+	writer.WriteField("price", strconv.Itoa(price))
+	writer.WriteField("category_id", strconv.Itoa(categoryID))
+
+	contentType := writer.FormDataContentType()
+
+	err = writer.Close()
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
+	}
+
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/sell", contentType, body)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusBadRequest)
+	err = checkStatusCode(res, http.StatusBadRequest)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /sell: JSONデコードに失敗しました"))
 	}
 
 	if re.Error != ItemPriceErrMsg {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /sell: 商品価格は100円以上、1,000,000円以下しか出品できません")
+		return failure.Wrap(err, failure.Message("POST /sell: 商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下しか出品できません"))
 	}
 
 	return nil
@@ -138,24 +189,24 @@ func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
 	}
 
 	return nil
@@ -169,28 +220,28 @@ func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, 
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /buy: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
 	}
 
 	if re.Error != expectedMsg {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error))
+		return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error))
 	}
 
 	return nil
@@ -203,24 +254,24 @@ func (s *Session) ShipWithWrongCSRFToken(itemID int64) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship: JSONデコードに失敗しました"))
 	}
 
 	return nil
@@ -233,28 +284,28 @@ func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg s
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship: JSONデコードに失敗しました"))
 	}
 
 	if re.Error != expectedMsg {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("POST /ship: exected error message: %s; actual: %s", expectedMsg, re.Error))
+		return failure.Wrap(err, failure.Messagef("POST /ship: exected error message: %s; actual: %s", expectedMsg, re.Error))
 	}
 
 	return nil
@@ -263,18 +314,18 @@ func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg s
 func (s *Session) DecodeQRURLWithFailed(apath string, expectedStatus int) error {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
+		return failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: リクエストに失敗しました", apath))
+		return failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("GET %s: %s", apath, msg))
+		return err
 	}
 
 	return nil
@@ -287,24 +338,24 @@ func (s *Session) ShipDoneWithWrongCSRFToken(itemID int64) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship_done", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship_done: JSONデコードに失敗しました"))
 	}
 
 	return nil
@@ -317,28 +368,28 @@ func (s *Session) ShipDoneWithFailed(itemID int64, expectedStatus int, expectedM
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship_done", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: "+msg)
+		return err
 	}
 
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "POST /ship_done: JSONデコードに失敗しました")
+		return failure.Wrap(err, failure.Message("POST /ship_done: JSONデコードに失敗しました"))
 	}
 
 	if re.Error != expectedMsg {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), fmt.Sprintf("POST /ship_done: exected error message: %s; actual: %s", expectedMsg, re.Error))
+		return failure.Wrap(err, failure.Messagef("POST /ship_done: exected error message: %s; actual: %s", expectedMsg, re.Error))
 	}
 
 	return nil

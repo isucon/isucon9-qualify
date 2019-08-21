@@ -3,11 +3,11 @@ package scenario
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
-	"github.com/isucon/isucon9-qualify/bench/fails"
+	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
+	"github.com/morikuni/failure"
 )
 
 func irregularLoginWrongPassword(user1 asset.AppUser) error {
@@ -25,21 +25,7 @@ func irregularLoginWrongPassword(user1 asset.AppUser) error {
 }
 
 func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
-	s1, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	seller, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user1.Equal(seller) {
-		return fails.NewError(nil, "ログインが失敗しています")
-	}
-
-	err = s1.SetSettings()
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -65,21 +51,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	s2, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	buyer, err := s2.Login(user2.AccountName, user2.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user2.Equal(buyer) {
-		return fails.NewError(nil, "ログインが失敗しています")
-	}
-
-	err = s2.SetSettings()
+	s2, err := LoginedSession(user2)
 	if err != nil {
 		return err
 	}
@@ -109,21 +81,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	s3, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	other, err := s3.Login(user3.AccountName, user3.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user3.Equal(other) {
-		return fails.NewError(nil, "ログインが失敗しています")
-	}
-
-	err = s3.SetSettings()
+	s3, err := LoginedSession(user3)
 	if err != nil {
 		return err
 	}
@@ -161,7 +119,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	apath, err := s1.Ship(targetItemID)
+	reserveID, apath, err := s1.Ship(targetItemID)
 	if err != nil {
 		return err
 	}
@@ -172,7 +130,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	surl, err := s1.DecodeQRURL(apath)
+	md5Str, err := s1.DownloadQRURL(apath)
 	if err != nil {
 		return err
 	}
@@ -183,9 +141,9 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	err = s3.ShipmentAccept(surl)
-	if err != nil {
-		return err
+	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
+	if !sShipment.CheckQRMD5(reserveID, md5Str) {
+		return failure.New(ErrScenario, failure.Message("QRコードの画像に誤りがあります"))
 	}
 
 	// 他人はship_doneできない
@@ -204,10 +162,10 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	go func() {
-	}()
-
-	<-time.After(6 * time.Second)
+	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
+	if !ok {
+		return failure.New(ErrScenario, failure.Message("配送予約IDに誤りがあります"))
+	}
 
 	err = s2.Complete(targetItemID)
 	if err != nil {

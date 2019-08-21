@@ -1,6 +1,7 @@
 package session
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,33 +10,37 @@ import (
 	"net/url"
 	"time"
 
-	"golang.org/x/xerrors"
+	"github.com/morikuni/failure"
 )
 
 const (
 	DefaultAPITimeout = 10
 
 	userAgent = "benchmarker/isucon9-qualify"
+
+	ErrSession failure.StringCode = "error session"
 )
 
 type Session struct {
+	UserID     int64
 	csrfToken  string
 	httpClient *http.Client
 }
 
 type TargetURLs struct {
-	AppURL      *url.URL
-	PaymentURL  *url.URL
-	ShipmentURL *url.URL
+	AppURL      url.URL
+	TargetHost  string
+	PaymentURL  url.URL
+	ShipmentURL url.URL
 }
 
 var (
 	ShareTargetURLs *TargetURLs
 )
 
-func SetShareTargetURLs(appURL, paymentURL, shipmentURL string) error {
+func SetShareTargetURLs(appURL, targetHost, paymentURL, shipmentURL string) error {
 	var err error
-	ShareTargetURLs, err = newTargetURLs(appURL, paymentURL, shipmentURL)
+	ShareTargetURLs, err = newTargetURLs(appURL, targetHost, paymentURL, shipmentURL)
 	if err != nil {
 		return err
 	}
@@ -43,7 +48,7 @@ func SetShareTargetURLs(appURL, paymentURL, shipmentURL string) error {
 	return nil
 }
 
-func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) {
+func newTargetURLs(appURL, targetHost, paymentURL, shipmentURL string) (*TargetURLs, error) {
 	if len(appURL) == 0 {
 		return nil, fmt.Errorf("client: missing url")
 	}
@@ -56,25 +61,42 @@ func newTargetURLs(appURL, paymentURL, shipmentURL string) (*TargetURLs, error) 
 		return nil, fmt.Errorf("client: missing url")
 	}
 
-	appParsedURL, err := url.ParseRequestURI(appURL)
+	appParsedURL, err := urlParse(appURL)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to parse url: %s: %w", appURL, err)
+		return nil, failure.Wrap(err, failure.Messagef("failed to parse url: %s", appURL))
 	}
 
-	paymentParsedURL, err := url.ParseRequestURI(paymentURL)
+	paymentParsedURL, err := urlParse(paymentURL)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to parse url: %s: %w", paymentURL, err)
+		return nil, failure.Wrap(err, failure.Messagef("failed to parse url: %s", paymentURL))
 	}
 
-	shipmentParsedURL, err := url.ParseRequestURI(shipmentURL)
+	shipmentParsedURL, err := urlParse(shipmentURL)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to parse url: %s: %w", shipmentURL, err)
+		return nil, failure.Wrap(err, failure.Messagef("failed to parse url: %s", shipmentURL))
 	}
 
 	return &TargetURLs{
-		AppURL:      appParsedURL,
-		PaymentURL:  paymentParsedURL,
-		ShipmentURL: shipmentParsedURL,
+		AppURL:      *appParsedURL,
+		TargetHost:  targetHost,
+		PaymentURL:  *paymentParsedURL,
+		ShipmentURL: *shipmentParsedURL,
+	}, nil
+}
+
+func urlParse(ref string) (*url.URL, error) {
+	u, err := url.Parse(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Host == "" {
+		return nil, fmt.Errorf("host is empty")
+	}
+
+	return &url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
 	}, nil
 }
 
@@ -83,9 +105,14 @@ func NewSession() (*Session, error) {
 
 	s := &Session{
 		httpClient: &http.Client{
-			Transport: &http.Transport{},
-			Jar:       jar,
-			Timeout:   time.Duration(DefaultAPITimeout) * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					// HTTPの時は無視されるだけ
+					ServerName: ShareTargetURLs.TargetHost,
+				},
+			},
+			Jar:     jar,
+			Timeout: time.Duration(DefaultAPITimeout) * time.Second,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return fmt.Errorf("redirect attempted")
 			},
@@ -95,7 +122,7 @@ func NewSession() (*Session, error) {
 	return s, nil
 }
 
-func (s *Session) newGetRequest(u *url.URL, spath string) (*http.Request, error) {
+func (s *Session) newGetRequest(u url.URL, spath string) (*http.Request, error) {
 	if len(spath) > 0 {
 		u.Path = spath
 	}
@@ -105,12 +132,31 @@ func (s *Session) newGetRequest(u *url.URL, spath string) (*http.Request, error)
 		return nil, err
 	}
 
+	req.Host = ShareTargetURLs.TargetHost
 	req.Header.Set("User-Agent", userAgent)
 
 	return req, nil
 }
 
-func (s *Session) newPostRequest(u *url.URL, spath, contentType string, body io.Reader) (*http.Request, error) {
+func (s *Session) newGetRequestWithQuery(u url.URL, spath string, q url.Values) (*http.Request, error) {
+	if len(spath) > 0 {
+		u.Path = spath
+	}
+
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Host = ShareTargetURLs.TargetHost
+	req.Header.Set("User-Agent", userAgent)
+
+	return req, nil
+}
+
+func (s *Session) newPostRequest(u url.URL, spath, contentType string, body io.Reader) (*http.Request, error) {
 	u.Path = spath
 
 	req, err := http.NewRequest(http.MethodPost, u.String(), body)
@@ -118,22 +164,27 @@ func (s *Session) newPostRequest(u *url.URL, spath, contentType string, body io.
 		return nil, err
 	}
 
+	req.Host = ShareTargetURLs.TargetHost
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("User-Agent", userAgent)
 
 	return req, nil
 }
 
-func checkStatusCode(res *http.Response, expectedStatusCode int) (msg string, err error) {
+func checkStatusCode(res *http.Response, expectedStatusCode int) error {
+	prefixMsg := fmt.Sprintf("%s %s", res.Request.Method, res.Request.URL.Path)
+
 	if res.StatusCode != expectedStatusCode {
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return "bodyの読み込みに失敗しました", err
+			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました"))
 		}
-		return fmt.Sprintf("got response status code %d; expected %d", res.StatusCode, expectedStatusCode), fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
+		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), ErrSession,
+			failure.Messagef("%s: got response status code %d; expected %d", prefixMsg, res.StatusCode, expectedStatusCode),
+		)
 	}
 
-	return "", nil
+	return nil
 }
 
 func (s *Session) Do(req *http.Request) (*http.Response, error) {

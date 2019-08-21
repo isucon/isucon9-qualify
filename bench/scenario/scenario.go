@@ -2,12 +2,22 @@ package scenario
 
 import (
 	"sync"
+	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
+	"github.com/isucon/isucon9-qualify/bench/server"
 )
 
-func Initialize() {
+func Initialize() *fails.Critical {
+	critical := fails.NewCritical()
+
+	_, err := initialize("", "")
+	if err != nil {
+		critical.Add(err)
+	}
+
+	return critical
 }
 
 func Verify() *fails.Critical {
@@ -29,18 +39,56 @@ func Verify() *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.AppUser{
-			AccountName: "aaa",
-			Address:     "aaa",
-			Password:    "aaa",
+		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+		err := bumpAndNewItems(user1, user2)
+		if err != nil {
+			critical.Add(err)
 		}
-		user2 := asset.AppUser{
-			AccountName: "bbb",
-			Address:     "bbb",
-			Password:    "bbb",
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
+		err := newCategoryItems(user1)
+		if err != nil {
+			critical.Add(err)
 		}
-		// bumpするためにはそのユーザーのItemIDが必要
-		err := bump(user1, user2)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
+		err := itemEdit(user1)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
+		err := transactionEvidence(user1)
+		if err != nil {
+			critical.Add(err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1 := asset.GetRandomUser()
+		user2 := asset.GetRandomUser()
+
+		s1, err := LoginedSession(user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = userItemsAndItemWithLoginedSession(s1, user2.ID)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -70,3 +118,157 @@ func Verify() *fails.Critical {
 
 	return critical
 }
+
+func Validation(critical *fails.Critical) {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		check(critical)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		load(critical)
+	}()
+
+	wg.Wait()
+}
+
+func check(critical *fails.Critical) {
+	var wg sync.WaitGroup
+
+	user1, user2, user3 := asset.GetRandomUser(), asset.GetRandomUser(), asset.GetRandomUser()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			err := irregularLoginWrongPassword(user3)
+			if err != nil {
+				critical.Add(err)
+			}
+
+			<-ch
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			err := irregularSellAndBuy(user2, user1, user3)
+			if err != nil {
+				critical.Add(err)
+			}
+
+			<-ch
+		}
+	}()
+
+	wg.Wait()
+}
+
+func load(critical *fails.Critical) {
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+			s1, err := LoginedSession(user1)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := LoginedSession(user2)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			for j := 0; j < 10; j++ {
+				ch := time.After(3 * time.Second)
+
+				err := loadSellNewCategoryBuyWithLoginedSession(s1, s2)
+				if err != nil {
+					critical.Add(err)
+					<-ch
+					continue
+				}
+
+				err = loadSellNewCategoryBuyWithLoginedSession(s2, s1)
+				if err != nil {
+					critical.Add(err)
+					<-ch
+					continue
+				}
+				<-ch
+			}
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			user1 := asset.GetRandomUser()
+			user2 := asset.GetRandomUser()
+
+			s1, err := LoginedSession(user1)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := LoginedSession(user2)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			for j := 0; j < 10; j++ {
+				ch := time.After(3 * time.Second)
+
+				targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
+				if err != nil {
+					critical.Add(err)
+					<-ch
+					continue
+				}
+
+				err = userItemsAndItemWithLoginedSession(s1, user2.ID)
+				if err != nil {
+					critical.Add(err)
+					<-ch
+					continue
+				}
+
+				err = buyComplete(s1, s2, targetItemID)
+				if err != nil {
+					critical.Add(err)
+				}
+
+				<-ch
+			}
+		}()
+	}
+
+	wg.Wait()
+}
+
+func FinalCheck(critical *fails.Critical) {}
+
+var (
+	sShipment *server.ServerShipment
+	sPayment  *server.ServerPayment
+)

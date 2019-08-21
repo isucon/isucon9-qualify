@@ -13,14 +13,14 @@
   debug:
     var: go_version_output
 
-- name: Install Go 1.12.7
+- name: Install Go
   become: yes
   become_user: isucon
-  when: go_version_output is failed or go_version_output.stdout != "go version go1.12.7 linux/amd64"
+  when: go_version_output is failed or go_version_output.stdout != "go version go1.12.9 linux/amd64"
   args:
     chdir: /home/isucon
   command: |
-    /home/isucon/xbuild/go-install 1.12.7 /home/isucon/local/go
+    /home/isucon/xbuild/go-install 1.12.9 /home/isucon/local/go
 
 - name: Add PATH for Go
   become: yes

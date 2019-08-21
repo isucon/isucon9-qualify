@@ -1,9 +1,22 @@
 import React from 'react';
 import BasePageContainer from '../containers/BasePageContainer';
+import { Button } from '@material-ui/core';
 
-const BuyCompletePage: React.FC = () => (
+type Props = {
+  itemId: number;
+  onClickTransaction: (itemId: number) => void;
+};
+
+const BuyCompletePage: React.FC<Props> = ({ itemId, onClickTransaction }) => (
   <BasePageContainer>
-    <div>Item buying Page</div>
+    <div>購入が完了しました</div>
+    <Button
+      onClick={(e: React.MouseEvent) => {
+        onClickTransaction(itemId);
+      }}
+    >
+      取引画面へ
+    </Button>
   </BasePageContainer>
 );
 

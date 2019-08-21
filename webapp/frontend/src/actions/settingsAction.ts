@@ -7,6 +7,7 @@ import { AppState } from '../index';
 import { Settings } from '../dataObjects/settings';
 import { UserData } from '../dataObjects/user';
 import { CategorySimple } from '../dataObjects/category';
+import { FormErrorState } from '../reducers/formErrorReducer';
 
 export const FETCH_SETTINGS_START = 'FETCH_SETTINGS_START';
 export const FETCH_SETTINGS_SUCCESS = 'FETCH_SETTINGS_SUCCESS';
@@ -55,7 +56,11 @@ export function fetchSettings(): ThunkResult<void> {
         );
       })
       .catch((err: Error) => {
-        dispatch(fetchItemPageFailAction());
+        dispatch(
+          fetchItemPageFailAction({
+            error: err.message,
+          }),
+        );
       });
   };
 }
@@ -84,8 +89,13 @@ const fetchSettingsSuccessAction = (
 });
 
 export interface FetchSettingsFailAction
-  extends Action<typeof FETCH_SETTINGS_FAIL> {}
+  extends Action<typeof FETCH_SETTINGS_FAIL> {
+  payload: FormErrorState;
+}
 
-const fetchItemPageFailAction = (): FetchSettingsFailAction => ({
+const fetchItemPageFailAction = (
+  newError: FormErrorState,
+): FetchSettingsFailAction => ({
   type: 'FETCH_SETTINGS_FAIL',
+  payload: newError,
 });

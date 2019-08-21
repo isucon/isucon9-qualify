@@ -13,13 +13,4 @@ class Environment
         }
         return $val;
     }
-
-    public static function want($name)
-    {
-        $val = getenv($name);
-        if ($val === false) {
-            throw new \RuntimeException(sprintf("required env variable %s is missing", $name));
-        }
-        return $val;
-    }
 }

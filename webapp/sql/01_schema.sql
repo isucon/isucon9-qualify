@@ -1,5 +1,11 @@
 use `isucari`;
 
+DROP TABLE IF EXISTS `configs`;
+CREATE TABLE configs (
+    `name` VARCHAR(191) NOT NULL PRIMARY KEY,
+    `val` VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
+
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -20,6 +26,7 @@ CREATE TABLE `items` (
   `name` varchar(191) NOT NULL,
   `price` int unsigned NOT NULL,
   `description` text NOT NULL,
+  `image_name` varchar(191) NOT NULL,
   `category_id` int unsigned NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

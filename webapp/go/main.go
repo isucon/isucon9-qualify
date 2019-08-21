@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -23,9 +26,12 @@ import (
 const (
 	sessionName = "session_isucari"
 
+	DefaultPaymentServiceURL  = "http://localhost:5555"
+	DefaultShipmentServiceURL = "http://localhost:7000"
+
 	ItemMinPrice    = 100
 	ItemMaxPrice    = 1000000
-	ItemPriceErrMsg = "商品価格は100円以上、1,000,000円以下にしてください"
+	ItemPriceErrMsg = "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください"
 
 	ItemStatusOnSale  = "on_sale"
 	ItemStatusTrading = "trading"
@@ -49,6 +55,8 @@ const (
 
 	ItemsPerPage        = 48
 	TransactionsPerPage = 10
+
+	BcryptCost = 10
 )
 
 var (
@@ -56,6 +64,11 @@ var (
 	dbx       *sqlx.DB
 	store     sessions.Store
 )
+
+type Config struct {
+	Name string `json:"name" db:"name"`
+	Val  string `json:"val" db:"val"`
+}
 
 type User struct {
 	ID             int64     `json:"id" db:"id"`
@@ -81,6 +94,7 @@ type Item struct {
 	Name        string    `json:"name" db:"name"`
 	Price       int       `json:"price" db:"price"`
 	Description string    `json:"description" db:"description"`
+	ImageName   string    `json:"image_name" db:"image_name"`
 	CategoryID  int       `json:"category_id" db:"category_id"`
 	CreatedAt   time.Time `json:"-" db:"created_at"`
 	UpdatedAt   time.Time `json:"-" db:"updated_at"`
@@ -93,6 +107,7 @@ type ItemSimple struct {
 	Status     string      `json:"status"`
 	Name       string      `json:"name"`
 	Price      int         `json:"price"`
+	ImageURL   string      `json:"image_url"`
 	CategoryID int         `json:"category_id"`
 	Category   *Category   `json:"category"`
 	CreatedAt  int64       `json:"created_at"`
@@ -108,6 +123,7 @@ type ItemDetail struct {
 	Name                      string      `json:"name"`
 	Price                     int         `json:"price"`
 	Description               string      `json:"description"`
+	ImageURL                  string      `json:"image_url"`
 	CategoryID                int         `json:"category_id"`
 	Category                  *Category   `json:"category"`
 	TransactionEvidenceID     int64       `json:"transaction_evidence_id,omitempty"`
@@ -152,6 +168,15 @@ type Category struct {
 	ParentID           int    `json:"parent_id" db:"parent_id"`
 	CategoryName       string `json:"category_name" db:"category_name"`
 	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
+}
+
+type reqInitialize struct {
+	PaymentServiceURL  string `json:"payment_service_url"`
+	ShipmentServiceURL string `json:"shipment_service_url"`
+}
+
+type resInitialize struct {
+	IsCampaign bool `json:"is_campaign"`
 }
 
 type resNewItems struct {
@@ -206,14 +231,6 @@ type resBuy struct {
 	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
 }
 
-type reqSell struct {
-	CSRFToken   string `json:"csrf_token"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int    `json:"price"`
-	CategoryID  int    `json:"category_id"`
-}
-
 type resSell struct {
 	ID int64 `json:"id"`
 }
@@ -224,7 +241,8 @@ type reqPostShip struct {
 }
 
 type resPostShip struct {
-	Path string `json:"path"`
+	Path      string `json:"path"`
+	ReserveID string `json:"reserve_id"`
 }
 
 type reqPostShipDone struct {
@@ -243,18 +261,17 @@ type reqBump struct {
 }
 
 type resSetting struct {
-	CSRFToken  string     `json:"csrf_token"`
-	User       *User      `json:"user,omitempty"`
-	Categories []Category `json:"categories"`
+	CSRFToken         string     `json:"csrf_token"`
+	PaymentServiceURL string     `json:"payment_service_url"`
+	User              *User      `json:"user,omitempty"`
+	Categories        []Category `json:"categories"`
 }
 
 func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-}
 
-func readTopTemplate() {
 	templates = template.Must(template.ParseFiles(
 		"../public/index.html",
 	))
@@ -303,7 +320,8 @@ func main() {
 
 	mux := goji.NewMux()
 
-	mux.HandleFunc(pat.Get("/"), getTop)
+	// API
+	mux.HandleFunc(pat.Post("/initialize"), postInitialize)
 	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
 	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
 	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
@@ -320,8 +338,23 @@ func main() {
 	mux.HandleFunc(pat.Get("/settings"), getSettings)
 	mux.HandleFunc(pat.Post("/login"), postLogin)
 	mux.HandleFunc(pat.Post("/register"), postRegister)
+	mux.HandleFunc(pat.Get("/reports.json"), getReports)
+	// Frontend
+	mux.HandleFunc(pat.Get("/"), getIndex)
+	mux.HandleFunc(pat.Get("/login"), getIndex)
+	mux.HandleFunc(pat.Get("/register"), getIndex)
+	mux.HandleFunc(pat.Get("/timeline"), getIndex)
+	mux.HandleFunc(pat.Get("/categories/:category_id/items"), getIndex)
+	mux.HandleFunc(pat.Get("/sell"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getIndex)
+	mux.HandleFunc(pat.Get("/items/:item_id/buy"), getIndex)
+	mux.HandleFunc(pat.Get("/buy/complete"), getIndex)
+	mux.HandleFunc(pat.Get("/transactions/:transaction_id"), getIndex)
+	mux.HandleFunc(pat.Get("/users/:user_id"), getIndex)
+	mux.HandleFunc(pat.Get("/users/setting"), getIndex)
+	// Assets
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
-
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 
@@ -354,7 +387,7 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 		return user, http.StatusNotFound, "user not found"
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		return user, http.StatusInternalServerError, "db error"
 	}
 
@@ -385,17 +418,93 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 	return category, err
 }
 
-func getTop(w http.ResponseWriter, r *http.Request) {
-	readTopTemplate()
+func getConfigByName(name string) (string, error) {
+	config := Config{}
+	err := dbx.Get(&config, "SELECT * FROM `configs` WHERE `name` = ?", name)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		log.Print(err)
+		return "", err
+	}
+	return config.Val, err
+}
+
+func getPaymentServiceURL() string {
+	val, _ := getConfigByName("payment_service_url")
+	if val == "" {
+		return DefaultPaymentServiceURL
+	}
+	return val
+}
+
+func getShipmentServiceURL() string {
+	val, _ := getConfigByName("shipment_service_url")
+	if val == "" {
+		return DefaultShipmentServiceURL
+	}
+	return val
+}
+
+func getIndex(w http.ResponseWriter, r *http.Request) {
 	templates.ExecuteTemplate(w, "index.html", struct{}{})
+}
+
+func postInitialize(w http.ResponseWriter, r *http.Request) {
+	ri := reqInitialize{}
+
+	err := json.NewDecoder(r.Body).Decode(&ri)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
+		return
+	}
+
+	cmd := exec.Command("../sql/init.sh")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stderr
+	cmd.Run()
+	if err != nil {
+		outputErrorMsg(w, http.StatusInternalServerError, "exec init.sh error")
+		return
+	}
+
+	_, err = dbx.Exec(
+		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+		"payment_service_url",
+		ri.PaymentServiceURL,
+	)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	_, err = dbx.Exec(
+		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+		"shipment_service_url",
+		ri.ShipmentServiceURL,
+	)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
+	res := resInitialize{}
+	// Campaign 実施時は true にする
+	res.IsCampaign = false
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(res)
 }
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	itemIDStr := query.Get("item_id")
 	var itemID int64
+	var err error
 	if itemIDStr != "" {
-		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+		itemID, err = strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
 			return
@@ -405,7 +514,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	createdAtStr := query.Get("created_at")
 	var createdAt int64
 	if createdAtStr != "" {
-		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		createdAt, err = strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
 			return
@@ -424,7 +533,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 			ItemsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			return
 		}
@@ -437,7 +546,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 			ItemsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			return
 		}
@@ -462,6 +571,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -471,7 +581,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0 : ItemsPerPage-1]
+		itemSimples = itemSimples[0:ItemsPerPage]
 	}
 
 	rni := resNewItems{
@@ -500,7 +610,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	var categoryIDs []int
 	err = dbx.Select(&categoryIDs, "SELECT id FROM `categories` WHERE parent_id=?", rootCategory.ID)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -509,7 +619,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := query.Get("item_id")
 	var itemID int64
 	if itemIDStr != "" {
-		itemID, _ := strconv.ParseInt(itemIDStr, 10, 64)
+		itemID, err = strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
 			return
@@ -519,7 +629,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	createdAtStr := query.Get("created_at")
 	var createdAt int64
 	if createdAtStr != "" {
-		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		createdAt, err = strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
 			return
@@ -540,7 +650,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 			ItemsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			return
 		}
@@ -554,7 +664,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 			ItemsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			return
 		}
@@ -564,7 +674,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	err = dbx.Select(&items, inQuery, inArgs...)
 
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -588,6 +698,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -597,7 +708,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0 : ItemsPerPage-1]
+		itemSimples = itemSimples[0:ItemsPerPage]
 	}
 
 	rni := resNewItems{
@@ -630,7 +741,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := query.Get("item_id")
 	var itemID int64
 	if itemIDStr != "" {
-		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+		itemID, err = strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
 			return
@@ -640,7 +751,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	createdAtStr := query.Get("created_at")
 	var createdAt int64
 	if createdAtStr != "" {
-		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		createdAt, err = strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
 			return
@@ -661,7 +772,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 			ItemsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			return
 		}
@@ -676,7 +787,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 			ItemsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			return
 		}
@@ -696,6 +807,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
+			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
 			Category:   &category,
 			CreatedAt:  item.CreatedAt.Unix(),
@@ -705,7 +817,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemSimples) > ItemsPerPage {
 		hasNext = true
-		itemSimples = itemSimples[0 : ItemsPerPage-1]
+		itemSimples = itemSimples[0:ItemsPerPage]
 	}
 
 	rui := resUserItems{
@@ -728,9 +840,10 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 	itemIDStr := query.Get("item_id")
+	var err error
 	var itemID int64
 	if itemIDStr != "" {
-		itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
+		itemID, err = strconv.ParseInt(itemIDStr, 10, 64)
 		if err != nil || itemID <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "item_id param error")
 			return
@@ -740,7 +853,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	createdAtStr := query.Get("created_at")
 	var createdAt int64
 	if createdAtStr != "" {
-		createdAt, err := strconv.ParseInt(createdAtStr, 10, 64)
+		createdAt, err = strconv.ParseInt(createdAtStr, 10, 64)
 		if err != nil || createdAt <= 0 {
 			outputErrorMsg(w, http.StatusBadRequest, "created_at param error")
 			return
@@ -765,7 +878,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			TransactionsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			tx.Rollback()
 			return
@@ -784,7 +897,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			TransactionsPerPage+1,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			tx.Rollback()
 			return
@@ -816,6 +929,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			Name:        item.Name,
 			Price:       item.Price,
 			Description: item.Description,
+			ImageURL:    getImageURL(item.ImageName),
 			CategoryID:  item.CategoryID,
 			// TransactionEvidenceID
 			// TransactionEvidenceStatus
@@ -839,7 +953,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 		err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", item.ID)
 		if err != nil && err != sql.ErrNoRows {
 			// It's able to ignore ErrNoRows
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			tx.Rollback()
 			return
@@ -854,16 +968,16 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if err != nil {
-				log.Println(err)
+				log.Print(err)
 				outputErrorMsg(w, http.StatusInternalServerError, "db error")
 				tx.Rollback()
 				return
 			}
-			ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
+			ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
 				ReserveID: shipping.ReserveID,
 			})
 			if err != nil {
-				log.Println(err)
+				log.Print(err)
 				outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
 				tx.Rollback()
 				return
@@ -881,7 +995,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	hasNext := false
 	if len(itemDetails) > TransactionsPerPage {
 		hasNext = true
-		itemDetails = itemDetails[0 : TransactionsPerPage-1]
+		itemDetails = itemDetails[0:TransactionsPerPage]
 	}
 
 	rts := resTransactions{
@@ -915,7 +1029,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -942,6 +1056,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		Name:        item.Name,
 		Price:       item.Price,
 		Description: item.Description,
+		ImageURL:    getImageURL(item.ImageName),
 		CategoryID:  item.CategoryID,
 		// TransactionEvidenceID
 		// TransactionEvidenceStatus
@@ -963,7 +1078,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", item.ID)
 		if err != nil && err != sql.ErrNoRows {
 			// It's able to ignore ErrNoRows
-			log.Println(err)
+			log.Print(err)
 			outputErrorMsg(w, http.StatusInternalServerError, "db error")
 			return
 		}
@@ -976,7 +1091,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if err != nil {
-				log.Println(err)
+				log.Print(err)
 				outputErrorMsg(w, http.StatusInternalServerError, "db error")
 				return
 			}
@@ -1027,7 +1142,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
@@ -1041,7 +1156,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 	tx := dbx.MustBegin()
 	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1059,7 +1174,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		itemID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1068,7 +1183,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1106,7 +1221,7 @@ func getQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -1172,7 +1287,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1199,7 +1314,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1208,7 +1323,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	category, err := getCategoryByID(tx, targetItem.CategoryID)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "category id error")
 		tx.Rollback()
@@ -1227,7 +1342,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		category.ParentID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1236,7 +1351,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	transactionEvidenceID, err := result.LastInsertId()
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1250,35 +1365,35 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		targetItem.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
 
-	scr, err := APIShipmentCreate("http://localhost:7000", &APIShipmentCreateReq{
+	scr, err := APIShipmentCreate(getShipmentServiceURL(), &APIShipmentCreateReq{
 		ToAddress:   buyer.Address,
 		ToName:      buyer.AccountName,
 		FromAddress: seller.Address,
 		FromName:    seller.AccountName,
 	})
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
 		tx.Rollback()
 
 		return
 	}
 
-	pstr, err := APIPaymentToken("http://localhost:5555", &APIPaymentServiceTokenReq{
+	pstr, err := APIPaymentToken(getPaymentServiceURL(), &APIPaymentServiceTokenReq{
 		ShopID: PaymentServiceIsucariShopID,
 		Token:  rb.Token,
 		APIKey: PaymentServiceIsucariAPIKey,
 		Price:  targetItem.Price,
 	})
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "payment service is failed")
 		tx.Rollback()
@@ -1317,7 +1432,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		"",
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1361,7 +1476,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 
 		return
@@ -1382,7 +1497,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1396,12 +1511,12 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
 		tx.Rollback()
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1421,17 +1536,17 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
 
-	img, err := APIShipmentRequest("http://localhost:7000", &APIShipmentRequestReq{
+	img, err := APIShipmentRequest(getShipmentServiceURL(), &APIShipmentRequestReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
 		tx.Rollback()
 
@@ -1445,7 +1560,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		transactionEvidence.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1455,7 +1570,8 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	rps := resPostShip{
-		Path: fmt.Sprintf("/transactions/%d.png", transactionEvidence.ID),
+		Path:      fmt.Sprintf("/transactions/%d.png", transactionEvidence.ID),
+		ReserveID: shipping.ReserveID,
 	}
 	json.NewEncoder(w).Encode(rps)
 }
@@ -1487,11 +1603,11 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "transaction_evidence not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidence not found")
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 
 		return
@@ -1507,12 +1623,12 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	item := Item{}
 	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "items not found")
+		outputErrorMsg(w, http.StatusNotFound, "items not found")
 		tx.Rollback()
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1526,12 +1642,12 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
 		tx.Rollback()
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1546,22 +1662,22 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 	shipping := Shipping{}
 	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "db not found")
+		outputErrorMsg(w, http.StatusNotFound, "shippings not found")
 		tx.Rollback()
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
 
-	ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
+	ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
 		tx.Rollback()
 
@@ -1580,7 +1696,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		transactionEvidence.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1593,7 +1709,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		transactionEvidence.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1633,11 +1749,11 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	transactionEvidence := TransactionEvidence{}
 	err = dbx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", itemID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "transaction_evidence not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidence not found")
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 
 		return
@@ -1652,12 +1768,12 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	item := Item{}
 	err = tx.Get(&item, "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", itemID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "items not found")
+		outputErrorMsg(w, http.StatusNotFound, "items not found")
 		tx.Rollback()
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1671,12 +1787,12 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 
 	err = tx.Get(&transactionEvidence, "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", itemID)
 	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusBadRequest, "db not found")
+		outputErrorMsg(w, http.StatusNotFound, "transaction_evidences not found")
 		tx.Rollback()
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1691,17 +1807,17 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	shipping := Shipping{}
 	err = tx.Get(&shipping, "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", transactionEvidence.ID)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
 
-	ssr, err := APIShipmentStatus("http://localhost:7000", &APIShipmentStatusReq{
+	ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
 		ReserveID: shipping.ReserveID,
 	})
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
 		tx.Rollback()
 
@@ -1709,7 +1825,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !(ssr.Status == ShippingsStatusDone) {
-		outputErrorMsg(w, http.StatusInternalServerError, "shipment service側で配送完了になっていません")
+		outputErrorMsg(w, http.StatusBadRequest, "shipment service側で配送完了になっていません")
 		tx.Rollback()
 		return
 	}
@@ -1720,7 +1836,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		transactionEvidence.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1733,7 +1849,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		transactionEvidence.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1746,7 +1862,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		itemID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
@@ -1760,30 +1876,35 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func postSell(w http.ResponseWriter, r *http.Request) {
-	rs := reqSell{}
+	csrfToken := r.FormValue("csrf_token")
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	priceStr := r.FormValue("price")
+	categoryIDStr := r.FormValue("category_id")
 
-	err := json.NewDecoder(r.Body).Decode(&rs)
+	f, header, err := r.FormFile("image")
 	if err != nil {
-		outputErrorMsg(w, http.StatusBadRequest, "json decode error")
+		log.Print(err)
+		outputErrorMsg(w, http.StatusBadRequest, "image error")
 		return
 	}
-
-	csrfToken := rs.CSRFToken
+	defer f.Close()
 
 	if csrfToken != getCSRFToken(r) {
 		outputErrorMsg(w, http.StatusUnprocessableEntity, "csrf token error")
-
 		return
 	}
 
-	name := rs.Name
-	price := rs.Price
-	description := rs.Description
-	categoryID := rs.CategoryID
+	categoryID, err := strconv.Atoi(categoryIDStr)
+	if err != nil || categoryID < 0 {
+		outputErrorMsg(w, http.StatusBadRequest, "category id error")
+		return
+	}
 
-	// For test purpose, use 13 as default category
-	if categoryID == 0 {
-		categoryID = 13
+	price, err := strconv.Atoi(priceStr)
+	if err != nil {
+		outputErrorMsg(w, http.StatusBadRequest, "price error")
+		return
 	}
 
 	if name == "" || description == "" || price == 0 || categoryID == 0 {
@@ -1800,7 +1921,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	category, err := getCategoryByID(dbx, categoryID)
 	if err != nil || category.ParentID == 0 {
-		log.Println(categoryID, category)
+		log.Print(categoryID, category)
 		outputErrorMsg(w, http.StatusBadRequest, "Incorrect category ID")
 		return
 	}
@@ -1808,6 +1929,32 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	user, errCode, errMsg := getUser(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	img, err := ioutil.ReadAll(f)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "image error")
+		return
+	}
+
+	ext := filepath.Ext(header.Filename)
+
+	if !(ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif") {
+		outputErrorMsg(w, http.StatusBadRequest, "unsupported image format error")
+		return
+	}
+
+	if ext == ".jpeg" {
+		ext = ".jpg"
+	}
+
+	imgName := fmt.Sprintf("%s%s", secureRandomStr(16), ext)
+	err = ioutil.WriteFile(fmt.Sprintf("../public/upload/%s", imgName), img, 0644)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "Saving image failed")
 		return
 	}
 
@@ -1821,22 +1968,23 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`category_id`) VALUES (?, ?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
 		price,
 		description,
+		imgName,
 		category.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
@@ -1844,20 +1992,20 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	itemID, err := result.LastInsertId()
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
 
 	now := time.Now()
-	result, err = tx.Exec("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
+	_, err = tx.Exec("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
 		seller.NumSellItems+1,
 		now,
 		seller.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
@@ -1908,7 +2056,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1928,7 +2076,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1937,7 +2085,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	// last_bump + 3s > now
 	if seller.LastBump.Add(BumpChargeSeconds).After(now) {
-		outputErrorMsg(w, http.StatusBadRequest, "Bump not allowed")
+		outputErrorMsg(w, http.StatusForbidden, "Bump not allowed")
 		tx.Rollback()
 		return
 	}
@@ -1948,7 +2096,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		targetItem.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -1958,14 +2106,14 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		seller.ID,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
 
 	err = tx.Get(&targetItem, "SELECT * FROM `items` WHERE `id` = ?", itemID)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		tx.Rollback()
 		return
@@ -1993,11 +2141,13 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		ress.User = &user
 	}
 
+	ress.PaymentServiceURL = getPaymentServiceURL()
+
 	categories := []Category{}
 
 	err := dbx.Select(&categories, "SELECT * FROM `categories`")
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -2031,7 +2181,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
@@ -2043,7 +2193,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "crypt error")
 		return
@@ -2054,7 +2204,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	session.Values["user_id"] = u.ID
 	session.Values["csrf_token"] = secureRandomStr(20)
 	if err = session.Save(r, w); err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "session error")
 		return
@@ -2077,14 +2227,14 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 	password := rr.Password
 
 	if accountName == "" || password == "" || address == "" {
-		outputErrorMsg(w, http.StatusInternalServerError, "all parameters are required")
+		outputErrorMsg(w, http.StatusBadRequest, "all parameters are required")
 
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "error")
 		return
@@ -2096,7 +2246,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		address,
 	)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
@@ -2105,7 +2255,7 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 	userID, err := result.LastInsertId()
 
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
@@ -2116,8 +2266,23 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		AccountName: accountName,
 		Address:     address,
 	}
+
+	session := getSession(r)
+	session.Values["user_id"] = u.ID
+	session.Values["csrf_token"] = secureRandomStr(20)
+	if err = session.Save(r, w); err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "session error")
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(u)
+}
+
+// TODO: select * from transaction_evidences
+func getReports(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 }
 
 func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
@@ -2128,4 +2293,8 @@ func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
 	json.NewEncoder(w).Encode(struct {
 		Error string `json:"error"`
 	}{Error: msg})
+}
+
+func getImageURL(imageName string) string {
+	return fmt.Sprintf("/upload/%s", imageName)
 }

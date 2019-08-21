@@ -1,0 +1,28 @@
+- name: Create isucari directory
+  become: yes
+  become_user: isucon
+  file:
+    path=/home/isucon/isucari
+    state=directory
+
+- name: Deploy isucari
+  become: yes
+  synchronize:
+    src: ../../../../
+    dest: /home/isucon/isucari
+    delete: yes
+    recursive: yes
+    rsync_opts:
+      - "--exclude=.git"
+      - "--exclude=.gitignore"
+      - "--exclude=provisioning"
+
+- name: Chown isucon
+  become: yes
+  become_user: root
+  file:
+    dest: /home/isucon/isucari
+    owner: isucon
+    group: isucon
+    mode: 0755
+    recurse: yes

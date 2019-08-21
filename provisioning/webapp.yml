@@ -1,17 +1,12 @@
 - hosts: localhost
   user: root
   gather_facts: yes
-  vars_prompt:
-    - name: "target"
-      prompt: "Target: vagrant or local?"
-      default: "vagrant"
 
   roles:
     - bootstrap
     - users.isucon
     - users.isucon_admin
-
-    - { role: vagrant-specific, when: target == "vagrant" }
+    - webapp.deploy
 
     - nginx
     - mysql

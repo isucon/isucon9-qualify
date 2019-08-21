@@ -18,6 +18,7 @@ export interface AuthStatusState {
   userId?: number;
   accountName?: string;
   address?: string;
+  numSellItems?: number;
   checked: boolean; // 初回のsettings取得が完了したかどうか
 }
 
@@ -50,6 +51,7 @@ const authStatus = (
             userId: number;
             accountName: string;
             address?: string;
+            numSellItems: number;
           }
         | {} = {};
 
@@ -58,6 +60,7 @@ const authStatus = (
           userId: user.id,
           accountName: user.accountName,
           address: user.address || undefined,
+          numSellItems: user.numSellItems,
         };
       }
 

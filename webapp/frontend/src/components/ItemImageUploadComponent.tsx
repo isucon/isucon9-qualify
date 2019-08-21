@@ -25,7 +25,9 @@ const styles = (theme: Theme): StyleRules =>
     },
   });
 
-interface ItemImageUploadComponentProps extends WithStyles<typeof styles> {}
+interface ItemImageUploadComponentProps extends WithStyles<typeof styles> {
+  onImageChange: (image: Blob) => void;
+}
 
 interface ItemImageUploadComponentState {
   file?: File;
@@ -64,6 +66,8 @@ class ItemImageUploadComponent extends React.Component<
         file: file,
         imagePreviewUrl: reader.result,
       });
+
+      this.props.onImageChange(file);
     };
 
     reader.readAsDataURL(file);
@@ -73,7 +77,6 @@ class ItemImageUploadComponent extends React.Component<
     const { classes } = this.props;
     const { imagePreviewUrl } = this.state;
     let imagePreview = null;
-    console.log(imagePreviewUrl);
 
     if (imagePreviewUrl) {
       imagePreview = <img alt="プレビュー" src={imagePreviewUrl} />;
