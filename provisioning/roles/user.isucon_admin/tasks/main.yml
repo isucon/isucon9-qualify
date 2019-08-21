@@ -23,3 +23,11 @@
     owner: root
     group: root
     mode: 0440
+
+- name: Copy admin public keys to authorized_keys
+  copy:
+    src: authorized_keys
+    dest: /home/isucon_admin/.ssh/authorized_keys
+    owner: isucon_admin
+    group: isucon_admin
+    mode: 0600
