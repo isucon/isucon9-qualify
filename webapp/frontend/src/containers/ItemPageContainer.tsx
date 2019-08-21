@@ -4,6 +4,7 @@ import { fetchItemAction } from '../actions/fetchItemAction';
 import { AppState } from '../index';
 import { push } from 'connected-react-router';
 import { routes } from '../routes/Route';
+import { postBumpAction } from '../actions/postBumpAction';
 
 const mapStateToProps = (state: AppState) => ({
   loading: state.page.isItemLoading,
@@ -22,6 +23,9 @@ const mapDispatchToProps = (dispatch: any) => ({
   },
   onClickItemEdit: (itemId: number) => {
     dispatch(push(routes.itemEdit.getPath(itemId)));
+  },
+  onClickBump: (itemId: number) => {
+    dispatch(postBumpAction(itemId));
   },
   onClickTransaction: (itemId: number) => {
     dispatch(push(routes.transaction.getPath(itemId)));

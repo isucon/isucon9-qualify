@@ -48,6 +48,7 @@ interface ItemPageProps extends WithStyles<typeof styles> {
   load: (itemId: string) => void;
   onClickBuy: (itemId: number) => void;
   onClickItemEdit: (itemId: number) => void;
+  onClickBump: (itemId: number) => void;
   onClickTransaction: (itemId: number) => void;
 }
 
@@ -62,6 +63,7 @@ class ItemPage extends React.Component<Props> {
     this.props.load(this.props.match.params.item_id);
     this._onClickBuyButton = this._onClickBuyButton.bind(this);
     this._onClickItemEditButton = this._onClickItemEditButton.bind(this);
+    this._onClickBumpButton = this._onClickBumpButton.bind(this);
     this._onClickTransaction = this._onClickTransaction.bind(this);
   }
 
@@ -73,6 +75,11 @@ class ItemPage extends React.Component<Props> {
   _onClickItemEditButton(e: React.MouseEvent) {
     e.preventDefault();
     this.props.onClickItemEdit(this.props.item.id);
+  }
+
+  _onClickBumpButton(e: React.MouseEvent) {
+    e.preventDefault();
+    this.props.onClickBump(this.props.item.id);
   }
 
   _onClickTransaction(e: React.MouseEvent) {
@@ -87,14 +94,32 @@ class ItemPage extends React.Component<Props> {
       return <LoadingComponent />;
     }
 
-    let onClick: (e: React.MouseEvent) => void = this._onClickBuyButton;
-    let buttonText: string = '購入';
-    let disableButton: boolean = false;
+    let buttons: {
+      onClick: (e: React.MouseEvent) => void;
+      buttonText: string;
+      disabled: boolean;
+    }[] = [
+      {
+        onClick: this._onClickBuyButton,
+        buttonText: '購入',
+        disabled: false,
+      },
+    ];
 
-    // 自分の商品で出品中なら編集画面へ遷移
+    // 自分の商品で出品中なら編集画面へ遷移 / Bumpボタンを表示
     if (viewer.userId === item.sellerId && item.status === 'on_sale') {
-      onClick = this._onClickItemEditButton;
-      buttonText = '商品編集';
+      buttons = [
+        {
+          onClick: this._onClickBumpButton,
+          buttonText: 'Bump',
+          disabled: false,
+        },
+        {
+          onClick: this._onClickItemEditButton,
+          buttonText: '商品編集',
+          disabled: false,
+        },
+      ];
     }
 
     // 出品者 or 購入者で取引中か売り切れなら取引画面へのボタンを追加
@@ -102,8 +127,13 @@ class ItemPage extends React.Component<Props> {
       (viewer.userId === item.sellerId || viewer.userId === item.buyerId) &&
       (item.status === 'trading' || item.status === 'sold_out')
     ) {
-      onClick = this._onClickTransaction;
-      buttonText = '取引画面';
+      buttons = [
+        {
+          onClick: this._onClickTransaction,
+          buttonText: '取引画面',
+          disabled: false,
+        },
+      ];
     }
 
     // 商品が出品中でなく、出品者でも購入者でもない場合は売り切れ
@@ -112,9 +142,13 @@ class ItemPage extends React.Component<Props> {
       viewer.userId !== item.sellerId &&
       viewer.userId !== item.buyerId
     ) {
-      onClick = (e: React.MouseEvent) => {};
-      buttonText = '売り切れ';
-      disableButton = true;
+      buttons = [
+        {
+          onClick(e: React.MouseEvent) {},
+          buttonText: '売り切れ',
+          disabled: true,
+        },
+      ];
     }
 
     return (
@@ -186,16 +220,7 @@ class ItemPage extends React.Component<Props> {
             </Grid>
           </Grid>
         </Grid>
-        <ItemFooterComponent
-          price={item.price}
-          buttons={[
-            {
-              onClick,
-              buttonText,
-              disabled: disableButton,
-            },
-          ]}
-        />
+        <ItemFooterComponent price={item.price} buttons={buttons} />
       </BasePageContainer>
     );
   }
