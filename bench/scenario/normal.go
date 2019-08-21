@@ -4,19 +4,10 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/isucon/isucon9-qualify/bench/action"
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
-)
-
-const (
-	CorrectCardNumber = "AAAAAAAA"
-	FailedCardNumber  = "FA10AAAA"
-	IsucariShopID     = "11"
-
-	ErrScenario failure.StringCode = "error scenario"
 )
 
 func initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
@@ -29,12 +20,12 @@ func initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
 }
 
 func sellAndBuy(user1, user2 asset.AppUser) error {
-	s1, err := action.LoginedSession(user1)
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}
 
-	s2, err := action.LoginedSession(user2)
+	s2, err := LoginedSession(user2)
 	if err != nil {
 		return err
 	}
@@ -139,7 +130,7 @@ func loadSellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
 }
 
 func transactionEvidence(user1 asset.AppUser) error {
-	s1, err := action.LoginedSession(user1)
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -188,7 +179,7 @@ func transactionEvidence(user1 asset.AppUser) error {
 }
 
 func userItemsAndItem(user1, user2 asset.AppUser) error {
-	s1, err := action.LoginedSession(user1)
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -250,12 +241,12 @@ func userItemsAndItem(user1, user2 asset.AppUser) error {
 }
 
 func bumpAndNewItems(user1, user2 asset.AppUser) error {
-	s1, err := action.LoginedSession(user1)
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}
 
-	s2, err := action.LoginedSession(user2)
+	s2, err := LoginedSession(user2)
 	if err != nil {
 		return err
 	}
@@ -349,7 +340,7 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 }
 
 func itemEdit(user1 asset.AppUser) error {
-	s1, err := action.LoginedSession(user1)
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -367,7 +358,7 @@ func itemEdit(user1 asset.AppUser) error {
 }
 
 func newCategoryItems(user1 asset.AppUser) error {
-	s1, err := action.LoginedSession(user1)
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}

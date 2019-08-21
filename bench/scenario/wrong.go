@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/isucon/isucon9-qualify/bench/action"
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -26,7 +25,7 @@ func irregularLoginWrongPassword(user1 asset.AppUser) error {
 }
 
 func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
-	s1, err := action.LoginedSession(user1)
+	s1, err := LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -52,7 +51,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	s2, err := action.LoginedSession(user2)
+	s2, err := LoginedSession(user2)
 	if err != nil {
 		return err
 	}
@@ -82,7 +81,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	s3, err := action.LoginedSession(user3)
+	s3, err := LoginedSession(user3)
 	if err != nil {
 		return err
 	}

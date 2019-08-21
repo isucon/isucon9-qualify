@@ -1,4 +1,4 @@
-package action
+package scenario
 
 import (
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -11,7 +11,7 @@ const (
 	FailedCardNumber  = "FA10AAAA"
 	IsucariShopID     = "11"
 
-	ErrAction failure.StringCode = "error action"
+	ErrScenario failure.StringCode = "error scenario"
 )
 
 func LoginedSession(user1 asset.AppUser) (*session.Session, error) {
@@ -26,7 +26,7 @@ func LoginedSession(user1 asset.AppUser) (*session.Session, error) {
 	}
 
 	if !user1.Equal(user) {
-		return nil, failure.New(ErrAction, failure.Message("ログインが失敗しています"))
+		return nil, failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
 	}
 
 	err = s1.SetSettings()
