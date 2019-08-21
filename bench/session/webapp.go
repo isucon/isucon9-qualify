@@ -494,24 +494,24 @@ func (s *Session) Complete(itemID int64) error {
 func (s *Session) DownloadQRURL(apath string) (md5Str string, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
+		return "", failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
+		return "", failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: %s", apath, msg)))
+		return "", failure.Wrap(err, failure.Messagef("GET %s: %s", apath, msg))
 	}
 
 	h := md5.New()
 	_, err = io.Copy(h, res.Body)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: bodyの読み込みに失敗しました", apath)))
+		return "", failure.Wrap(err, failure.Messagef("GET %s: bodyの読み込みに失敗しました", apath))
 	}
 
 	return string(h.Sum(nil)), nil
@@ -637,24 +637,24 @@ func (s *Session) NewItemsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNe
 func (s *Session) NewCategoryItems(rootCategoryID int) (hasNext bool, rootCategoryName string, items []ItemSimple, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/new_items/%d.json", rootCategoryID))
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: "+msg, rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: "+msg, rootCategoryID))
 	}
 
 	rni := resNewItems{}
 	err = json.NewDecoder(res.Body).Decode(&rni)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: JSONデコードに失敗しました", rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: JSONデコードに失敗しました", rootCategoryID))
 	}
 
 	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
@@ -667,24 +667,24 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, ite
 
 	req, err := s.newGetRequestWithQuery(ShareTargetURLs.AppURL, fmt.Sprintf("/new_items/%d.json", rootCategoryID), q)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: "+msg, rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: "+msg, rootCategoryID))
 	}
 
 	rni := resNewItems{}
 	err = json.NewDecoder(res.Body).Decode(&rni)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /new_items/%d.json: JSONデコードに失敗しました", rootCategoryID)))
+		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: JSONデコードに失敗しました", rootCategoryID))
 	}
 
 	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
@@ -749,24 +749,24 @@ func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(itemID, createdAt int6
 func (s *Session) UserItems(userID int64) (hasNext bool, user *UserSimple, items []ItemSimple, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/users/%d.json", userID))
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: リクエストに失敗しました", userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: リクエストに失敗しました", userID))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: リクエストに失敗しました", userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: リクエストに失敗しました", userID))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: "+msg, userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: "+msg, userID))
 	}
 
 	rui := resUserItems{}
 	err = json.NewDecoder(res.Body).Decode(&rui)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: JSONデコードに失敗しました", userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: JSONデコードに失敗しました", userID))
 	}
 
 	return rui.HasNext, rui.User, rui.Items, nil
@@ -779,24 +779,24 @@ func (s *Session) UserItemsWithItemIDAndCreatedAt(userID, itemID, createdAt int6
 
 	req, err := s.newGetRequestWithQuery(ShareTargetURLs.AppURL, fmt.Sprintf("/users/%d.json", userID), q)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: リクエストに失敗しました", userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: リクエストに失敗しました", userID))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: リクエストに失敗しました", userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: リクエストに失敗しました", userID))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: "+msg, userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: "+msg, userID))
 	}
 
 	rui := resUserItems{}
 	err = json.NewDecoder(res.Body).Decode(&rui)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /users/%d.json: JSONデコードに失敗しました", userID)))
+		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: JSONデコードに失敗しました", userID))
 	}
 
 	return rui.HasNext, rui.User, rui.Items, nil
@@ -805,23 +805,23 @@ func (s *Session) UserItemsWithItemIDAndCreatedAt(userID, itemID, createdAt int6
 func (s *Session) Item(itemID int64) (item *ItemDetail, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/items/%d.json", itemID))
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /items/%d.json: リクエストに失敗しました", itemID)))
+		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /items/%d.json: リクエストに失敗しました", itemID)))
+		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /items/%d.json: "+msg, itemID)))
+		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: "+msg, itemID))
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&item)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("GET /items/%d.json: JSONデコードに失敗しました", itemID)))
+		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: JSONデコードに失敗しました", itemID))
 	}
 
 	return item, nil

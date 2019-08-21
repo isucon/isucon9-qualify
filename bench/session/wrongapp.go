@@ -241,7 +241,7 @@ func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, 
 	}
 
 	if re.Error != expectedMsg {
-		return failure.Wrap(err, failure.Message(fmt.Sprintf("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error)))
+		return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error))
 	}
 
 	return nil
@@ -305,7 +305,7 @@ func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg s
 	}
 
 	if re.Error != expectedMsg {
-		return failure.Wrap(err, failure.Message(fmt.Sprintf("POST /ship: exected error message: %s; actual: %s", expectedMsg, re.Error)))
+		return failure.Wrap(err, failure.Messagef("POST /ship: exected error message: %s; actual: %s", expectedMsg, re.Error))
 	}
 
 	return nil
@@ -314,18 +314,18 @@ func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg s
 func (s *Session) DecodeQRURLWithFailed(apath string, expectedStatus int) error {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
-		return failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
+		return failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: リクエストに失敗しました", apath)))
+		return failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return failure.Wrap(err, failure.Message(fmt.Sprintf("GET %s: %s", apath, msg)))
+		return failure.Wrap(err, failure.Messagef("GET %s: %s", apath, msg))
 	}
 
 	return nil
@@ -389,7 +389,7 @@ func (s *Session) ShipDoneWithFailed(itemID int64, expectedStatus int, expectedM
 	}
 
 	if re.Error != expectedMsg {
-		return failure.Wrap(err, failure.Message(fmt.Sprintf("POST /ship_done: exected error message: %s; actual: %s", expectedMsg, re.Error)))
+		return failure.Wrap(err, failure.Messagef("POST /ship_done: exected error message: %s; actual: %s", expectedMsg, re.Error))
 	}
 
 	return nil

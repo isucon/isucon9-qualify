@@ -1,7 +1,6 @@
 package scenario
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -124,11 +123,11 @@ func userItemsAndItem(user1, user2 asset.AppUser) error {
 	for _, item := range items {
 		aItem, ok := asset.GetItem(user.ID, item.ID)
 		if !ok {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/users/%d.jsonに存在しない商品が返ってきています", user2.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", user2.ID))
 		}
 
 		if !(item.Name == aItem.Name) {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/users/%d.jsonの商品の名前が間違えています", user2.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonの商品の名前が間違えています", user2.ID))
 		}
 	}
 
@@ -141,16 +140,16 @@ func userItemsAndItem(user1, user2 asset.AppUser) error {
 
 	for _, item := range items {
 		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/users/%d.jsonのitem_idとcreated_atが正しく動作していません", user2.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonのitem_idとcreated_atが正しく動作していません", user2.ID))
 		}
 
 		aItem, ok := asset.GetItem(user.ID, item.ID)
 		if !ok {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/users/%d.jsonに存在しない商品が返ってきています", user2.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", user2.ID))
 		}
 
 		if !(item.Name == aItem.Name) {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/users/%d.jsonの商品の名前が間違えています", user2.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/users/%d.jsonの商品の名前が間違えています", user2.ID))
 		}
 	}
 
@@ -162,11 +161,11 @@ func userItemsAndItem(user1, user2 asset.AppUser) error {
 
 	aItem, ok := asset.GetItem(user2.ID, targetItemID)
 	if !ok {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/items/%d.jsonに存在しない商品が返ってきています", targetItemID)))
+		return failure.New(ErrScenario, failure.Messagef("/items/%d.jsonに存在しない商品が返ってきています", targetItemID))
 	}
 
 	if !(item.Description == aItem.Description) {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/items/%d.jsonの商品説明が間違っています", targetItemID)))
+		return failure.New(ErrScenario, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
 
 	return nil
@@ -201,7 +200,7 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	}
 
 	if len(items) != asset.ItemsPerPage {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items))))
+		return failure.New(ErrScenario, failure.Messagef("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items)))
 	}
 
 	// 簡易チェック
@@ -242,7 +241,7 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	}
 
 	if hasNext && (len(items) != asset.ItemsPerPage) {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items))))
+		return failure.New(ErrScenario, failure.Messagef("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items)))
 	}
 
 	createdAt = items[0].CreatedAt
@@ -303,32 +302,32 @@ func newCategoryItems(user1 asset.AppUser) error {
 	}
 
 	if !hasNext {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID)))
+		return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
 	}
 
 	if len(items) != asset.ItemsPerPage {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items))))
+		return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items)))
 	}
 
 	if rootCategoryName != category.CategoryName {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのカテゴリ名が間違えています", category.ID)))
+		return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonのカテゴリ名が間違えています", category.ID))
 	}
 
 	// 簡易チェック
 	createdAt := items[0].CreatedAt
 	for _, item := range items {
 		if createdAt < item.CreatedAt {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonはcreated_at順である必要があります", category.ID))
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
 			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
 		}
 
 		createdAt = item.CreatedAt
@@ -342,36 +341,36 @@ func newCategoryItems(user1 asset.AppUser) error {
 	}
 
 	if !hasNext {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのhas_nextがfalseです", category.ID)))
+		return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonのhas_nextがfalseです", category.ID))
 	}
 
 	if len(items) != asset.ItemsPerPage {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items))))
+		return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items)))
 	}
 
 	if rootCategoryName != category.CategoryName {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのカテゴリ名が間違えています", category.ID)))
+		return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonのカテゴリ名が間違えています", category.ID))
 	}
 
 	// 簡易チェック
 	createdAt = items[0].CreatedAt
 	for _, item := range items {
 		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのitem_idとcreated_atが正しく動作していません", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonのitem_idとcreated_atが正しく動作していません", category.ID))
 		}
 
 		if createdAt < item.CreatedAt {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonはcreated_at順である必要があります", category.ID))
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
 			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
 		}
 
 		createdAt = item.CreatedAt
@@ -399,28 +398,28 @@ func newCategoryItemsWithLoginedSession(s1 *session.Session) error {
 	}
 
 	if len(items) != asset.ItemsPerPage {
-		return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items))))
+		return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonの商品数が違います: expected: %d; actual: %d", category.ID, asset.ItemsPerPage, len(items)))
 	}
 
 	// 簡易チェック
 	createdAt := items[0].CreatedAt
 	for _, item := range items {
 		if !(item.ID < targetItem.ID && item.CreatedAt <= targetItem.CreatedAt) {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonのitem_idとcreated_atが正しく動作していません", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonのitem_idとcreated_atが正しく動作していません", category.ID))
 		}
 
 		if createdAt < item.CreatedAt {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonはcreated_at順である必要があります", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonはcreated_at順である必要があります", category.ID))
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
 			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(ErrScenario, failure.Message(fmt.Sprintf("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID)))
+			return failure.New(ErrScenario, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
 		}
 
 		createdAt = item.CreatedAt

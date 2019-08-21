@@ -61,17 +61,17 @@ func newTargetURLs(appURL, targetHost, paymentURL, shipmentURL string) (*TargetU
 
 	appParsedURL, err := urlParse(appURL)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("failed to parse url: %s", appURL)))
+		return nil, failure.Wrap(err, failure.Messagef("failed to parse url: %s", appURL))
 	}
 
 	paymentParsedURL, err := urlParse(paymentURL)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("failed to parse url: %s", paymentURL)))
+		return nil, failure.Wrap(err, failure.Messagef("failed to parse url: %s", paymentURL))
 	}
 
 	shipmentParsedURL, err := urlParse(shipmentURL)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("failed to parse url: %s", shipmentURL)))
+		return nil, failure.Wrap(err, failure.Messagef("failed to parse url: %s", shipmentURL))
 	}
 
 	return &TargetURLs{
@@ -173,7 +173,7 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) (msg string, er
 	if res.StatusCode != expectedStatusCode {
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return "bodyの読み込みに失敗しました", err
+			return "bodyの読み込みに失敗しました", failure.Wrap(err)
 		}
 		return fmt.Sprintf("got response status code %d; expected %d", res.StatusCode, expectedStatusCode), fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
 	}
