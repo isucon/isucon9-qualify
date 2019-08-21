@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -20,7 +21,7 @@ type resCard struct {
 	Token string `json:"token"`
 }
 
-func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err error) {
+func (s *Session) PaymentCard(ctx context.Context, cardNumber, shopID string) (token string, err error) {
 	b, _ := json.Marshal(reqCard{
 		CardNumber: cardNumber,
 		ShopID:     shopID,
@@ -29,6 +30,8 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 	if err != nil {
 		return "", failure.Wrap(err, failure.Message("[payment service] /card: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	req.Header.Add("Origin", "http://localhost:8000")
 

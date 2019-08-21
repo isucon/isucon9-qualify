@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"context"
 	"math/rand"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -18,42 +19,23 @@ func initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
 	return s1.Initialize(paymentServiceURL, shipmentServiceURL)
 }
 
-func sellAndBuy(user1, user2 asset.AppUser) error {
-	s1, err := LoginedSession(user1)
+func sellAndBuy(ctx context.Context, user1, user2 asset.AppUser) error {
+	s1, err := LoginedSession(ctx, user1)
 	if err != nil {
 		return err
 	}
 
-	s2, err := LoginedSession(user2)
+	s2, err := LoginedSession(ctx, user2)
 	if err != nil {
 		return err
 	}
 
-	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
+	targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
 	if err != nil {
 		return err
 	}
 
-	err = buyComplete(s1, s2, targetItemID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func loadSellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
-	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
-	if err != nil {
-		return err
-	}
-
-	err = newCategoryItemsWithLoginedSession(s2)
-	if err != nil {
-		return err
-	}
-
-	err = buyComplete(s1, s2, targetItemID)
+	err = buyComplete(ctx, s1, s2, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -61,13 +43,32 @@ func loadSellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
 	return nil
 }
 
-func transactionEvidence(user1 asset.AppUser) error {
-	s1, err := LoginedSession(user1)
+func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *session.Session) error {
+	targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
 	if err != nil {
 		return err
 	}
 
-	_, items, err := s1.UsersTransactions()
+	err = newCategoryItemsWithLoginedSession(ctx, s2)
+	if err != nil {
+		return err
+	}
+
+	err = buyComplete(ctx, s1, s2, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func transactionEvidence(ctx context.Context, user1 asset.AppUser) error {
+	s1, err := LoginedSession(ctx, user1)
+	if err != nil {
+		return err
+	}
+
+	_, items, err := s1.UsersTransactions(ctx)
 	if err != nil {
 		return err
 	}
@@ -86,7 +87,7 @@ func transactionEvidence(user1 asset.AppUser) error {
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
 
-	_, items, err = s1.UsersTransactionsWithItemIDAndCreatedAt(targetItemID, targetItemCreatedAt)
+	_, items, err = s1.UsersTransactionsWithItemIDAndCreatedAt(ctx, targetItemID, targetItemCreatedAt)
 	if err != nil {
 		return err
 	}
@@ -110,8 +111,8 @@ func transactionEvidence(user1 asset.AppUser) error {
 	return nil
 }
 
-func userItemsAndItemWithLoginedSession(s1 *session.Session, userID int64) error {
-	_, user, items, err := s1.UserItems(userID)
+func userItemsAndItemWithLoginedSession(ctx context.Context, s1 *session.Session, userID int64) error {
+	_, user, items, err := s1.UserItems(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -129,7 +130,7 @@ func userItemsAndItemWithLoginedSession(s1 *session.Session, userID int64) error
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
 
-	_, user, items, err = s1.UserItemsWithItemIDAndCreatedAt(userID, targetItemID, targetItemCreatedAt)
+	_, user, items, err = s1.UserItemsWithItemIDAndCreatedAt(ctx, userID, targetItemID, targetItemCreatedAt)
 	if err != nil {
 		return err
 	}
@@ -150,7 +151,7 @@ func userItemsAndItemWithLoginedSession(s1 *session.Session, userID int64) error
 	}
 
 	targetItemID = asset.GetUserItemsFirst(userID)
-	item, err := s1.Item(targetItemID)
+	item, err := s1.Item(ctx, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -167,26 +168,26 @@ func userItemsAndItemWithLoginedSession(s1 *session.Session, userID int64) error
 	return nil
 }
 
-func bumpAndNewItems(user1, user2 asset.AppUser) error {
-	s1, err := LoginedSession(user1)
+func bumpAndNewItems(ctx context.Context, user1, user2 asset.AppUser) error {
+	s1, err := LoginedSession(ctx, user1)
 	if err != nil {
 		return err
 	}
 
-	s2, err := LoginedSession(user2)
+	s2, err := LoginedSession(ctx, user2)
 	if err != nil {
 		return err
 	}
 
 	targetItemID := asset.GetUserItemsFirst(user1.ID)
-	newCreatedAt, err := s1.Bump(targetItemID)
+	newCreatedAt, err := s1.Bump(ctx, targetItemID)
 	if err != nil {
 		return err
 	}
 
 	asset.SetItemCreatedAt(user1.ID, targetItemID, newCreatedAt)
 
-	hasNext, items, err := s2.NewItems()
+	hasNext, items, err := s2.NewItems(ctx)
 	if err != nil {
 		return err
 	}
@@ -231,7 +232,7 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
 
-	hasNext, items, err = s2.NewItemsWithItemIDAndCreatedAt(targetItemID, targetItemCreatedAt)
+	hasNext, items, err = s2.NewItemsWithItemIDAndCreatedAt(ctx, targetItemID, targetItemCreatedAt)
 	if err != nil {
 		return err
 	}
@@ -266,15 +267,15 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 	return nil
 }
 
-func itemEdit(user1 asset.AppUser) error {
-	s1, err := LoginedSession(user1)
+func itemEdit(ctx context.Context, user1 asset.AppUser) error {
+	s1, err := LoginedSession(ctx, user1)
 	if err != nil {
 		return err
 	}
 
 	targetItemID := asset.GetUserItemsFirst(user1.ID)
 	price := 110
-	_, err = s1.ItemEdit(targetItemID, price)
+	_, err = s1.ItemEdit(ctx, targetItemID, price)
 	if err != nil {
 		return err
 	}
@@ -284,15 +285,15 @@ func itemEdit(user1 asset.AppUser) error {
 	return nil
 }
 
-func newCategoryItems(user1 asset.AppUser) error {
-	s1, err := LoginedSession(user1)
+func newCategoryItems(ctx context.Context, user1 asset.AppUser) error {
+	s1, err := LoginedSession(ctx, user1)
 	if err != nil {
 		return err
 	}
 
 	category := asset.GetRandomRootCategory()
 
-	hasNext, rootCategoryName, items, err := s1.NewCategoryItems(category.ID)
+	hasNext, rootCategoryName, items, err := s1.NewCategoryItems(ctx, category.ID)
 	if err != nil {
 		return err
 	}
@@ -331,7 +332,7 @@ func newCategoryItems(user1 asset.AppUser) error {
 
 	targetItemID, targetItemCreatedAt := items[len(items)-1].ID, items[len(items)-1].CreatedAt
 
-	hasNext, rootCategoryName, items, err = s1.NewCategoryItemsWithItemIDAndCreatedAt(category.ID, targetItemID, targetItemCreatedAt)
+	hasNext, rootCategoryName, items, err = s1.NewCategoryItemsWithItemIDAndCreatedAt(ctx, category.ID, targetItemID, targetItemCreatedAt)
 	if err != nil {
 		return err
 	}
@@ -375,7 +376,7 @@ func newCategoryItems(user1 asset.AppUser) error {
 	return nil
 }
 
-func newCategoryItemsWithLoginedSession(s1 *session.Session) error {
+func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session) error {
 	uitems := asset.GetUserItems(s1.UserID)
 	tIndex := 0
 	if len(uitems) >= 2 {
@@ -388,7 +389,7 @@ func newCategoryItemsWithLoginedSession(s1 *session.Session) error {
 	}
 
 	category := asset.GetRandomRootCategory()
-	_, _, items, err := s1.NewCategoryItemsWithItemIDAndCreatedAt(category.ID, targetItem.ID, targetItem.CreatedAt)
+	_, _, items, err := s1.NewCategoryItemsWithItemIDAndCreatedAt(ctx, category.ID, targetItem.ID, targetItem.CreatedAt)
 	if err != nil {
 		return err
 	}

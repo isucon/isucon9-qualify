@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -32,7 +33,7 @@ func secureRandomStr(b int) string {
 	return fmt.Sprintf("%x", k)
 }
 
-func (s *Session) LoginWithWrongPassword(accountName, password string) error {
+func (s *Session) LoginWithWrongPassword(ctx context.Context, accountName, password string) error {
 	b, _ := json.Marshal(reqLogin{
 		AccountName: accountName,
 		Password:    password,
@@ -42,6 +43,8 @@ func (s *Session) LoginWithWrongPassword(accountName, password string) error {
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /login: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -63,7 +66,7 @@ func (s *Session) LoginWithWrongPassword(accountName, password string) error {
 	return nil
 }
 
-func (s *Session) SellWithWrongCSRFToken(name string, price int, description string, categoryID int) error {
+func (s *Session) SellWithWrongCSRFToken(ctx context.Context, name string, price int, description string, categoryID int) error {
 	file, err := os.Open("webapp/public/upload/sample.jpg")
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
@@ -100,6 +103,8 @@ func (s *Session) SellWithWrongCSRFToken(name string, price int, description str
 		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
 
+	req = req.WithContext(ctx)
+
 	res, err := s.Do(req)
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
@@ -120,7 +125,7 @@ func (s *Session) SellWithWrongCSRFToken(name string, price int, description str
 	return nil
 }
 
-func (s *Session) SellWithWrongPrice(name string, price int, description string, categoryID int) error {
+func (s *Session) SellWithWrongPrice(ctx context.Context, name string, price int, description string, categoryID int) error {
 	file, err := os.Open("webapp/public/upload/sample.jpg")
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
@@ -157,6 +162,8 @@ func (s *Session) SellWithWrongPrice(name string, price int, description string,
 		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
 
+	req = req.WithContext(ctx)
+
 	res, err := s.Do(req)
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
@@ -181,7 +188,7 @@ func (s *Session) SellWithWrongPrice(name string, price int, description string,
 	return nil
 }
 
-func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
+func (s *Session) BuyWithWrongCSRFToken(ctx context.Context, itemID int64, token string) error {
 	b, _ := json.Marshal(reqBuy{
 		CSRFToken: secureRandomStr(20),
 		ItemID:    itemID,
@@ -191,6 +198,8 @@ func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -212,7 +221,7 @@ func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
 	return nil
 }
 
-func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, expectedMsg string) error {
+func (s *Session) BuyWithFailed(ctx context.Context, itemID int64, token string, expectedStatus int, expectedMsg string) error {
 	b, _ := json.Marshal(reqBuy{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -222,6 +231,8 @@ func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, 
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -247,7 +258,7 @@ func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, 
 	return nil
 }
 
-func (s *Session) ShipWithWrongCSRFToken(itemID int64) error {
+func (s *Session) ShipWithWrongCSRFToken(ctx context.Context, itemID int64) error {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: secureRandomStr(20),
 		ItemID:    itemID,
@@ -256,6 +267,8 @@ func (s *Session) ShipWithWrongCSRFToken(itemID int64) error {
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -277,7 +290,7 @@ func (s *Session) ShipWithWrongCSRFToken(itemID int64) error {
 	return nil
 }
 
-func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg string) error {
+func (s *Session) ShipWithFailed(ctx context.Context, itemID int64, expectedStatus int, expectedMsg string) error {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -286,6 +299,8 @@ func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg s
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -311,11 +326,13 @@ func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg s
 	return nil
 }
 
-func (s *Session) DecodeQRURLWithFailed(apath string, expectedStatus int) error {
+func (s *Session) DecodeQRURLWithFailed(ctx context.Context, apath string, expectedStatus int) error {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
 		return failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -331,7 +348,7 @@ func (s *Session) DecodeQRURLWithFailed(apath string, expectedStatus int) error 
 	return nil
 }
 
-func (s *Session) ShipDoneWithWrongCSRFToken(itemID int64) error {
+func (s *Session) ShipDoneWithWrongCSRFToken(ctx context.Context, itemID int64) error {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: secureRandomStr(20),
 		ItemID:    itemID,
@@ -340,6 +357,8 @@ func (s *Session) ShipDoneWithWrongCSRFToken(itemID int64) error {
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -361,7 +380,7 @@ func (s *Session) ShipDoneWithWrongCSRFToken(itemID int64) error {
 	return nil
 }
 
-func (s *Session) ShipDoneWithFailed(itemID int64, expectedStatus int, expectedMsg string) error {
+func (s *Session) ShipDoneWithFailed(ctx context.Context, itemID int64, expectedStatus int, expectedMsg string) error {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -370,6 +389,8 @@ func (s *Session) ShipDoneWithFailed(itemID int64, expectedStatus int, expectedM
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {

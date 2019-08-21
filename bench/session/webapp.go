@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -238,7 +239,7 @@ func (s *Session) Initialize(paymentServiceURL, shipmentServiceURL string) (bool
 	return ri.IsCampaign, nil
 }
 
-func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
+func (s *Session) Login(ctx context.Context, accountName, password string) (*asset.AppUser, error) {
 	b, _ := json.Marshal(reqLogin{
 		AccountName: accountName,
 		Password:    password,
@@ -247,6 +248,8 @@ func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	if err != nil {
 		return nil, failure.Wrap(err, failure.Message("POST /login: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -268,11 +271,13 @@ func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	return u, nil
 }
 
-func (s *Session) SetSettings() error {
+func (s *Session) SetSettings(ctx context.Context) error {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/settings")
 	if err != nil {
 		return failure.Wrap(err, failure.Message("GET /settings: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -304,7 +309,7 @@ func (s *Session) SetSettings() error {
 	return nil
 }
 
-func (s *Session) Sell(name string, price int, description string, categoryID int) (int64, error) {
+func (s *Session) Sell(ctx context.Context, name string, price int, description string, categoryID int) (int64, error) {
 	file, err := os.Open("webapp/public/upload/sample.jpg")
 	if err != nil {
 		return 0, failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
@@ -341,6 +346,8 @@ func (s *Session) Sell(name string, price int, description string, categoryID in
 		return 0, failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
 
+	req = req.WithContext(ctx)
+
 	res, err := s.Do(req)
 	if err != nil {
 		return 0, failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
@@ -361,7 +368,7 @@ func (s *Session) Sell(name string, price int, description string, categoryID in
 	return rs.ID, nil
 }
 
-func (s *Session) Buy(itemID int64, token string) (int64, error) {
+func (s *Session) Buy(ctx context.Context, itemID int64, token string) (int64, error) {
 	b, _ := json.Marshal(reqBuy{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -371,6 +378,8 @@ func (s *Session) Buy(itemID int64, token string) (int64, error) {
 	if err != nil {
 		return 0, failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -392,7 +401,7 @@ func (s *Session) Buy(itemID int64, token string) (int64, error) {
 	return rb.TransactionEvidenceID, nil
 }
 
-func (s *Session) Ship(itemID int64) (reserveID, apath string, err error) {
+func (s *Session) Ship(ctx context.Context, itemID int64) (reserveID, apath string, err error) {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -401,6 +410,8 @@ func (s *Session) Ship(itemID int64) (reserveID, apath string, err error) {
 	if err != nil {
 		return "", "", failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -430,7 +441,7 @@ func (s *Session) Ship(itemID int64) (reserveID, apath string, err error) {
 	return rs.ReserveID, rs.Path, nil
 }
 
-func (s *Session) ShipDone(itemID int64) error {
+func (s *Session) ShipDone(ctx context.Context, itemID int64) error {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -439,6 +450,8 @@ func (s *Session) ShipDone(itemID int64) error {
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -459,7 +472,7 @@ func (s *Session) ShipDone(itemID int64) error {
 	return nil
 }
 
-func (s *Session) Complete(itemID int64) error {
+func (s *Session) Complete(ctx context.Context, itemID int64) error {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -468,6 +481,8 @@ func (s *Session) Complete(itemID int64) error {
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /complete: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -488,11 +503,13 @@ func (s *Session) Complete(itemID int64) error {
 	return nil
 }
 
-func (s *Session) DownloadQRURL(apath string) (md5Str string, err error) {
+func (s *Session) DownloadQRURL(ctx context.Context, apath string) (md5Str string, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
 	if err != nil {
 		return "", failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -514,7 +531,7 @@ func (s *Session) DownloadQRURL(apath string) (md5Str string, err error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-func (s *Session) Bump(itemID int64) (int64, error) {
+func (s *Session) Bump(ctx context.Context, itemID int64) (int64, error) {
 	b, _ := json.Marshal(reqBump{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -523,6 +540,8 @@ func (s *Session) Bump(itemID int64) (int64, error) {
 	if err != nil {
 		return 0, failure.Wrap(err, failure.Message("POST /bump: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -544,7 +563,7 @@ func (s *Session) Bump(itemID int64) (int64, error) {
 	return rie.ItemCreatedAt, nil
 }
 
-func (s *Session) ItemEdit(itemID int64, price int) (int, error) {
+func (s *Session) ItemEdit(ctx context.Context, itemID int64, price int) (int, error) {
 	b, _ := json.Marshal(reqItemEdit{
 		CSRFToken: s.csrfToken,
 		ItemID:    itemID,
@@ -554,6 +573,8 @@ func (s *Session) ItemEdit(itemID int64, price int) (int, error) {
 	if err != nil {
 		return 0, failure.Wrap(err, failure.Message("POST /items/edit: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -575,11 +596,13 @@ func (s *Session) ItemEdit(itemID int64, price int) (int, error) {
 	return rie.ItemPrice, nil
 }
 
-func (s *Session) NewItems() (hasNext bool, items []ItemSimple, err error) {
+func (s *Session) NewItems(ctx context.Context) (hasNext bool, items []ItemSimple, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/new_items.json")
 	if err != nil {
 		return false, nil, failure.Wrap(err, failure.Message("GET /new_items.json: リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -601,7 +624,7 @@ func (s *Session) NewItems() (hasNext bool, items []ItemSimple, err error) {
 	return rni.HasNext, rni.Items, nil
 }
 
-func (s *Session) NewItemsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNext bool, items []ItemSimple, err error) {
+func (s *Session) NewItemsWithItemIDAndCreatedAt(ctx context.Context, itemID, createdAt int64) (hasNext bool, items []ItemSimple, err error) {
 	q := url.Values{}
 	q.Set("item_id", strconv.FormatInt(itemID, 10))
 	q.Set("created_at", strconv.FormatInt(createdAt, 10))
@@ -611,6 +634,8 @@ func (s *Session) NewItemsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNe
 		return false, nil, failure.Wrap(err, failure.Message("GET /new_items.json: リクエストに失敗しました"))
 	}
 
+	req = req.WithContext(ctx)
+
 	res, err := s.Do(req)
 	if err != nil {
 		return false, nil, failure.Wrap(err, failure.Message("GET /new_items.json: リクエストに失敗しました"))
@@ -631,11 +656,13 @@ func (s *Session) NewItemsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNe
 	return rni.HasNext, rni.Items, nil
 }
 
-func (s *Session) NewCategoryItems(rootCategoryID int) (hasNext bool, rootCategoryName string, items []ItemSimple, err error) {
+func (s *Session) NewCategoryItems(ctx context.Context, rootCategoryID int) (hasNext bool, rootCategoryName string, items []ItemSimple, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/new_items/%d.json", rootCategoryID))
 	if err != nil {
 		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -657,7 +684,7 @@ func (s *Session) NewCategoryItems(rootCategoryID int) (hasNext bool, rootCatego
 	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
 }
 
-func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, itemID, createdAt int64) (hasNext bool, rootCategoryName string, items []ItemSimple, err error) {
+func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(ctx context.Context, rootCategoryID int, itemID, createdAt int64) (hasNext bool, rootCategoryName string, items []ItemSimple, err error) {
 	q := url.Values{}
 	q.Set("item_id", strconv.FormatInt(itemID, 10))
 	q.Set("created_at", strconv.FormatInt(createdAt, 10))
@@ -667,6 +694,8 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, ite
 		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
 	}
 
+	req = req.WithContext(ctx)
+
 	res, err := s.Do(req)
 	if err != nil {
 		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: リクエストに失敗しました", rootCategoryID))
@@ -687,11 +716,13 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, ite
 	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
 }
 
-func (s *Session) UsersTransactions() (hasNext bool, items []ItemDetail, err error) {
+func (s *Session) UsersTransactions(ctx context.Context) (hasNext bool, items []ItemDetail, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/users/transactions.json")
 	if err != nil {
 		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json リクエストに失敗しました"))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -713,7 +744,7 @@ func (s *Session) UsersTransactions() (hasNext bool, items []ItemDetail, err err
 	return rt.HasNext, rt.Items, nil
 }
 
-func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNext bool, items []ItemDetail, err error) {
+func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(ctx context.Context, itemID, createdAt int64) (hasNext bool, items []ItemDetail, err error) {
 	q := url.Values{}
 	q.Set("item_id", strconv.FormatInt(itemID, 10))
 	q.Set("created_at", strconv.FormatInt(createdAt, 10))
@@ -723,6 +754,8 @@ func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(itemID, createdAt int6
 		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json リクエストに失敗しました"))
 	}
 
+	req = req.WithContext(ctx)
+
 	res, err := s.Do(req)
 	if err != nil {
 		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json リクエストに失敗しました"))
@@ -743,11 +776,13 @@ func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(itemID, createdAt int6
 	return rt.HasNext, rt.Items, nil
 }
 
-func (s *Session) UserItems(userID int64) (hasNext bool, user *UserSimple, items []ItemSimple, err error) {
+func (s *Session) UserItems(ctx context.Context, userID int64) (hasNext bool, user *UserSimple, items []ItemSimple, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/users/%d.json", userID))
 	if err != nil {
 		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: リクエストに失敗しました", userID))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
@@ -769,7 +804,7 @@ func (s *Session) UserItems(userID int64) (hasNext bool, user *UserSimple, items
 	return rui.HasNext, rui.User, rui.Items, nil
 }
 
-func (s *Session) UserItemsWithItemIDAndCreatedAt(userID, itemID, createdAt int64) (hasNext bool, user *UserSimple, items []ItemSimple, err error) {
+func (s *Session) UserItemsWithItemIDAndCreatedAt(ctx context.Context, userID, itemID, createdAt int64) (hasNext bool, user *UserSimple, items []ItemSimple, err error) {
 	q := url.Values{}
 	q.Set("item_id", strconv.FormatInt(itemID, 10))
 	q.Set("created_at", strconv.FormatInt(createdAt, 10))
@@ -779,6 +814,8 @@ func (s *Session) UserItemsWithItemIDAndCreatedAt(userID, itemID, createdAt int6
 		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: リクエストに失敗しました", userID))
 	}
 
+	req = req.WithContext(ctx)
+
 	res, err := s.Do(req)
 	if err != nil {
 		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: リクエストに失敗しました", userID))
@@ -799,11 +836,13 @@ func (s *Session) UserItemsWithItemIDAndCreatedAt(userID, itemID, createdAt int6
 	return rui.HasNext, rui.User, rui.Items, nil
 }
 
-func (s *Session) Item(itemID int64) (item *ItemDetail, err error) {
+func (s *Session) Item(ctx context.Context, itemID int64) (item *ItemDetail, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/items/%d.json", itemID))
 	if err != nil {
 		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
 	}
+
+	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {

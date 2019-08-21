@@ -1,6 +1,8 @@
 package scenario
 
 import (
+	"context"
+
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/server"
@@ -14,13 +16,13 @@ const (
 	IsucariShopID     = "11"
 )
 
-func LoginedSession(user1 asset.AppUser) (*session.Session, error) {
+func LoginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session, error) {
 	s1, err := session.NewSession()
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := s1.Login(user1.AccountName, user1.Password)
+	user, err := s1.Login(ctx, user1.AccountName, user1.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +31,7 @@ func LoginedSession(user1 asset.AppUser) (*session.Session, error) {
 		return nil, failure.New(fails.ErrApplication, failure.Message("ログインが失敗しています"))
 	}
 
-	err = s1.SetSettings()
+	err = s1.SetSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,22 +39,22 @@ func LoginedSession(user1 asset.AppUser) (*session.Session, error) {
 	return s1, nil
 }
 
-func buyComplete(s1, s2 *session.Session, targetItemID int64) error {
-	token, err := s2.PaymentCard(CorrectCardNumber, IsucariShopID)
+func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int64) error {
+	token, err := s2.PaymentCard(ctx, CorrectCardNumber, IsucariShopID)
 	if err != nil {
 		return err
 	}
-	_, err = s2.Buy(targetItemID, token)
-	if err != nil {
-		return err
-	}
-
-	reserveID, apath, err := s1.Ship(targetItemID)
+	_, err = s2.Buy(ctx, targetItemID, token)
 	if err != nil {
 		return err
 	}
 
-	md5Str, err := s1.DownloadQRURL(apath)
+	reserveID, apath, err := s1.Ship(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	md5Str, err := s1.DownloadQRURL(ctx, apath)
 	if err != nil {
 		return err
 	}
@@ -62,7 +64,7 @@ func buyComplete(s1, s2 *session.Session, targetItemID int64) error {
 		return failure.New(fails.ErrApplication, failure.Message("QRコードの画像に誤りがあります"))
 	}
 
-	err = s1.ShipDone(targetItemID)
+	err = s1.ShipDone(ctx, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -72,7 +74,7 @@ func buyComplete(s1, s2 *session.Session, targetItemID int64) error {
 		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
 	}
 
-	err = s2.Complete(targetItemID)
+	err = s2.Complete(ctx, targetItemID)
 	if err != nil {
 		return err
 	}
