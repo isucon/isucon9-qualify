@@ -128,7 +128,10 @@ type resInitialize struct {
 }
 
 type resSetting struct {
-	CSRFToken string `json:"csrf_token"`
+	CSRFToken         string     `json:"csrf_token"`
+	PaymentServiceURL string     `json:"payment_service_url"`
+	User              *User      `json:"user,omitempty"`
+	Categories        []Category `json:"categories"`
 }
 
 type resSell struct {
@@ -292,9 +295,14 @@ func (s *Session) SetSettings() error {
 	}
 
 	if rs.CSRFToken == "" {
-		return failure.New(ErrApplication, failure.Message("GET /settings: csrf tokenが空でした"))
+		return failure.New(ErrApplication, failure.Message("GET /settings: csrf tokenが空です"))
 	}
 
+	if rs.User == nil || rs.User.ID == 0 {
+		return failure.New(ErrApplication, failure.Message("GET /settings: userが空です"))
+	}
+
+	s.UserID = rs.User.ID
 	s.csrfToken = rs.CSRFToken
 	return nil
 }
