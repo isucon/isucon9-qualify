@@ -1,12 +1,22 @@
 import { AppState } from '../index';
-import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { AuthRoute } from '../components/Route/AuthRoute';
+import { fetchSettings } from '../actions/settingsAction';
+import { ThunkDispatch } from 'redux-thunk';
+import { AnyAction } from 'redux';
 
 const mapStateToProps = (state: AppState) => ({
   isLoggedIn: !!state.authStatus.userId,
+  loading: !state.authStatus.checked,
+  alreadyLoaded: state.authStatus.checked,
 });
-const mapDispatchToProps = (dispatch: Dispatch) => ({});
+const mapDispatchToProps = (
+  dispatch: ThunkDispatch<AppState, undefined, AnyAction>,
+) => ({
+  load: () => {
+    dispatch(fetchSettings());
+  },
+});
 
 export default connect(
   mapStateToProps,

@@ -29,22 +29,12 @@ const styles = (theme: Theme): StyleRules =>
   });
 
 interface BaseProps extends WithStyles<typeof styles> {
-  load: () => void;
-  alreadyLoaded: boolean;
   loading: boolean;
 }
 
 export type Props = PropsWithChildren<BaseProps>;
 
 class BasePageComponent extends React.Component<Props> {
-  constructor(props: Props) {
-    super(props);
-
-    if (!this.props.alreadyLoaded) {
-      this.props.load();
-    }
-  }
-
   render() {
     const { classes } = this.props;
 
