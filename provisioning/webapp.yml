@@ -3,9 +3,9 @@
   gather_facts: yes
 
   roles:
-    - bootstrap
     - user.isucon
     - user.isucon_admin
+    - bootstrap
     - webapp.deploy
 
     - nginx
