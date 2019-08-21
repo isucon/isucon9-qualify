@@ -1,0 +1,25 @@
+- name: Create isucon group
+  group:
+    name: isucon
+    gid: 1001
+    state: present
+    system: no
+
+- name: Create isucon user
+  user:
+    name: isucon
+    uid: 1001
+    group: isucon
+    password: isucon
+    home: /home/isucon
+    shell: /bin/bash
+    state: present
+    system: no
+
+- name: Add sudoers
+  copy:
+    content: "isucon  ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/90-isucon-user
+    owner: root
+    group: root
+    mode: 0440

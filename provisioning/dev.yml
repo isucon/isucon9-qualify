@@ -3,6 +3,8 @@
   gather_facts: yes
 
   roles:
+    - user.isucon
+    - user.isucon_admin
     - bootstrap
     - dev.deploy
 
