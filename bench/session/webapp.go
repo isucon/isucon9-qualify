@@ -514,7 +514,7 @@ func (s *Session) DownloadQRURL(apath string) (md5Str string, err error) {
 		return "", failure.Wrap(err, failure.Messagef("GET %s: bodyの読み込みに失敗しました", apath))
 	}
 
-	return string(h.Sum(nil)), nil
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 func (s *Session) Bump(itemID int64) (int64, error) {

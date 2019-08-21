@@ -326,7 +326,10 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 
 	png, _ := qrcode.Encode(msg, qrcode.Low, 256)
 
-	s.shipmentCache.SetQRMD5(req.ReserveID, fmt.Sprintf("%s", md5.Sum(png)))
+	h := md5.New()
+	h.Write(png)
+
+	s.shipmentCache.SetQRMD5(req.ReserveID, fmt.Sprintf("%x", h.Sum(nil)))
 
 	w.Write(png)
 }
