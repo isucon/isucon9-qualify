@@ -17,6 +17,8 @@ const (
 	DefaultAPITimeout = 10
 
 	userAgent = "benchmarker/isucon9-qualify"
+
+	ErrSession failure.StringCode = "error session"
 )
 
 type Session struct {
@@ -169,16 +171,20 @@ func (s *Session) newPostRequest(u url.URL, spath, contentType string, body io.R
 	return req, nil
 }
 
-func checkStatusCode(res *http.Response, expectedStatusCode int) (msg string, err error) {
+func checkStatusCode(res *http.Response, expectedStatusCode int) error {
+	prefixMsg := fmt.Sprintf("%s %s", res.Request.Method, res.Request.URL.Path)
+
 	if res.StatusCode != expectedStatusCode {
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return "bodyの読み込みに失敗しました", failure.Wrap(err)
+			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました"))
 		}
-		return fmt.Sprintf("got response status code %d; expected %d", res.StatusCode, expectedStatusCode), fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
+		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), ErrSession,
+			failure.Messagef("%s: got response status code %d; expected %d", prefixMsg, res.StatusCode, expectedStatusCode),
+		)
 	}
 
-	return "", nil
+	return nil
 }
 
 func (s *Session) Do(req *http.Request) (*http.Response, error) {

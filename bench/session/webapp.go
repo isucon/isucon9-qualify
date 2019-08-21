@@ -227,9 +227,9 @@ func (s *Session) Initialize(paymentServiceURL, shipmentServiceURL string) (bool
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, failure.Wrap(err, failure.Message("POST /initialize: "+msg))
+		return false, err
 	}
 
 	ri := resInitialize{}
@@ -257,9 +257,9 @@ func (s *Session) Login(accountName, password string) (*asset.AppUser, error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Message("POST /login: "+msg))
+		return nil, err
 	}
 
 	u := &asset.AppUser{}
@@ -283,9 +283,9 @@ func (s *Session) SetSettings() error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("GET /settings: "+msg))
+		return err
 	}
 
 	rs := &resSetting{}
@@ -350,9 +350,9 @@ func (s *Session) Sell(name string, price int, description string, categoryID in
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /sell: "+msg))
+		return 0, err
 	}
 
 	rs := &resSell{}
@@ -381,9 +381,9 @@ func (s *Session) Buy(itemID int64, token string) (int64, error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /buy: "+msg))
+		return 0, err
 	}
 
 	rb := &resBuy{}
@@ -411,9 +411,9 @@ func (s *Session) Ship(itemID int64) (reserveID, apath string, err error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return "", "", failure.Wrap(err, failure.Message("POST /ship: "+msg))
+		return "", "", err
 	}
 
 	rs := &resShip{}
@@ -449,9 +449,9 @@ func (s *Session) ShipDone(itemID int64) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship_done: "+msg))
+		return err
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
@@ -478,9 +478,9 @@ func (s *Session) Complete(itemID int64) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /complete: "+msg))
+		return err
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
@@ -503,9 +503,9 @@ func (s *Session) DownloadQRURL(apath string) (md5Str string, err error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return "", failure.Wrap(err, failure.Messagef("GET %s: %s", apath, msg))
+		return "", err
 	}
 
 	h := md5.New()
@@ -533,9 +533,9 @@ func (s *Session) Bump(itemID int64) (int64, error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /bump: "+msg))
+		return 0, err
 	}
 
 	rie := &resItemEdit{}
@@ -564,9 +564,9 @@ func (s *Session) ItemEdit(itemID int64, price int) (int, error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /items/edit: "+msg))
+		return 0, err
 	}
 
 	rie := &resItemEdit{}
@@ -590,9 +590,9 @@ func (s *Session) NewItems() (hasNext bool, items []ItemSimple, err error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /new_items.json: "+msg))
+		return false, nil, err
 	}
 
 	rni := resNewItems{}
@@ -620,9 +620,9 @@ func (s *Session) NewItemsWithItemIDAndCreatedAt(itemID, createdAt int64) (hasNe
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /new_items.json: "+msg))
+		return false, nil, err
 	}
 
 	rni := resNewItems{}
@@ -646,9 +646,9 @@ func (s *Session) NewCategoryItems(rootCategoryID int) (hasNext bool, rootCatego
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: "+msg, rootCategoryID))
+		return false, "", nil, err
 	}
 
 	rni := resNewItems{}
@@ -676,9 +676,9 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(rootCategoryID int, ite
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, "", nil, failure.Wrap(err, failure.Messagef("GET /new_items/%d.json: "+msg, rootCategoryID))
+		return false, "", nil, err
 	}
 
 	rni := resNewItems{}
@@ -702,9 +702,9 @@ func (s *Session) UsersTransactions() (hasNext bool, items []ItemDetail, err err
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json "+msg))
+		return false, nil, err
 	}
 
 	rt := resTransactions{}
@@ -732,9 +732,9 @@ func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(itemID, createdAt int6
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json "+msg))
+		return false, nil, err
 	}
 
 	rt := resTransactions{}
@@ -758,9 +758,9 @@ func (s *Session) UserItems(userID int64) (hasNext bool, user *UserSimple, items
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: "+msg, userID))
+		return false, nil, nil, err
 	}
 
 	rui := resUserItems{}
@@ -788,9 +788,9 @@ func (s *Session) UserItemsWithItemIDAndCreatedAt(userID, itemID, createdAt int6
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, nil, nil, failure.Wrap(err, failure.Messagef("GET /users/%d.json: "+msg, userID))
+		return false, nil, nil, err
 	}
 
 	rui := resUserItems{}
@@ -814,9 +814,9 @@ func (s *Session) Item(itemID int64) (item *ItemDetail, err error) {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
+	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: "+msg, itemID))
+		return nil, err
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&item)

@@ -49,9 +49,9 @@ func (s *Session) LoginWithWrongPassword(accountName, password string) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnauthorized)
+	err = checkStatusCode(res, http.StatusUnauthorized)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /login: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -106,9 +106,9 @@ func (s *Session) SellWithWrongCSRFToken(name string, price int, description str
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /sell: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -163,9 +163,9 @@ func (s *Session) SellWithWrongPrice(name string, price int, description string,
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusBadRequest)
+	err = checkStatusCode(res, http.StatusBadRequest)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /sell: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -198,9 +198,9 @@ func (s *Session) BuyWithWrongCSRFToken(itemID int64, token string) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -229,9 +229,9 @@ func (s *Session) BuyWithFailed(itemID int64, token string, expectedStatus int, 
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -263,9 +263,9 @@ func (s *Session) ShipWithWrongCSRFToken(itemID int64) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -293,9 +293,9 @@ func (s *Session) ShipWithFailed(itemID int64, expectedStatus int, expectedMsg s
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -323,9 +323,9 @@ func (s *Session) DecodeQRURLWithFailed(apath string, expectedStatus int) error 
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return failure.Wrap(err, failure.Messagef("GET %s: %s", apath, msg))
+		return err
 	}
 
 	return nil
@@ -347,9 +347,9 @@ func (s *Session) ShipDoneWithWrongCSRFToken(itemID int64) error {
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCode(res, http.StatusUnprocessableEntity)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship_done: "+msg))
+		return err
 	}
 
 	re := resErr{}
@@ -377,9 +377,9 @@ func (s *Session) ShipDoneWithFailed(itemID int64, expectedStatus int, expectedM
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, expectedStatus)
+	err = checkStatusCode(res, expectedStatus)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship_done: "+msg))
+		return err
 	}
 
 	re := resErr{}
