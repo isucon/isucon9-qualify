@@ -2,6 +2,7 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
 import {
+  ErrorRes,
   ItemDetail,
   UserTransactionsReq,
   UserTransactionsRes,
@@ -38,19 +39,17 @@ export function fetchTransactionsAction(
           created_at: createdAt,
         } as UserTransactionsReq);
       })
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (!response.ok) {
           if (response.status === 404) {
             throw new NotFoundError('Transactions not found');
           }
 
-          throw new AppResponseError(
-            'Request for getting transaction list data was failed',
-            response,
-          );
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: UserTransactionsRes) => {
         dispatch(

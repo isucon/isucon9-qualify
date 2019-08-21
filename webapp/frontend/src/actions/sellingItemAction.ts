@@ -3,8 +3,9 @@ import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { push } from 'connected-react-router';
 import { AnyAction } from 'redux';
-import { SellRes } from '../types/appApiTypes';
+import { ErrorRes, SellRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
+import { AppResponseError } from '../errors/AppResponseError';
 
 export const SELLING_ITEM_SUCCESS = 'SELLING_ITEM_SUCCESS';
 export const SELLING_ITEM_FAIL = 'SELLING_ITEM_FAIL';
@@ -27,11 +28,12 @@ export function listItemAction(
     body.append('category_id', categoryId.toString());
     body.append('image', image);
     AppClient.postFormData('/sell', body)
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (!response.ok) {
-          throw new Error('HTTP status not 200');
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
-        return response.json();
+        return await response.json();
       })
       .then((body: SellRes) => {
         dispatch(sellingSuccessAction(body.id));

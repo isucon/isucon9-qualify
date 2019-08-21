@@ -1,7 +1,12 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
-import { ItemSimple, UserItemsReq, UserItemsRes } from '../types/appApiTypes';
+import {
+  ErrorRes,
+  ItemSimple,
+  UserItemsReq,
+  UserItemsRes,
+} from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
@@ -33,19 +38,17 @@ export function fetchUserItemsAction(
           created_at: createdAt,
         } as UserItemsReq);
       })
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (!response.ok) {
           if (response.status === 404) {
             throw new NotFoundError('UserItems not found');
           }
 
-          throw new AppResponseError(
-            'Request for getting transaction list data was failed',
-            response,
-          );
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: UserItemsRes) => {
         dispatch(

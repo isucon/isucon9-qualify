@@ -2,6 +2,7 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
 import {
+  ErrorRes,
   ItemSimple,
   NewCategoryItemRes,
   NewItemReq,
@@ -44,19 +45,17 @@ export function fetchTimelineAction(
 
         return AppClient.get(`/new_items.json`, getParams);
       })
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (!response.ok) {
           if (response.status === 404) {
             throw new NotFoundError('Item not found');
           }
 
-          throw new AppResponseError(
-            'Request for getting timeline item data was failed',
-            response,
-          );
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: NewItemRes | NewCategoryItemRes) => {
         dispatch(

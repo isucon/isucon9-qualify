@@ -1,7 +1,7 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action, AnyAction } from 'redux';
-import { SettingsRes } from '../types/appApiTypes';
+import { ErrorRes, SettingsRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { AppState } from '../index';
 import { Settings } from '../dataObjects/settings';
@@ -21,15 +21,13 @@ export function fetchSettings(): ThunkResult<void> {
       dispatch(fetchSettingStartAction());
     })
       .then(() => AppClient.get(`/settings`))
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (!response.ok) {
-          throw new AppResponseError(
-            'Request for getting settings data was failed',
-            response,
-          );
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: SettingsRes) => {
         let user: UserData | undefined = undefined;

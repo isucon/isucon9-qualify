@@ -4,7 +4,7 @@ import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { push } from 'connected-react-router';
 import { Action, AnyAction } from 'redux';
-import { BuyReq } from '../types/appApiTypes';
+import { BuyReq, ErrorRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
 import { CardReq, CardRes } from '../types/paymentApiTypes';
 import { PaymentResponseError } from '../errors/PaymentResponseError';
@@ -67,7 +67,7 @@ export function buyItemAction(
         dispatch(buySuccessAction());
         dispatch(push(routes.buyComplete.path));
       })
-      .catch((err: Error) => {
+      .catch(async (err: Error) => {
         if (err instanceof ResponseError) {
           const res = err.getResponse();
           let action: Function;
@@ -81,14 +81,11 @@ export function buyItemAction(
           }
 
           if (res) {
-            return res.json().then((body: any) => {
-              if (body && body.error) {
-                dispatch(action(body.error));
-                return;
-              }
+            const errRes: ErrorRes = await res.json();
 
-              dispatch(action(err.message));
-            });
+            if (errRes) {
+              return dispatch(action(errRes.error));
+            }
           }
 
           dispatch(action(err.message));

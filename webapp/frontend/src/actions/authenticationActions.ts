@@ -5,7 +5,8 @@ import { push } from 'connected-react-router';
 import { AnyAction } from 'redux';
 import { routes } from '../routes/Route';
 import { AppState } from '../index';
-import { LoginRes } from '../types/appApiTypes';
+import { ErrorRes, LoginRes } from '../types/appApiTypes';
+import { AppResponseError } from '../errors/AppResponseError';
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const LOGIN_FAIL = 'LOGIN_FAIL';
@@ -21,12 +22,13 @@ export function postLoginAction(
       account_name: accountName,
       password: password,
     })
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (response.status !== 200) {
-          throw new Error('HTTP status not 200');
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: LoginRes) => {
         dispatch(

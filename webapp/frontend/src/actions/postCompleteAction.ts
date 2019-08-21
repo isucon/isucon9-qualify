@@ -2,8 +2,9 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action, AnyAction } from 'redux';
-import { CompleteReq, CompleteRes } from '../types/appApiTypes';
+import { CompleteReq, CompleteRes, ErrorRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
+import { AppResponseError } from '../errors/AppResponseError';
 
 export const POST_COMPLETE_START = 'POST_COMPLETE_START';
 export const POST_COMPLETE_SUCCESS = 'POST_COMPLETE_SUCCESS';
@@ -22,12 +23,13 @@ export function postCompleteAction(itemId: number): ThunkResult<void> {
           item_id: itemId,
         } as CompleteReq);
       })
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (response.status !== 200) {
-          throw new Error('HTTP status not 200');
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: CompleteRes) => {
         dispatch(postCompleteSuccessAction());
@@ -69,10 +71,10 @@ export interface PostCompleteFailAction
 }
 
 export function postCompleteFailAction(
-  newErros: FormErrorState,
+  newErrors: FormErrorState,
 ): PostCompleteFailAction {
   return {
     type: POST_COMPLETE_FAIL,
-    payload: newErros,
+    payload: newErrors,
   };
 }
