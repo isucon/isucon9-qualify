@@ -2,6 +2,7 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
 import {
+  ErrorRes,
   ItemDetail,
   ItemSimple,
   UserItemsRes,
@@ -31,10 +32,8 @@ async function fetchUserPageData(
   const userDataRes: Response = await AppClient.get(`/users/${userId}.json`);
 
   if (!userDataRes.ok) {
-    throw new AppResponseError(
-      `Fetching data from /users/${userId} was failed`,
-      userDataRes,
-    );
+    const errRes: ErrorRes = await userDataRes.json();
+    throw new AppResponseError(errRes.error, userDataRes);
   }
 
   const userData: UserItemsRes = await userDataRes.json();
@@ -47,10 +46,8 @@ async function fetchUserPageData(
     );
 
     if (!transactionRes.ok) {
-      throw new AppResponseError(
-        `Fetching data from /users/transactions.json was failed`,
-        transactionRes,
-      );
+      const errRes: ErrorRes = await userDataRes.json();
+      throw new AppResponseError(errRes.error, transactionRes);
     }
 
     transactions = await transactionRes.json();

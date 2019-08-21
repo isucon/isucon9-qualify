@@ -2,8 +2,9 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action, AnyAction } from 'redux';
-import { ShipReq, ShipRes } from '../types/appApiTypes';
+import { ErrorRes, ShipReq, ShipRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
+import { AppResponseError } from '../errors/AppResponseError';
 
 export const POST_SHIPPED_START = 'POST_SHIPPED_START';
 export const POST_SHIPPED_SUCCESS = 'POST_SHIPPED_SUCCESS';
@@ -22,12 +23,13 @@ export function postShippedAction(itemId: number): ThunkResult<void> {
           item_id: itemId,
         } as ShipReq);
       })
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (response.status !== 200) {
-          throw new Error('HTTP status not 200');
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: ShipRes) => {
         dispatch(postShippedSuccessAction());

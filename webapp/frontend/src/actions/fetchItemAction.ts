@@ -1,7 +1,7 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action, AnyAction } from 'redux';
-import { GetItemRes } from '../types/appApiTypes';
+import { ErrorRes, GetItemRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { ItemData } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
@@ -20,19 +20,17 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
         dispatch(fetchItemStartAction());
       })
       .then(() => AppClient.get(`/items/${itemId}.json`))
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (!response.ok) {
           if (response.status === 404) {
             throw new NotFoundError('Item not found');
           }
 
-          throw new AppResponseError(
-            'Request for getting item data was failed',
-            response,
-          );
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: GetItemRes) => {
         dispatch(
