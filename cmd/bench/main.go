@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -85,7 +86,10 @@ func main() {
 
 	log.Print("=== validation ===")
 
-	scenario.Validation(cerr)
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(20*time.Second))
+	defer cancel()
+
+	scenario.Validation(ctx, cerr)
 
 	criticalMsgs = cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {

@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -119,25 +120,34 @@ func Verify() *fails.Critical {
 	return critical
 }
 
-func Validation(critical *fails.Critical) {
+func Validation(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
+	closed := make(chan struct{})
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		check(critical)
+		check(ctx, critical)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		load(critical)
+		load(ctx, critical)
 	}()
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(closed)
+	}()
+
+	select {
+	case <-closed:
+	case <-ctx.Done():
+	}
 }
 
-func check(critical *fails.Critical) {
+func check(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 
 	user1, user2, user3 := asset.GetRandomUser(), asset.GetRandomUser(), asset.GetRandomUser()
@@ -145,6 +155,8 @@ func check(critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+	L:
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
@@ -153,13 +165,19 @@ func check(critical *fails.Critical) {
 				critical.Add(err)
 			}
 
-			<-ch
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+	L:
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
@@ -168,15 +186,20 @@ func check(critical *fails.Critical) {
 				critical.Add(err)
 			}
 
-			<-ch
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
 		}
 	}()
 
 	wg.Wait()
 }
 
-func load(critical *fails.Critical) {
+func load(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
+	closed := make(chan struct{})
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
@@ -196,23 +219,30 @@ func load(critical *fails.Critical) {
 				return
 			}
 
+		L:
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
 				err := loadSellNewCategoryBuyWithLoginedSession(s1, s2)
 				if err != nil {
 					critical.Add(err)
-					<-ch
-					continue
+
+					goto Last
 				}
 
 				err = loadSellNewCategoryBuyWithLoginedSession(s2, s1)
 				if err != nil {
 					critical.Add(err)
-					<-ch
-					continue
+
+					goto Last
 				}
-				<-ch
+
+			Last:
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
 			}
 		}()
 	}
@@ -236,34 +266,50 @@ func load(critical *fails.Critical) {
 				return
 			}
 
+		L:
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
 				targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
 				if err != nil {
 					critical.Add(err)
-					<-ch
-					continue
+
+					goto Last
 				}
 
 				err = userItemsAndItemWithLoginedSession(s1, user2.ID)
 				if err != nil {
 					critical.Add(err)
-					<-ch
-					continue
+
+					goto Last
 				}
 
 				err = buyComplete(s1, s2, targetItemID)
 				if err != nil {
 					critical.Add(err)
+
+					goto Last
 				}
 
-				<-ch
+			Last:
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
 			}
 		}()
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(closed)
+	}()
+
+	select {
+	case <-closed:
+	case <-ctx.Done():
+	}
 }
 
 func FinalCheck(critical *fails.Critical) {}
