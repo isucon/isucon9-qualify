@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"time"
 
-	"golang.org/x/xerrors"
+	"github.com/morikuni/failure"
 )
 
 const (
@@ -61,17 +61,17 @@ func newTargetURLs(appURL, targetHost, paymentURL, shipmentURL string) (*TargetU
 
 	appParsedURL, err := urlParse(appURL)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to parse url: %s: %w", appURL, err)
+		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("failed to parse url: %s", appURL)))
 	}
 
 	paymentParsedURL, err := urlParse(paymentURL)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to parse url: %s: %w", paymentURL, err)
+		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("failed to parse url: %s", paymentURL)))
 	}
 
 	shipmentParsedURL, err := urlParse(shipmentURL)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to parse url: %s: %w", shipmentURL, err)
+		return nil, failure.Wrap(err, failure.Message(fmt.Sprintf("failed to parse url: %s", shipmentURL)))
 	}
 
 	return &TargetURLs{
