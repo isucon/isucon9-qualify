@@ -404,12 +404,6 @@ func (s *ServerShipment) statusHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func (s *ServerShipment) ForceDone(key string) bool {
-	_, ok := s.shipmentCache.SetStatus(key, StatusDone)
-
-	return ok
-}
-
 func (s *ServerShipment) ForceSetStatus(key string, status string) bool {
 	_, ok := s.shipmentCache.SetStatus(key, status)
 

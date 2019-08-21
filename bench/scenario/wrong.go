@@ -162,7 +162,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 		return err
 	}
 
-	ok := sShipment.ForceDone(reserveID)
+	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
 		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
 	}

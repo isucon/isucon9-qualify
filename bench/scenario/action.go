@@ -68,9 +68,9 @@ func buyComplete(s1, s2 *session.Session, targetItemID int64) error {
 		return err
 	}
 
-	ok := sShipment.ForceDone(reserveID)
+	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
+		return failure.New(ErrScenario, failure.Message("配送予約IDに誤りがあります"))
 	}
 
 	err = s2.Complete(targetItemID)
