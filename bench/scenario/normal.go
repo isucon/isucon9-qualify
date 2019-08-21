@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/isucon/isucon9-qualify/bench/action"
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -28,40 +29,12 @@ func initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
 }
 
 func sellAndBuy(user1, user2 asset.AppUser) error {
-	s1, err := session.NewSession()
+	s1, err := action.LoginedSession(user1)
 	if err != nil {
 		return err
 	}
 
-	s2, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	seller, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user1.Equal(seller) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s1.SetSettings()
-	if err != nil {
-		return err
-	}
-
-	buyer, err := s2.Login(user2.AccountName, user2.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user2.Equal(buyer) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s2.SetSettings()
+	s2, err := action.LoginedSession(user2)
 	if err != nil {
 		return err
 	}
@@ -112,30 +85,7 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 	return nil
 }
 
-func loginedSession(user1 asset.AppUser) (*session.Session, error) {
-	s1, err := session.NewSession()
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	if !user1.Equal(user) {
-		return nil, failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s1.SetSettings()
-	if err != nil {
-		return nil, err
-	}
-
-	return s1, nil
-}
-
-func sellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
+func loadSellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
 	targetItemID, err := s1.Sell("abcd", 100, "description description", 32)
 	if err != nil {
 		return err
@@ -189,21 +139,7 @@ func sellNewCategoryBuyWithLoginedSession(s1, s2 *session.Session) error {
 }
 
 func transactionEvidence(user1 asset.AppUser) error {
-	s1, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	user, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user1.Equal(user) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s1.SetSettings()
+	s1, err := action.LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -252,21 +188,7 @@ func transactionEvidence(user1 asset.AppUser) error {
 }
 
 func userItemsAndItem(user1, user2 asset.AppUser) error {
-	s1, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	viewer, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user1.Equal(viewer) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s1.SetSettings()
+	s1, err := action.LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -328,40 +250,12 @@ func userItemsAndItem(user1, user2 asset.AppUser) error {
 }
 
 func bumpAndNewItems(user1, user2 asset.AppUser) error {
-	s1, err := session.NewSession()
+	s1, err := action.LoginedSession(user1)
 	if err != nil {
 		return err
 	}
 
-	s2, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	seller, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user1.Equal(seller) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s1.SetSettings()
-	if err != nil {
-		return err
-	}
-
-	buyer, err := s2.Login(user2.AccountName, user2.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user2.Equal(buyer) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s2.SetSettings()
+	s2, err := action.LoginedSession(user2)
 	if err != nil {
 		return err
 	}
@@ -455,21 +349,7 @@ func bumpAndNewItems(user1, user2 asset.AppUser) error {
 }
 
 func itemEdit(user1 asset.AppUser) error {
-	s1, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	seller, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user1.Equal(seller) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s1.SetSettings()
+	s1, err := action.LoginedSession(user1)
 	if err != nil {
 		return err
 	}
@@ -487,21 +367,7 @@ func itemEdit(user1 asset.AppUser) error {
 }
 
 func newCategoryItems(user1 asset.AppUser) error {
-	s1, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	seller, err := s1.Login(user1.AccountName, user1.Password)
-	if err != nil {
-		return err
-	}
-
-	if !user1.Equal(seller) {
-		return failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
-	}
-
-	err = s1.SetSettings()
+	s1, err := action.LoginedSession(user1)
 	if err != nil {
 		return err
 	}
