@@ -121,6 +121,14 @@ export interface SellRes extends Response {
 }
 
 /**
+ * POST /bump
+ */
+export interface BumpReq {
+  item_id: number;
+}
+export interface BumpRes extends ItemEditRes {}
+
+/**
  * GET /settings
  */
 export interface SettingsRes {

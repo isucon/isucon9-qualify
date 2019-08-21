@@ -17,17 +17,14 @@ const useStyles = makeStyles(theme => ({
 
 type Props = {
   price: number;
-  onClick: (e: React.MouseEvent) => void;
-  buttonText: string;
-  disabled: boolean;
+  buttons: {
+    onClick: (e: React.MouseEvent) => void;
+    buttonText: string;
+    disabled: boolean;
+  }[];
 };
 
-const ItemFooterComponent: React.FC<Props> = ({
-  price,
-  onClick,
-  buttonText,
-  disabled,
-}) => {
+const ItemFooterComponent: React.FC<Props> = ({ price, buttons }) => {
   const classes = useStyles();
 
   return (
@@ -36,16 +33,20 @@ const ItemFooterComponent: React.FC<Props> = ({
         <Grid item>
           <Typography variant="h5">{price}ｲｽｺｲﾝ</Typography>
         </Grid>
-        <Grid item>
-          <Button
-            variant="contained"
-            className={classes.buyButton}
-            onClick={onClick}
-            disabled={disabled}
-          >
-            {buttonText}
-          </Button>
-        </Grid>
+        {buttons.map(button => {
+          return (
+            <Grid item>
+              <Button
+                variant="contained"
+                className={classes.buyButton}
+                onClick={button.onClick}
+                disabled={button.disabled}
+              >
+                {button.buttonText}
+              </Button>
+            </Grid>
+          );
+        })}
       </Grid>
     </AppBar>
   );
