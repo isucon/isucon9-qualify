@@ -4,8 +4,8 @@
 
   roles:
     - bootstrap
-    - users.isucon
-    - users.isucon_admin
+    - user.isucon
+    - user.isucon_admin
     - dev.deploy
 
     - kernel-tune
