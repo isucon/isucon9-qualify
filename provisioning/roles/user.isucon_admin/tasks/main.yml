@@ -24,6 +24,15 @@
     group: root
     mode: 0440
 
+- name: Create dot ssh directory
+  become: yes
+  file:
+    path: /home/isucon_admin/.ssh
+    state: directory
+    owner: isucon_admin
+    group: isucon_admin
+    mode: 0700
+
 - name: Copy admin public keys to authorized_keys
   copy:
     src: authorized_keys
