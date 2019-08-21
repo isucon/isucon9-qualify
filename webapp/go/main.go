@@ -241,7 +241,8 @@ type reqPostShip struct {
 }
 
 type resPostShip struct {
-	Path string `json:"path"`
+	Path      string `json:"path"`
+	ReserveID string `json:"reserve_id"`
 }
 
 type reqPostShipDone struct {
@@ -1569,7 +1570,8 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	rps := resPostShip{
-		Path: fmt.Sprintf("/transactions/%d.png", transactionEvidence.ID),
+		Path:      fmt.Sprintf("/transactions/%d.png", transactionEvidence.ID),
+		ReserveID: shipping.ReserveID,
 	}
 	json.NewEncoder(w).Encode(rps)
 }
