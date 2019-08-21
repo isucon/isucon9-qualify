@@ -188,9 +188,13 @@ class ItemPage extends React.Component<Props> {
         </Grid>
         <ItemFooterComponent
           price={item.price}
-          onClick={onClick}
-          buttonText={buttonText}
-          disabled={disableButton}
+          buttons={[
+            {
+              onClick,
+              buttonText,
+              disabled: disableButton,
+            },
+          ]}
         />
       </BasePageContainer>
     );
