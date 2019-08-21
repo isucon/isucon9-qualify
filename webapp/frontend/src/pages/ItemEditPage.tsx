@@ -17,6 +17,8 @@ import LoadingComponent from '../components/LoadingComponent';
 import { ErrorMessageComponent } from '../components/ErrorMessageComponent';
 import validator from 'validator';
 import InternalServerErrorPage from './error/InternalServerErrorPage';
+import { Link as RouteLink } from 'react-router-dom';
+import { routes } from '../routes/Route';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
@@ -121,6 +123,9 @@ class ItemEditPage extends React.Component<Props, State> {
           >
             編集する
           </Button>
+          <RouteLink to={routes.item.getPath(item.id)}>
+            商品ページへ戻る
+          </RouteLink>
         </form>
       </BasePageContainer>
     );

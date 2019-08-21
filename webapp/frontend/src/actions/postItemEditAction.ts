@@ -2,9 +2,10 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action, AnyAction } from 'redux';
-import { ItemEditReq, ItemEditRes } from '../types/appApiTypes';
+import { ErrorRes, ItemEditReq, ItemEditRes } from '../types/appApiTypes';
 import { push } from 'connected-react-router';
 import { routes } from '../routes/Route';
+import { AppResponseError } from '../errors/AppResponseError';
 
 export const POST_ITEM_EDIT_START = 'POST_ITEM_EDIT_START';
 export const POST_ITEM_EDIT_SUCCESS = 'POST_ITEM_EDIT_SUCCESS';
@@ -31,12 +32,13 @@ export function postItemEditAction(
         }
         return AppClient.post('/items/edit', reqParams);
       })
-      .then((response: Response) => {
+      .then(async (response: Response) => {
         if (response.status !== 200) {
-          throw new Error('HTTP status not 200');
+          const errRes: ErrorRes = await response.json();
+          throw new AppResponseError(errRes.error, response);
         }
 
-        return response.json();
+        return await response.json();
       })
       .then((body: ItemEditRes) => {
         dispatch(postItemEditSuccessAction());
@@ -47,7 +49,7 @@ export function postItemEditAction(
       .catch((err: Error) => {
         dispatch(
           postItemEditFailAction({
-            error: err.message,
+            itemEditFormError: err.message,
           }),
         );
       });

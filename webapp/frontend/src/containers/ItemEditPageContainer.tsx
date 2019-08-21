@@ -10,7 +10,7 @@ const mapStateToProps = (state: AppState) => ({
   loading: state.page.isItemLoading,
   item: state.viewingItem.item,
   errorType: state.error.errorType,
-  formError: 'TODO',
+  formError: state.formError.itemEditFormError,
 });
 const mapDispatchToProps = (
   dispatch: ThunkDispatch<AppState, undefined, AnyAction>,

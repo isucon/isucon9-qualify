@@ -1,12 +1,25 @@
-import { LOGIN_FAIL } from '../actions/authenticationActions';
+import { LOGIN_FAIL, LoginFailAction } from '../actions/authenticationActions';
 import { AnyAction } from 'redux';
-import { REGISTER_FAIL } from '../actions/registerAction';
-import { SELLING_ITEM_FAIL } from '../actions/sellingItemAction';
-import { BUY_FAIL, USING_CARD_FAIL } from '../actions/buyAction';
+import { REGISTER_FAIL, RegisterFailAction } from '../actions/registerAction';
+import {
+  SELLING_ITEM_FAIL,
+  SellingFailAction,
+} from '../actions/sellingItemAction';
+import {
+  BUY_FAIL,
+  BuyFailAction,
+  USING_CARD_FAIL,
+  UsingCardFailAction,
+} from '../actions/buyAction';
+import {
+  POST_ITEM_EDIT_FAIL,
+  PostItemEditFailAction,
+} from '../actions/postItemEditAction';
 
 export interface FormErrorState {
   error?: string;
   buyFormError?: BuyFormErrorState;
+  itemEditFormError?: string;
 }
 
 export interface BuyFormErrorState {
@@ -17,11 +30,21 @@ export interface BuyFormErrorState {
 const initialState: FormErrorState = {
   error: undefined,
   buyFormError: {},
+  itemEditFormError: undefined,
 };
+
+type Actions =
+  | AnyAction
+  | PostItemEditFailAction
+  | LoginFailAction
+  | RegisterFailAction
+  | UsingCardFailAction
+  | BuyFailAction
+  | SellingFailAction;
 
 const formError = (
   state: FormErrorState = initialState,
-  action: AnyAction,
+  action: Actions,
 ): FormErrorState => {
   switch (action.type) {
     case LOGIN_FAIL:
@@ -33,6 +56,11 @@ const formError = (
         ...action.payload,
       };
     }
+    case POST_ITEM_EDIT_FAIL:
+      return {
+        ...state,
+        itemEditFormError: action.payload.itemEditFormError,
+      };
     default:
       return initialState;
   }
