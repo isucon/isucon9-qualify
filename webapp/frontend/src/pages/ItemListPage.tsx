@@ -46,6 +46,7 @@ class ItemListPage extends React.Component<Props> {
         return (
           <div className={classes.root}>
             <Typography variant="h5">出品されている商品はありません</Typography>
+            <SellingButtonContainer />
           </div>
         );
       }
