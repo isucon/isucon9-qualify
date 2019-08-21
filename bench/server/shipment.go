@@ -2,11 +2,11 @@ package server
 
 import (
 	"bufio"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"hash"
-	"image/png"
 	"log"
 	"math/rand"
 	"net/http"
@@ -15,8 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boombuler/barcode"
-	"github.com/boombuler/barcode/qr"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 var (
@@ -51,6 +50,7 @@ type shipment struct {
 	FromName    string `json:"from_name"`
 
 	Status          string    `json:"-"`
+	QRMD5           string    `json:"-"`
 	ReserveDatetime time.Time `json:"-"`
 	DoneDatetime    time.Time `json:"-"`
 }
@@ -100,6 +100,21 @@ func (c *shipmentStore) SetStatus(key string, status string) (shipment, bool) {
 		return shipment{}, false
 	}
 	value.Status = status
+
+	c.items[key] = value
+
+	return value, true
+}
+
+func (c *shipmentStore) SetQRMD5(key string, str string) (shipment, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	value, ok := c.items[key]
+	if !ok {
+		return shipment{}, false
+	}
+	value.QRMD5 = str
 
 	c.items[key] = value
 
@@ -309,10 +324,11 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 		log.Print(msg)
 	}
 
-	qrCode, _ := qr.Encode(msg, qr.L, qr.Auto)
-	qrCode, _ = barcode.Scale(qrCode, 256, 256)
+	png, _ := qrcode.Encode(msg, qrcode.Low, 256)
 
-	png.Encode(w, qrCode)
+	s.shipmentCache.SetQRMD5(req.ReserveID, fmt.Sprintf("%s", md5.Sum(png)))
+
+	w.Write(png)
 }
 
 func (s *ServerShipment) acceptHandler(w http.ResponseWriter, r *http.Request) {
@@ -328,13 +344,7 @@ func (s *ServerShipment) acceptHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok := false
-	if s.debug {
-		_, ok = s.shipmentCache.SetStatusWithDone(id, time.Now().Add(5*time.Second))
-	} else {
-		_, ok = s.shipmentCache.SetStatus(id, StatusShipping)
-	}
-
+	_, ok := s.shipmentCache.SetStatusWithDone(id, time.Now().Add(5*time.Second))
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
@@ -395,4 +405,19 @@ func (s *ServerShipment) ForceDone(key string) bool {
 	_, ok := s.shipmentCache.SetStatus(key, StatusDone)
 
 	return ok
+}
+
+func (s *ServerShipment) ForceSetStatus(key string, status string) bool {
+	_, ok := s.shipmentCache.SetStatus(key, status)
+
+	return ok
+}
+
+func (s *ServerShipment) CheckQRMD5(key string, md5Str string) bool {
+	val, ok := s.shipmentCache.Get(key)
+	if !ok {
+		return false
+	}
+
+	return val.QRMD5 == md5Str
 }

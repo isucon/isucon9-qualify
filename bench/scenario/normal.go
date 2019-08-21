@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
+	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
 )
@@ -77,24 +78,19 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	apath, err := s1.Ship(targetItemID)
+	reserveID, apath, err := s1.Ship(targetItemID)
 	if err != nil {
 		return err
 	}
 
-	surl, err := s1.DecodeQRURL(apath)
+	md5Str, err := s1.DownloadQRURL(apath)
 	if err != nil {
 		return err
 	}
 
-	s3, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	err = s3.ShipmentAccept(surl)
-	if err != nil {
-		return err
+	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
+	if !sShipment.CheckQRMD5(reserveID, md5Str) {
+		return failure.New(ErrScenario, failure.Message("QRコードの画像に誤りがあります"))
 	}
 
 	err = s1.ShipDone(targetItemID)
@@ -102,7 +98,7 @@ func sellAndBuy(user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	ok := sShipment.ForceDone(surl.Query().Get("id"))
+	ok := sShipment.ForceDone(reserveID)
 	if !ok {
 		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
 	}
@@ -152,24 +148,19 @@ func sellAndBuyWithLoginedSession(s1, s2 *session.Session) error {
 		return err
 	}
 
-	apath, err := s1.Ship(targetItemID)
+	reserveID, apath, err := s1.Ship(targetItemID)
 	if err != nil {
 		return err
 	}
 
-	surl, err := s1.DecodeQRURL(apath)
+	md5Str, err := s1.DownloadQRURL(apath)
 	if err != nil {
 		return err
 	}
 
-	s3, err := session.NewSession()
-	if err != nil {
-		return err
-	}
-
-	err = s3.ShipmentAccept(surl)
-	if err != nil {
-		return err
+	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
+	if !sShipment.CheckQRMD5(reserveID, md5Str) {
+		return failure.New(ErrScenario, failure.Message("QRコードの画像に誤りがあります"))
 	}
 
 	err = s1.ShipDone(targetItemID)
@@ -177,7 +168,7 @@ func sellAndBuyWithLoginedSession(s1, s2 *session.Session) error {
 		return err
 	}
 
-	ok := sShipment.ForceDone(surl.Query().Get("id"))
+	ok := sShipment.ForceDone(reserveID)
 	if !ok {
 		return failure.New(ErrScenario, failure.Message("QRコードのURLに誤りがあります"))
 	}
