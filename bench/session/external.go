@@ -3,6 +3,8 @@ package session
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/morikuni/failure"
@@ -35,9 +37,14 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 	}
 	defer res.Body.Close()
 
-	msg, err := checkStatusCode(res, http.StatusOK)
-	if err != nil {
-		return "", failure.Wrap(err, failure.Message("[payment service] /card: "+msg))
+	if res.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return "", failure.Wrap(err, failure.Message("[payment service] /card: bodyの読み込みに失敗しました"))
+		}
+		return "", failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), ErrSession,
+			failure.Messagef("[payment service] /card: got response status code %d; expected %d", res.StatusCode, http.StatusOK),
+		)
 	}
 
 	rc := &resCard{}
