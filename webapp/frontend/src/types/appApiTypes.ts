@@ -73,6 +73,7 @@ export interface RegisterRes extends Response {
   id: number;
   account_name: string;
   address: string;
+  num_sell_items: number;
 }
 
 /**
@@ -91,16 +92,30 @@ export interface LoginRes {
 export interface GetItemRes extends ItemDetail {}
 
 /**
+ * POST /items/edit
+ */
+export interface ItemEditReq {
+  item_id: number;
+  item_price: number;
+}
+
+export interface ItemEditRes {
+  item_id: number;
+  item_price: number;
+  item_created_at: number;
+  item_updated_at: number;
+}
+
+/**
  * POST /sell
  */
-// Request
 export interface SellReq {
   name: string;
   price: number;
   description: string;
   category_id: number;
 }
-// Response
+
 export interface SellRes extends Response {
   id: number;
 }
@@ -108,7 +123,6 @@ export interface SellRes extends Response {
 /**
  * GET /settings
  */
-// Response
 export interface SettingsRes {
   csrf_token: string;
   user?: User;
@@ -118,7 +132,6 @@ export interface SettingsRes {
 /**
  * POST /buy
  */
-// Request
 export interface BuyReq {
   item_id: number;
   token: string;
