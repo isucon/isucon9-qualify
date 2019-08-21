@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/isucon/isucon9-qualify/bench/action"
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/server"
@@ -178,13 +177,13 @@ func load(critical *fails.Critical) {
 			defer wg.Done()
 
 			user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
-			s1, err := action.LoginedSession(user1)
+			s1, err := LoginedSession(user1)
 			if err != nil {
 				critical.Add(err)
 				return
 			}
 
-			s2, err := action.LoginedSession(user2)
+			s2, err := LoginedSession(user2)
 			if err != nil {
 				critical.Add(err)
 				return
