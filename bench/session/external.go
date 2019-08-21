@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/isucon/isucon9-qualify/bench/fails"
-	"golang.org/x/xerrors"
+	"github.com/morikuni/failure"
 )
 
 type reqCard struct {
@@ -27,51 +26,54 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.PaymentURL, "/card", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: リクエストに失敗しました")
+		return "", failure.Wrap(err, failure.Message("[payment service] /card: リクエストに失敗しました"))
 	}
 
 	req.Header.Add("Origin", "http://localhost:8000")
 
 	res, err := s.Do(req)
 	if err != nil {
-		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: リクエストに失敗しました")
+		return "", failure.Wrap(err, failure.Message("[payment service] /card: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: "+msg)
+		return "", failure.Wrap(err, failure.Message("[payment service] /card: "+msg))
 	}
 
 	rc := &resCard{}
 	err = json.NewDecoder(res.Body).Decode(rc)
 	if err != nil {
-		return "", fails.NewError(xerrors.Errorf("error in session: %v", err), "[payment service] /card: JSONデコードに失敗しました")
+		return "", failure.Wrap(err, failure.Message("[payment service] /card: JSONデコードに失敗しました"))
 	}
 
 	return rc.Token, nil
 }
 
 func (s *Session) ShipmentAccept(surl *url.URL) error {
+	surl.Host = ShareTargetURLs.ShipmentURL.Host
+	surl.Scheme = ShareTargetURLs.ShipmentURL.Scheme
+
 	req, err := s.newGetRequest(*surl, "")
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("[shipment service] /accept: リクエストに失敗しました"))
 	}
 
 	res, err := s.Do(req)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: リクエストに失敗しました")
+		return failure.Wrap(err, failure.Message("[shipment service] /accept: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
 	msg, err := checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: "+msg)
+		return failure.Wrap(err, failure.Message("[shipment service] /accept: "+msg))
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return fails.NewError(xerrors.Errorf("error in session: %v", err), "[shipment service] /accept: bodyの読み込みに失敗しました")
+		return failure.Wrap(err, failure.Message("[shipment service] /accept: bodyの読み込みに失敗しました"))
 	}
 
 	return nil

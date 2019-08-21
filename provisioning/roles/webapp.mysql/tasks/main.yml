@@ -19,5 +19,5 @@
 - name: Init data
   shell: mysql < initial.sql
   args:
-    chdir: /home/isucon/isucari/initial-data/result/
+    chdir: /home/isucon/isucari/webapp/sql
   become: yes

@@ -1,15 +1,10 @@
 - hosts: localhost
   user: root
   gather_facts: yes
-  vars_prompt:
-    - name: "target"
-      prompt: "Target: vagrant or local?"
-      default: "vagrant"
 
   roles:
     - bootstrap
-
-    - { role: vagrant-specific, when: target == "vagrant" }
+    - dev.deploy
 
     - kernel-tune
     - nginx

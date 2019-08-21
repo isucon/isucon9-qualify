@@ -100,9 +100,22 @@ func (c *shipmentStore) SetStatus(key string, status string) (shipment, bool) {
 		return shipment{}, false
 	}
 	value.Status = status
-	if status == StatusShipping {
-		value.DoneDatetime = time.Now().Add(5 * time.Second)
+
+	c.items[key] = value
+
+	return value, true
+}
+
+func (c *shipmentStore) SetStatusWithDone(key string, doneDatetime time.Time) (shipment, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	value, ok := c.items[key]
+	if !ok {
+		return shipment{}, false
 	}
+	value.Status = StatusShipping
+	value.DoneDatetime = doneDatetime
 
 	c.items[key] = value
 
@@ -140,13 +153,16 @@ type createRes struct {
 }
 
 type ServerShipment struct {
+	debug         bool
 	shipmentCache *shipmentStore
 
 	Server
 }
 
-func NewShipment() *ServerShipment {
-	s := &ServerShipment{}
+func NewShipment(debug bool) *ServerShipment {
+	s := &ServerShipment{
+		debug: debug,
+	}
 
 	s.shipmentCache = NewShipmentStore()
 
@@ -288,7 +304,10 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 	u.RawQuery = q.Encode()
 
 	msg := u.String()
-	log.Print(msg)
+
+	if s.debug {
+		log.Print(msg)
+	}
 
 	qrCode, _ := qr.Encode(msg, qr.L, qr.Auto)
 	qrCode, _ = barcode.Scale(qrCode, 256, 256)
@@ -309,7 +328,13 @@ func (s *ServerShipment) acceptHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok := s.shipmentCache.SetStatus(id, StatusShipping)
+	ok := false
+	if s.debug {
+		_, ok = s.shipmentCache.SetStatusWithDone(id, time.Now().Add(5*time.Second))
+	} else {
+		_, ok = s.shipmentCache.SetStatus(id, StatusShipping)
+	}
+
 	if !ok {
 		b, _ := json.Marshal(errorRes{Error: "empty"})
 
@@ -364,4 +389,10 @@ func (s *ServerShipment) statusHandler(w http.ResponseWriter, r *http.Request) {
 	res.ReserveTime = ship.ReserveDatetime.Unix()
 
 	json.NewEncoder(w).Encode(res)
+}
+
+func (s *ServerShipment) ForceDone(key string) bool {
+	_, ok := s.shipmentCache.SetStatus(key, StatusDone)
+
+	return ok
 }

@@ -16,7 +16,7 @@ open(my $te_fh, ">", "result/transaction_evidences_json.txt") or die $!;
 open(my $shippings_fh, ">", "result/shippings_json.txt") or die $!;
 
 my $BASE_PRICE = 100;
-my $NUM_USER_GENERATE = 200;
+my $NUM_USER_GENERATE = 1000;
 my $NUM_ITEM_GENERATE = 10000;
 my $RATE_OF_SOLDOUT = 30;
 

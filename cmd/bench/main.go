@@ -46,10 +46,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = server.RunServer(5555, 7000)
+	sp, ss, err := server.RunServer(5555, 7000)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	scenario.SetShipment(ss)
+	scenario.SetPayment(sp)
 
 	err = session.SetShareTargetURLs(
 		conf.TargetURLStr,
