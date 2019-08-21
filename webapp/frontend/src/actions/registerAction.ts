@@ -29,6 +29,7 @@ export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
             userId: body.id,
             accountName: body.account_name,
             address: body.address,
+            numSellItems: body.num_sell_items,
           }),
         );
         dispatch(push(routes.top.path));
@@ -56,6 +57,7 @@ export function registerSuccessAction(newAuthState: {
   userId: number;
   accountName: string;
   address: string;
+  numSellItems: number;
 }): RegisterSuccessAction {
   return {
     type: REGISTER_SUCCESS,

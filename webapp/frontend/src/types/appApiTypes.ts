@@ -73,6 +73,7 @@ export interface RegisterRes extends Response {
   id: number;
   account_name: string;
   address: string;
+  num_sell_items: number;
 }
 
 /**
