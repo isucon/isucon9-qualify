@@ -1,17 +1,13 @@
 import { connect } from 'react-redux';
 import { AppState } from '../index';
-import { fetchSettings } from '../actions/settingsAction';
 import BasePageComponent from '../components/BasePageComponent';
+import { Dispatch } from 'redux';
 
 const mapStateToProps = (state: AppState) => ({
   loading: state.page.isLoading,
   alreadyLoaded: state.authStatus.checked,
 });
-const mapDispatchToProps = (dispatch: any) => ({
-  load: () => {
-    dispatch(fetchSettings());
-  },
-});
+const mapDispatchToProps = (dispatch: Dispatch) => ({});
 
 export default connect(
   mapStateToProps,
