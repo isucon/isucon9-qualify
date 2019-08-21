@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"github.com/isucon/isucon9-qualify/bench/asset"
+	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
@@ -11,8 +12,6 @@ const (
 	CorrectCardNumber = "AAAAAAAA"
 	FailedCardNumber  = "FA10AAAA"
 	IsucariShopID     = "11"
-
-	ErrScenario failure.StringCode = "error scenario"
 )
 
 func LoginedSession(user1 asset.AppUser) (*session.Session, error) {
@@ -27,7 +26,7 @@ func LoginedSession(user1 asset.AppUser) (*session.Session, error) {
 	}
 
 	if !user1.Equal(user) {
-		return nil, failure.New(ErrScenario, failure.Message("ログインが失敗しています"))
+		return nil, failure.New(fails.ErrApplication, failure.Message("ログインが失敗しています"))
 	}
 
 	err = s1.SetSettings()
@@ -60,7 +59,7 @@ func buyComplete(s1, s2 *session.Session, targetItemID int64) error {
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		return failure.New(ErrScenario, failure.Message("QRコードの画像に誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Message("QRコードの画像に誤りがあります"))
 	}
 
 	err = s1.ShipDone(targetItemID)
@@ -70,7 +69,7 @@ func buyComplete(s1, s2 *session.Session, targetItemID int64) error {
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(ErrScenario, failure.Message("配送予約IDに誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
 	}
 
 	err = s2.Complete(targetItemID)

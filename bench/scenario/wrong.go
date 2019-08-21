@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
+	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
@@ -143,7 +144,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		return failure.New(ErrScenario, failure.Message("QRコードの画像に誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Message("QRコードの画像に誤りがあります"))
 	}
 
 	// 他人はship_doneできない
@@ -164,7 +165,7 @@ func irregularSellAndBuy(user1, user2, user3 asset.AppUser) error {
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(ErrScenario, failure.Message("配送予約IDに誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
 	}
 
 	err = s2.Complete(targetItemID)

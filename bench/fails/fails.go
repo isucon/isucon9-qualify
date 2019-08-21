@@ -7,6 +7,12 @@ import (
 	"github.com/morikuni/failure"
 )
 
+const (
+	ErrApplication failure.StringCode = "error application"
+	ErrSession     failure.StringCode = "error session"
+	ErrTimeout     failure.StringCode = "error timeout"
+)
+
 type Critical struct {
 	Msgs []string
 	mu   sync.Mutex
@@ -37,6 +43,11 @@ func (c *Critical) Add(err error) {
 	log.Printf("%+v", err)
 
 	if msg, ok := failure.MessageOf(err); ok {
+		switch c, _ := failure.CodeOf(err); c {
+		case ErrTimeout:
+			msg += "（タイムアウトしました）"
+		}
+
 		c.Msgs = append(c.Msgs, msg)
 	} else {
 		c.Msgs = append(c.Msgs, "運営に連絡してください")

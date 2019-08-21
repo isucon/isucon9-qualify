@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/morikuni/failure"
 )
 
@@ -42,7 +43,7 @@ func (s *Session) PaymentCard(cardNumber, shopID string) (token string, err erro
 		if err != nil {
 			return "", failure.Wrap(err, failure.Message("[payment service] /card: bodyの読み込みに失敗しました"))
 		}
-		return "", failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), ErrSession,
+		return "", failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrApplication,
 			failure.Messagef("[payment service] /card: got response status code %d; expected %d", res.StatusCode, http.StatusOK),
 		)
 	}

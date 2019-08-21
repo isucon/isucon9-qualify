@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"time"
 
+	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/morikuni/failure"
 )
 
@@ -17,8 +19,6 @@ const (
 	DefaultAPITimeout = 10
 
 	userAgent = "benchmarker/isucon9-qualify"
-
-	ErrSession failure.StringCode = "error session"
 )
 
 type Session struct {
@@ -179,7 +179,7 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) error {
 		if err != nil {
 			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました"))
 		}
-		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), ErrSession,
+		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrSession,
 			failure.Messagef("%s: got response status code %d; expected %d", prefixMsg, res.StatusCode, expectedStatusCode),
 		)
 	}
@@ -190,7 +190,11 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) error {
 func (s *Session) Do(req *http.Request) (*http.Response, error) {
 	res, err := s.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+			return nil, failure.Translate(err, fails.ErrTimeout)
+		}
+
+		return nil, failure.Wrap(err)
 	}
 
 	return res, nil

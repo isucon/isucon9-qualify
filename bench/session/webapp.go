@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
+	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/morikuni/failure"
 )
 
@@ -207,10 +208,6 @@ type resUserItems struct {
 	Items   []ItemSimple `json:"items"`
 }
 
-const (
-	ErrApplication failure.StringCode = "error application"
-)
-
 func (s *Session) Initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
 	b, _ := json.Marshal(reqInitialize{
 		PaymentServiceURL:  paymentServiceURL,
@@ -295,11 +292,11 @@ func (s *Session) SetSettings() error {
 	}
 
 	if rs.CSRFToken == "" {
-		return failure.New(ErrApplication, failure.Message("GET /settings: csrf tokenが空です"))
+		return failure.New(fails.ErrApplication, failure.Message("GET /settings: csrf tokenが空です"))
 	}
 
 	if rs.User == nil || rs.User.ID == 0 {
-		return failure.New(ErrApplication, failure.Message("GET /settings: userが空です"))
+		return failure.New(fails.ErrApplication, failure.Message("GET /settings: userが空です"))
 	}
 
 	s.UserID = rs.User.ID
@@ -423,11 +420,11 @@ func (s *Session) Ship(itemID int64) (reserveID, apath string, err error) {
 	}
 
 	if len(rs.Path) == 0 {
-		return "", "", failure.New(ErrApplication, failure.Message("POST /ship: pathが空です"))
+		return "", "", failure.New(fails.ErrApplication, failure.Message("POST /ship: pathが空です"))
 	}
 
 	if len(rs.ReserveID) == 0 {
-		return "", "", failure.New(ErrApplication, failure.Message("POST /ship: reserve_idが空です"))
+		return "", "", failure.New(fails.ErrApplication, failure.Message("POST /ship: reserve_idが空です"))
 	}
 
 	return rs.ReserveID, rs.Path, nil
