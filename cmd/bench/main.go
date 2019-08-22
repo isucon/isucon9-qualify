@@ -6,7 +6,9 @@ import (
 	"flag"
 	"log"
 	"math/rand"
+	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/scenario"
@@ -27,6 +29,8 @@ type Config struct {
 	TargetHost   string
 	ShipmentURL  string
 	PaymentURL   string
+
+	AllowedIPs []net.IP
 }
 
 func init() {
@@ -40,18 +44,29 @@ func main() {
 	flags.SetOutput(os.Stderr)
 
 	conf := Config{}
+	allowedIPStr := ""
 
 	flags.StringVar(&conf.TargetURLStr, "target-url", "http://127.0.0.1:8000", "target url")
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
 	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
 	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
+	flags.StringVar(&allowedIPStr, "allowed-ips", "", "allowed ips (comma separated)")
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sp, ss, err := server.RunServer(5555, 7000)
+	for _, str := range strings.Split(allowedIPStr, ",") {
+		aip := net.ParseIP(str)
+		if aip == nil {
+			log.Printf("%s cannot be parsed", str)
+			continue
+		}
+		conf.AllowedIPs = append(conf.AllowedIPs, aip)
+	}
+
+	sp, ss, err := server.RunServer(5555, 7000, conf.AllowedIPs)
 	if err != nil {
 		log.Fatal(err)
 	}
