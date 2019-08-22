@@ -63,20 +63,14 @@ func irregularSellAndBuy(ctx context.Context, user1, user2, user3 asset.AppUser)
 		return err
 	}
 
-	failedToken, err := s2.PaymentCard(ctx, FailedCardNumber, IsucariShopID)
-	if err != nil {
-		return err
-	}
+	failedToken := sPayment.ForceSet(FailedCardNumber)
 
 	err = s2.BuyWithFailed(ctx, targetItemID, failedToken, http.StatusBadRequest, "カードの残高が足りません")
 	if err != nil {
 		return err
 	}
 
-	token, err := s2.PaymentCard(ctx, CorrectCardNumber, IsucariShopID)
-	if err != nil {
-		return err
-	}
+	token := sPayment.ForceSet(CorrectCardNumber)
 
 	err = s2.BuyWithWrongCSRFToken(ctx, targetItemID, token)
 	if err != nil {
@@ -93,10 +87,7 @@ func irregularSellAndBuy(ctx context.Context, user1, user2, user3 asset.AppUser)
 		return err
 	}
 
-	oToken, err := s3.PaymentCard(ctx, CorrectCardNumber, IsucariShopID)
-	if err != nil {
-		return err
-	}
+	oToken := sPayment.ForceSet(CorrectCardNumber)
 
 	// onsaleでない商品は買えない
 	err = s3.BuyWithFailed(ctx, targetItemID, oToken, http.StatusForbidden, "item is not for sale")
