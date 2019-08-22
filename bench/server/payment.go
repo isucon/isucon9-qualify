@@ -104,8 +104,7 @@ func NewPayment() *ServerPayment {
 	s.cardTokens = newCardToken()
 	s.mux = http.NewServeMux()
 
-	// cardだけはdelayなし
-	s.mux.Handle("/card", apply(http.HandlerFunc(s.cardHandler), s.withIPRestriction()))
+	s.mux.Handle("/card", apply(http.HandlerFunc(s.cardHandler), s.withDelay(), s.withIPRestriction()))
 	s.mux.Handle("/token", apply(http.HandlerFunc(s.tokenHandler), s.withDelay(), s.withIPRestriction()))
 
 	return s
@@ -231,4 +230,8 @@ func (s *ServerPayment) cardHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(res)
+}
+
+func (s *ServerPayment) ForceSet(cardNumber string) string {
+	return s.cardTokens.Set(cardNumber)
 }

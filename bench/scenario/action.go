@@ -40,11 +40,9 @@ func LoginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session,
 }
 
 func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int64) error {
-	token, err := s2.PaymentCard(ctx, CorrectCardNumber, IsucariShopID)
-	if err != nil {
-		return err
-	}
-	_, err = s2.Buy(ctx, targetItemID, token)
+	token := sPayment.ForceSet(CorrectCardNumber)
+
+	_, err := s2.Buy(ctx, targetItemID, token)
 	if err != nil {
 		return err
 	}
