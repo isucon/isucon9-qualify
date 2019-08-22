@@ -75,6 +75,8 @@ func (s *Server) withIPRestriction() Adapter {
 				}
 
 				if !passed {
+					w.WriteHeader(http.StatusForbidden)
+
 					return
 				}
 			}
