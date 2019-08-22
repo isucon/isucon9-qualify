@@ -10,6 +10,8 @@ import (
 
 const (
 	IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0"
+
+	userAgent = "isucon9-qualify-webapp"
 )
 
 type APIPaymentServiceTokenReq struct {
@@ -56,6 +58,7 @@ func APIPaymentToken(paymentURL string, param *APIPaymentServiceTokenReq) (*APIP
 		return nil, err
 	}
 
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
@@ -89,6 +92,7 @@ func APIShipmentCreate(shipmentURL string, param *APIShipmentCreateReq) (*APIShi
 		return nil, err
 	}
 
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", IsucariAPIToken)
 
@@ -123,6 +127,7 @@ func APIShipmentRequest(shipmentURL string, param *APIShipmentRequestReq) ([]byt
 		return nil, err
 	}
 
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", IsucariAPIToken)
 
@@ -151,6 +156,7 @@ func APIShipmentStatus(shipmentURL string, param *APIShipmentStatusReq) (*APIShi
 		return nil, err
 	}
 
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", IsucariAPIToken)
 
