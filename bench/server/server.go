@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 type Server struct {
 	delay time.Duration
 	mu    sync.RWMutex
+
+	allowedIPs []net.IP
 
 	mux *http.ServeMux
 }
@@ -56,6 +59,26 @@ func (s *Server) withDelay() Adapter {
 func (s *Server) withIPRestriction() Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if len(s.allowedIPs) != 0 {
+				ip, err := userIP(r)
+				if err != nil {
+					log.Print(err)
+					return
+				}
+
+				passed := false
+				for _, aIP := range s.allowedIPs {
+					if ip.Equal(aIP) {
+						passed = true
+						break
+					}
+				}
+
+				if !passed {
+					return
+				}
+			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -68,7 +91,32 @@ func apply(h http.Handler, adapters ...Adapter) http.Handler {
 	return h
 }
 
-func RunServer(paymentPort, shipmentPort int) (*ServerPayment, *ServerShipment, error) {
+func userIP(r *http.Request) (net.IP, error) {
+	tcIP := r.Header.Get("True-Client-IP")
+
+	// 未検証で信じる
+	// DO NOT COPY the following code
+	if tcIP != "" {
+		userIP := net.ParseIP(tcIP)
+		if userIP == nil {
+			return nil, fmt.Errorf("userip: %q is not IP:port", tcIP)
+		}
+		return userIP, nil
+	}
+
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return nil, fmt.Errorf("userip: %q is not IP:port", r.RemoteAddr)
+	}
+
+	userIP := net.ParseIP(ip)
+	if userIP == nil {
+		return nil, fmt.Errorf("userip: %q is not IP:port", r.RemoteAddr)
+	}
+	return userIP, nil
+}
+
+func RunServer(paymentPort, shipmentPort int, allowedIPs []net.IP) (*ServerPayment, *ServerShipment, error) {
 	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: paymentPort})
 	if err != nil {
 		return nil, nil, err
@@ -79,14 +127,14 @@ func RunServer(paymentPort, shipmentPort int) (*ServerPayment, *ServerShipment, 
 		return nil, nil, err
 	}
 
-	pay := NewPayment()
+	pay := NewPayment(allowedIPs)
 	serverPayment := &http.Server{
 		Handler: pay,
 	}
 
 	pay.SetDelay(200 * time.Millisecond)
 
-	ship := NewShipment(false)
+	ship := NewShipment(false, allowedIPs)
 	serverShipment := &http.Server{
 		Handler: ship,
 	}

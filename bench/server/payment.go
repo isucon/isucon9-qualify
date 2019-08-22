@@ -4,6 +4,7 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -98,11 +99,12 @@ type ServerPayment struct {
 	Server
 }
 
-func NewPayment() *ServerPayment {
+func NewPayment(allowedIPs []net.IP) *ServerPayment {
 	s := &ServerPayment{}
 
 	s.cardTokens = newCardToken()
 	s.mux = http.NewServeMux()
+	s.allowedIPs = allowedIPs
 
 	s.mux.Handle("/card", apply(http.HandlerFunc(s.cardHandler), s.withDelay(), s.withIPRestriction()))
 	s.mux.Handle("/token", apply(http.HandlerFunc(s.tokenHandler), s.withDelay(), s.withIPRestriction()))

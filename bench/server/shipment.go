@@ -9,6 +9,7 @@ import (
 	"hash"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -174,7 +175,7 @@ type ServerShipment struct {
 	Server
 }
 
-func NewShipment(debug bool) *ServerShipment {
+func NewShipment(debug bool, allowedIPs []net.IP) *ServerShipment {
 	s := &ServerShipment{
 		debug: debug,
 	}
@@ -206,6 +207,7 @@ func NewShipment(debug bool) *ServerShipment {
 	f.Close()
 
 	s.mux = http.NewServeMux()
+	s.allowedIPs = allowedIPs
 
 	s.mux.Handle("/create", apply(http.HandlerFunc(s.createHandler), s.withDelay(), s.withIPRestriction()))
 	s.mux.Handle("/request", apply(http.HandlerFunc(s.requestHandler), s.withDelay(), s.withIPRestriction()))

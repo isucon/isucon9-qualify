@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pay := server.NewPayment()
+	pay := server.NewPayment(nil)
 
 	serverPayment := &http.Server{
 		Handler: pay,
