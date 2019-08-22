@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -69,7 +70,10 @@ func (s *Server) withIPRestriction() Adapter {
 				}
 
 				if !passed {
+					b, _ := json.Marshal(errorRes{Error: "IP address is not allowed"})
+
 					w.WriteHeader(http.StatusForbidden)
+					w.Write(b)
 
 					return
 				}
