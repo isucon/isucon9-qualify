@@ -31,6 +31,10 @@ import {
   FETCH_USER_PAGE_DATA_START,
   FETCH_USER_PAGE_DATA_SUCCESS,
 } from '../actions/fetchUserPageDataAction';
+import {
+  PATH_NAME_CHANGE,
+  PathNameChangeAction,
+} from '../actions/locationChangeAction';
 
 type Actions =
   | LocationChangeAction
@@ -44,6 +48,7 @@ type Actions =
   | FetchSettingsSuccessAction
   | FetchSettingsFailAction
   | FetchUserPageActions
+  | PathNameChangeAction
   | AnyAction;
 
 export interface PageState {
@@ -87,20 +92,7 @@ const page = (state: PageState = initialState, action: Actions): PageState => {
     case FETCH_USER_PAGE_DATA_FAIL:
       return { ...state, isUserPageLoading: false };
     // Location change
-    case LOCATION_CHANGE:
-      const {
-        payload: {
-          location: { pathname },
-        },
-      } = action as LocationChangeAction; // TODO なんでasつけないと動かないん？
-
-      switch (pathname) {
-        case routes.timeline.path:
-          // TODO カテゴリ新着, ユーザページのチェックもここに入る
-          return { ...state, isTimelineLoading: true };
-        default:
-          return { ...state };
-      }
+    case PATH_NAME_CHANGE:
     default:
       return { ...state };
   }
