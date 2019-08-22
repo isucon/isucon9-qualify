@@ -589,6 +589,10 @@ class Service
                     throw new \PDOException($sth->errorInfo());
                 }
 
+                $detail['transaction_evidence_id'] = null;
+                $detail['transaction_evidence_status'] = null;
+                $detail['shipping_status'] = null;
+
                 $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
                 if ($transactionEvidence !== false) {
                     if ($transactionEvidence['id'] > 0) {
