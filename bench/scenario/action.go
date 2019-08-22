@@ -13,7 +13,6 @@ import (
 const (
 	CorrectCardNumber = "AAAAAAAA"
 	FailedCardNumber  = "FA10AAAA"
-	IsucariShopID     = "11"
 )
 
 func LoginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session, error) {

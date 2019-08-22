@@ -10,10 +10,10 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/server"
 )
 
-func Initialize() *fails.Critical {
+func Initialize(paymentServiceURL, shipmentServiceURL string) *fails.Critical {
 	critical := fails.NewCritical()
 
-	_, err := initialize("", "")
+	_, err := initialize(paymentServiceURL, shipmentServiceURL)
 	if err != nil {
 		critical.Add(err)
 	}
