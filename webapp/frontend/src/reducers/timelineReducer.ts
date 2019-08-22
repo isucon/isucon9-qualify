@@ -4,7 +4,10 @@ import {
   FETCH_TIMELINE_SUCCESS,
   FetchTimelineSuccessAction,
 } from '../actions/fetchTimelineAction';
-import { LOCATION_CHANGE } from 'connected-react-router';
+import {
+  PATH_NAME_CHANGE,
+  PathNameChangeAction,
+} from '../actions/locationChangeAction';
 
 export interface TimelineState {
   items: TimelineItem[];
@@ -18,18 +21,17 @@ const initialState: TimelineState = {
   hasNext: false,
 };
 
-type Actions = FetchTimelineSuccessAction | AnyAction;
+type Actions = FetchTimelineSuccessAction | PathNameChangeAction | AnyAction;
 
 const timeline = (
   state: TimelineState = initialState,
   action: Actions,
 ): TimelineState => {
   switch (action.type) {
-    case LOCATION_CHANGE:
-      // MEMO: ページ遷移したら再度APIを叩かせるようにリセットする
+    case PATH_NAME_CHANGE:
       return initialState;
     case FETCH_TIMELINE_SUCCESS:
-      const { payload } = action;
+      const { payload } = action as FetchTimelineSuccessAction;
       return {
         items: state.items.concat(payload.items),
         hasNext: payload.hasNext,
