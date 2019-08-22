@@ -62,6 +62,8 @@ class Service
     private const PAYMENT_SERVICE_ISUCARI_API_KEY = 'a15400e46c83635eb181-946abb51ff26a868317c';
     private const PAYMENT_SERVICE_ISUCARI_SHOP_ID = '11';
 
+    private const HTTP_USER_AGENT = 'isucon9-qualify-webapp';
+
     private const MIN_ITEM_PRICE = 100;
     private const MAX_ITEM_PRICE = 1000000;
 
@@ -605,7 +607,7 @@ class Service
                         $host = $this->getShipmentServiceURL();
                         try {
                             $r = $client->get($host . '/status', [
-                                'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                                'headers' => ['Authorization' => self::ISUCARI_API_TOKEN, 'User-Agent' => self::HTTP_USER_AGENT],
                                 'json' => ['reserve_id' => $shipping['reserve_id']],
                             ]);
                         } catch (RequestException $e) {
@@ -1195,7 +1197,7 @@ class Service
                 $res = $client->post(
                     $host . '/create',
                     [
-                        'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                        'headers' => ['Authorization' => self::ISUCARI_API_TOKEN, 'User-Agent' => self::HTTP_USER_AGENT],
                         'json' => [
                             'to_address' => $buyer['address'],
                             'to_name' => $buyer['account_name'],
@@ -1222,12 +1224,14 @@ class Service
             try {
                 $pres = $client->post(
                     $host . '/token',
-                    ['json' => [
+                    [
+                        'json' => [
                         'shop_id' => self::PAYMENT_SERVICE_ISUCARI_SHOP_ID,
                         'api_key' => self::PAYMENT_SERVICE_ISUCARI_API_KEY,
                         'token' => $payload->token,
                         'price' => $item['price'],
-                    ]]
+                    ],
+                    'headers' => ['User-Agent' => self::HTTP_USER_AGENT],]
                 );
             } catch (RequestException $e) {
                 $this->dbh->rollBack();
@@ -1383,7 +1387,7 @@ class Service
                 $res = $client->post(
                     $host . '/request',
                     [
-                        'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                        'headers' => ['Authorization' => self::ISUCARI_API_TOKEN, 'User-Agent' => self::HTTP_USER_AGENT],
                         'json' => ['reserve_id' => $shipping['reserve_id']],
                         'stream' => true,
                     ]
@@ -1510,7 +1514,7 @@ class Service
             $host = $this->getShipmentServiceURL();
             try {
                 $r = $client->get($host . '/status', [
-                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN, 'User-Agent' => self::HTTP_USER_AGENT],
                     'json' => ['reserve_id' => $shipping['reserve_id']],
                 ]);
             } catch (RequestException $e) {
@@ -1646,7 +1650,7 @@ class Service
             $host = $this->getShipmentServiceURL();
             try {
                 $r = $client->post($host . '/status', [
-                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN],
+                    'headers' => ['Authorization' => self::ISUCARI_API_TOKEN, 'User-Agent' => self::HTTP_USER_AGENT],
                     'json' => ['reserve_id' => $shipping['reserve_id']],
                 ]);
             } catch (RequestException $e) {
