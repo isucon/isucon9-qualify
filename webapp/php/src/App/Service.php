@@ -788,6 +788,9 @@ class Service
             if ($item === false) {
                 return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
             }
+            $item['image_url'] = $this->getImageUrl($item['image_name']);
+            $category = $this->getCategoryByID($item['category_id']);
+            $item['category'] = $category;
 
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
             $r = $sth->execute([$item['seller_id']]);
@@ -802,6 +805,11 @@ class Service
             unset($seller['hashed_password'], $seller['address'], $seller['created_at']);
             $item['seller'] = $seller;
 
+            $item['buyer'] = null;
+            $item['transaction_evidence_id'] = null;
+            $item['transaction_evidence_status'] = null;
+            $item['shipping_status'] = null;
+
             if (($user['id'] === $item['seller']['id'] || $user['id'] === $item['buyer_id']) && (int) $item['buyer_id'] !== 0) {
                 $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
                 $r = $sth->execute([$item['buyer_id']]);
@@ -814,11 +822,33 @@ class Service
                 }
                 unset($buyer['hashed_password'], $buyer['address'], $buyer['created_at']);
                 $item['buyer'] = $buyer;
+
+                $sth = $this->dbh->prepare("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?");
+                $r = $sth->execute([$item['id']]);
+                if ($r === false) {
+                    throw new \PDOException($sth->errorInfo());
+                }
+                $transactionEvidence = $sth->fetch();
+                if ($transactionEvidence !== false) {
+                    $sth = $this->dbh->prepare("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?");
+                    $r = $sth->execute([$transactionEvidence["id"]]);
+                    if ($r === false) {
+                        throw new \PDOException($sth->errorInfo());
+                    }
+                    $shipping = $sth->fetch();
+                    if ($shipping === false) {
+                        return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shipping not found']);
+                    }
+                    $item['transaction_evidence_id'] = $transactionEvidence["id"];
+                    $item['transaction_evidence_status'] = $transactionEvidence["status"];
+                    $item['shipping_status'] = $shipping['status'];
+                }
             }
         } catch (\PDOException $e) {
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
-        unset($item['created_at'], $item['updated_at']);
+        unset($item['updated_at']);
+        $item['created_at'] = (new \DateTime($item['created_at']))->getTimestamp();
         return $response->withStatus(StatusCode::HTTP_OK)->withJson($item);
     }
 
@@ -1371,7 +1401,6 @@ class Service
                 return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
             }
 
-
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
             $r = $sth->execute([
                 self::SHIPPING_STATUS_WAIT_PICKUP,
@@ -1391,7 +1420,7 @@ class Service
 
         return $response->withStatus(StatusCode::HTTP_OK)->withJson([
             'path' => sprintf("/transactions/%d.png", (int) $transactionEvidence['id']),
-            'reserve_id' => (int) $transactionEvidence['id'],
+            'reserve_id' => (int) $shipping['reserve_id'],
         ]);
     }
 
