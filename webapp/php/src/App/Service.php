@@ -760,6 +760,7 @@ class Service
                 'csrf_token' => $token,
                 'user' => $user,
                 'categories' => $categories,
+                'payment_service_url' => $this->getPaymentServiceURL(),
             ]
         );
     }
@@ -1734,8 +1735,9 @@ class Service
                 return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => 'Bump not allowed']);
             }
 
-            $sth = $this->dbh->prepare('UPDATE `items` SET `created_at`=? WHERE id=?');
+            $sth = $this->dbh->prepare('UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?');
             $r = $sth->execute([
+                $now->format(self::DATETIME_SQL_FORMAT),
                 $now->format(self::DATETIME_SQL_FORMAT),
                 $item['id']
             ]);
