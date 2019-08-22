@@ -25,6 +25,8 @@ type Config struct {
 	// ShipmentPort   int
 	TargetURLStr string
 	TargetHost   string
+	ShipmentURL  string
+	PaymentURL   string
 }
 
 func init() {
@@ -41,6 +43,8 @@ func main() {
 
 	flags.StringVar(&conf.TargetURLStr, "target-url", "http://127.0.0.1:8000", "target url")
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
+	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
+	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
 
 	err := flags.Parse(os.Args[1:])
 	if err != nil {
@@ -58,15 +62,15 @@ func main() {
 	err = session.SetShareTargetURLs(
 		conf.TargetURLStr,
 		conf.TargetHost,
-		"http://localhost:5555",
-		"http://localhost:7000",
+		conf.PaymentURL,
+		conf.ShipmentURL,
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	log.Print("=== initialize ===")
-	scenario.Initialize()
+	scenario.Initialize(session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
 	log.Print("=== verify ===")
 
 	cerr := scenario.Verify(context.Background())
