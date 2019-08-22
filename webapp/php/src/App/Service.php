@@ -747,7 +747,9 @@ class Service
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
 
-        $categories = $this->dbh->query('SELECT * FROM `categories`', PDO::FETCH_ASSOC);
+        $sth = $this->dbh->query('SELECT * FROM `categories`', PDO::FETCH_ASSOC);
+        $sth->execute();
+        $categories = $sth->fetchAll();
         if ($categories === false) {
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
