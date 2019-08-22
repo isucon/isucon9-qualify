@@ -764,7 +764,6 @@ class Service
         );
     }
 
-
     public function item(Request $request, Response $response, array $args)
     {
         $itemId = $args['id'];
@@ -1390,6 +1389,7 @@ class Service
 
         return $response->withStatus(StatusCode::HTTP_OK)->withJson([
             'path' => sprintf("/transactions/%d.png", (int) $transactionEvidence['id']),
+            'reserve_id' => (int) $transactionEvidence['id'],
         ]);
     }
 
