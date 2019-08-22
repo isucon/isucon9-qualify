@@ -19,3 +19,6 @@ errcheck:
 
 staticcheck:
 	staticcheck -checks="all,-ST1000" ./...
+
+clean:
+	rm -rf bin/*
