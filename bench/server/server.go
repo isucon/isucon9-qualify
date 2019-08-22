@@ -45,8 +45,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) withDelay() Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
 			<-time.After(s.GetDelay())
+			next.ServeHTTP(w, r)
 		})
 	}
 }

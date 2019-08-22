@@ -85,7 +85,7 @@ func main() {
 	}
 
 	log.Print("=== initialize ===")
-	scenario.Initialize(session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
 	log.Print("=== verify ===")
 
 	cerr := scenario.Verify(context.Background())

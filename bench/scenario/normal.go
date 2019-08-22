@@ -10,13 +10,13 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func initialize(paymentServiceURL, shipmentServiceURL string) (bool, error) {
+func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, error) {
 	s1, err := session.NewSession()
 	if err != nil {
 		return false, err
 	}
 
-	return s1.Initialize(paymentServiceURL, shipmentServiceURL)
+	return s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
 }
 
 func sellAndBuy(ctx context.Context, user1, user2 asset.AppUser) error {
