@@ -1061,7 +1061,8 @@ class Service
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
 
-        return $response->withHeader('Content-Type', 'image/png')->getBody()->write($shipping['img_binary']);
+        $response->getBody()->write($shipping['img_binary']);
+        return $response->withHeader('Content-Type', 'image/png');
     }
 
     public function buy(Request $request, Response $response, array $args)
@@ -1374,7 +1375,7 @@ class Service
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
             $r = $sth->execute([
                 self::SHIPPING_STATUS_WAIT_PICKUP,
-                $res->getBody(),
+                $res->getBody()->getContents(),
                 (new \DateTime())->format(self::DATETIME_SQL_FORMAT),
                 $transactionEvidence['id']
             ]);
