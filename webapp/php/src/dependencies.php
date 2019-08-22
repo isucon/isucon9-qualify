@@ -2,6 +2,7 @@
 
 use Psr\Container\ContainerInterface;
 use Slim\App;
+use Slim\Http\StatusCode;
 
 return function (App $app) {
     $container = $app->getContainer();
@@ -38,5 +39,15 @@ return function (App $app) {
     // session
     $container['session'] = function ($c) {
         return new \SlimSession\Helper;
+    };
+
+    // error logging
+    $container['errorHandler'] =  function (ContainerInterface $c) {
+        return function (Slim\Http\Request $request, Slim\Http\Response $response, \Exception $exception) use ($c) {
+            $logger = $c['logger'];
+            $logger->critical($exception->getMessage(), ['exception' => (string) $exception]);
+            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)
+                ->withJson(['error' => $exception->getMessage()]);
+        };
     };
 };
