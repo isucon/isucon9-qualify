@@ -133,6 +133,7 @@ export interface BumpRes extends ItemEditRes {}
  */
 export interface SettingsRes {
   csrf_token: string;
+  payment_service_url: string;
   user?: User;
   categories: CategorySimple[];
 }

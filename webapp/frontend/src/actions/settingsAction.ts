@@ -8,6 +8,7 @@ import { Settings } from '../dataObjects/settings';
 import { UserData } from '../dataObjects/user';
 import { CategorySimple } from '../dataObjects/category';
 import { FormErrorState } from '../reducers/formErrorReducer';
+import PaymentClient from '../httpClients/paymentClient';
 
 export const FETCH_SETTINGS_START = 'FETCH_SETTINGS_START';
 export const FETCH_SETTINGS_SUCCESS = 'FETCH_SETTINGS_SUCCESS';
@@ -52,6 +53,9 @@ export function fetchSettings(): ThunkResult<void> {
             user: user,
           }),
         );
+
+        // MEMO: ここでやるのがいいかわからん
+        PaymentClient.setBaseURL(body.payment_service_url);
       })
       .catch((err: Error) => {
         dispatch(
