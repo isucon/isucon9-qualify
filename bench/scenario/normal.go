@@ -168,24 +168,14 @@ func userItemsAndItemWithLoginedSession(ctx context.Context, s1 *session.Session
 	return nil
 }
 
-func bumpAndNewItems(ctx context.Context, user1, user2 asset.AppUser) error {
-	s1, err := LoginedSession(ctx, user1)
-	if err != nil {
-		return err
-	}
-
-	s2, err := LoginedSession(ctx, user2)
-	if err != nil {
-		return err
-	}
-
-	targetItemID := asset.GetUserItemsFirst(user1.ID)
+func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Session) error {
+	targetItemID := asset.GetUserItemsFirst(s1.UserID)
 	newCreatedAt, err := s1.Bump(ctx, targetItemID)
 	if err != nil {
 		return err
 	}
 
-	asset.SetItemCreatedAt(user1.ID, targetItemID, newCreatedAt)
+	asset.SetItemCreatedAt(s1.UserID, targetItemID, newCreatedAt)
 
 	hasNext, items, err := s2.NewItems(ctx)
 	if err != nil {

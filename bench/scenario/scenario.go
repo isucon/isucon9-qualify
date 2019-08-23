@@ -41,7 +41,20 @@ func Verify(ctx context.Context) *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
-		err := bumpAndNewItems(ctx, user1, user2)
+
+		s1, err := LoginedSession(ctx, user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		s2, err := LoginedSession(ctx, user2)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = bumpAndNewItemsWithLoginedSession(ctx, s1, s2)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -153,6 +166,8 @@ func check(ctx context.Context, critical *fails.Critical) {
 
 	user1, user2, user3 := asset.GetRandomUser(), asset.GetRandomUser(), asset.GetRandomUser()
 
+	// 間違ったパスワードでログインができないことをチェックする
+	// これがないとパスワードチェックを外して常にログイン成功させるチートが可能になる
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -174,6 +189,8 @@ func check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
+	// エラー処理が除かれていないかの確認
+	// ここだけsellとbuyの間に他の処理がない
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -194,6 +211,53 @@ func check(ctx context.Context, critical *fails.Critical) {
 			}
 		}
 	}()
+
+	// 以下の関数はすべてsellとbuyの間に他の処理を挟む
+	// 今回の問題は決済総額がスコアになるのでMySQLを守るためにGETの速度を落とすチートが可能
+	// それを防ぐためにsellしたあとに他のエンドポイントにリクエストを飛ばして完了してからbuyされる
+	// シナリオとしてはGETで色んなページを見てから初めて購入に結びつくという動きをするのは自然
+	// 最適化が難しいエンドポイントの速度をわざと落として、最適化が簡単なエンドポイントに負荷を偏らせるチートを防ぐために
+	// すべてのシナリオはチャネルを使って一定時間より早く再実行はしないようにする
+	// 理論上そのエンドポイントを高速化することで出せるスコアに上限が出るので、他のエンドポイントを最適化する必要性が出る
+
+	// bumpしてから新着をチェックする
+	// TODO: 新着はbumpが新着に出ていることを確認してから、初期データを後ろの方までいい感じに遡りたい
+	// TODO: 速度が上がるとbumpしたものが新着に無くなる可能性があるので、created_at的になければ更に遡るようにする
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+
+		s1, err := LoginedSession(ctx, user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		s2, err := LoginedSession(ctx, user2)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+	L:
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			err := bumpAndNewItemsWithLoginedSession(ctx, s1, s2)
+			if err != nil {
+				critical.Add(err)
+			}
+
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
+		}
+	}()
+
+	//
 
 	go func() {
 		wg.Wait()
