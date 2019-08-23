@@ -1,6 +1,6 @@
 - name: Install Dependencies
   apt:
-    pkg: ['build-essential']
+    pkg: ['build-essential', 'git']
     state: present
     update_cache: yes
     cache_valid_time: 3600
