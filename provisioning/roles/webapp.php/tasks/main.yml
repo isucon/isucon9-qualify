@@ -1,0 +1,21 @@
+- name: Copy isucari.php.service
+  become: yes
+  become_user: root
+  copy:
+    src: etc/systemd/system/isucari.php.service
+    dest: /etc/systemd/system/isucari.php.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - daemon-reload
+
+- name: Copy isucari Nginx PHP config
+  copy:
+    src: etc/nginx/sites-available/{{ item }}
+    dest: /etc/nginx/sites-available/{{ item }}
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - isucari.php.conf

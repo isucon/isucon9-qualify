@@ -1,0 +1,82 @@
+---
+- name: Check Installed PHP
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon
+  command: /home/isucon/local/php/bin/php -r 'echo phpversion();'
+  register: php_version_output
+  changed_when: php_version_output is failed
+  ignore_errors: true
+
+- name: Debug php_version_output
+  debug:
+    var: php_version_output
+
+- name: Install PHP
+  become: yes
+  become_user: isucon
+  when: php_version_output is failed or php_version_output.stdout != "7.2.21"
+  args:
+    chdir: /home/isucon
+  command: >
+    /home/isucon/xbuild/php-install 7.2.21 /home/isucon/local/php --
+    --with-pcre-regex --with-zlib --enable-fpm --enable-pdo --with-pear
+    --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl
+    --with-pcre-regex --with-pcre-dir --with-libxml-dir --enable-opcache
+    --enable-bcmath --with-bz2 --enable-calendar --enable-cli --enable-shmop
+    --enable-sysvsem --enable-sysvshm --enable-sysvmsg --enable-mbregex
+    --enable-mbstring --enable-pcntl --enable-sockets --with-curl --enable-zip
+
+- name: Add PATH for PHP
+  become: yes
+  become_user: isucon
+  blockinfile:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK php"
+    dest: /home/isucon/.bash_profile
+    content: |
+      export PATH=/home/isucon/local/php/bin:$PATH
+
+- name: Put isucari.php-fpm.conf
+  become: yes
+  become_user: isucon
+  copy:
+    src: isucari.php-fpm.conf
+    dest: /home/isucon/local/php/etc/isucari.php-fpm.conf
+
+- name: Fix php.ini
+  become: yes
+  become_user: isucon
+  ini_file:
+    path: /home/isucon/local/php/etc/php.ini
+    section: PHP
+    option: memory_limit
+    value: -1
+    mode: 0644
+    backup: yes
+
+- name: Check Installed Composer
+  become: yes
+  become_user: isucon
+  command: composer -v
+  args:
+    chdir: /home/isucon
+  environment:
+    PATH: "/home/isucon/local/php/bin/:{{ ansible_env.PATH }}"
+  register: composer_version_output
+  changed_when: composer_version_output is failed
+  ignore_errors: true
+
+- name: Debug composer_version_output
+  debug:
+    var: composer_version_output
+
+- name: Download Composer
+  become: yes
+  become_user: isucon
+  get_url:
+    url: https://getcomposer.org/download/1.9.0/composer.phar
+    dest: /home/isucon/local/php/bin/composer
+    sha256sum: c9dff69d092bdec14dee64df6677e7430163509798895fbd54891c166c5c0875
+    mode: 0755
+  when: composer_version_output is failed
