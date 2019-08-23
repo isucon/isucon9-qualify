@@ -1,3 +1,21 @@
+- name: Install isucari.php
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon/isucari/webapp/php
+  shell: |
+    bash -lc "composer install"
+
+- name: Copy isucari Nginx PHP config
+  copy:
+    src: etc/nginx/sites-available/{{ item }}
+    dest: /etc/nginx/sites-available/{{ item }}
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - isucari.php.conf
+
 - name: Copy isucari.php.service
   become: yes
   become_user: root
@@ -9,13 +27,3 @@
     mode: 0644
   notify:
     - daemon-reload
-
-- name: Copy isucari Nginx PHP config
-  copy:
-    src: etc/nginx/sites-available/{{ item }}
-    dest: /etc/nginx/sites-available/{{ item }}
-    owner: root
-    group: root
-    mode: 0644
-  with_items:
-    - isucari.php.conf
