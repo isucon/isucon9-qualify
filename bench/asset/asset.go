@@ -214,6 +214,8 @@ func GetRandomRootCategory() AppCategory {
 	return rootCategories[rand.Intn(len(rootCategories))]
 }
 
-func GetTransactionEvidence(id int64) AppTransactionEvidence {
-	return transactionEvidences[id]
+// TODO: transactionEvidencesをちゃんと管理するようにして存在しないケースをなくす
+func GetTransactionEvidence(id int64) (AppTransactionEvidence, bool) {
+	te, ok := transactionEvidences[id]
+	return te, ok
 }

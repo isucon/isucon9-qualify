@@ -62,12 +62,7 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 	return nil
 }
 
-func transactionEvidence(ctx context.Context, user1 asset.AppUser) error {
-	s1, err := LoginedSession(ctx, user1)
-	if err != nil {
-		return err
-	}
-
+func transactionEvidenceWithLoginedSession(ctx context.Context, s1 *session.Session) error {
 	_, items, err := s1.UsersTransactions(ctx)
 	if err != nil {
 		return err
@@ -79,8 +74,8 @@ func transactionEvidence(ctx context.Context, user1 asset.AppUser) error {
 			continue
 		}
 
-		ate := asset.GetTransactionEvidence(item.TransactionEvidenceID)
-		if item.TransactionEvidenceStatus != ate.Status {
+		ate, ok := asset.GetTransactionEvidence(item.TransactionEvidenceID)
+		if ok && item.TransactionEvidenceStatus != ate.Status {
 			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonのステータスに誤りがあります"))
 		}
 	}
@@ -102,8 +97,8 @@ func transactionEvidence(ctx context.Context, user1 asset.AppUser) error {
 			continue
 		}
 
-		ate := asset.GetTransactionEvidence(item.TransactionEvidenceID)
-		if item.TransactionEvidenceStatus != ate.Status {
+		ate, ok := asset.GetTransactionEvidence(item.TransactionEvidenceID)
+		if ok && item.TransactionEvidenceStatus != ate.Status {
 			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonのステータスに誤りがあります"))
 		}
 	}
