@@ -10,7 +10,6 @@ import { SnackBarAction } from './actionTypes';
 export const POST_SHIPPED_DONE_START = 'POST_SHIPPED_DONE_START';
 export const POST_SHIPPED_DONE_SUCCESS = 'POST_SHIPPED_DONE_SUCCESS';
 export const POST_SHIPPED_DONE_FAIL = 'POST_SHIPPED_DONE_FAIL';
-
 export type PostShippedDoneActions =
   | PostShippedDoneStartAction
   | PostShippedDoneSuccessAction
