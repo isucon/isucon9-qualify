@@ -11,6 +11,7 @@ $setup_quarifier_environment =<<-SCRIPT
 set -e
 echo "-- ISUCON9 quarifier setup --"
 export DEBIAN_FRONTEND="noninteractive"
+apt update
 apt -y install python-pip
 pip install ansible==2.8.3
 SCRIPT
