@@ -1,4 +1,3 @@
-import config from '../config';
 import { SettingsRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 
@@ -6,7 +5,6 @@ import { AppResponseError } from '../errors/AppResponseError';
  * HTTP client for main app
  */
 class AppClient {
-  private baseUrl: string = config.apiUrl;
   private defaultHeaders: HeadersInit = {};
 
   async get(path: string, params: Record<string, any> = {}): Promise<Response> {
@@ -18,7 +16,7 @@ class AppClient {
       }
     }
 
-    let url = `${this.baseUrl}${path}`;
+    let url = `${path}`;
     if (getParams.toString() !== '') {
       url = `${url}?${getParams.toString()}`;
     }
@@ -42,7 +40,7 @@ class AppClient {
     params.csrf_token = await this.getCsrfToken();
     requestOption.body = JSON.stringify(params);
 
-    return await fetch(`${this.baseUrl}${path}`, requestOption);
+    return await fetch(path, requestOption);
   }
 
   async postFormData(path: string, body: FormData): Promise<Response> {
@@ -58,7 +56,7 @@ class AppClient {
     body.append('csrf_token', await this.getCsrfToken());
     requestOption.body = body;
 
-    return await fetch(`${this.baseUrl}${path}`, requestOption);
+    return await fetch(path, requestOption);
   }
 
   private async getCsrfToken(): Promise<string> {
