@@ -13,6 +13,7 @@ import {
 import withStyles from '@material-ui/core/styles/withStyles';
 import validator from 'validator';
 import LoadingButton from './LoadingButtonComponent';
+import NotFoundPage from '../pages/error/NotFoundPage';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
@@ -29,10 +30,10 @@ const styles = (theme: Theme): StyleRules =>
   });
 
 interface ItemBuyFormProps extends WithStyles<typeof styles> {
-  item: ItemData;
+  item?: ItemData;
   onBuyAction: (itemId: number, cardNumber: string) => void;
   loadingBuy: boolean;
-  errors: BuyFormErrorState;
+  errors?: BuyFormErrorState;
 }
 
 interface ItemBuyFormState {
@@ -71,17 +72,20 @@ class ItemBuyFormComponent extends React.Component<
   }
 
   _onClickBuyButton(e: React.MouseEvent) {
-    const {
-      item: { id },
-    } = this.props;
+    const { item } = this.props;
+    const id = item ? item.id : 0; // MEMO: この関数がcallされる前にitemの有無は確認されるので0になることはない
     const { cardNumber } = this.state;
     this.props.onBuyAction(id, cardNumber);
   }
 
   render() {
     const { item, errors, classes, loadingBuy } = this.props;
-    const cardError = errors.cardError;
-    const appError = errors.buyError;
+    const cardError = errors ? errors.cardError : undefined;
+    const appError = errors ? errors.buyError : undefined;
+
+    if (!item) {
+      return <NotFoundPage />;
+    }
 
     return (
       <React.Fragment>
