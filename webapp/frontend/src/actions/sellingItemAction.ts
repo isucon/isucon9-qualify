@@ -41,7 +41,7 @@ export function listItemAction(
       })
       .then((body: SellRes) => {
         dispatch(sellingSuccessAction(body.id));
-        dispatch(push(routes.top.path)); // TODO
+        dispatch(push(routes.timeline.path));
       })
       .catch((err: Error) => {
         dispatch(
