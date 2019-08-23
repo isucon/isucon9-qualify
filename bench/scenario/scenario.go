@@ -381,6 +381,58 @@ func check(ctx context.Context, critical *fails.Critical) {
 	}()
 
 	// ユーザーページをある程度見る
+	// TODO: 初期データを後ろの方までいい感じに遡りたい
+	// TODO: ユーザーをランダムにしたい
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+
+		s1, err := LoginedSession(ctx, user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		s2, err := LoginedSession(ctx, user2)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+	L:
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			targetItemID, err := sell(ctx, s1, 100)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = userItemsAndItemWithLoginedSession(ctx, s1, s2.UserID)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = buyComplete(ctx, s1, s2, targetItemID, 100)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+		Final:
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
+		}
+	}()
 
 	// 商品ページをいくつか見る
 
