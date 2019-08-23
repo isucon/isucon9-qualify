@@ -1,6 +1,6 @@
 - name: Install Package
   apt:
-    pkg: ['mysql-server']
+    pkg: ['mysql-server', 'libmysqlclient-dev']
     state: present
 
 - name: Enable and start mysql service
