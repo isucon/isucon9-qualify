@@ -13,7 +13,8 @@ import {
 import withStyles from '@material-ui/core/styles/withStyles';
 import validator from 'validator';
 import LoadingButton from './LoadingButtonComponent';
-import NotFoundPage from '../pages/error/NotFoundPage';
+import { Link } from 'react-router-dom';
+import { routes } from '../routes/Route';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
@@ -84,7 +85,12 @@ class ItemBuyFormComponent extends React.Component<
     const appError = errors ? errors.buyError : undefined;
 
     if (!item) {
-      return <NotFoundPage />;
+      return (
+        <React.Fragment>
+          <Typography variant="h4">エラーが発生しました</Typography>
+          <Link to={routes.timeline.path}>トップページへ戻る</Link>
+        </React.Fragment>
+      );
     }
 
     return (
