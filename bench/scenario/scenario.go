@@ -261,8 +261,11 @@ func check(ctx context.Context, critical *fails.Critical) {
 			err := bumpAndNewItemsWithLoginedSession(ctx, s1, s2)
 			if err != nil {
 				critical.Add(err)
+
+				goto Final
 			}
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -297,21 +300,25 @@ func check(ctx context.Context, critical *fails.Critical) {
 			targetItemID, err := sell(ctx, s1, 100)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
 			err = newCategoryItemsWithLoginedSession(ctx, s1)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
 			err = buyComplete(ctx, s1, s2, targetItemID, 100)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -346,21 +353,25 @@ func check(ctx context.Context, critical *fails.Critical) {
 			targetItemID, err := sell(ctx, s1, 100)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
 			err = transactionEvidenceWithLoginedSession(ctx, s1)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
 			err = buyComplete(ctx, s1, s2, targetItemID, 100)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -416,17 +427,17 @@ func load(ctx context.Context, critical *fails.Critical) {
 				if err != nil {
 					critical.Add(err)
 
-					goto Last
+					goto Final
 				}
 
 				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s2, s1)
 				if err != nil {
 					critical.Add(err)
 
-					goto Last
+					goto Final
 				}
 
-			Last:
+			Final:
 				select {
 				case <-ch:
 				case <-ctx.Done():
@@ -463,24 +474,24 @@ func load(ctx context.Context, critical *fails.Critical) {
 				if err != nil {
 					critical.Add(err)
 
-					goto Last
+					goto Final
 				}
 
 				err = userItemsAndItemWithLoginedSession(ctx, s1, user2.ID)
 				if err != nil {
 					critical.Add(err)
 
-					goto Last
+					goto Final
 				}
 
 				err = buyComplete(ctx, s1, s2, targetItemID, 100)
 				if err != nil {
 					critical.Add(err)
 
-					goto Last
+					goto Final
 				}
 
-			Last:
+			Final:
 				select {
 				case <-ch:
 				case <-ctx.Done():
