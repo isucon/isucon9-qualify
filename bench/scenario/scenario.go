@@ -149,6 +149,7 @@ func Validation(ctx context.Context, critical *fails.Critical) {
 
 func check(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
+	closed := make(chan struct{})
 
 	user1, user2, user3 := asset.GetRandomUser(), asset.GetRandomUser(), asset.GetRandomUser()
 
@@ -194,7 +195,15 @@ func check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(closed)
+	}()
+
+	select {
+	case <-closed:
+	case <-ctx.Done():
+	}
 }
 
 func load(ctx context.Context, critical *fails.Critical) {
@@ -311,6 +320,8 @@ func load(ctx context.Context, critical *fails.Critical) {
 	case <-ctx.Done():
 	}
 }
+
+func Campaign(critical *fails.Critical) {}
 
 func FinalCheck(critical *fails.Critical) {}
 
