@@ -74,7 +74,7 @@ def random_string(length):
 def get_user():
     user_id = flask.session.get("user_id")
     if user_id is None:
-        http_json_error(requests.status_codes['not_found'], "no session")
+        http_json_error(requests.codes['not_found'], "no session")
     try:
         conn = dbh()
         with conn.cursor() as c:
@@ -82,10 +82,10 @@ def get_user():
             c.execute(sql, user_id)
             user = c.fetchone()
             if user is None:
-                http_json_error(requests.status_codes['not_found'], "user not found")
+                http_json_error(requests.codes['not_found'], "user not found")
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], "db error")
+        http_json_error(requests.codes['internal_server_error'], "db error")
     return user
 
 
@@ -118,7 +118,7 @@ def ensure_required_payload(keys=None):
 
 def ensure_valid_csrf_token():
     if flask.request.json['csrf_token'] != flask.session['csrf_token']:
-        http_json_error(requests.status_codes['unprocessable_entity'], "csrf token error")
+        http_json_error(requests.codes['unprocessable_entity'], "csrf token error")
 
 
 def get_config(name):
@@ -183,7 +183,7 @@ def post_item_edit():
 
     price = int(flask.request.json['price'])
     if not 100 <= price <= 100000:
-        http_json_error(requests.status_codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
+        http_json_error(requests.codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
     user = get_user()
     conn = dbh()
     with conn.cursor() as c:
@@ -192,12 +192,12 @@ def post_item_edit():
             c.execute(sql, user['id'])
             item = c.fetchone()
             if item is None:
-                http_json_error(requests.status_codes['not_found'], "item not found")
+                http_json_error(requests.codes['not_found'], "item not found")
             if item["seller_id"] != user["id"]:
-                http_json_error(requests.status_codes['forbidden'], "自分の商品以外は編集できません")
+                http_json_error(requests.codes['forbidden'], "自分の商品以外は編集できません")
         except MySQLdb.Error as err:
             app.logger.exception(err)
-            http_json_error(requests.status_codes['internal_server_error'], "db error")
+            http_json_error(requests.codes['internal_server_error'], "db error")
 
     conn.begin()
     with conn.cursor() as c:
@@ -207,7 +207,7 @@ def post_item_edit():
             item = c.fetchone()
             if item["status"] != Constants.ITEM_STATUS_ON_SALE:
                 conn.rollback()
-                http_json_error(requests.status_codes['forbidden'], "販売中の商品以外編集できません")
+                http_json_error(requests.codes['forbidden'], "販売中の商品以外編集できません")
             sql = "UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?"
             c.execute(sql, (
                 flask.request.json["price"],
@@ -222,7 +222,7 @@ def post_item_edit():
         except MySQLdb.Error as err:
             conn.rollback()
             app.logger.exception(err)
-            http_json_error(requests.status_codes['internal_server_error'], "db error")
+            http_json_error(requests.codes['internal_server_error'], "db error")
     return flask.jsonify(dict(
         item_id=item["id"],
         item_price=item["price"],
@@ -245,19 +245,19 @@ def post_buy():
             item = c.fetchone()
             if item is None:
                 conn.rollback()
-                http_json_error(requests.status_codes['not_found'], "item not found")
+                http_json_error(requests.codes['not_found'], "item not found")
             if item['status'] is not Constants.ITEM_STATUS_ON_SALE:
                 conn.rollback()
-                http_json_error(requests.status_codes['forbidden'], "item is not for sale")
+                http_json_error(requests.codes['forbidden'], "item is not for sale")
             if item['seller_id'] == buyer['id']:
                 conn.rollback()
-                http_json_error(requests.status_codes['forbidden'], "自分の商品は買えません")
+                http_json_error(requests.codes['forbidden'], "自分の商品は買えません")
             sql = "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE"
             c.execute(sql, (item['seller_id']))
             seller = c.fetchone()
             if seller is None:
                 conn.rollback()
-                http_json_error(requests.status_codes['not_found'], "seller not found")
+                http_json_error(requests.codes['not_found'], "seller not found")
             category = get_category_by_id(item['category_id'])
             # TODO: check category error
             sql = "INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, " \
@@ -297,7 +297,7 @@ def post_buy():
             except (socket.gaierror, requests.HTTPError) as err:
                 conn.rollback()
                 app.logger.exception(err)
-                http_json_error(requests.status_codes['internal_server_error'])
+                http_json_error(requests.codes['internal_server_error'])
 
             shipping_res = res.json()
 
@@ -314,18 +314,18 @@ def post_buy():
             except (socket.gaierror, requests.HTTPError) as err:
                 conn.rollback()
                 app.logger.exception(err)
-                http_json_error(requests.status_codes['internal_server_error'])
+                http_json_error(requests.codes['internal_server_error'])
 
             payment_res = res.json()
             if payment_res['status'] == "invalid":
                 conn.rollback()
-                http_json_error(requests.status_codes["bad_request"], "カード情報に誤りがあります")
+                http_json_error(requests.codes["bad_request"], "カード情報に誤りがあります")
             if payment_res['status'] == "fail":
                 conn.rollback()
-                http_json_error(requests.status_codes["bad_request"], "カードの残高が足りません")
+                http_json_error(requests.codes["bad_request"], "カードの残高が足りません")
             if payment_res['status'] != "ok":
                 conn.rollback()
-                http_json_error(requests.status_codes["bad_request"], "想定外のエラー")
+                http_json_error(requests.codes["bad_request"], "想定外のエラー")
 
             sql = "INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, " \
                   "`reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) " \
@@ -346,33 +346,33 @@ def post_buy():
         conn.commit()
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], "db error")
+        http_json_error(requests.codes['internal_server_error'], "db error")
     return flask.jsonify(dict(transaction_evidence_id=transaction_evidence_id))
 
 
 @app.route("/sell", methods=["POST"])
 def post_sell():
     if flask.request.form['csrf_token'] != flask.session['csrf_token']:
-        http_json_error(requests.status_codes['unprocessable_entity'], "csrf token error")
+        http_json_error(requests.codes['unprocessable_entity'], "csrf token error")
     for k in ["name", "description", "price", "category_id"]:
         if k not in flask.request.form or len(flask.request.form[k]) == 0:
             http_json_error(requests.codes['bad_request'], 'all parameters are required')
 
     price = int(flask.request.form['price'])
     if not 100 <= price <= 100000:
-        http_json_error(requests.status_codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
+        http_json_error(requests.codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
 
     category = get_category_by_id(flask.request.form['category_id'])
     if category['parent_category_id'] == 0:
-        http_json_error(requests.status_codes['bad_request'], 'Incorrect category ID')
+        http_json_error(requests.codes['bad_request'], 'Incorrect category ID')
     user = get_user()
     if flask.request.files['image'] not in flask.request.files:
-        http_json_error(requests.status_codes['internal_server_error'], 'image error')
+        http_json_error(requests.codes['internal_server_error'], 'image error')
 
     file = flask.request.files['image']
     ext = os.path.splitext(file.filename)[1]
     if ext not in ('.jpg', 'jpeg', '.png', 'gif'):
-        http_json_error(requests.status_codes['bad_request'], 'unsupported image format error error')
+        http_json_error(requests.codes['bad_request'], 'unsupported image format error error')
     if ext == ".jpeg":
         ext = ".jpg"
     imagename = "{0}{1}".format(random_string(32), ext)
@@ -406,7 +406,7 @@ def post_sell():
             conn.commit()
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], "db error")
+        http_json_error(requests.codes['internal_server_error'], "db error")
 
     return flask.jsonify({
         'id': item_id,
@@ -424,12 +424,12 @@ def post_ship():
             c.execute(sql, flask.request.json["item_id"])
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
-                http_json_error(requests.status_codes["not_found"], "transaction_evidences not found")
+                http_json_error(requests.codes["not_found"], "transaction_evidences not found")
         except MySQLdb.Error as err:
             app.logger.exception(err)
-            http_json_error(requests.status_codes['internal_server_error'], "db error")
+            http_json_error(requests.codes['internal_server_error'], "db error")
     if transaction_evidence["seller_id"] != user["id"]:
-        http_json_error(requests.status_codes['forbidden'], "権限がありません")
+        http_json_error(requests.codes['forbidden'], "権限がありません")
 
     try:
         conn.begin()
@@ -439,27 +439,27 @@ def post_ship():
             item = c.fetchone()
             if item is None:
                 conn.rollback()
-                http_json_error(requests.status_codes["not_found"], "item not found")
+                http_json_error(requests.codes["not_found"], "item not found")
             if item["status"] != Constants.ITEM_STATUS_TRADING:
                 conn.rollback()
-                http_json_error(requests.status_codes["forbidden"], "商品が取引中ではありません")
+                http_json_error(requests.codes["forbidden"], "商品が取引中ではありません")
 
             sql = "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE"
             c.execute(sql, transaction_evidence["id"])
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 conn.rollback()
-                http_json_error(requests.status_codes["not_found"], "transaction_evidences not found")
+                http_json_error(requests.codes["not_found"], "transaction_evidences not found")
             if transaction_evidence["status"] != Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING:
                 conn.rollback()
-                http_json_error(requests.status_codes['forbidden'], "準備ができていません")
+                http_json_error(requests.codes['forbidden'], "準備ができていません")
 
             sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE"
             c.execute(sql, transaction_evidence["id"])
             shipping = c.fetchone()
             if shipping is None:
                 conn.rollback()
-                http_json_error(requests.status_codes["not_found"], "shipping not found")
+                http_json_error(requests.codes["not_found"], "shipping not found")
 
             try:
                 host = get_shipment_service_url()
@@ -470,7 +470,7 @@ def post_ship():
             except (socket.gaierror, requests.HTTPError) as err:
                 conn.rollback()
                 app.logger.exception(err)
-                http_json_error(requests.status_codes["internal_server_error"], "failed to request to shipment service")
+                http_json_error(requests.codes["internal_server_error"], "failed to request to shipment service")
 
             sql = "UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?"
             c.execute(sql, (
@@ -482,7 +482,7 @@ def post_ship():
         conn.commit()
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], "db error")
+        http_json_error(requests.codes['internal_server_error'], "db error")
     return flask.jsonify(dict(path="/transactions/%d.png".format(transaction_evidence["id"])))
 
 
@@ -516,20 +516,20 @@ def post_bump():
             target_item = c.fetchone()
             if target_item is None:
                 conn.rollback()
-                http_json_error(requests.status_codes['not_found'], "item not found")
+                http_json_error(requests.codes['not_found'], "item not found")
             if target_item['seller_id'] != user['id']:
                 conn.rollback()
-                http_json_error(requests.status_codes['forbidden'], "自分の商品以外は編集できません")
+                http_json_error(requests.codes['forbidden'], "自分の商品以外は編集できません")
 
             sql = "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE"
             c.execute(sql, (user['id']))
             seller = c.fetchone()
             if seller is None:
                 conn.rollback()
-                http_json_error(requests.status_codes['not_found'], "user not found")
+                http_json_error(requests.codes['not_found'], "user not found")
             now = datetime.datetime.now()
             if seller['last_bump'] + datetime.timedelta(seconds=3) < now:
-                http_json_error(requests.status_codes['forbidden'], "Bump not allowed")
+                http_json_error(requests.codes['forbidden'], "Bump not allowed")
 
             sql = "UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?"
             c.execute(sql, (target_item['id']))
@@ -544,7 +544,7 @@ def post_bump():
         conn.commit()
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], "db error")
+        http_json_error(requests.codes['internal_server_error'], "db error")
 
     return flask.jsonify({
         'item_id': target_item['id'],
@@ -564,7 +564,7 @@ def get_settings():
             categories = c.fetchall()
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], "db error")
+        http_json_error(requests.codes['internal_server_error'], "db error")
 
     return flask.jsonify(dict(
         user=to_user_json(get_user()),
@@ -584,10 +584,10 @@ def post_login():
             if user is None or \
                     not bcrypt.checkpw(flask.request.json['password'].encode('utf-8'),
                                        user['hashed_password'].encode('utf-8')):
-                http_json_error(requests.status_codes['unauthorized'], 'アカウント名かパスワードが間違えています')
+                http_json_error(requests.codes['unauthorized'], 'アカウント名かパスワードが間違えています')
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], 'db error')
+        http_json_error(requests.codes['internal_server_error'], 'db error')
 
     flask.session['user_id'] = user['id']
     flask.session['csrf_token'] = random_string(10)
@@ -609,7 +609,7 @@ def post_register():
         user_id = c.lastrowid
     except MySQLdb.Error as err:
         app.logger.exception(err)
-        http_json_error(requests.status_codes['internal_server_error'], 'db error')
+        http_json_error(requests.codes['internal_server_error'], 'db error')
 
     flask.session['user_id'] = user_id
     flask.session['csrf_token'] = random_string(10)
