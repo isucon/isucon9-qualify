@@ -257,7 +257,15 @@ func check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	//
+	// カテゴリ新着をある程度見る
+
+	// 取引一覧をある程度見る
+
+	// ユーザーページをある程度見る
+
+	// 商品ページをいくつか見る
+
+	// 出品した商品を編集する（100円を110円とかにする）
 
 	go func() {
 		wg.Wait()
