@@ -5,6 +5,7 @@ import viewingItem from './viewingItemReducer';
 import viewingUser from './viewingUserReducer';
 import error from './errorReducer';
 import page from './pageReducuer';
+import snackBar from './snackBarReducer';
 import buyPage from './buyPageReducer';
 import categories from './categoriesReducer';
 import timeline from './timelineReducer';
@@ -22,6 +23,7 @@ export default (history: History) =>
     viewingUser,
     error,
     page,
+    snackBar,
     buyPage,
     categories,
     timeline,

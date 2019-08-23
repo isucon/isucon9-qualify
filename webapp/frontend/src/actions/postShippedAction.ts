@@ -1,11 +1,11 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action } from 'redux';
 import { ErrorRes, ShipReq, ShipRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
 import { AppResponseError } from '../errors/AppResponseError';
 import { AppState } from '../index';
+import { SnackBarAction } from './actionTypes';
 
 export const POST_SHIPPED_START = 'POST_SHIPPED_START';
 export const POST_SHIPPED_SUCCESS = 'POST_SHIPPED_SUCCESS';
@@ -43,11 +43,7 @@ export function postShippedAction(itemId: number): ThunkResult<void> {
         dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {
-        dispatch(
-          postShippedFailAction({
-            error: err.message,
-          }),
-        );
+        dispatch(postShippedFailAction(err.message));
       });
   };
 }
@@ -71,15 +67,11 @@ export function postShippedSuccessAction(): PostShippedSuccessAction {
 }
 
 export interface PostShippedFailAction
-  extends Action<typeof POST_SHIPPED_FAIL> {
-  payload: FormErrorState;
-}
+  extends SnackBarAction<typeof POST_SHIPPED_FAIL> {}
 
-export function postShippedFailAction(
-  newErrors: FormErrorState,
-): PostShippedFailAction {
+export function postShippedFailAction(error: string): PostShippedFailAction {
   return {
     type: POST_SHIPPED_FAIL,
-    payload: newErrors,
+    snackBarMessage: error,
   };
 }

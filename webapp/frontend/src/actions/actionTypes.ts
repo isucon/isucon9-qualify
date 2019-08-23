@@ -1,3 +1,4 @@
+import { Action } from 'redux';
 import { AuthActions } from './authenticationActions';
 import { BuyActions } from './buyAction';
 import { ErrorActions } from './errorAction';
@@ -38,3 +39,7 @@ export type ActionTypes =
   | RegisterActions
   | SellingItemActions
   | SettingsActions;
+
+export interface SnackBarAction<T> extends Action<T> {
+  snackBarMessage: string;
+}
