@@ -1,23 +1,29 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { ErrorRes, ItemEditReq, ItemEditRes } from '../types/appApiTypes';
-import { push } from 'connected-react-router';
+import { CallHistoryMethodAction, push } from 'connected-react-router';
 import { routes } from '../routes/Route';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
 
 export const POST_ITEM_EDIT_START = 'POST_ITEM_EDIT_START';
 export const POST_ITEM_EDIT_SUCCESS = 'POST_ITEM_EDIT_SUCCESS';
 export const POST_ITEM_EDIT_FAIL = 'POST_ITEM_EDIT_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type PostItemEditActions =
+  | PostItemEditStartAction
+  | PostItemEditSuccessAction
+  | PostItemEditFailAction
+  | CallHistoryMethodAction;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, PostItemEditActions>;
 
 export function postItemEditAction(
   itemId: number,
   itemPrice?: number,
 ): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, PostItemEditActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(postItemEditStartAction());

@@ -1,19 +1,29 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { FormErrorState } from '../reducers/formErrorReducer';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { ErrorRes, ShipDoneReq, ShipDoneRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
+import { SnackBarAction } from './actionTypes';
 
 export const POST_SHIPPED_DONE_START = 'POST_SHIPPED_DONE_START';
 export const POST_SHIPPED_DONE_SUCCESS = 'POST_SHIPPED_DONE_SUCCESS';
 export const POST_SHIPPED_DONE_FAIL = 'POST_SHIPPED_DONE_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type PostShippedDoneActions =
+  | PostShippedDoneStartAction
+  | PostShippedDoneSuccessAction
+  | PostShippedDoneFailAction;
+type ThunkResult<R> = ThunkAction<
+  R,
+  AppState,
+  undefined,
+  PostShippedDoneActions
+>;
 
 export function postShippedDoneAction(itemId: number): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, PostShippedDoneActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(postShippedDoneStartAction());
@@ -38,11 +48,7 @@ export function postShippedDoneAction(itemId: number): ThunkResult<void> {
         dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {
-        dispatch(
-          postShippedDoneFailAction({
-            error: err.message,
-          }),
-        );
+        dispatch(postShippedDoneFailAction(err.message));
       });
   };
 }
@@ -66,15 +72,13 @@ export function postShippedDoneSuccessAction(): PostShippedDoneSuccessAction {
 }
 
 export interface PostShippedDoneFailAction
-  extends Action<typeof POST_SHIPPED_DONE_FAIL> {
-  payload: FormErrorState;
-}
+  extends SnackBarAction<typeof POST_SHIPPED_DONE_FAIL> {}
 
 export function postShippedDoneFailAction(
-  newErrors: FormErrorState,
+  error: string,
 ): PostShippedDoneFailAction {
   return {
     type: POST_SHIPPED_DONE_FAIL,
-    payload: newErrors,
+    snackBarMessage: error,
   };
 }

@@ -1,17 +1,21 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
-import { push } from 'connected-react-router';
-import { AnyAction } from 'redux';
+import { CallHistoryMethodAction, push } from 'connected-react-router';
+import { Action } from 'redux';
 import { ErrorRes, SellRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
 
 export const SELLING_ITEM_SUCCESS = 'SELLING_ITEM_SUCCESS';
 export const SELLING_ITEM_FAIL = 'SELLING_ITEM_FAIL';
 
-type State = void;
-type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>;
+export type SellingItemActions =
+  | SellingSuccessAction
+  | SellingFailAction
+  | CallHistoryMethodAction;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, SellingItemActions>;
 
 export function listItemAction(
   name: string,
@@ -20,7 +24,7 @@ export function listItemAction(
   categoryId: number,
   image: Blob,
 ): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, SellingItemActions>) => {
     const body = new FormData();
     body.append('name', name);
     body.append('description', description);
@@ -49,8 +53,8 @@ export function listItemAction(
   };
 }
 
-export interface SellingSuccessAction {
-  type: typeof SELLING_ITEM_SUCCESS;
+export interface SellingSuccessAction
+  extends Action<typeof SELLING_ITEM_SUCCESS> {
   payload: {
     itemId: number;
   };
@@ -63,8 +67,7 @@ export function sellingSuccessAction(itemId: number): SellingSuccessAction {
   };
 }
 
-export interface SellingFailAction {
-  type: typeof SELLING_ITEM_FAIL;
+export interface SellingFailAction extends Action<typeof SELLING_ITEM_FAIL> {
   payload: FormErrorState;
 }
 

@@ -1,19 +1,24 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { FormErrorState } from '../reducers/formErrorReducer';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { CompleteReq, CompleteRes, ErrorRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
+import { SnackBarAction } from './actionTypes';
 
 export const POST_COMPLETE_START = 'POST_COMPLETE_START';
 export const POST_COMPLETE_SUCCESS = 'POST_COMPLETE_SUCCESS';
 export const POST_COMPLETE_FAIL = 'POST_COMPLETE_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type PostCompleteActions =
+  | PostCompleteStartAction
+  | PostCompleteSuccessAction
+  | PostCompleteFailAction;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, PostCompleteActions>;
 
 export function postCompleteAction(itemId: number): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, PostCompleteActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(postCompleteStartAction());
@@ -38,11 +43,7 @@ export function postCompleteAction(itemId: number): ThunkResult<void> {
         dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {
-        dispatch(
-          postCompleteFailAction({
-            error: err.message,
-          }),
-        );
+        dispatch(postCompleteFailAction(err.message));
       });
   };
 }
@@ -66,15 +67,11 @@ export function postCompleteSuccessAction(): PostCompleteSuccessAction {
 }
 
 export interface PostCompleteFailAction
-  extends Action<typeof POST_COMPLETE_FAIL> {
-  payload: FormErrorState;
-}
+  extends SnackBarAction<typeof POST_COMPLETE_FAIL> {}
 
-export function postCompleteFailAction(
-  newErrors: FormErrorState,
-): PostCompleteFailAction {
+export function postCompleteFailAction(error: string): PostCompleteFailAction {
   return {
     type: POST_COMPLETE_FAIL,
-    payload: newErrors,
+    snackBarMessage: error,
   };
 }

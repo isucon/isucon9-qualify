@@ -12,23 +12,24 @@ import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
 import { FormErrorState } from '../reducers/formErrorReducer';
+import { AppState } from '../index';
 
 export const FETCH_TIMELINE_START = 'FETCH_TIMELINE_START';
 export const FETCH_TIMELINE_SUCCESS = 'FETCH_TIMELINE_SUCCESS';
 export const FETCH_TIMELINE_FAIL = 'FETCH_TIMELINE_FAIL';
 
-type Actions =
+export type FetchTimelineActions =
   | FetchTimelineStartAction
   | FetchTimelineSuccessAction
   | FetchTimelineFailAction;
-type ThunkResult<R> = ThunkAction<R, void, undefined, Actions>;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, FetchTimelineActions>;
 
 export function fetchTimelineAction(
   createdAt?: number,
   itemId?: number,
   categoryId?: number,
 ): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, Actions>) => {
+  return (dispatch: ThunkDispatch<AppState, any, FetchTimelineActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(fetchTimelineStartAction());

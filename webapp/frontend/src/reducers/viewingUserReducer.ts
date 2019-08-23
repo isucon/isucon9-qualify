@@ -1,9 +1,6 @@
-import { AnyAction } from 'redux';
 import { UserData } from '../dataObjects/user';
-import {
-  FETCH_USER_PAGE_DATA_SUCCESS,
-  FetchUserPageDataSuccessAction,
-} from '../actions/fetchUserPageDataAction';
+import { FETCH_USER_PAGE_DATA_SUCCESS } from '../actions/fetchUserPageDataAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 // ユーザページに表示するユーザ情報のstate
 export interface ViewingUserState {
@@ -12,11 +9,9 @@ export interface ViewingUserState {
 
 const initialState: ViewingUserState = {};
 
-type actions = FetchUserPageDataSuccessAction | AnyAction;
-
 const viewingUser = (
   state: ViewingUserState = initialState,
-  action: actions,
+  action: ActionTypes,
 ): ViewingUserState => {
   switch (action.type) {
     case FETCH_USER_PAGE_DATA_SUCCESS:

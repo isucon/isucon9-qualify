@@ -1,54 +1,24 @@
-import { AnyAction } from 'redux';
 import {
   FETCH_ITEM_FAIL,
   FETCH_ITEM_START,
   FETCH_ITEM_SUCCESS,
-  FetchItemFailAction,
-  FetchItemStartAction,
-  FetchItemSuccessAction,
 } from '../actions/fetchItemAction';
 import {
   FETCH_SETTINGS_FAIL,
   FETCH_SETTINGS_START,
   FETCH_SETTINGS_SUCCESS,
-  FetchSettingsFailAction,
-  FetchSettingsStartAction,
-  FetchSettingsSuccessAction,
 } from '../actions/settingsAction';
 import {
   FETCH_TIMELINE_FAIL,
-  FETCH_TIMELINE_START,
   FETCH_TIMELINE_SUCCESS,
-  FetchTimelineFailAction,
-  FetchTimelineStartAction,
-  FetchTimelineSuccessAction,
 } from '../actions/fetchTimelineAction';
-import { LocationChangeAction } from 'connected-react-router';
 import {
-  Actions as FetchUserPageActions,
   FETCH_USER_PAGE_DATA_FAIL,
   FETCH_USER_PAGE_DATA_START,
   FETCH_USER_PAGE_DATA_SUCCESS,
 } from '../actions/fetchUserPageDataAction';
-import {
-  PATH_NAME_CHANGE,
-  PathNameChangeAction,
-} from '../actions/locationChangeAction';
-
-type Actions =
-  | LocationChangeAction
-  | FetchItemStartAction
-  | FetchItemSuccessAction
-  | FetchItemFailAction
-  | FetchTimelineStartAction
-  | FetchTimelineSuccessAction
-  | FetchTimelineFailAction
-  | FetchSettingsStartAction
-  | FetchSettingsSuccessAction
-  | FetchSettingsFailAction
-  | FetchUserPageActions
-  | PathNameChangeAction
-  | AnyAction;
+import { PATH_NAME_CHANGE } from '../actions/locationChangeAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface PageState {
   isLoading: boolean;
@@ -71,7 +41,10 @@ const pathChangeState: PageState = {
   isUserPageLoading: true,
 };
 
-const page = (state: PageState = initialState, action: Actions): PageState => {
+const page = (
+  state: PageState = initialState,
+  action: ActionTypes,
+): PageState => {
   switch (action.type) {
     // Item page
     case FETCH_ITEM_START:

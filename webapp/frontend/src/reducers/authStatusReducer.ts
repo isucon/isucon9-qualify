@@ -1,18 +1,11 @@
-import {
-  LOGIN_SUCCESS,
-  LoginSuccessAction,
-} from '../actions/authenticationActions';
-import {
-  REGISTER_SUCCESS,
-  RegisterSuccessAction,
-} from '../actions/registerAction';
+import { LOGIN_SUCCESS } from '../actions/authenticationActions';
+import { REGISTER_SUCCESS } from '../actions/registerAction';
 import {
   FETCH_SETTINGS_FAIL,
   FETCH_SETTINGS_SUCCESS,
-  FetchSettingsFailAction,
-  FetchSettingsSuccessAction,
 } from '../actions/settingsAction';
 import { UserData } from '../dataObjects/user';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface AuthStatusState {
   userId?: number;
@@ -26,15 +19,9 @@ const initialState: AuthStatusState = {
   checked: false,
 };
 
-type Actions =
-  | LoginSuccessAction
-  | RegisterSuccessAction
-  | FetchSettingsSuccessAction
-  | FetchSettingsFailAction;
-
 const authStatus = (
   state: AuthStatusState = initialState,
-  action: Actions,
+  action: ActionTypes,
 ): AuthStatusState => {
   switch (action.type) {
     case LOGIN_SUCCESS:

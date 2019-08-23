@@ -1,9 +1,6 @@
-import { AnyAction } from 'redux';
 import { ItemData } from '../dataObjects/item';
-import {
-  FETCH_ITEM_SUCCESS,
-  FetchItemSuccessAction,
-} from '../actions/fetchItemAction';
+import { FETCH_ITEM_SUCCESS } from '../actions/fetchItemAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface ViewingItemState {
   item?: ItemData;
@@ -11,11 +8,9 @@ export interface ViewingItemState {
 
 const initialState: ViewingItemState = {};
 
-type actions = AnyAction | FetchItemSuccessAction;
-
 const viewingItem = (
   state: ViewingItemState = initialState,
-  action: actions,
+  action: ActionTypes,
 ): ViewingItemState => {
   switch (action.type) {
     case FETCH_ITEM_SUCCESS:

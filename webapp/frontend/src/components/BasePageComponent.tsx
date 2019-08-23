@@ -9,6 +9,7 @@ import {
 } from '@material-ui/core';
 import LoadingComponent from './LoadingComponent';
 import HeaderContainer from '../containers/HeaderContainer';
+import SnackBarContainer from '../containers/SnackBarContainer';
 import { StyleRules } from '@material-ui/core/styles';
 import createStyles from '@material-ui/core/styles/createStyles';
 import withStyles from '@material-ui/core/styles/withStyles';
@@ -16,7 +17,7 @@ import withStyles from '@material-ui/core/styles/withStyles';
 const themeInstance = createMuiTheme({
   palette: {
     background: {
-      default: 'white',
+      default: '#fff',
     },
   },
 });
@@ -47,6 +48,7 @@ class BasePageComponent extends React.Component<Props> {
           ) : (
             this.props.children || null
           )}
+          <SnackBarContainer />
         </Container>
       </MuiThemeProvider>
     );

@@ -1,13 +1,7 @@
-import { AnyAction } from 'redux';
 import { TimelineItem } from '../dataObjects/item';
-import {
-  FETCH_TIMELINE_SUCCESS,
-  FetchTimelineSuccessAction,
-} from '../actions/fetchTimelineAction';
-import {
-  PATH_NAME_CHANGE,
-  PathNameChangeAction,
-} from '../actions/locationChangeAction';
+import { FETCH_TIMELINE_SUCCESS } from '../actions/fetchTimelineAction';
+import { PATH_NAME_CHANGE } from '../actions/locationChangeAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface TimelineState {
   items: TimelineItem[];
@@ -21,17 +15,15 @@ const initialState: TimelineState = {
   hasNext: false,
 };
 
-type Actions = FetchTimelineSuccessAction | PathNameChangeAction | AnyAction;
-
 const timeline = (
   state: TimelineState = initialState,
-  action: Actions,
+  action: ActionTypes,
 ): TimelineState => {
   switch (action.type) {
     case PATH_NAME_CHANGE:
       return initialState;
     case FETCH_TIMELINE_SUCCESS:
-      const { payload } = action as FetchTimelineSuccessAction;
+      const { payload } = action;
       return {
         items: state.items.concat(payload.items),
         hasNext: payload.hasNext,

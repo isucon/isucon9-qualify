@@ -1,19 +1,24 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { FormErrorState } from '../reducers/formErrorReducer';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { ErrorRes, ShipReq, ShipRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
+import { SnackBarAction } from './actionTypes';
 
 export const POST_SHIPPED_START = 'POST_SHIPPED_START';
 export const POST_SHIPPED_SUCCESS = 'POST_SHIPPED_SUCCESS';
 export const POST_SHIPPED_FAIL = 'POST_SHIPPED_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type PostShippedActions =
+  | PostShippedStartAction
+  | PostShippedSuccessAction
+  | PostShippedFailAction;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, PostShippedActions>;
 
 export function postShippedAction(itemId: number): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, PostShippedActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(postShippedStartAction());
@@ -38,11 +43,7 @@ export function postShippedAction(itemId: number): ThunkResult<void> {
         dispatch(fetchItemAction(itemId.toString())); // FIXME: 異常系のハンドリングが取引ページ向けでない
       })
       .catch((err: Error) => {
-        dispatch(
-          postShippedFailAction({
-            error: err.message,
-          }),
-        );
+        dispatch(postShippedFailAction(err.message));
       });
   };
 }
@@ -66,15 +67,11 @@ export function postShippedSuccessAction(): PostShippedSuccessAction {
 }
 
 export interface PostShippedFailAction
-  extends Action<typeof POST_SHIPPED_FAIL> {
-  payload: FormErrorState;
-}
+  extends SnackBarAction<typeof POST_SHIPPED_FAIL> {}
 
-export function postShippedFailAction(
-  newErrors: FormErrorState,
-): PostShippedFailAction {
+export function postShippedFailAction(error: string): PostShippedFailAction {
   return {
     type: POST_SHIPPED_FAIL,
-    payload: newErrors,
+    snackBarMessage: error,
   };
 }

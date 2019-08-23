@@ -1,18 +1,24 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { ErrorRes, BumpReq, BumpRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
 
 export const POST_BUMP_START = 'POST_BUMP_START';
 export const POST_BUMP_SUCCESS = 'POST_BUMP_SUCCESS';
 export const POST_BUMP_FAIL = 'POST_BUMP_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type PostBumpActions =
+  | PostBumpStartAction
+  | PostBumpSuccessAction
+  | PostBumpFailAction;
+
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, PostBumpActions>;
 
 export function postBumpAction(itemId: number): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, PostBumpActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(postBumpStartAction());

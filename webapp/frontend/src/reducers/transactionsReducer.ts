@@ -1,14 +1,8 @@
-import { AnyAction } from 'redux';
 import { TransactionItem } from '../dataObjects/item';
-import {
-  FETCH_TRANSACTIONS_SUCCESS,
-  FetchTransactionsSuccessAction,
-} from '../actions/fetchTransactionsAction';
-import {
-  FETCH_USER_PAGE_DATA_SUCCESS,
-  FetchUserPageDataSuccessAction,
-} from '../actions/fetchUserPageDataAction';
-import { LOCATION_CHANGE, LocationChangeAction } from 'connected-react-router';
+import { FETCH_TRANSACTIONS_SUCCESS } from '../actions/fetchTransactionsAction';
+import { FETCH_USER_PAGE_DATA_SUCCESS } from '../actions/fetchUserPageDataAction';
+import { LOCATION_CHANGE } from 'connected-react-router';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface TransactionsState {
   items: TransactionItem[];
@@ -20,15 +14,9 @@ const initialState: TransactionsState = {
   hasNext: false,
 };
 
-type Actions =
-  | FetchTransactionsSuccessAction
-  | LocationChangeAction
-  | FetchUserPageDataSuccessAction
-  | AnyAction;
-
 const transactions = (
   state: TransactionsState = initialState,
-  action: Actions,
+  action: ActionTypes,
 ): TransactionsState => {
   switch (action.type) {
     case LOCATION_CHANGE:

@@ -1,6 +1,6 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { ErrorRes, SettingsRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { AppState } from '../index';
@@ -14,10 +14,14 @@ export const FETCH_SETTINGS_START = 'FETCH_SETTINGS_START';
 export const FETCH_SETTINGS_SUCCESS = 'FETCH_SETTINGS_SUCCESS';
 export const FETCH_SETTINGS_FAIL = 'FETCH_SETTINGS_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, AppState, undefined, AnyAction>;
+export type SettingsActions =
+  | FetchSettingsStartAction
+  | FetchSettingsSuccessAction
+  | FetchSettingsFailAction;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, SettingsActions>;
 
 export function fetchSettings(): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<AppState, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, SettingsActions>) => {
     Promise.resolve(() => {
       dispatch(fetchSettingStartAction());
     })
