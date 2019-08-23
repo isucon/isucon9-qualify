@@ -64,6 +64,13 @@ const initialState: PageState = {
   isUserPageLoading: true,
 };
 
+const pathChangeState: PageState = {
+  isLoading: false, // Settings取得時しかtrueにならない
+  isItemLoading: true,
+  isTimelineLoading: true,
+  isUserPageLoading: true,
+};
+
 const page = (state: PageState = initialState, action: Actions): PageState => {
   switch (action.type) {
     // Item page
@@ -73,8 +80,6 @@ const page = (state: PageState = initialState, action: Actions): PageState => {
     case FETCH_ITEM_FAIL:
       return { ...state, isItemLoading: false };
     // Timeline
-    case FETCH_TIMELINE_START:
-      return { ...state, isTimelineLoading: true };
     case FETCH_TIMELINE_SUCCESS:
     case FETCH_TIMELINE_FAIL:
       return { ...state, isTimelineLoading: false };
@@ -92,6 +97,7 @@ const page = (state: PageState = initialState, action: Actions): PageState => {
       return { ...state, isUserPageLoading: false };
     // Location change
     case PATH_NAME_CHANGE:
+      return pathChangeState;
     default:
       return { ...state };
   }
