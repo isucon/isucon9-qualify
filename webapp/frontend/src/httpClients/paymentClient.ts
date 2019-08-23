@@ -1,18 +1,9 @@
-import config from '../config';
-
 /**
  * HTTP client for payment service
  */
 class PaymentClient {
-  private baseUrl: string = config.paymentUrl;
+  private baseURL?: string;
   private defaultHeaders: HeadersInit = {};
-
-  async get(path: string): Promise<Response> {
-    return await fetch(`${this.baseUrl}${path}`, {
-      method: 'GET',
-      headers: this.defaultHeaders,
-    });
-  }
 
   async post(path: string, params?: Object): Promise<Response> {
     let requestOption: RequestInit = {
@@ -28,7 +19,11 @@ class PaymentClient {
       requestOption.body = JSON.stringify(params);
     }
 
-    return await fetch(`${this.baseUrl}${path}`, requestOption);
+    return await fetch(`${this.baseURL}${path}`, requestOption);
+  }
+
+  public setBaseURL(baseURL: string) {
+    this.baseURL = baseURL;
   }
 }
 

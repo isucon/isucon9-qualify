@@ -23,8 +23,7 @@ import {
   FetchTimelineStartAction,
   FetchTimelineSuccessAction,
 } from '../actions/fetchTimelineAction';
-import { LOCATION_CHANGE, LocationChangeAction } from 'connected-react-router';
-import { routes } from '../routes/Route';
+import { LocationChangeAction } from 'connected-react-router';
 import {
   Actions as FetchUserPageActions,
   FETCH_USER_PAGE_DATA_FAIL,
