@@ -49,6 +49,10 @@ type cardTokenStore struct {
 type cardToken struct {
 	number string
 	expire time.Time
+
+	// for benchmarker
+	itemID int64
+	price  int
 }
 
 func newCardToken() *cardTokenStore {
@@ -170,6 +174,20 @@ func (s *ServerPayment) tokenHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if ct.price != 0 {
+		if ct.price != tr.Price {
+			result := tokenRes{
+				Status: "wrong price",
+			}
+
+			b, _ := json.Marshal(result)
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write(b)
+			return
+		}
+	}
+
 	result := tokenRes{
 		Status: "ok",
 	}
@@ -234,6 +252,17 @@ func (s *ServerPayment) cardHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func (s *ServerPayment) ForceSet(cardNumber string) string {
-	return s.cardTokens.Set(cardNumber)
+func (s *ServerPayment) ForceSet(card string, itemID int64, price int) string {
+	token := secureRandomStr(20)
+	expire := time.Now().Add(5 * time.Minute)
+	s.cardTokens.Lock()
+	s.cardTokens.items[token] = cardToken{
+		number: card,
+		expire: expire,
+		itemID: itemID,
+		price:  price,
+	}
+	s.cardTokens.Unlock()
+
+	return token
 }
