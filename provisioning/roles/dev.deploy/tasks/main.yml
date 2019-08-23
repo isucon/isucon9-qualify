@@ -16,7 +16,6 @@
       - "--exclude=.git"
       - "--exclude=.gitignore"
       - "--exclude=provisioning"
-      - "--exclude=initial-data"
 
 - name: Chown isucon
   become: yes
