@@ -17,6 +17,10 @@ const useStyles = makeStyles(theme => ({
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(2),
   },
+  checklist: {
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+  },
   img: {
     width: '70%',
   },
@@ -47,12 +51,15 @@ const TopPage: React.FC = () => {
       <div className={classes.paper}>
         <img className={classes.img} src={'/logo.png'} alt={'ISUCARI'} />
         <div className={classes.textarea}>
-          <Typography variant="h6">ついにリリース！</Typography>
           <Typography variant="h6">
-            椅子限定C2CのECサービス カードで簡単決済。
+            椅子限定のフリマサイト ついにリリース！
           </Typography>
+          <div className={classes.checklist}>
+            <Typography variant="h6">✔ 安全なカード決済</Typography>
+            <Typography variant="h6">✔ お互い匿名で安心配送</Typography>
+          </div>
           <Typography variant="h6">
-            もちろんセキュリティも万全。 お互いの住所を知らなくても配送可能。
+            安心安全にあなただけの椅子を手に入れよう！
           </Typography>
         </div>
         <Button
