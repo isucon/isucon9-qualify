@@ -1,21 +1,24 @@
-import { AuthStatusState } from '../reducers/authStatusReducer';
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
+import { Action } from 'redux';
 import { FormErrorState } from '../reducers/formErrorReducer';
-import { push } from 'connected-react-router';
-import { AnyAction } from 'redux';
+import { CallHistoryMethodAction, push } from 'connected-react-router';
 import { ErrorRes, RegisterReq, RegisterRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
 
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAIL = 'REGISTER_FAIL';
 
-export type State = void | AuthStatusState;
-type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>;
+export type RegisterActions =
+  | RegisterSuccessAction
+  | RegisterFailAction
+  | CallHistoryMethodAction;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, RegisterActions>;
 
 export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, RegisterActions>) => {
     AppClient.post('/register', payload)
       .then(async (response: Response) => {
         if (response.status !== 200) {
@@ -46,8 +49,7 @@ export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
   };
 }
 
-export interface RegisterSuccessAction {
-  type: typeof REGISTER_SUCCESS;
+export interface RegisterSuccessAction extends Action<typeof REGISTER_SUCCESS> {
   payload: {
     userId: number;
     accountName: string;
@@ -67,8 +69,7 @@ export function registerSuccessAction(newAuthState: {
   };
 }
 
-export interface RegisterFailAction {
-  type: typeof REGISTER_FAIL;
+export interface RegisterFailAction extends Action<typeof REGISTER_FAIL> {
   payload: FormErrorState;
 }
 

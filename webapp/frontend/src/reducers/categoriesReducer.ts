@@ -1,9 +1,6 @@
-import { AnyAction } from 'redux';
 import { CategorySimple } from '../dataObjects/category';
-import {
-  FETCH_SETTINGS_SUCCESS,
-  FetchSettingsSuccessAction,
-} from '../actions/settingsAction';
+import { FETCH_SETTINGS_SUCCESS } from '../actions/settingsAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface CategoriesState {
   categories: CategorySimple[];
@@ -13,11 +10,9 @@ const initialState: CategoriesState = {
   categories: [],
 };
 
-type Actions = FetchSettingsSuccessAction | AnyAction;
-
 const categories = (
   state: CategoriesState = initialState,
-  action: Actions,
+  action: ActionTypes,
 ): CategoriesState => {
   switch (action.type) {
     case FETCH_SETTINGS_SUCCESS:

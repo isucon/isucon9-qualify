@@ -1,10 +1,10 @@
-import { AnyAction } from 'redux';
 import {
   BUY_FAIL,
   BUY_START,
   BUY_SUCCESS,
   USING_CARD_FAIL,
 } from '../actions/buyAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface BuyPageState {
   loadingBuy: boolean;
@@ -16,7 +16,7 @@ const initialState: BuyPageState = {
 
 const buyPage = (
   state: BuyPageState = initialState,
-  action: AnyAction,
+  action: ActionTypes,
 ): BuyPageState => {
   switch (action.type) {
     case BUY_START:

@@ -1,45 +1,14 @@
-import {
-  INTERNAL_SERVER_ERROR,
-  InternalServerErrorAction,
-  NOT_FOUND_ERROR,
-  NotFoundErrorAction,
-} from '../actions/errorAction';
-import {
-  FETCH_ITEM_FAIL,
-  FetchItemFailAction,
-} from '../actions/fetchItemAction';
-import {
-  FETCH_SETTINGS_FAIL,
-  FetchSettingsFailAction,
-} from '../actions/settingsAction';
-import {
-  POST_SHIPPED_FAIL,
-  PostShippedFailAction,
-} from '../actions/postShippedAction';
-import {
-  POST_SHIPPED_DONE_FAIL,
-  PostShippedDoneFailAction,
-} from '../actions/postShippedDoneAction';
-import {
-  POST_COMPLETE_FAIL,
-  PostCompleteFailAction,
-} from '../actions/postCompleteAction';
-import {
-  FETCH_TRANSACTIONS_FAIL,
-  FetchTransactionsFailAction,
-} from '../actions/fetchTransactionsAction';
-import {
-  FETCH_USER_ITEMS_FAIL,
-  FetchUserItemsFailAction,
-} from '../actions/fetchUserItemsAction';
-import {
-  FETCH_USER_PAGE_DATA_FAIL,
-  FetchUserPageDataFailAction,
-} from '../actions/fetchUserPageDataAction';
-import {
-  FETCH_TIMELINE_FAIL,
-  FetchTimelineFailAction,
-} from '../actions/fetchTimelineAction';
+import { INTERNAL_SERVER_ERROR, NOT_FOUND_ERROR } from '../actions/errorAction';
+import { FETCH_ITEM_FAIL } from '../actions/fetchItemAction';
+import { FETCH_SETTINGS_FAIL } from '../actions/settingsAction';
+import { POST_SHIPPED_FAIL } from '../actions/postShippedAction';
+import { POST_SHIPPED_DONE_FAIL } from '../actions/postShippedDoneAction';
+import { POST_COMPLETE_FAIL } from '../actions/postCompleteAction';
+import { FETCH_TRANSACTIONS_FAIL } from '../actions/fetchTransactionsAction';
+import { FETCH_USER_ITEMS_FAIL } from '../actions/fetchUserItemsAction';
+import { FETCH_USER_PAGE_DATA_FAIL } from '../actions/fetchUserPageDataAction';
+import { FETCH_TIMELINE_FAIL } from '../actions/fetchTimelineAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 export const NoError = 'NO_ERROR';
 export const NotFoundError = 'NOT_FOUND';
@@ -58,22 +27,9 @@ const initialState: ErrorState = {
   errorType: NoError,
 };
 
-type errorActions =
-  | NotFoundErrorAction
-  | InternalServerErrorAction
-  | FetchItemFailAction
-  | FetchTimelineFailAction
-  | FetchTransactionsFailAction
-  | FetchUserItemsFailAction
-  | FetchUserPageDataFailAction
-  | FetchSettingsFailAction
-  | PostShippedFailAction
-  | PostShippedDoneFailAction
-  | PostCompleteFailAction;
-
 const error = (
   state: ErrorState = initialState,
-  action: errorActions,
+  action: ActionTypes,
 ): ErrorState => {
   switch (action.type) {
     case NOT_FOUND_ERROR:

@@ -14,16 +14,22 @@ import { UserData } from '../dataObjects/user';
 import { ShippingStatus } from '../dataObjects/shipping';
 import { TransactionStatus } from '../dataObjects/transaction';
 import { FormErrorState } from '../reducers/formErrorReducer';
+import { AppState } from '../index';
 
 export const FETCH_USER_PAGE_DATA_START = 'FETCH_USER_PAGE_DATA_START';
 export const FETCH_USER_PAGE_DATA_SUCCESS = 'FETCH_USER_PAGE_DATA_SUCCESS';
 export const FETCH_USER_PAGE_DATA_FAIL = 'FETCH_USER_PAGE_DATA_FAIL';
 
-export type Actions =
+export type FetchUserPageDataActions =
   | FetchUserPageDataStartAction
   | FetchUserPageDataSuccessAction
   | FetchUserPageDataFailAction;
-type ThunkResult<R> = ThunkAction<R, void, undefined, Actions>;
+type ThunkResult<R> = ThunkAction<
+  R,
+  AppState,
+  undefined,
+  FetchUserPageDataActions
+>;
 
 async function fetchUserPageData(
   userId: number,
@@ -60,7 +66,7 @@ export function fetchUserPageDataAction(
   userId: number,
   isMyPage: boolean,
 ): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, Actions>) => {
+  return (dispatch: ThunkDispatch<AppState, any, FetchUserPageDataActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(fetchUserPageDataStartAction());

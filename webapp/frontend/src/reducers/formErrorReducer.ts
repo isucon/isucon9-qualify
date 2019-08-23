@@ -1,20 +1,9 @@
-import { LOGIN_FAIL, LoginFailAction } from '../actions/authenticationActions';
-import { AnyAction } from 'redux';
-import { REGISTER_FAIL, RegisterFailAction } from '../actions/registerAction';
-import {
-  SELLING_ITEM_FAIL,
-  SellingFailAction,
-} from '../actions/sellingItemAction';
-import {
-  BUY_FAIL,
-  BuyFailAction,
-  USING_CARD_FAIL,
-  UsingCardFailAction,
-} from '../actions/buyAction';
-import {
-  POST_ITEM_EDIT_FAIL,
-  PostItemEditFailAction,
-} from '../actions/postItemEditAction';
+import { LOGIN_FAIL } from '../actions/authenticationActions';
+import { REGISTER_FAIL } from '../actions/registerAction';
+import { SELLING_ITEM_FAIL } from '../actions/sellingItemAction';
+import { BUY_FAIL, USING_CARD_FAIL } from '../actions/buyAction';
+import { POST_ITEM_EDIT_FAIL } from '../actions/postItemEditAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface FormErrorState {
   error?: string;
@@ -33,18 +22,9 @@ const initialState: FormErrorState = {
   itemEditFormError: undefined,
 };
 
-type Actions =
-  | AnyAction
-  | PostItemEditFailAction
-  | LoginFailAction
-  | RegisterFailAction
-  | UsingCardFailAction
-  | BuyFailAction
-  | SellingFailAction;
-
 const formError = (
   state: FormErrorState = initialState,
-  action: Actions,
+  action: ActionTypes,
 ): FormErrorState => {
   switch (action.type) {
     case LOGIN_FAIL:

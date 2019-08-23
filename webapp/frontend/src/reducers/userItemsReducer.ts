@@ -1,14 +1,9 @@
 import { AnyAction } from 'redux';
 import { TimelineItem } from '../dataObjects/item';
-import {
-  FETCH_USER_ITEMS_SUCCESS,
-  FetchUserItemsSuccessAction,
-} from '../actions/fetchUserItemsAction';
-import {
-  FETCH_USER_PAGE_DATA_SUCCESS,
-  FetchUserPageDataSuccessAction,
-} from '../actions/fetchUserPageDataAction';
-import { LOCATION_CHANGE, LocationChangeAction } from 'connected-react-router';
+import { FETCH_USER_ITEMS_SUCCESS } from '../actions/fetchUserItemsAction';
+import { FETCH_USER_PAGE_DATA_SUCCESS } from '../actions/fetchUserPageDataAction';
+import { LOCATION_CHANGE } from 'connected-react-router';
+import { ActionTypes } from '../actions/actionTypes';
 
 export interface UserItemsState {
   items: TimelineItem[];
@@ -20,15 +15,9 @@ const initialState: UserItemsState = {
   hasNext: false,
 };
 
-type Actions =
-  | FetchUserItemsSuccessAction
-  | FetchUserPageDataSuccessAction
-  | LocationChangeAction
-  | AnyAction;
-
 const userItems = (
   state: UserItemsState = initialState,
-  action: Actions,
+  action: ActionTypes,
 ): UserItemsState => {
   switch (action.type) {
     case LOCATION_CHANGE:

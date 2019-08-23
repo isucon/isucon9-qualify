@@ -13,22 +13,28 @@ import { NotFoundError } from '../errors/NotFoundError';
 import { TransactionStatus } from '../dataObjects/transaction';
 import { ShippingStatus } from '../dataObjects/shipping';
 import { FormErrorState } from '../reducers/formErrorReducer';
+import { AppState } from '../index';
 
 export const FETCH_TRANSACTIONS_START = 'FETCH_TRANSACTIONS_START';
 export const FETCH_TRANSACTIONS_SUCCESS = 'FETCH_TRANSACTIONS_SUCCESS';
 export const FETCH_TRANSACTIONS_FAIL = 'FETCH_TRANSACTIONS_FAIL';
 
-type Actions =
+export type FetchTransactionActions =
   | FetchTransactionsStartAction
   | FetchTransactionsSuccessAction
   | FetchTransactionsFailAction;
-type ThunkResult<R> = ThunkAction<R, void, undefined, Actions>;
+type ThunkResult<R> = ThunkAction<
+  R,
+  AppState,
+  undefined,
+  FetchTransactionActions
+>;
 
 export function fetchTransactionsAction(
   itemId?: number,
   createdAt?: number,
 ): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, Actions>) => {
+  return (dispatch: ThunkDispatch<AppState, any, FetchTransactionActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(fetchTransactionsStartAction());

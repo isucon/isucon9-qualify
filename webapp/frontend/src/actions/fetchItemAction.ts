@@ -1,20 +1,26 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { ErrorRes, GetItemRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { ItemData } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
 import { FormErrorState } from '../reducers/formErrorReducer';
+import { AppState } from '../index';
 
 export const FETCH_ITEM_START = 'FETCH_ITEM_START';
 export const FETCH_ITEM_SUCCESS = 'FETCH_ITEM_SUCCESS';
 export const FETCH_ITEM_FAIL = 'FETCH_ITEM_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type FetchItemActions =
+  | FetchItemStartAction
+  | FetchItemSuccessAction
+  | FetchItemFailAction;
+
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, FetchItemActions>;
 
 export function fetchItemAction(itemId: string): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, FetchItemActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(fetchItemStartAction());

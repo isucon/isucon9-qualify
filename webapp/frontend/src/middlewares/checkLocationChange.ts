@@ -1,14 +1,13 @@
-import { AnyAction, Dispatch, Middleware, MiddlewareAPI } from 'redux';
+import { Dispatch, Middleware, MiddlewareAPI } from 'redux';
 import { AppState } from '../index';
-import { LOCATION_CHANGE, LocationChangeAction } from 'connected-react-router';
+import { LOCATION_CHANGE } from 'connected-react-router';
 import { pathNameChangeAction } from '../actions/locationChangeAction';
+import { ActionTypes } from '../actions/actionTypes';
 
 // react-routerのページ遷移発火時、pathnameが変わった場合は独自のactionを発火する
 const checkLocationChange: Middleware = <S extends AppState>(
   store: MiddlewareAPI<Dispatch, S>,
-) => (next: Dispatch<AnyAction>) => (
-  action: AnyAction | LocationChangeAction,
-): any => {
+) => (next: Dispatch<ActionTypes>) => (action: ActionTypes): any => {
   const { getState, dispatch } = store;
   if (action.type !== LOCATION_CHANGE) {
     return next(action);

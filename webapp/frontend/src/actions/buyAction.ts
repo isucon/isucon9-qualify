@@ -2,28 +2,35 @@ import AppClient from '../httpClients/appClient';
 import PaymentClient from '../httpClients/paymentClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
-import { push } from 'connected-react-router';
-import { Action, AnyAction } from 'redux';
+import { CallHistoryMethodAction, push } from 'connected-react-router';
+import { Action } from 'redux';
 import { BuyReq, ErrorRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
 import { CardReq, CardRes } from '../types/paymentApiTypes';
 import { PaymentResponseError } from '../errors/PaymentResponseError';
 import { AppResponseError } from '../errors/AppResponseError';
 import { ResponseError } from '../errors/ResponseError';
+import { AppState } from '../index';
 
 export const BUY_START = 'BUY_START';
 export const BUY_SUCCESS = 'BUY_SUCCESS';
 export const BUY_FAIL = 'BUY_FAIL';
 export const USING_CARD_FAIL = 'USING_CARD_FAIL';
 
-type State = void;
-type ThunkResult<R> = ThunkAction<R, State, undefined, AnyAction>;
+export type BuyActions =
+  | BuyStartAction
+  | BuySuccessAction
+  | BuyFailAction
+  | UsingCardFailAction
+  | CallHistoryMethodAction;
+
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, BuyActions>;
 
 export function buyItemAction(
   itemId: number,
   cardNumber: string,
 ): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, BuyActions>) => {
     Promise.resolve(() => {
       dispatch(buyStartAction());
     })

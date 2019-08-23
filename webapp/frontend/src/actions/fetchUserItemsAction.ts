@@ -11,23 +11,29 @@ import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
 import { FormErrorState } from '../reducers/formErrorReducer';
+import { AppState } from '../index';
 
 export const FETCH_USER_ITEMS_START = 'FETCH_USER_ITEMS_START';
 export const FETCH_USER_ITEMS_SUCCESS = 'FETCH_USER_ITEMS_SUCCESS';
 export const FETCH_USER_ITEMS_FAIL = 'FETCH_USER_ITEMS_FAIL';
 
-type Actions =
+export type FetchUserItemsActions =
   | FetchUserItemsStartAction
   | FetchUserItemsSuccessAction
   | FetchUserItemsFailAction;
-type ThunkResult<R> = ThunkAction<R, void, undefined, Actions>;
+type ThunkResult<R> = ThunkAction<
+  R,
+  AppState,
+  undefined,
+  FetchUserItemsActions
+>;
 
 export function fetchUserItemsAction(
   userId: number,
   itemId?: number,
   createdAt?: number,
 ): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, Actions>) => {
+  return (dispatch: ThunkDispatch<AppState, any, FetchUserItemsActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(fetchUserItemsStartAction());

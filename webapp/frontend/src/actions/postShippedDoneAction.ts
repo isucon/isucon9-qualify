@@ -1,19 +1,29 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { ErrorRes, ShipDoneReq, ShipDoneRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
 
 export const POST_SHIPPED_DONE_START = 'POST_SHIPPED_DONE_START';
 export const POST_SHIPPED_DONE_SUCCESS = 'POST_SHIPPED_DONE_SUCCESS';
 export const POST_SHIPPED_DONE_FAIL = 'POST_SHIPPED_DONE_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type PostShippedDoneActions =
+  | PostShippedDoneStartAction
+  | PostShippedDoneSuccessAction
+  | PostShippedDoneFailAction;
+type ThunkResult<R> = ThunkAction<
+  R,
+  AppState,
+  undefined,
+  PostShippedDoneActions
+>;
 
 export function postShippedDoneAction(itemId: number): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, PostShippedDoneActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(postShippedDoneStartAction());

@@ -1,10 +1,11 @@
-import { AnyAction, Dispatch, Middleware, MiddlewareAPI } from 'redux';
+import { Dispatch, Middleware, MiddlewareAPI } from 'redux';
 import { AppState } from '../index';
+import { ActionTypes } from '../actions/actionTypes';
 
 const logger: Middleware = <S extends AppState>({
   getState,
-}: MiddlewareAPI<Dispatch, S>) => (next: Dispatch<AnyAction>) => (
-  action: any,
+}: MiddlewareAPI<Dispatch, S>) => (next: Dispatch<ActionTypes>) => (
+  action: ActionTypes,
 ): any => {
   console.group(action.type);
   console.info('dispatching', action);

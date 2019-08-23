@@ -1,19 +1,24 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { FormErrorState } from '../reducers/formErrorReducer';
-import { Action, AnyAction } from 'redux';
+import { Action } from 'redux';
 import { CompleteReq, CompleteRes, ErrorRes } from '../types/appApiTypes';
 import { fetchItemAction } from './fetchItemAction';
 import { AppResponseError } from '../errors/AppResponseError';
+import { AppState } from '../index';
 
 export const POST_COMPLETE_START = 'POST_COMPLETE_START';
 export const POST_COMPLETE_SUCCESS = 'POST_COMPLETE_SUCCESS';
 export const POST_COMPLETE_FAIL = 'POST_COMPLETE_FAIL';
 
-type ThunkResult<R> = ThunkAction<R, void, undefined, AnyAction>;
+export type PostCompleteActions =
+  | PostCompleteStartAction
+  | PostCompleteSuccessAction
+  | PostCompleteFailAction;
+type ThunkResult<R> = ThunkAction<R, AppState, undefined, PostCompleteActions>;
 
 export function postCompleteAction(itemId: number): ThunkResult<void> {
-  return (dispatch: ThunkDispatch<any, any, AnyAction>) => {
+  return (dispatch: ThunkDispatch<AppState, any, PostCompleteActions>) => {
     Promise.resolve()
       .then(() => {
         dispatch(postCompleteStartAction());
