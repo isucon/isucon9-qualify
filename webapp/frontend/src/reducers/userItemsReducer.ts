@@ -1,4 +1,3 @@
-import { AnyAction } from 'redux';
 import { TimelineItem } from '../dataObjects/item';
 import { FETCH_USER_ITEMS_SUCCESS } from '../actions/fetchUserItemsAction';
 import { FETCH_USER_PAGE_DATA_SUCCESS } from '../actions/fetchUserPageDataAction';

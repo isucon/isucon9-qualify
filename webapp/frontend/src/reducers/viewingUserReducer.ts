@@ -1,8 +1,5 @@
 import { UserData } from '../dataObjects/user';
-import {
-  FETCH_USER_PAGE_DATA_SUCCESS,
-  FetchUserPageDataSuccessAction,
-} from '../actions/fetchUserPageDataAction';
+import { FETCH_USER_PAGE_DATA_SUCCESS } from '../actions/fetchUserPageDataAction';
 import { ActionTypes } from '../actions/actionTypes';
 
 // ユーザページに表示するユーザ情報のstate
