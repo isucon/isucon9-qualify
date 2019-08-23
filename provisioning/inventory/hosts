@@ -2,5 +2,5 @@
 localhost
 [dev]
 localhost
-[external]
+[bench]
 localhost
