@@ -287,7 +287,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
-			targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
+			targetItemID, err := sell(ctx, s1, 100)
 			if err != nil {
 				critical.Add(err)
 				return
@@ -405,7 +405,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
-				targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
+				targetItemID, err := sell(ctx, s1, 100)
 				if err != nil {
 					critical.Add(err)
 

@@ -30,7 +30,7 @@ func sellAndBuy(ctx context.Context, user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
+	targetItemID, err := sell(ctx, s1, 100)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func sellAndBuy(ctx context.Context, user1, user2 asset.AppUser) error {
 }
 
 func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *session.Session) error {
-	targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
+	targetItemID, err := sell(ctx, s1, 100)
 	if err != nil {
 		return err
 	}
