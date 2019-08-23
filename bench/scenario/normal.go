@@ -49,7 +49,7 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 		return err
 	}
 
-	err = newCategoryItemsWithLoginedSession(ctx, s2)
+	err = loadNewCategoryItemsWithLoginedSession(ctx, s2)
 	if err != nil {
 		return err
 	}
@@ -275,12 +275,7 @@ func itemEdit(ctx context.Context, user1 asset.AppUser) error {
 	return nil
 }
 
-func newCategoryItems(ctx context.Context, user1 asset.AppUser) error {
-	s1, err := LoginedSession(ctx, user1)
-	if err != nil {
-		return err
-	}
-
+func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session) error {
 	category := asset.GetRandomRootCategory()
 
 	hasNext, rootCategoryName, items, err := s1.NewCategoryItems(ctx, category.ID)
@@ -366,7 +361,7 @@ func newCategoryItems(ctx context.Context, user1 asset.AppUser) error {
 	return nil
 }
 
-func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session) error {
+func loadNewCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session) error {
 	uitems := asset.GetUserItems(s1.UserID)
 	tIndex := 0
 	if len(uitems) >= 2 {

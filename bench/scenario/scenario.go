@@ -64,7 +64,14 @@ func Verify(ctx context.Context) *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1 := asset.GetRandomUser()
-		err := newCategoryItems(ctx, user1)
+
+		s1, err := LoginedSession(ctx, user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = newCategoryItemsWithLoginedSession(ctx, s1)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -258,6 +265,53 @@ func check(ctx context.Context, critical *fails.Critical) {
 	}()
 
 	// カテゴリ新着をある程度見る
+	// TODO: 初期データを後ろの方までいい感じに遡りたい
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+
+		s1, err := LoginedSession(ctx, user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		s2, err := LoginedSession(ctx, user2)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+	L:
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			err = newCategoryItemsWithLoginedSession(ctx, s1)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			err = buyComplete(ctx, s1, s2, targetItemID, 100)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
+		}
+	}()
 
 	// 取引一覧をある程度見る
 
