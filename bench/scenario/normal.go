@@ -252,20 +252,22 @@ func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Sess
 	return nil
 }
 
-func itemEdit(ctx context.Context, user1 asset.AppUser) error {
-	s1, err := LoginedSession(ctx, user1)
+func itemEditWithLoginedSession(ctx context.Context, s1 *session.Session, targetItemID int64, price int) error {
+	_, err := s1.ItemEdit(ctx, targetItemID, price)
 	if err != nil {
 		return err
 	}
 
-	targetItemID := asset.GetUserItemsFirst(user1.ID)
-	price := 110
-	_, err = s1.ItemEdit(ctx, targetItemID, price)
+	asset.SetItemPrice(s1.UserID, targetItemID, price)
+
+	return nil
+}
+
+func itemEditNewItemWithLoginedSession(ctx context.Context, s1 *session.Session, targetItemID int64, price int) error {
+	_, err := s1.ItemEdit(ctx, targetItemID, price)
 	if err != nil {
 		return err
 	}
-
-	asset.SetItemPrice(user1.ID, targetItemID, price)
 
 	return nil
 }

@@ -81,7 +81,16 @@ func Verify(ctx context.Context) *fails.Critical {
 	go func() {
 		defer wg.Done()
 		user1 := asset.GetRandomUser()
-		err := itemEdit(ctx, user1)
+
+		s1, err := LoginedSession(ctx, user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		targetItemID := asset.GetUserItemsFirst(s1.UserID)
+
+		err = itemEditWithLoginedSession(ctx, s1, targetItemID, 110)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -383,6 +392,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	// ユーザーページをある程度見る
 	// TODO: 初期データを後ろの方までいい感じに遡りたい
 	// TODO: ユーザーをランダムにしたい
+	// TODO: 商品ページも見るのは蛇足では
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -435,8 +445,59 @@ func check(ctx context.Context, critical *fails.Critical) {
 	}()
 
 	// 商品ページをいくつか見る
+	// TODO: 初期データをもう少し詰めてから実装する
 
 	// 出品した商品を編集する（100円を110円とかにする）
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+
+		s1, err := LoginedSession(ctx, user1)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		s2, err := LoginedSession(ctx, user2)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+	L:
+		for j := 0; j < 10; j++ {
+			ch := time.After(5 * time.Second)
+
+			targetItemID, err := sell(ctx, s1, 100)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItemID, 110)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = buyComplete(ctx, s1, s2, targetItemID, 110)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+		Final:
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
+		}
+	}()
 
 	go func() {
 		wg.Wait()
