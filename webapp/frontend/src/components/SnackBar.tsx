@@ -12,11 +12,11 @@ const useStyles = makeStyles(theme => ({
 
 type Props = {
   open: boolean;
-  error?: string;
+  message?: string;
   handleClose: (event: React.MouseEvent) => void;
 };
 
-const ErrorSnackBar: React.FC<Props> = ({ open, error, handleClose }) => {
+const SnackBar: React.FC<Props> = ({ open, message, handleClose }) => {
   const classes = useStyles();
 
   const handleOnClose = (event: React.SyntheticEvent, reason: string) => {
@@ -33,7 +33,7 @@ const ErrorSnackBar: React.FC<Props> = ({ open, error, handleClose }) => {
         open={open}
         autoHideDuration={6000}
         onClose={handleOnClose}
-        message={<span>{error}</span>}
+        message={<span>{message}</span>}
         action={[
           <IconButton
             key="close"
@@ -50,4 +50,4 @@ const ErrorSnackBar: React.FC<Props> = ({ open, error, handleClose }) => {
   );
 };
 
-export { ErrorSnackBar };
+export { SnackBar };
