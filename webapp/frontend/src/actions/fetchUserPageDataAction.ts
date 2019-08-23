@@ -15,6 +15,8 @@ import { ShippingStatus } from '../dataObjects/shipping';
 import { TransactionStatus } from '../dataObjects/transaction';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { AppState } from '../index';
+import { NotFoundError } from '../errors/NotFoundError';
+import { notFoundError, NotFoundErrorAction } from './errorAction';
 
 export const FETCH_USER_PAGE_DATA_START = 'FETCH_USER_PAGE_DATA_START';
 export const FETCH_USER_PAGE_DATA_SUCCESS = 'FETCH_USER_PAGE_DATA_SUCCESS';
@@ -23,7 +25,8 @@ export const FETCH_USER_PAGE_DATA_FAIL = 'FETCH_USER_PAGE_DATA_FAIL';
 export type FetchUserPageDataActions =
   | FetchUserPageDataStartAction
   | FetchUserPageDataSuccessAction
-  | FetchUserPageDataFailAction;
+  | FetchUserPageDataFailAction
+  | NotFoundErrorAction;
 type ThunkResult<R> = ThunkAction<
   R,
   AppState,
@@ -39,6 +42,11 @@ async function fetchUserPageData(
 
   if (!userDataRes.ok) {
     const errRes: ErrorRes = await userDataRes.json();
+
+    if (userDataRes.status === 404) {
+      throw new NotFoundError(errRes.error);
+    }
+
     throw new AppResponseError(errRes.error, userDataRes);
   }
 
@@ -121,6 +129,10 @@ export function fetchUserPageDataAction(
         );
       })
       .catch((err: Error) => {
+        if (err instanceof NotFoundError) {
+          dispatch(notFoundError());
+        }
+
         dispatch(
           fetchUserPageDataFailAction({
             error: err.message,

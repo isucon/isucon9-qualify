@@ -7,6 +7,7 @@ import { ItemData } from '../dataObjects/item';
 import { NotFoundError } from '../errors/NotFoundError';
 import { FormErrorState } from '../reducers/formErrorReducer';
 import { AppState } from '../index';
+import { notFoundError, NotFoundErrorAction } from './errorAction';
 
 export const FETCH_ITEM_START = 'FETCH_ITEM_START';
 export const FETCH_ITEM_SUCCESS = 'FETCH_ITEM_SUCCESS';
@@ -15,7 +16,8 @@ export const FETCH_ITEM_FAIL = 'FETCH_ITEM_FAIL';
 export type FetchItemActions =
   | FetchItemStartAction
   | FetchItemSuccessAction
-  | FetchItemFailAction;
+  | FetchItemFailAction
+  | NotFoundErrorAction;
 
 type ThunkResult<R> = ThunkAction<R, AppState, undefined, FetchItemActions>;
 
@@ -69,6 +71,11 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
         );
       })
       .catch((err: Error) => {
+        if (err instanceof NotFoundError) {
+          dispatch(notFoundError());
+          return;
+        }
+
         dispatch(
           fetchItemFailAction({
             error: err.message,
