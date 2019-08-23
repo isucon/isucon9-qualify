@@ -35,7 +35,7 @@ func sellAndBuy(ctx context.Context, user1, user2 asset.AppUser) error {
 		return err
 	}
 
-	err = buyComplete(ctx, s1, s2, targetItemID)
+	err = buyComplete(ctx, s1, s2, targetItemID, 100)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 		return err
 	}
 
-	err = buyComplete(ctx, s1, s2, targetItemID)
+	err = buyComplete(ctx, s1, s2, targetItemID, 100)
 	if err != nil {
 		return err
 	}

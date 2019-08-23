@@ -284,7 +284,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Last
 				}
 
-				err = buyComplete(ctx, s1, s2, targetItemID)
+				err = buyComplete(ctx, s1, s2, targetItemID, 100)
 				if err != nil {
 					critical.Add(err)
 

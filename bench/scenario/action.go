@@ -38,8 +38,8 @@ func LoginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session,
 	return s1, nil
 }
 
-func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int64) error {
-	token := sPayment.ForceSet(CorrectCardNumber)
+func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int64, price int) error {
+	token := sPayment.ForceSet(CorrectCardNumber, targetItemID, price)
 
 	_, err := s2.Buy(ctx, targetItemID, token)
 	if err != nil {
