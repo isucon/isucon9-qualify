@@ -1,0 +1,17 @@
+- name: Install isucari.perl
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon/isucari/webapp/perl
+  shell: |
+    bash -lc "carton install"
+
+- name: Copy isucari.perl unit file
+  copy:
+    src: etc/systemd/system/isucari.perl.service
+    dest: /etc/systemd/system/isucari.perl.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - daemon-reload

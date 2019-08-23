@@ -1,4 +1,4 @@
-- name: Install webapps
+- name: Install isucari.golang
   command: /home/isucon/local/go/bin/go build -o isucari
   args:
     chdir: /home/isucon/isucari/webapp/go/
@@ -16,3 +16,10 @@
     mode: 0644
   notify:
     - daemon-reload
+
+- name: Enable and start isucari.golang
+  systemd:
+    name: isucari.golang
+    state: started
+    daemon_reload: yes
+    enabled: yes

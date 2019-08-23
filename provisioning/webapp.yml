@@ -11,8 +11,10 @@
     - nginx
     - mysql
     - golang
+    - perl
     - webapp.mysql
     - webapp.golang
+    - webapp.perl
     - webapp.nginx
 
   tasks:
