@@ -1,4 +1,4 @@
-- hosts: localhost
+- hosts: webapp
   user: root
   gather_facts: yes
 

@@ -1,4 +1,4 @@
-- hosts: localhost
+- hosts: dev
   user: root
   gather_facts: yes
 

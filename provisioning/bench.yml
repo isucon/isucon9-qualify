@@ -1,4 +1,4 @@
-- hosts: localhost
+- hosts: bench
   user: root
   gather_facts: yes
 
