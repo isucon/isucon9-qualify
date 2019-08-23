@@ -48,7 +48,7 @@ func irregularSellAndBuy(ctx context.Context, user1, user2, user3 asset.AppUser)
 		return err
 	}
 
-	targetItemID, err := s1.Sell(ctx, "abcd", 100, "description description", 32)
+	targetItemID, err := sell(ctx, s1, 100)
 	if err != nil {
 		return err
 	}
