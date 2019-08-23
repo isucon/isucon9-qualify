@@ -7,7 +7,6 @@
 
 - name: Deploy isucari
   become: yes
-  become_user: isucon
   synchronize:
     src: ../../../../
     dest: /home/isucon/isucari
@@ -29,7 +28,6 @@
 
 - name: Chown isucon
   become: yes
-  become_user: root
   file:
     dest: /home/isucon/isucari
     owner: isucon
