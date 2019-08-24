@@ -21,7 +21,7 @@ my $NUM_USER_GENERATE = 4000;
 my $NUM_ITEM_GENERATE = 50000;
 my $RATE_OF_SOLDOUT = 30; # sold out商品の割合
 my $RATE_OF_ACTIVE_SELLER = 10; # 出品が多いユーザの割合
-my $RATE_OF_ACTIVE_SELLER_RATE = 90; # 出品が多いユーザに割り振る割合。80%の商品が20%のユーザから出品されている
+my $RATE_OF_ACTIVE_SELLER_RATE = 90; # 出品が多いユーザに割り振る割合。90%の商品が10%のユーザから出品されている
 my $CLAUSE_IN_DESCRIPTION = 100; # description中の文節の数
 
 my $PASSWORD_SALT = 'Oi87WbXmCRnFZATUm4fXUJUE8VLdiI4tGk17M1K3SmS';
