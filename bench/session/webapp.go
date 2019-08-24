@@ -864,3 +864,32 @@ func (s *Session) Item(ctx context.Context, itemID int64) (item *ItemDetail, err
 
 	return item, nil
 }
+
+func (s *Session) Reports(ctx context.Context) (transactionEvidences []TransactionEvidence, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/reports.json")
+	if err != nil {
+		return nil, failure.Wrap(err, failure.Message("GET /reports.json: リクエストに失敗しました"))
+	}
+
+	req = req.WithContext(ctx)
+
+	res, err := s.Do(req)
+	if err != nil {
+		return nil, failure.Wrap(err, failure.Message("GET /reports.json: リクエストに失敗しました"))
+	}
+	defer res.Body.Close()
+
+	err = checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return nil, err
+	}
+
+	transactionEvidences = make([]TransactionEvidence, 0, 100)
+
+	err = json.NewDecoder(res.Body).Decode(&transactionEvidences)
+	if err != nil {
+		return nil, failure.Wrap(err, failure.Message("GET /reports.json: JSONデコードに失敗しました"))
+	}
+
+	return transactionEvidences, nil
+}

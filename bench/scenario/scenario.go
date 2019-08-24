@@ -8,6 +8,8 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/server"
+	"github.com/isucon/isucon9-qualify/bench/session"
+	"github.com/morikuni/failure"
 )
 
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) *fails.Critical {
@@ -627,13 +629,43 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 func Campaign(critical *fails.Critical) {}
 
-func FinalCheck(critical *fails.Critical) int64 {
+func FinalCheck(ctx context.Context, critical *fails.Critical) int64 {
 	reports := sPayment.GetReports()
+
+	s1, err := session.NewSession()
+	if err != nil {
+		critical.Add(err)
+
+		return 0
+	}
+
+	tes, err := s1.Reports(ctx)
+	if err != nil {
+		critical.Add(err)
+
+		return 0
+	}
 
 	var score int64
 
-	for _, report := range reports {
+	for _, te := range tes {
+		report, ok := reports[te.ItemID]
+		if !ok {
+			critical.Add(failure.New(fails.ErrApplication, failure.Messagef("購入実績がありません transaction_evidence_id: %d; item_id: %d", te.ID, te.ItemID)))
+			continue
+		}
+
+		if report.Price != te.ItemPrice {
+			critical.Add(failure.New(fails.ErrApplication, failure.Messagef("購入実績の価格が異なります transaction_evidence_id: %d; item_id: %d; expected price: %d; reported price: %d", te.ID, te.ItemID, report.Price, te.ItemPrice)))
+			continue
+		}
+
 		score += int64(report.Price)
+		delete(reports, te.ItemID)
+	}
+
+	for itemID, report := range reports {
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("購入されたはずなのに記録されていません item_id: %d; expected price: %d", itemID, report.Price)))
 	}
 
 	return score
