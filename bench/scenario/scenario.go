@@ -627,7 +627,17 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 func Campaign(critical *fails.Critical) {}
 
-func FinalCheck(critical *fails.Critical) {}
+func FinalCheck(critical *fails.Critical) int64 {
+	reports := sPayment.GetReports()
+
+	var score int64
+
+	for _, report := range reports {
+		score += int64(report.Price)
+	}
+
+	return score
+}
 
 var (
 	sShipment *server.ServerShipment

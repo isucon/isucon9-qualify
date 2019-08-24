@@ -97,8 +97,34 @@ func (c *cardTokenStore) Get(token string) (cardToken, bool) {
 	return v, found
 }
 
+func newReports() *reportStore {
+	m := make(map[int64]report)
+	c := &reportStore{
+		items: m,
+	}
+	return c
+}
+
+type reportStore struct {
+	sync.Mutex
+	items map[int64]report
+}
+
+type report struct {
+	Price int
+}
+
+func (c *reportStore) Set(itemID int64, price int) {
+	c.Lock()
+	c.items[itemID] = report{
+		Price: price,
+	}
+	c.Unlock()
+}
+
 type ServerPayment struct {
 	cardTokens *cardTokenStore
+	reports    *reportStore
 
 	Server
 }
@@ -107,6 +133,7 @@ func NewPayment(allowedIPs []net.IP) *ServerPayment {
 	s := &ServerPayment{}
 
 	s.cardTokens = newCardToken()
+	s.reports = newReports()
 	s.mux = http.NewServeMux()
 	s.allowedIPs = allowedIPs
 
@@ -186,6 +213,8 @@ func (s *ServerPayment) tokenHandler(w http.ResponseWriter, req *http.Request) {
 			w.Write(b)
 			return
 		}
+
+		s.reports.Set(ct.itemID, ct.price)
 	}
 
 	result := tokenRes{
@@ -252,6 +281,7 @@ func (s *ServerPayment) cardHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+// for benchmarker
 func (s *ServerPayment) ForceSet(card string, itemID int64, price int) string {
 	token := secureRandomStr(20)
 	expire := time.Now().Add(5 * time.Minute)
@@ -265,4 +295,13 @@ func (s *ServerPayment) ForceSet(card string, itemID int64, price int) string {
 	s.cardTokens.Unlock()
 
 	return token
+}
+
+// for benchmarker
+// コピーはしていないので注意
+func (s *ServerPayment) GetReports() map[int64]report {
+	s.reports.Lock()
+	defer s.reports.Unlock()
+
+	return s.reports.items
 }

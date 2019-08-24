@@ -126,11 +126,11 @@ func main() {
 
 	log.Print("=== final check ===")
 
-	scenario.FinalCheck(cerr)
+	score := scenario.FinalCheck(cerr)
 
 	output := Output{
 		Pass:  true,
-		Score: 0,
+		Score: score,
 	}
 	json.NewEncoder(os.Stdout).Encode(output)
 }
