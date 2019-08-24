@@ -2282,7 +2282,16 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 
 // TODO: select * from transaction_evidences
 func getReports(w http.ResponseWriter, r *http.Request) {
+	transactionEvidences := make([]TransactionEvidence, 0)
+	err := dbx.Select(&transactionEvidences, "SELECT * FROM `transaction_evidences` WHERE `id` > 2970")
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(transactionEvidences)
 }
 
 func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
