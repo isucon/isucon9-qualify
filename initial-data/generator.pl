@@ -11,14 +11,18 @@ use JSON::Types;
 
 open(my $sql_fh, ">:utf8", "result/initial.sql") or die $!;
 open(my $users_fh, ">", "result/users_json.txt") or die $!;
+open(my $active_sellers_fh, ">", "result/active_sellers_json.txt") or die $!;
 open(my $items_fh, ">", "result/items_json.txt") or die $!;
 open(my $te_fh, ">", "result/transaction_evidences_json.txt") or die $!;
 open(my $shippings_fh, ">", "result/shippings_json.txt") or die $!;
 
 my $BASE_PRICE = 100;
-my $NUM_USER_GENERATE = 1000;
-my $NUM_ITEM_GENERATE = 10000;
-my $RATE_OF_SOLDOUT = 30;
+my $NUM_USER_GENERATE = 4000;
+my $NUM_ITEM_GENERATE = 50000;
+my $RATE_OF_SOLDOUT = 30; # sold out商品の割合
+my $RATE_OF_ACTIVE_SELLER = 10; # 出品が多いユーザの割合
+my $RATE_OF_ACTIVE_SELLER_RATE = 90; # 出品が多いユーザに割り振る割合。80%の商品が20%のユーザから出品されている
+my $CLAUSE_IN_DESCRIPTION = 100; # description中の文節の数
 
 my $PASSWORD_SALT = 'Oi87WbXmCRnFZATUm4fXUJUE8VLdiI4tGk17M1K3SmS';
 my @ADDTIONAL_ADDREDSS = qw/
@@ -164,8 +168,13 @@ sub check_password {
 }
 
 my %users = ();
+my @active_seller = ();
 sub create_user {
     my ($id, $name, $passwd, $address, $created_at) = @_;
+    # 出品が多いユーザ
+    if (rand(100) < $RATE_OF_ACTIVE_SELLER) {
+        push @active_seller, $id;
+    }
     $users{$id} = +{
         id           => number $id,
         account_name => string $name,
@@ -189,12 +198,17 @@ sub flush_users {
             $user->{num_sell_items},
             format_mysql($user->{created_at})
         );
-        if (@insert_users > 200) {
+        if (@insert_users > 500) {
             print $sql_fh q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`num_sell_items`,`created_at`) VALUES ! . join(", ", @insert_users) . ";\n";
             @insert_users = ();
         }
     }
     print $sql_fh q!INSERT INTO `users` (`id`,`account_name`,`hashed_password`,`address`,`num_sell_items`,`created_at`) VALUES ! . join(", ", @insert_users) . ";\n";
+
+    for my $active_seller_id (@active_seller) {
+        my $user = $users{$active_seller_id};
+        print $active_sellers_fh JSON::encode_json({id => $user->{id}, num_sell_items => $user->{num_sell_items}})."\n";
+    }
 }
 
 {
@@ -276,7 +290,7 @@ sub insert_items {
 
     $users{$seller_id}->{num_sell_items}++;
 
-    if (@insert_items > 200) {
+    if (@insert_items > 500) {
         flush_items();
     }
 
@@ -349,16 +363,21 @@ sub flush_shippings {
     srand(1565358009);
 
     my $te_id = 0;
+    my $active_seller_rr = 0;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
         my $t_sell = $base_time+int(rand(10))-5;
         my $t_buy = $t_sell + int(rand(10)) + 60;
         my $t_done = $t_buy + 10;
 
         my $name = gen_text(8,0),;
-        my $description = gen_text(200,1);
+        my $description = gen_text($CLAUSE_IN_DESCRIPTION,1);
         my $category = $CATEGOREIS[int(rand(scalar @CATEGOREIS))];
 
         my $seller = int(rand($NUM_USER_GENERATE))+1;
+        if (rand(100) < $RATE_OF_ACTIVE_SELLER_RATE) {
+            $seller = $active_seller[$active_seller_rr % scalar @active_seller];
+            $active_seller_rr++;
+        }
         my $status = 'on_sale';
         my $buyer = 0;
 
