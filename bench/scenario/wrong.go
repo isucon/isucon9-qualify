@@ -32,18 +32,20 @@ func irregularSellAndBuy(ctx context.Context, user1, user2, user3 asset.AppUser)
 		return err
 	}
 
-	err = s1.SellWithWrongCSRFToken(ctx, "abcd", 100, "description description", 32)
+	name, description := asset.GenText(8, false), asset.GenText(200, true)
+
+	err = s1.SellWithWrongCSRFToken(ctx, name, 100, description, 32)
 	if err != nil {
 		return err
 	}
 
 	// 変な値段で買えない
-	err = s1.SellWithWrongPrice(ctx, "abcd", session.ItemMinPrice-1, "description description", 32)
+	err = s1.SellWithWrongPrice(ctx, name, session.ItemMinPrice-1, description, 32)
 	if err != nil {
 		return err
 	}
 
-	err = s1.SellWithWrongPrice(ctx, "abcd", session.ItemMaxPrice+1, "description description", 32)
+	err = s1.SellWithWrongPrice(ctx, name, session.ItemMaxPrice+1, description, 32)
 	if err != nil {
 		return err
 	}

@@ -39,7 +39,7 @@ func LoginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session,
 }
 
 func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
-	targetItemID, err := s1.Sell(ctx, "abcd", price, "description description", 32)
+	targetItemID, err := s1.Sell(ctx, asset.GenText(8, false), price, asset.GenText(200, true), 32)
 	if err != nil {
 		return 0, err
 	}
