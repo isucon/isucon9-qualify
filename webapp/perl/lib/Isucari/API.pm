@@ -11,7 +11,9 @@ our $ISUCARI_API_TOKEN = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0";
 
 sub new {
     my $class = shift;
-    my $ua  = LWP::UserAgent->new();
+    my $ua  = LWP::UserAgent->new(
+        agent => "isucon9-qualify-webapp",
+    );
     bless {ua => $ua}, $class;
 }
 
