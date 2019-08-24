@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -72,6 +73,7 @@ var (
 	rootCategories       []AppCategory
 	userItems            map[int64][]int64
 	transactionEvidences map[int64]AppTransactionEvidence
+	keywords             []string
 	muItem               sync.RWMutex
 	indexUser            int32
 )
@@ -159,6 +161,19 @@ func init() {
 	}
 	f.Close()
 
+	f, err = os.Open("initial-data/keywords.tsv")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner = bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		text := scanner.Text()
+		keywords = append(keywords, text)
+	}
+	f.Close()
+
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
 }
@@ -218,4 +233,24 @@ func GetRandomRootCategory() AppCategory {
 func GetTransactionEvidence(id int64) (AppTransactionEvidence, bool) {
 	te, ok := transactionEvidences[id]
 	return te, ok
+}
+
+func GenText(length int, isLine bool) string {
+	texts := make([]string, 0, length)
+
+	for i := 0; i < length; i++ {
+		t := keywords[rand.Intn(len(keywords))]
+
+		if t == "#" {
+			if isLine {
+				t = "\n"
+			} else {
+				t = " "
+			}
+		}
+
+		texts = append(texts, t)
+	}
+
+	return strings.Join(texts, "")
 }
