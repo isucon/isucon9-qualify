@@ -989,6 +989,7 @@ post '/ship' => [qw/allow_json_request/] => sub {
     $txn->commit();
 
     $c->render_json({
+        reserve_id => $shipping->{reserve_id},
         path => sprintf('/transactions/%d.png', $target_transaction_evidence->{id})
     })
 };
@@ -1149,7 +1150,7 @@ post '/complete' => [qw/allow_json_request/] => sub {
         return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, 'failed to request to shipment service');
     }
     if (!($ssr->{status} eq $SHIPPINGS_STATUS_DONE)) {
-        return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "shipment service側で配送完了になっていません");
+        return $self->error_with_msg($c, HTTP_BAD_REQUEST, "shipment service側で配送完了になっていません");
     }
 
     my $now = time;
