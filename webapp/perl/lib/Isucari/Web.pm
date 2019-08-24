@@ -989,6 +989,7 @@ post '/ship' => [qw/allow_json_request/] => sub {
     $txn->commit();
 
     $c->render_json({
+        reserve_id => $shipping->{reserve_id},
         path => sprintf('/transactions/%d.png', $target_transaction_evidence->{id})
     })
 };
