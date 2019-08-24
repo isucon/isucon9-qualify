@@ -8,9 +8,11 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/scenario"
 	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
@@ -111,26 +113,61 @@ func main() {
 	scenario.Validation(ctx, cerr)
 
 	criticalMsgs = cerr.GetMsgs()
-	if len(criticalMsgs) > 0 {
+	if len(criticalMsgs) > 10 {
 		log.Print("cause error!")
 
 		output := Output{
 			Pass:     false,
 			Score:    0,
-			Messages: criticalMsgs,
+			Messages: uniqMsgs(criticalMsgs),
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 
 		return
 	}
 
+	<-time.After(1 * time.Second)
+
 	log.Print("=== final check ===")
 
-	score := scenario.FinalCheck(cerr)
+	cerr = fails.NewCritical()
+	score := scenario.FinalCheck(context.Background(), cerr)
+	cMsgs := cerr.GetMsgs()
+
+	msgs := append(uniqMsgs(criticalMsgs), cMsgs...)
+
+	if len(cMsgs) > 0 {
+		output := Output{
+			Pass:     false,
+			Score:    score,
+			Messages: msgs,
+		}
+		json.NewEncoder(os.Stdout).Encode(output)
+
+		return
+	}
 
 	output := Output{
-		Pass:  true,
-		Score: score,
+		Pass:     true,
+		Score:    score,
+		Messages: msgs,
 	}
 	json.NewEncoder(os.Stdout).Encode(output)
+}
+
+func uniqMsgs(allMsgs []string) []string {
+	sort.Strings(allMsgs)
+	msgs := make([]string, 0, len(allMsgs))
+
+	tmp := ""
+
+	// 適当にuniqする
+	for _, m := range allMsgs {
+		if tmp != m {
+			tmp = m
+			msgs = append(msgs, m)
+		}
+	}
+
+	return msgs
 }
