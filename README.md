@@ -22,6 +22,7 @@ $ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isuc
 
 ```
 ├── bench        # ベンチマーカーのソースコード
+├── initial-data # 初期データ作成
 ├── provisioning # セットアップ用ansible
 └── webapp       # 各言語の参考実装
 ```
