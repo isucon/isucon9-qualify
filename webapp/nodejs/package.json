@@ -17,6 +17,9 @@
     "typescript": "latest"
   },
   "dependencies": {
-    "express": "latest"
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "express": "latest",
+    "mysql2": "^1.6.5"
   }
 }
