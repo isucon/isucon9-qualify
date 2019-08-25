@@ -1,6 +1,8 @@
-import { IncomingMessage } from "http";
+import { IncomingMessage, ServerResponse } from "http";
 import util from "util";
 import childProcess from "child_process";
+import path from "path";
+import fs from "fs";
 
 import TraceError from "trace-error";
 import createFastify, { FastifyRequest, FastifyReply } from "fastify";
@@ -45,6 +47,10 @@ declare module "fastify" {
 
 // =============================================
 
+function TODO() {
+  throw new Error("Not yet implemented!");
+}
+
 type ReqInitialize = Readonly<{
   payment_service_url: string;
   shipment_service_url: string;
@@ -52,6 +58,10 @@ type ReqInitialize = Readonly<{
 
 const fastify = createFastify({
   logger: true
+});
+
+fastify.register(fastifyStatic, {
+  root: path.join(__dirname, "public")
 });
 
 fastify.register(fastifyMysql, {
@@ -103,9 +113,98 @@ fastify.post("/initialize", async (req, reply) => {
     .send(res);
 });
 
-fastify.get("/hello", (_req, reply) => {
-  reply.send("Hello, world!\n");
+fastify.get("/new_items.json", (_req, reply) => {
+  TODO();
 });
+
+fastify.get("/new_items/:root_category_id.json", (req, reply) => {
+  const rootCategoryId: string = req.params.root_category_id;
+  TODO();
+});
+
+fastify.get("/users/transactions.json", (req, reply) => {
+  TODO();
+});
+
+fastify.get("/users/:user_id.json", (req, reply) => {
+  const userId: string = req.params.user_id;
+  TODO();
+});
+
+fastify.get("/items/:item_id.json", (req, reply) => {
+  const itemId: string = req.params.item_id;
+  TODO();
+});
+
+fastify.post("/items/edit", (req, reply) => {
+  TODO();
+});
+
+fastify.post("/buy", (req, reply) => {
+  TODO();
+});
+
+fastify.post("/sell", (req, reply) => {
+  TODO();
+});
+
+fastify.post("/ship", (req, reply) => {
+  TODO();
+});
+
+fastify.post("/ship_done", (req, reply) => {
+  TODO();
+});
+
+fastify.post("/complete", (req, reply) => {
+  TODO();
+});
+
+fastify.get("/transactions/:transaction_evidence_id.png", (req, reply) => {
+  const transactionEvidenceId: string = req.params.transaction_evidence_id;
+  TODO();
+});
+
+fastify.post("/bump", (req, reply) => {
+  TODO();
+});
+
+fastify.get("/settings", (req, reply) => {
+  TODO();
+});
+
+fastify.post("/login", (req, reply) => {
+  TODO();
+});
+
+fastify.post("/register", (req, reply) => {
+  TODO();
+});
+
+fastify.get("/reports.json", (req, reply) => {
+  TODO();
+});
+
+// Frontend
+
+async function getIndex(_req: any, reply: FastifyReply<ServerResponse>) {
+  const html = await fs.promises.readFile(path.join(__dirname, "public/index.html"));
+  reply.type("text/html").send(html);
+}
+
+fastify.get("/", getIndex);
+fastify.get("/login", getIndex);
+fastify.get("/register", getIndex);
+fastify.get("/timeline", getIndex);
+fastify.get("/categories/:category_id/items", getIndex);
+fastify.get("/sell", getIndex);
+fastify.get("/items/:item_id", getIndex);
+fastify.get("/items/:item_id/edit", getIndex);
+fastify.get("/items/:item_id/buy", getIndex);
+fastify.get("/buy/complete", getIndex);
+fastify.get("/transactions/:transaction_id", getIndex);
+fastify.get("/users/:user_id", getIndex);
+fastify.get("/users/setting", getIndex);
 
 fastify.listen(8000, (err, _address) => {
   if (err) {
