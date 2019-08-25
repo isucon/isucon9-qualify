@@ -5,7 +5,7 @@ import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
 import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
-import { TransactionComponent } from './TransactionComponent';
+import { Index } from './TransactionComponent';
 
 const useStyles = makeStyles(theme => ({
   grid: {
@@ -32,7 +32,7 @@ const TransactionListComponent: React.FC<Props> = function({
   for (const item of items) {
     transactionsComponents.push(
       <GridListTile className={classes.grid} key={item.id}>
-        <TransactionComponent item={item} />
+        <Index item={item} />
       </GridListTile>,
     );
   }
