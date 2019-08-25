@@ -14,12 +14,17 @@
   "license": "ISC",
   "devDependencies": {
     "ts-node": "latest",
+    "ts-node-dev": "^1.0.0-pre.42",
     "typescript": "latest"
   },
   "dependencies": {
-    "@types/express": "latest",
-    "@types/node": "latest",
-    "express": "latest",
-    "mysql2": "^1.6.5"
+    "@types/node": "^12",
+    "fastify": "^2.7",
+    "fastify-cookie": "^3.1",
+    "fastify-mysql": "^0.3",
+    "fastify-plugin": "^1.6",
+    "fastify-static": "^2.5",
+    "mysql2": "^1.6",
+    "trace-error": "^1.0.3"
   }
 }
