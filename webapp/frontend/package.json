@@ -33,7 +33,9 @@
     "lint": "npm run fix && eslint",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "watch": "npm-watch"
+    "watch": "npm-watch",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
   },
   "watch": {
     "build": "src/**/*"
@@ -54,6 +56,11 @@
     ]
   },
   "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@storybook/addon-actions": "^5.1.11",
+    "@storybook/addon-links": "^5.1.11",
+    "@storybook/addons": "^5.1.11",
+    "@storybook/react": "^5.1.11",
     "@types/material-ui": "^0.21.6",
     "@types/react-infinite-scroller": "^1.2.1",
     "@types/react-redux": "^7.1.1",
@@ -61,6 +68,7 @@
     "@types/recompose": "^0.30.6",
     "@types/redux": "^3.6.0",
     "@types/redux-thunk": "^2.1.0",
+    "babel-loader": "^8.0.6",
     "husky": "^3.0.3",
     "lint-staged": "^9.2.1",
     "npm-watch": "^0.6.0",
