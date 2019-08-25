@@ -27,15 +27,6 @@ $ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isuc
 └── webapp       # 各言語の参考実装
 ```
 
-## 開発方法
-
-tmuxで端末を複数立てるのがおすすめ。外部サービスを手元で立てるなら以下のようにする。
-
-```
-$ make
-$ ./bin/payment
-$ ./bin/shipment
-```
 
 ## ベンチマーカー実行方法
 
@@ -46,6 +37,43 @@ $ make
 
 $ make
 $ ./bin/benchmarker
+```
+
+## 開発方法
+
+tmuxで端末を複数立てるのがおすすめ。外部サービスを手元で立てるなら以下のようにする。
+
+```
+$ make
+$ ./bin/payment
+$ ./bin/shipment
+```
+
+## webapp 起動方法
+
+
+### DB初期化
+
+```shell-session
+cd webapp/sql
+
+# databaseとuserを初期化する
+mysql -u root < 00_create_database.sql
+
+# データを流し込む
+./init.sh
+```
+
+
+### 起動方法 (go)
+
+```shell-session
+cd webapp/go
+go run api.go main.go
+
+# or
+go build
+./go
 ```
 
 ## 参考実装移植について
