@@ -1,0 +1,22 @@
+{
+  "name": "isucon9q",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsc --noEmit",
+    "update-dependencies": "rm -rf node_modules && npm install && npm dedupe"
+  },
+  "engines": {
+    "node": ">= 12.9.0"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "ts-node": "latest",
+    "typescript": "latest"
+  },
+  "dependencies": {
+    "express": "latest"
+  }
+}
