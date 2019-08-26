@@ -4,8 +4,8 @@ import {
   NotFoundError,
 } from '../reducers/errorReducer';
 import { branch, renderComponent, withProps, compose } from 'recompose';
-import NotFoundPage from '../pages/error/NotFoundPage';
-import InternalServerErrorPage from '../pages/error/InternalServerErrorPage';
+import { NotFoundPage } from '../pages/error/NotFoundPage';
+import { InternalServerErrorPage } from '../pages/error/InternalServerErrorPage';
 
 export interface ErrorProps {
   errorType: ErrorType;

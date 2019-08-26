@@ -16,7 +16,7 @@ import withStyles from '@material-ui/core/styles/withStyles';
 import LoadingComponent from '../components/LoadingComponent';
 import { ErrorMessageComponent } from '../components/ErrorMessageComponent';
 import validator from 'validator';
-import InternalServerErrorPage from './error/InternalServerErrorPage';
+import { InternalServerErrorPage } from './error/InternalServerErrorPage';
 import { Link as RouteLink } from 'react-router-dom';
 import { routes } from '../routes/Route';
 
@@ -88,7 +88,7 @@ class ItemEditPage extends React.Component<Props, State> {
     }
 
     if (!item) {
-      return <InternalServerErrorPage />;
+      return <InternalServerErrorPage message="商品が読み込めませんでした" />;
     }
 
     return (
