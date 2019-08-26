@@ -4,7 +4,7 @@ import { TransactionComponent } from '.';
 import { MemoryRouter } from 'react-router-dom';
 import { TransactionItem } from '../../dataObjects/item';
 
-const stories = storiesOf('components/Header', module);
+const stories = storiesOf('components/TransactionComponent', module);
 
 const item: TransactionItem = {
   id: 1,
