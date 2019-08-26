@@ -49,7 +49,7 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 		return err
 	}
 
-	err = loadNewCategoryItemsWithLoginedSession(ctx, s2)
+	err = loadNewCategoryItemsWithLoginedSession(ctx, s1)
 	if err != nil {
 		return err
 	}
@@ -113,9 +113,9 @@ func userItemsAndItemWithLoginedSession(ctx context.Context, s1 *session.Session
 	}
 
 	for _, item := range items {
-		aItem, ok := asset.GetItem(user.ID, item.ID)
+		aItem, ok := asset.GetItem(userID, item.ID)
 		if !ok {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", userID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品 (id: %d) が返ってきています", userID, item.ID))
 		}
 
 		if !(item.Name == aItem.Name) {
@@ -194,13 +194,12 @@ func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Sess
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonは販売中か売り切れの商品しか出してはいけません"))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
-			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonで返している商品の情報に誤りがあります"))
+		if ok && !(aItem.Name == item.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (id: %d; seller_id: %d)", item.ID, item.SellerID))
 		}
 
 		if targetItemID == item.ID {
@@ -212,7 +211,7 @@ func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Sess
 
 	if !found {
 		// Verifyでしかできない確認
-		return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonにバンプした商品が表示されていません"))
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonにバンプした商品が表示されていません (id: %d)", targetItemID))
 	}
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
@@ -241,9 +240,8 @@ func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Sess
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
-			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonで返している商品の情報に誤りがあります"))
+		if ok && !(aItem.Name == item.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (id: %d; seller_id: %d)", item.ID, item.SellerID))
 		}
 
 		createdAt = item.CreatedAt
@@ -300,13 +298,12 @@ func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
-			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
+		if ok && !(aItem.Name == item.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		createdAt = item.CreatedAt
@@ -347,9 +344,8 @@ func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
-			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
+		if ok && !(aItem.Name == item.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		createdAt = item.CreatedAt
