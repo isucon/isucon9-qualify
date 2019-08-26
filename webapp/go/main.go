@@ -441,7 +441,42 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	return user, http.StatusOK, ""
 }
 
-func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err error) {
+func uniqueIDs(ids []int64) []int64 {
+	u := make([]int64, 0, len(ids))
+	m := make(map[int64]bool)
+	for _, val := range ids {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			u = append(u, val)
+		}
+	}
+	return u
+}
+
+func preloadUserSimple(q sqlx.Queryer, userIDs []int64, userCache map[int64]UserSimple) error {
+	uniqIDs := uniqueIDs(userIDs)
+	inQuery, inArgs, err := sqlx.In("SELECT * FROM `users` WHERE `id` IN (?)", uniqIDs)
+	if err != nil {
+		return err
+	}
+
+	users := []User{}
+	err = dbx.Select(&users, inQuery, inArgs...)
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		userSimple := UserSimple{user.ID, user.AccountName, user.NumSellItems}
+		userCache[user.ID] = userSimple
+	}
+	return nil
+}
+
+func getUserSimpleByID(q sqlx.Queryer, userID int64, userCache map[int64]UserSimple) (userSimple UserSimple, err error) {
+	if userSimple, ok := userCache[userID]; ok {
+		return userSimple, err
+	}
 	user := User{}
 	err = sqlx.Get(q, &user, "SELECT * FROM `users` WHERE `id` = ?", userID)
 	if err != nil {
@@ -450,6 +485,7 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 	userSimple.ID = user.ID
 	userSimple.AccountName = user.AccountName
 	userSimple.NumSellItems = user.NumSellItems
+	userCache[user.ID] = userSimple
 	return userSimple, err
 }
 
@@ -602,9 +638,16 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	userCache := map[int64]UserSimple{}
+	preloadUsers := []int64{}
+	for _, item := range items {
+		preloadUsers = append(preloadUsers, item.BuyerID)
+		preloadUsers = append(preloadUsers, item.SellerID)
+	}
+	preloadUserSimple(dbx, preloadUsers, userCache)
 	itemSimples := []ItemSimple{}
 	for _, item := range items {
-		seller, err := getUserSimpleByID(dbx, item.SellerID)
+		seller, err := getUserSimpleByID(dbx, item.SellerID, userCache)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			return
@@ -721,9 +764,16 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userCache := map[int64]UserSimple{}
+	preloadUsers := []int64{}
+	for _, item := range items {
+		preloadUsers = append(preloadUsers, item.BuyerID)
+		preloadUsers = append(preloadUsers, item.SellerID)
+	}
+	preloadUserSimple(dbx, preloadUsers, userCache)
 	itemSimples := []ItemSimple{}
 	for _, item := range items {
-		seller, err := getUserSimpleByID(dbx, item.SellerID)
+		seller, err := getUserSimpleByID(dbx, item.SellerID, userCache)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			return
@@ -773,7 +823,8 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userSimple, err := getUserSimpleByID(dbx, userID)
+	userCache := map[int64]UserSimple{}
+	userSimple, err := getUserSimpleByID(dbx, userID, userCache)
 	if err != nil {
 		outputErrorMsg(w, http.StatusNotFound, "user not found")
 		return
@@ -946,9 +997,16 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	userCache := map[int64]UserSimple{}
+	preloadUsers := []int64{}
+	for _, item := range items {
+		preloadUsers = append(preloadUsers, item.BuyerID)
+		preloadUsers = append(preloadUsers, item.SellerID)
+	}
+	preloadUserSimple(dbx, preloadUsers, userCache)
 	itemDetails := []ItemDetail{}
 	for _, item := range items {
-		seller, err := getUserSimpleByID(tx, item.SellerID)
+		seller, err := getUserSimpleByID(tx, item.SellerID, userCache)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			tx.Rollback()
@@ -981,7 +1039,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if item.BuyerID != 0 {
-			buyer, err := getUserSimpleByID(tx, item.BuyerID)
+			buyer, err := getUserSimpleByID(tx, item.BuyerID, userCache)
 			if err != nil {
 				outputErrorMsg(w, http.StatusNotFound, "buyer not found")
 				tx.Rollback()
@@ -1082,7 +1140,12 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	seller, err := getUserSimpleByID(dbx, item.SellerID)
+	userCache := map[int64]UserSimple{}
+	preloadUsers := []int64{}
+	preloadUsers = append(preloadUsers, item.BuyerID)
+	preloadUsers = append(preloadUsers, item.SellerID)
+	preloadUserSimple(dbx, preloadUsers, userCache)
+	seller, err := getUserSimpleByID(dbx, item.SellerID, userCache)
 	if err != nil {
 		outputErrorMsg(w, http.StatusNotFound, "seller not found")
 		return
@@ -1108,7 +1171,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if (user.ID == item.SellerID || user.ID == item.BuyerID) && item.BuyerID != 0 {
-		buyer, err := getUserSimpleByID(dbx, item.BuyerID)
+		buyer, err := getUserSimpleByID(dbx, item.BuyerID, userCache)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "buyer not found")
 			return
