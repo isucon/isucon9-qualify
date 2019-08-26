@@ -84,7 +84,8 @@ var (
 	indexBuyerID         int32
 )
 
-func init() {
+// Initialize is a function to load initial data
+func Initialize() {
 	users = make(map[int64]AppUser)
 	activeSellerIDs = make([]int64, 0, 400)
 	buyerIDs = make([]int64, 0, 1000)
@@ -191,7 +192,6 @@ func init() {
 	}
 	f.Close()
 
-	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(activeSellerIDs), func(i, j int) { activeSellerIDs[i], activeSellerIDs[j] = activeSellerIDs[j], activeSellerIDs[i] })
 	rand.Shuffle(len(buyerIDs), func(i, j int) { buyerIDs[i], buyerIDs[j] = buyerIDs[j], buyerIDs[i] })
 }
