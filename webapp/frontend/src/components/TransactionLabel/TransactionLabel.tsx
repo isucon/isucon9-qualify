@@ -5,8 +5,8 @@ import { Theme } from '@material-ui/core';
 import Typography from '@material-ui/core/Typography';
 import Card from '@material-ui/core/Card';
 
-const baseWidth = '90px';
-const baseHeight = '28px';
+const baseWidth = '80px';
+const baseHeight = '25px';
 
 const useStyles = makeStyles((theme: Theme) => ({
   container: {
@@ -68,7 +68,9 @@ const TransactionLabel: React.FC<Props> = ({ itemStatus }) => {
   return (
     <div className={classes.container}>
       <Card className={className}>
-        <Typography component="p">{labelName}</Typography>
+        <Typography variant="subtitle2" component="p">
+          {labelName}
+        </Typography>
       </Card>
     </div>
   );
