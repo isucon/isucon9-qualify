@@ -2,7 +2,7 @@ import React from 'react';
 import { TimelineItem } from '../dataObjects/item';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import GridList from '@material-ui/core/GridList';
-import { ItemComponent } from './ItemComponent';
+import { Item } from './Item';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
 import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
@@ -32,11 +32,12 @@ const ItemListComponent: React.FC<ItemListPageProps> = function({
   for (const item of items) {
     itemComponents.push(
       <GridListTile className={classes.grid} key={item.id}>
-        <ItemComponent
+        <Item
           itemId={item.id}
           imageUrl={item.thumbnailUrl}
           title={item.name}
           price={item.price}
+          status={item.status}
         />
       </GridListTile>,
     );

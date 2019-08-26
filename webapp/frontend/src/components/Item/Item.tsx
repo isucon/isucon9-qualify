@@ -3,22 +3,25 @@ import Card from '@material-ui/core/Card';
 import { Link as RouteLink } from 'react-router-dom';
 import GridListTileBar from '@material-ui/core/GridListTileBar';
 import makeStyles from '@material-ui/core/styles/makeStyles';
-import { routes } from '../routes/Route';
+import { routes } from '../../routes/Route';
+import {Theme} from "@material-ui/core";
+import {ItemStatus} from "../../dataObjects/item";
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
   itemImage: {
     height: '100%',
   },
 }));
 
-interface ItemComponentProps {
+interface Props {
   itemId: number;
   imageUrl: string;
   title: string;
   price: number;
+  status: ItemStatus,
 }
 
-const ItemComponent: React.FC<ItemComponentProps> = ({
+const Item: React.FC<Props> = ({
   itemId,
   imageUrl,
   title,
@@ -36,4 +39,4 @@ const ItemComponent: React.FC<ItemComponentProps> = ({
   );
 };
 
-export { ItemComponent };
+export { Item };
