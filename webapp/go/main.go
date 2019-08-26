@@ -87,17 +87,18 @@ type UserSimple struct {
 }
 
 type Item struct {
-	ID          int64     `json:"id" db:"id"`
-	SellerID    int64     `json:"seller_id" db:"seller_id"`
-	BuyerID     int64     `json:"buyer_id" db:"buyer_id"`
-	Status      string    `json:"status" db:"status"`
-	Name        string    `json:"name" db:"name"`
-	Price       int       `json:"price" db:"price"`
-	Description string    `json:"description" db:"description"`
-	ImageName   string    `json:"image_name" db:"image_name"`
-	CategoryID  int       `json:"category_id" db:"category_id"`
-	CreatedAt   time.Time `json:"-" db:"created_at"`
-	UpdatedAt   time.Time `json:"-" db:"updated_at"`
+	ID             int64     `json:"id" db:"id"`
+	SellerID       int64     `json:"seller_id" db:"seller_id"`
+	BuyerID        int64     `json:"buyer_id" db:"buyer_id"`
+	Status         string    `json:"status" db:"status"`
+	Name           string    `json:"name" db:"name"`
+	Price          int       `json:"price" db:"price"`
+	Description    string    `json:"description" db:"description"`
+	ImageName      string    `json:"image_name" db:"image_name"`
+	CategoryID     int       `json:"category_id" db:"category_id"`
+	RootCategoryID int       `json:"-" db:"root_category_id"`
+	CreatedAt      time.Time `json:"-" db:"created_at"`
+	UpdatedAt      time.Time `json:"-" db:"updated_at"`
 }
 
 type ItemSimple struct {
@@ -641,10 +642,10 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	if itemID > 0 && createdAt > 0 {
 		// paging
 		inQuery, inArgs, err = sqlx.In(
-			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			"SELECT * FROM `items` WHERE `status` IN (?,?) AND `root_category_id` = ? AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
-			categoryIDs,
+			rootCategoryID,
 			time.Unix(createdAt, 0),
 			itemID,
 			ItemsPerPage+1,
@@ -657,10 +658,10 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// 1st page
 		inQuery, inArgs, err = sqlx.In(
-			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY created_at DESC, id DESC LIMIT ?",
+			"SELECT * FROM `items` WHERE `status` IN (?,?) AND `root_category_id` = ? ORDER BY created_at DESC, id DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
-			categoryIDs,
+			rootCategoryID,
 			ItemsPerPage+1,
 		)
 		if err != nil {
@@ -1974,7 +1975,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`,`root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 		seller.ID,
 		ItemStatusOnSale,
 		name,
@@ -1982,6 +1983,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		description,
 		imgName,
 		category.ID,
+		category.ParentID,
 	)
 	if err != nil {
 		log.Print(err)
