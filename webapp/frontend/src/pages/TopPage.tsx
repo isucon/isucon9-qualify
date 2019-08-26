@@ -1,12 +1,12 @@
 import React from 'react';
 import BasePageContainer from '../containers/BasePageContainer';
 import { routes } from '../routes/Route';
-import { Button } from '@material-ui/core';
+import { Button, Theme } from '@material-ui/core';
 import Typography from '@material-ui/core/Typography';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import { Link, LinkProps } from 'react-router-dom';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
   paper: {
     marginTop: theme.spacing(2),
     display: 'flex',

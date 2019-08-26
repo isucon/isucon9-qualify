@@ -1,14 +1,14 @@
 import React from 'react';
 import BasePageContainer from '../containers/BasePageContainer';
-import { Grid } from '@material-ui/core';
+import { Grid, Theme } from '@material-ui/core';
 import Avatar from '@material-ui/core/Avatar';
 import Typography from '@material-ui/core/Typography';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import Divider from '@material-ui/core/Divider';
-import InternalServerErrorPage from './error/InternalServerErrorPage';
+import { InternalServerErrorPage } from './error/InternalServerErrorPage';
 import SellingButtonComponent from '../containers/SellingButtonContainer';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
   avatar: {
     margin: theme.spacing(3),
     width: '100px',
@@ -44,7 +44,9 @@ const UserSettingPage: React.FC<Props> = ({
     address === undefined ||
     numSellItems === undefined
   ) {
-    return <InternalServerErrorPage />;
+    return (
+      <InternalServerErrorPage message="ユーザ情報が読み込めませんでした" />
+    );
   }
 
   return (

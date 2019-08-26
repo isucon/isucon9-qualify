@@ -4,9 +4,9 @@ import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import { RouteComponentProps } from 'react-router';
 import { ItemData } from '../dataObjects/item';
 import LoadingComponent from '../components/LoadingComponent';
-import NotFoundPage from './error/NotFoundPage';
+import { NotFoundPage } from './error/NotFoundPage';
 import SellerTransactionContainer from '../containers/SellerTransactionContainer';
-import InternalServerErrorPage from './error/InternalServerErrorPage';
+import { InternalServerErrorPage } from './error/InternalServerErrorPage';
 import BuyerTransactionContainer from '../containers/BuyerTransactionContainer';
 import { createStyles, Grid, Theme, WithStyles } from '@material-ui/core';
 import Typography from '@material-ui/core/Typography';
@@ -79,8 +79,7 @@ class TransactionPage extends React.Component<Props> {
       item.transactionEvidenceId === undefined
     ) {
       return (
-        // TODO: pass error message
-        <InternalServerErrorPage />
+        <InternalServerErrorPage message="取引中の商品ではない、もしくはデータ形式が不正です" />
       );
     }
 
@@ -108,7 +107,7 @@ class TransactionPage extends React.Component<Props> {
     }
 
     if (TransactionComponent === undefined) {
-      return <NotFoundPage />;
+      return <NotFoundPage message="商品が読み込めませんでした" />;
     }
 
     return (

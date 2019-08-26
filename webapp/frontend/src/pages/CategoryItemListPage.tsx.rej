@@ -1,4 +1,0 @@
-diff a/webapp/frontend/src/pages/CategoryItemListPage.tsx b/webapp/frontend/src/pages/CategoryItemListPage.tsx	(rejected hunks)
-@@ -75 +83 @@ class CategoryItemListPage extends React.Component<Props, State> {
--      categoryId
-+      categoryId,

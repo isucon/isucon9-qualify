@@ -1,9 +1,7 @@
 import React, { PropsWithChildren } from 'react';
-
 import {
   Container,
   MuiThemeProvider,
-  createMuiTheme,
   Theme,
   WithStyles,
 } from '@material-ui/core';
@@ -13,14 +11,7 @@ import SnackBarContainer from '../containers/SnackBarContainer';
 import { StyleRules } from '@material-ui/core/styles';
 import createStyles from '@material-ui/core/styles/createStyles';
 import withStyles from '@material-ui/core/styles/withStyles';
-
-const themeInstance = createMuiTheme({
-  palette: {
-    background: {
-      default: '#fff',
-    },
-  },
-});
+import { themeInstance } from '../theme';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({

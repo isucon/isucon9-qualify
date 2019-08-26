@@ -28,7 +28,7 @@ func Verify(ctx context.Context) *fails.Critical {
 
 	critical := fails.NewCritical()
 
-	user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+	user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 	wg.Add(1)
 	go func() {
@@ -42,7 +42,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -65,7 +65,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomUser()
+		user1 := asset.GetRandomBuyer()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -82,7 +82,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomUser()
+		user1 := asset.GetRandomActiveSeller()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -101,7 +101,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomUser()
+		user1 := asset.GetRandomActiveSeller()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -118,8 +118,8 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomUser()
-		user2 := asset.GetRandomUser()
+		user1 := asset.GetRandomBuyer()
+		user2 := asset.GetRandomActiveSeller()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -133,7 +133,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 	}()
 
-	user3 := asset.GetRandomUser()
+	user3 := asset.GetRandomBuyer()
 
 	wg.Add(1)
 	go func() {
@@ -189,7 +189,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
-	user1, user2, user3 := asset.GetRandomUser(), asset.GetRandomUser(), asset.GetRandomUser()
+	user1, user2, user3 := asset.GetRandomActiveSeller(), asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 	// 間違ったパスワードでログインができないことをチェックする
 	// これがないとパスワードチェックを外して常にログイン成功させるチートが可能になる
@@ -251,7 +251,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -290,7 +290,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -343,7 +343,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -398,7 +398,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -423,7 +423,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = userItemsAndItemWithLoginedSession(ctx, s1, s2.UserID)
+			err = userItemsAndItemWithLoginedSession(ctx, s2, s1.UserID)
 			if err != nil {
 				critical.Add(err)
 
@@ -453,7 +453,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 
 		s1, err := LoginedSession(ctx, user1)
 		if err != nil {
@@ -521,7 +521,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 		go func() {
 			defer wg.Done()
 
-			user1, user2 := asset.GetRandomUser(), asset.GetRandomUser()
+			user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
 			s1, err := LoginedSession(ctx, user1)
 			if err != nil {
 				critical.Add(err)
@@ -545,13 +545,6 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s2, s1)
-				if err != nil {
-					critical.Add(err)
-
-					goto Final
-				}
-
 			Final:
 				select {
 				case <-ch:
@@ -566,8 +559,8 @@ func load(ctx context.Context, critical *fails.Critical) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			user1 := asset.GetRandomUser()
-			user2 := asset.GetRandomUser()
+			user1 := asset.GetRandomBuyer()
+			user2 := asset.GetRandomActiveSeller()
 
 			s1, err := LoginedSession(ctx, user1)
 			if err != nil {
