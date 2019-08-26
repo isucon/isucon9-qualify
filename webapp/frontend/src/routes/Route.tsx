@@ -10,7 +10,7 @@ import UserPageContainer from '../containers/UserPageContainer';
 import UserSettingPageContainer from '../containers/UserSettingPageContainer';
 import AuthRoute from '../containers/AuthContainer';
 import NonAuthRoute from '../containers/NonAuthContainer';
-import NotFoundPage from '../pages/error/NotFoundPage';
+import { NotFoundPage } from '../pages/error/NotFoundPage';
 import TopPage from '../pages/TopPage';
 import CategoryItemListPageContainer from '../containers/CategoryItemListPageContainer';
 import BuyCompleteContainer from '../containers/BuyCompleteContainer';

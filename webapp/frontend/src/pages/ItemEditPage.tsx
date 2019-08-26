@@ -16,7 +16,7 @@ import withStyles from '@material-ui/core/styles/withStyles';
 import LoadingComponent from '../components/LoadingComponent';
 import { ErrorMessageComponent } from '../components/ErrorMessageComponent';
 import validator from 'validator';
-import InternalServerErrorPage from './error/InternalServerErrorPage';
+import { InternalServerErrorPage } from './error/InternalServerErrorPage';
 import { Link as RouteLink } from 'react-router-dom';
 import { routes } from '../routes/Route';
 

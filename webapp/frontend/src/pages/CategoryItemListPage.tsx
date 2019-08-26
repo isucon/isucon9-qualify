@@ -10,7 +10,7 @@ import withStyles from '@material-ui/core/styles/withStyles';
 import LoadingComponent from '../components/LoadingComponent';
 import Typography from '@material-ui/core/Typography/Typography';
 import { RouteComponentProps } from 'react-router';
-import InternalServerErrorPage from './error/InternalServerErrorPage';
+import { InternalServerErrorPage } from './error/InternalServerErrorPage';
 import validator from 'validator';
 
 const styles = (theme: Theme): StyleRules =>

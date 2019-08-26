@@ -5,7 +5,7 @@ import Avatar from '@material-ui/core/Avatar';
 import Typography from '@material-ui/core/Typography';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import Divider from '@material-ui/core/Divider';
-import InternalServerErrorPage from './error/InternalServerErrorPage';
+import { InternalServerErrorPage } from './error/InternalServerErrorPage';
 import SellingButtonComponent from '../containers/SellingButtonContainer';
 
 const useStyles = makeStyles(theme => ({
