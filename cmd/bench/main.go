@@ -87,9 +87,12 @@ func main() {
 	}
 
 	log.Print("=== initialize ===")
+	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
 	scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
-	log.Print("=== verify ===")
 
+	log.Print("=== verify ===")
+	// 初期チェック：正しく動いているかどうかを確認する
+	// 明らかにおかしいレスポンスを返しているアプリケーションはさっさと停止させることで、運営側のリソースを使い果たさない・他サービスへの攻撃に利用されるを防ぐ
 	cerr := scenario.Verify(context.Background())
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
@@ -105,11 +108,15 @@ func main() {
 		return
 	}
 
-	log.Print("=== validation ===")
-
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(20*time.Second))
 	defer cancel()
 
+	log.Print("=== validation ===")
+	// 一番大切なメイン処理：checkとloadの大きく2つの処理を行う
+	// checkはアプリケーションが正しく動いているか常にチェックする
+	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる
+	// checkとloadは区別がつかないようにしないといけない。loadのリクエストはログアウト状態しかなかったので、ログアウト時のキャッシュを強くするだけでスコアがはねる問題が過去にあった
+	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
 	scenario.Validation(ctx, cerr)
 
 	criticalMsgs = cerr.GetMsgs()
@@ -128,9 +135,9 @@ func main() {
 
 	<-time.After(1 * time.Second)
 
-	log.Print("=== final check ===")
-
 	cerr = fails.NewCritical()
+	log.Print("=== final check ===")
+	// 最終チェック：ベンチマーカーの記録とアプリケーションの記録を突き合わせて、最終的なスコアを算出する
 	score := scenario.FinalCheck(context.Background(), cerr)
 	cMsgs := cerr.GetMsgs()
 
