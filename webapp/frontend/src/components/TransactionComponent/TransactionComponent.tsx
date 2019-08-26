@@ -34,10 +34,14 @@ interface Props {
 
 const TransactionComponent: React.FC<Props> = ({ item }) => {
   const classes = useStyles();
+  const link =
+    item.status === 'on_sale'
+      ? routes.item.getPath(item.id)
+      : routes.transaction.getPath(item.id);
 
   return (
     <Card className={classes.card}>
-      <RouteLink to={routes.transaction.getPath(item.id)}>
+      <RouteLink to={link}>
         <CardMedia
           className={classes.img}
           image={item.thumbnailUrl}
