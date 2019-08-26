@@ -88,7 +88,7 @@ class ItemEditPage extends React.Component<Props, State> {
     }
 
     if (!item) {
-      return <InternalServerErrorPage />;
+      return <InternalServerErrorPage message="商品が読み込めませんでした" />;
     }
 
     return (

@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { makeStyles } from '@material-ui/core';
 import SellFormContainer from '../containers/SellFormContainer';
 import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';

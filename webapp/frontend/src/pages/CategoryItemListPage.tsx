@@ -109,7 +109,7 @@ class CategoryItemListPage extends React.Component<Props, State> {
     return (
       <BasePageContainer>
         {!categoryIdIsValid ? (
-          <InternalServerErrorPage />
+          <InternalServerErrorPage message="Category IDは数字のみです" />
         ) : loading ? (
           <LoadingComponent />
         ) : (
