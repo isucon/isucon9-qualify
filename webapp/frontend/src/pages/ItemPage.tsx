@@ -11,7 +11,7 @@ import withStyles from '@material-ui/core/styles/withStyles';
 import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import BasePageContainer from '../containers/BasePageContainer';
 import LoadingComponent from '../components/LoadingComponent';
-import ItemFooterComponent from '../components/ItemFooterComponent';
+import { ItemFooter } from '../components/ItemFooter';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
@@ -220,7 +220,7 @@ class ItemPage extends React.Component<Props> {
             </Grid>
           </Grid>
         </Grid>
-        <ItemFooterComponent price={item.price} buttons={buttons} />
+        <ItemFooter price={item.price} buttons={buttons} />
       </BasePageContainer>
     );
   }
