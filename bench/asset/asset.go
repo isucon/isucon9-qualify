@@ -21,6 +21,8 @@ const (
 	ItemStatusCancel  = "cancel"
 
 	ItemsPerPage = 48
+
+	ActiveSellerNumSellItems = 100
 )
 
 type AppUser struct {
@@ -67,22 +69,29 @@ type AppTransactionEvidence struct {
 }
 
 var (
-	users                []AppUser
+	users                map[int64]AppUser
+	activeSellerIDs      []int64
+	buyerIDs             []int64
 	items                map[string]AppItem
 	categories           map[int]AppCategory
 	rootCategories       []AppCategory
+	childCategories      []AppCategory
 	userItems            map[int64][]int64
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
 	muItem               sync.RWMutex
-	indexUser            int32
+	indexActiveSellerID  int32
+	indexBuyerID         int32
 )
 
 func init() {
-	users = make([]AppUser, 0, 100)
+	users = make(map[int64]AppUser)
+	activeSellerIDs = make([]int64, 0, 400)
+	buyerIDs = make([]int64, 0, 1000)
 	items = make(map[string]AppItem)
 	categories = make(map[int]AppCategory)
 	rootCategories = make([]AppCategory, 0, 10)
+	childCategories = make([]AppCategory, 0, 50)
 	userItems = make(map[int64][]int64)
 	transactionEvidences = make(map[int64]AppTransactionEvidence)
 
@@ -99,7 +108,13 @@ func init() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		users = append(users, *user)
+		users[user.ID] = *user
+
+		if user.NumSellItems >= ActiveSellerNumSellItems {
+			activeSellerIDs = append(activeSellerIDs, user.ID)
+		} else {
+			buyerIDs = append(buyerIDs, user.ID)
+		}
 	}
 	f.Close()
 
@@ -140,6 +155,8 @@ func init() {
 
 		if category.ParentID == 0 {
 			rootCategories = append(rootCategories, category)
+		} else {
+			childCategories = append(childCategories, category)
 		}
 	}
 	f.Close()
@@ -175,23 +192,35 @@ func init() {
 	f.Close()
 
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
+	rand.Shuffle(len(activeSellerIDs), func(i, j int) { activeSellerIDs[i], activeSellerIDs[j] = activeSellerIDs[j], activeSellerIDs[i] })
+	rand.Shuffle(len(buyerIDs), func(i, j int) { buyerIDs[i], buyerIDs[j] = buyerIDs[j], buyerIDs[i] })
 }
 
 func (u1 *AppUser) Equal(u2 *AppUser) bool {
 	return u1.AccountName == u2.AccountName && u1.Address == u2.Address
 }
 
-func GetRandomUser() AppUser {
+func GetRandomActiveSeller() AppUser {
 	// 全部使い切ったらpanicするので十分なユーザー数を用意しておく
-	return users[len(users)-int(atomic.AddInt32(&indexUser, 1))]
+	return users[activeSellerIDs[len(activeSellerIDs)-int(atomic.AddInt32(&indexActiveSellerID, 1))]]
+}
+
+func GetRandomBuyer() AppUser {
+	// 全部使い切ったらpanicするので十分なユーザー数を用意しておく
+	return users[buyerIDs[len(buyerIDs)-int(atomic.AddInt32(&indexBuyerID, 1))]]
 }
 
 func GetUserItemsFirst(sellerID int64) int64 {
+	muItem.RLock()
+	defer muItem.RUnlock()
+
 	return userItems[sellerID][0]
 }
 
 func GetUserItems(sellerID int64) []int64 {
+	muItem.RLock()
+	defer muItem.RUnlock()
+
 	return userItems[sellerID]
 }
 
@@ -201,6 +230,25 @@ func GetItem(sellerID, itemID int64) (AppItem, bool) {
 
 	i, ok := items[fmt.Sprintf("%d_%d", sellerID, itemID)]
 	return i, ok
+}
+
+func SetItem(sellerID int64, itemID int64, name string, price int, description string, categoryID int) {
+	muItem.Lock()
+	defer muItem.Unlock()
+
+	userItems[sellerID] = append(userItems[sellerID], itemID)
+
+	key := fmt.Sprintf("%d_%d", sellerID, itemID)
+	items[key] = AppItem{
+		ID:          itemID,
+		SellerID:    sellerID,
+		Status:      ItemStatusOnSale,
+		Name:        name,
+		Price:       price,
+		Description: description,
+		CategoryID:  categoryID,
+		CreatedAt:   time.Now().Unix(),
+	}
 }
 
 func SetItemPrice(sellerID int64, itemID int64, price int) {
@@ -227,6 +275,10 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 
 func GetRandomRootCategory() AppCategory {
 	return rootCategories[rand.Intn(len(rootCategories))]
+}
+
+func GetRandomChildCategory() AppCategory {
+	return childCategories[rand.Intn(len(childCategories))]
 }
 
 // TODO: transactionEvidencesをちゃんと管理するようにして存在しないケースをなくす
