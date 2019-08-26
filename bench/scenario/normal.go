@@ -340,7 +340,7 @@ func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
@@ -388,13 +388,12 @@ func loadNewCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Ses
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません", category.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if ok && !(aItem.Name == item.Name && aItem.Price == item.Price && aItem.Status == item.Status) {
-			// TODO: aItem.CreatedAt == item.CreatedAtはinitializeを実装しないと確認できない
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります", category.ID))
+		if ok && !(aItem.Name == item.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		createdAt = item.CreatedAt
