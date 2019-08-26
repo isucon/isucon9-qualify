@@ -1,9 +1,9 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core';
+import { makeStyles, Theme } from '@material-ui/core';
 import SignInFormContainer from '../containers/SignInFormContainer';
 import BasePageContainer from '../containers/BasePageContainer';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
   paper: {
     marginTop: theme.spacing(1),
     display: 'flex',
