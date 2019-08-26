@@ -34,12 +34,12 @@ interface Props {
 }
 
 const Header: React.FC<Props> = ({
-                                   isLoggedIn,
-                                   ownUserId,
-                                   goToTopPage,
-                                   goToUserPage,
-                                   goToSettingPage,
-                                 }) => {
+  isLoggedIn,
+  ownUserId,
+  goToTopPage,
+  goToUserPage,
+  goToSettingPage,
+}) => {
   const classes = useStyles();
   const [state, setState] = React.useState({
     open: false,
@@ -68,10 +68,7 @@ const Header: React.FC<Props> = ({
   return (
     <React.Fragment>
       {isLoggedIn && (
-        <Drawer
-          open={state.open}
-          onClose={toggleDrawer(false)}
-        >
+        <Drawer open={state.open} onClose={toggleDrawer(false)}>
           <List className={classes.list}>
             <ListItem button onClick={onClickTop}>
               <ListItemText primary="新着商品" />
