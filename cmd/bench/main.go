@@ -63,8 +63,7 @@ func main() {
 	for _, str := range strings.Split(allowedIPStr, ",") {
 		aip := net.ParseIP(str)
 		if aip == nil {
-			log.Printf("%s cannot be parsed", str)
-			continue
+			log.Fatalf("allowed-ips: %s cannot be parsed", str)
 		}
 		conf.AllowedIPs = append(conf.AllowedIPs, aip)
 	}
