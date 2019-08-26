@@ -455,7 +455,7 @@ func uniqueIDs(ids []int64) []int64 {
 
 func preloadUserSimple(q sqlx.Queryer, userIDs []int64, userCache map[int64]UserSimple) error {
 	uniqIDs := uniqueIDs(userIDs)
-	inQuery, inArgs, err := sqlx.In("SELECT * FROM `users` WHERE `id` IN (?)", uniqIDs)
+	inQuery, inArgs, err := sqlx.In("SELECT `id`,`account_name`,`num_sell_items` FROM `users` WHERE `id` IN (?)", uniqIDs)
 	if err != nil {
 		return err
 	}
@@ -478,7 +478,7 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64, userCache map[int64]UserSim
 		return userSimple, err
 	}
 	user := User{}
-	err = sqlx.Get(q, &user, "SELECT * FROM `users` WHERE `id` = ?", userID)
+	err = sqlx.Get(q, &user, "SELECT `id`,`account_name`,`num_sell_items` FROM `users` WHERE `id` = ?", userID)
 	if err != nil {
 		return userSimple, err
 	}
