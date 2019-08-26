@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/scenario"
 	"github.com/isucon/isucon9-qualify/bench/server"
@@ -68,6 +69,7 @@ func main() {
 		conf.AllowedIPs = append(conf.AllowedIPs, aip)
 	}
 
+	// 外部サービスの起動
 	sp, ss, err := server.RunServer(5555, 7000, conf.AllowedIPs)
 	if err != nil {
 		log.Fatal(err)
@@ -85,6 +87,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// 初期データの準備
+	asset.Initialize()
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
