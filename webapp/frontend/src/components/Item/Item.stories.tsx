@@ -2,6 +2,7 @@ import * as React from 'react';
 import { storiesOf } from '@storybook/react';
 import { Item } from '.';
 import { MemoryRouter } from 'react-router-dom';
+import { ItemStatus } from '../../dataObjects/item';
 
 const stories = storiesOf('components/Item', module);
 
@@ -10,7 +11,7 @@ const mockProps = {
   imageUrl: 'https://i.gyazo.com/8560fce19556b64c95ad091350910184.jpg',
   title: 'サンプル',
   price: 10000,
-  status: 'on_sale',
+  status: 'on_sale' as ItemStatus,
 };
 
 stories
