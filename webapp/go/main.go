@@ -1365,9 +1365,58 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var locked int
+	err = dbx.Get(&locked, "SELECT GET_LOCK(?,?)", rb.ItemID, 5)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	defer dbx.Exec("SELECT RELEASE_LOCK(?)", rb.ItemID)
+
+	chkItem := Item{}
+	err = dbx.Get(&chkItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "item not found")
+		return
+	}
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+	if chkItem.Status != ItemStatusOnSale {
+		outputErrorMsg(w, http.StatusForbidden, "item is not for sale")
+		return
+	}
+
+	seller := User{}
+	err = dbx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", chkItem.SellerID)
+	if err == sql.ErrNoRows {
+		outputErrorMsg(w, http.StatusNotFound, "seller not found")
+		return
+	}
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
 	buyer, errCode, errMsg := getUser(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
+		return
+	}
+
+	if chkItem.SellerID == buyer.ID {
+		outputErrorMsg(w, http.StatusForbidden, "自分の商品は買えません")
+		return
+	}
+
+	category, err := getCategoryByID(dbx, chkItem.CategoryID)
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "category id error")
 		return
 	}
 
@@ -1396,30 +1445,6 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 
 	if targetItem.SellerID == buyer.ID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品は買えません")
-		tx.Rollback()
-		return
-	}
-
-	seller := User{}
-	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", targetItem.SellerID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "seller not found")
-		tx.Rollback()
-		return
-	}
-	if err != nil {
-		log.Print(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
-	}
-
-	category, err := getCategoryByID(tx, targetItem.CategoryID)
-	if err != nil {
-		log.Print(err)
-
-		outputErrorMsg(w, http.StatusInternalServerError, "category id error")
 		tx.Rollback()
 		return
 	}
