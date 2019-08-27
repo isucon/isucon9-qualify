@@ -15,6 +15,10 @@ import (
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) *fails.Critical {
 	critical := fails.NewCritical()
 
+	// initializeだけタイムアウトを別に設定
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
 	_, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
 	if err != nil {
 		critical.Add(err)
