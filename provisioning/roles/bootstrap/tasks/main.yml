@@ -1,6 +1,7 @@
 - name: Install Dependencies
   apt:
     name: [
+    'jq',
     'git',
     're2c',
     'bison',
