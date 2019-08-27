@@ -93,13 +93,26 @@ func main() {
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
-	scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	criticalMsgs := cerr.GetMsgs()
+	if len(criticalMsgs) > 0 {
+		log.Print("cause error!")
+
+		output := Output{
+			Pass:     false,
+			Score:    0,
+			Messages: criticalMsgs,
+		}
+		json.NewEncoder(os.Stdout).Encode(output)
+
+		return
+	}
 
 	log.Print("=== verify ===")
 	// 初期チェック：正しく動いているかどうかを確認する
 	// 明らかにおかしいレスポンスを返しているアプリケーションはさっさと停止させることで、運営側のリソースを使い果たさない・他サービスへの攻撃に利用されるを防ぐ
-	cerr := scenario.Verify(context.Background())
-	criticalMsgs := cerr.GetMsgs()
+	cerr = scenario.Verify(context.Background())
+	criticalMsgs = cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
 		log.Print("cause error!")
 

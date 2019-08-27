@@ -11,7 +11,7 @@ import (
 )
 
 func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, error) {
-	s1, err := session.NewSession()
+	s1, err := session.NewSessionForInialize()
 	if err != nil {
 		return false, err
 	}
