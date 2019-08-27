@@ -71,8 +71,7 @@ func Verify(ctx context.Context) *fails.Critical {
 			critical.Add(err)
 			return
 		}
-		// bumpしたユーザーはあとでbumpをするとベンチが落ちるので一旦再利用しない
-		// defer ActiveSellerPool.Enqueue(s1)
+		defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
@@ -311,7 +310,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
-			s1, err := activeSellerSession(ctx)
+			// bumpは投稿した直後だとできないので必ず新しいユーザーでやる
+			user1 := asset.GetRandomActiveSeller()
+			s1, err := loginedSession(ctx, user1)
 			if err != nil {
 				critical.Add(err)
 				return
