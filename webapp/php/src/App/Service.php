@@ -1428,7 +1428,7 @@ class Service
 
         return $response->withStatus(StatusCode::HTTP_OK)->withJson([
             'path' => sprintf("/transactions/%d.png", (int) $transactionEvidence['id']),
-            'reserve_id' => (int) $shipping['reserve_id'],
+            'reserve_id' => (string) $shipping['reserve_id'],
         ]);
     }
 
