@@ -67,7 +67,8 @@ func Verify(ctx context.Context) *fails.Critical {
 			critical.Add(err)
 			return
 		}
-		defer ActiveSellerPool.Enqueue(s1)
+		// bumpしたユーザーはあとでbumpをするとベンチが落ちるので一旦再利用しない
+		// defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
