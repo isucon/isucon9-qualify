@@ -89,6 +89,7 @@ func main() {
 
 	// 初期データの準備
 	asset.Initialize()
+	scenario.InitSessionPool()
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする

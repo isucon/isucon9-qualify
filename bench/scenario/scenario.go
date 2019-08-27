@@ -28,29 +28,45 @@ func Verify(ctx context.Context) *fails.Critical {
 
 	critical := fails.NewCritical()
 
-	user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sellAndBuy(ctx, user1, user2)
+
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
+			return
+		}
+
+		s2, err := buyerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		targetItemID, err := sell(ctx, s1, 100)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = buyComplete(ctx, s1, s2, targetItemID, 100)
+		if err != nil {
+			critical.Add(err)
+			return
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		s2, err := LoginedSession(ctx, user2)
+		s2, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -65,9 +81,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -82,9 +96,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomActiveSeller()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -101,9 +113,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomActiveSeller()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -118,16 +128,19 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomBuyer()
-		user2 := asset.GetRandomActiveSeller()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		err = userItemsAndItemWithLoginedSession(ctx, s1, user2.ID)
+		s2, err := activeSellerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = userItemsAndItemWithLoginedSession(ctx, s1, s2.UserID)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -147,7 +160,19 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := irregularSellAndBuy(ctx, user2, user1, user3)
+		s1, err := buyerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		s2, err := buyerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = irregularSellAndBuy(ctx, s1, s2, user3)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -189,7 +214,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
-	user1, user2, user3 := asset.GetRandomActiveSeller(), asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
+	user3 := asset.GetRandomBuyer()
 
 	// 間違ったパスワードでログインができないことをチェックする
 	// これがないとパスワードチェックを外して常にログイン成功させるチートが可能になる
@@ -224,7 +249,19 @@ func check(ctx context.Context, critical *fails.Critical) {
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
-			err := irregularSellAndBuy(ctx, user2, user1, user3)
+			s1, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			err = irregularSellAndBuy(ctx, s1, s2, user3)
 			if err != nil {
 				critical.Add(err)
 			}
@@ -251,15 +288,13 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		s2, err := LoginedSession(ctx, user2)
+		s2, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -290,15 +325,13 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		s2, err := LoginedSession(ctx, user2)
+		s2, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -343,15 +376,13 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		s2, err := LoginedSession(ctx, user2)
+		s2, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -398,15 +429,13 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		s2, err := LoginedSession(ctx, user2)
+		s2, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -453,15 +482,13 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
 
-		s2, err := LoginedSession(ctx, user2)
+		s2, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -521,14 +548,13 @@ func load(ctx context.Context, critical *fails.Critical) {
 		go func() {
 			defer wg.Done()
 
-			user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-			s1, err := LoginedSession(ctx, user1)
+			s1, err := activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
 				return
 			}
 
-			s2, err := LoginedSession(ctx, user2)
+			s2, err := buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
 				return
@@ -559,16 +585,13 @@ func load(ctx context.Context, critical *fails.Critical) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			user1 := asset.GetRandomBuyer()
-			user2 := asset.GetRandomActiveSeller()
-
-			s1, err := LoginedSession(ctx, user1)
+			s2, err := activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
 				return
 			}
 
-			s2, err := LoginedSession(ctx, user2)
+			s1, err := buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
 				return
@@ -585,7 +608,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = userItemsAndItemWithLoginedSession(ctx, s1, user2.ID)
+				err = userItemsAndItemWithLoginedSession(ctx, s1, s2.UserID)
 				if err != nil {
 					critical.Add(err)
 
