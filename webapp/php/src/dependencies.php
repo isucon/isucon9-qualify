@@ -1,6 +1,7 @@
 <?php
 
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Slim\App;
 use Slim\Http\StatusCode;
 
@@ -41,13 +42,67 @@ return function (App $app) {
         return new \SlimSession\Helper;
     };
 
-    // error logging
+    // error handler
     $container['errorHandler'] =  function (ContainerInterface $c) {
-        return function (Slim\Http\Request $request, Slim\Http\Response $response, \Exception $exception) use ($c) {
+        return function (ServerRequestInterface $request, Slim\Http\Response $response, \Exception $exception) use ($c) {
+            /** @var \Psr\Log\LoggerInterface $logger */
             $logger = $c['logger'];
             $logger->critical($exception->getMessage(), ['exception' => (string) $exception]);
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)
-                ->withJson(['error' => $exception->getMessage()]);
+
+            $error = [
+                'message' => 'Error',
+            ];
+            $error['exception'] = [];
+
+            do {
+                $error['exception'][] = [
+                        'type' => get_class($exception),
+                        'code' => $exception->getCode(),
+                        'message' => $exception->getMessage(),
+                        'file' => $exception->getFile(),
+                        'line' => $exception->getLine(),
+                        'trace' => explode("\n", $exception->getTraceAsString()),
+                    ];
+            } while ($exception = $exception->getPrevious());
+
+            return $response->withJson(
+                $error,
+                StatusCode::HTTP_INTERNAL_SERVER_ERROR,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+            );
+        };
+    };
+
+    // php error handler
+    $container['phpErrorHandler'] = function (ContainerInterface $c) {
+        return function (ServerRequestInterface $request, Slim\Http\Response $response, \Throwable $exception) use ($c) {
+            /** @var \Psr\Log\LoggerInterface $logger */
+            $logger = $c['logger'];
+            $logger->critical($exception->getMessage(), ['exception' => (string) $exception]);
+
+            $error = [
+                'message' => 'Error',
+            ];
+
+            $error['exception'] = [];
+
+            do {
+                $error['exception'][] = [
+                    'type' => get_class($exception),
+                    'code' => $exception->getCode(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                    'line' => $exception->getLine(),
+                    'trace' => explode("\n", $exception->getTraceAsString()),
+                ];
+            } while ($exception = $exception->getPrevious());
+
+
+            return $response->withJson(
+                $error,
+                StatusCode::HTTP_INTERNAL_SERVER_ERROR,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+            );
         };
     };
 };
