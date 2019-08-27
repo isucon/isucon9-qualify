@@ -60,12 +60,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for _, str := range strings.Split(allowedIPStr, ",") {
-		aip := net.ParseIP(str)
-		if aip == nil {
-			log.Fatalf("allowed-ips: %s cannot be parsed", str)
+	if allowedIPStr != "" {
+		for _, str := range strings.Split(allowedIPStr, ",") {
+			aip := net.ParseIP(str)
+			if aip == nil {
+				log.Fatalf("allowed-ips: %s cannot be parsed", str)
+			}
+			conf.AllowedIPs = append(conf.AllowedIPs, aip)
 		}
-		conf.AllowedIPs = append(conf.AllowedIPs, aip)
 	}
 
 	// 外部サービスの起動
