@@ -130,7 +130,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
-		err = transactionEvidenceWithLoginedSession(ctx, s1)
+		err = transactionEvidence(ctx, s1)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -425,7 +425,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = transactionEvidenceWithLoginedSession(ctx, s1)
+			err = transactionEvidence(ctx, s1)
 			if err != nil {
 				critical.Add(err)
 
@@ -545,6 +545,58 @@ func check(ctx context.Context, critical *fails.Critical) {
 			}
 
 			err = buyComplete(ctx, s1, s2, targetItemID, 110)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+		Final:
+			ActiveSellerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
+
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+	L:
+		for j := 0; j < 5; j++ {
+			ch := time.After(5 * time.Second)
+
+			s1, err := activeSellerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			targetItemID, err := sell(ctx, s1, 100)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = loadTransactionEvidence(ctx, s1)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = buyComplete(ctx, s1, s2, targetItemID, 100)
 			if err != nil {
 				critical.Add(err)
 

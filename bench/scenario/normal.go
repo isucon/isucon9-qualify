@@ -38,10 +38,14 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 	return nil
 }
 
-func transactionEvidenceWithLoginedSession(ctx context.Context, s1 *session.Session) error {
-	_, items, err := s1.UsersTransactions(ctx)
+func transactionEvidence(ctx context.Context, s1 *session.Session) error {
+	hasNext, items, err := s1.UsersTransactions(ctx)
 	if err != nil {
 		return err
+	}
+
+	if !hasNext {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのhas_nextがfalseになっています (user_id: %d)", s1.UserID))
 	}
 
 	for _, item := range items {
@@ -52,7 +56,7 @@ func transactionEvidenceWithLoginedSession(ctx context.Context, s1 *session.Sess
 
 		ate, ok := asset.GetTransactionEvidence(item.TransactionEvidenceID)
 		if ok && item.TransactionEvidenceStatus != ate.Status {
-			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonのステータスに誤りがあります"))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのステータスに誤りがあります (user_id: %d)", s1.UserID))
 		}
 	}
 
@@ -65,7 +69,7 @@ func transactionEvidenceWithLoginedSession(ctx context.Context, s1 *session.Sess
 
 	for _, item := range items {
 		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
-			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonのitem_idとcreated_atが正しく動作していません"))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのitem_idとcreated_atが正しく動作していません (user_id: %d)", s1.UserID))
 		}
 
 		if item.TransactionEvidenceID == 0 {
@@ -75,7 +79,62 @@ func transactionEvidenceWithLoginedSession(ctx context.Context, s1 *session.Sess
 
 		ate, ok := asset.GetTransactionEvidence(item.TransactionEvidenceID)
 		if ok && item.TransactionEvidenceStatus != ate.Status {
-			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonのステータスに誤りがあります"))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのステータスに誤りがあります (user_id: %d)", s1.UserID))
+		}
+	}
+
+	return nil
+}
+
+func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
+	hasNext, items, err := s1.UsersTransactions(ctx)
+	if err != nil {
+		return err
+	}
+
+	if !hasNext {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのhas_nextがfalseになっています (user_id: %d)", s1.UserID))
+	}
+
+	for _, item := range items {
+		if item.TransactionEvidenceID == 0 {
+			// TODO: check
+			continue
+		}
+
+		ate, ok := asset.GetTransactionEvidence(item.TransactionEvidenceID)
+		if ok && item.TransactionEvidenceStatus != ate.Status {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのステータスに誤りがあります (user_id: %d)", s1.UserID))
+		}
+	}
+
+	for {
+		targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
+
+		hasNext, items, err = s1.UsersTransactionsWithItemIDAndCreatedAt(ctx, targetItemID, targetItemCreatedAt)
+		if err != nil {
+			return err
+		}
+
+		if !hasNext {
+			// TODO: check
+			break
+		}
+
+		for _, item := range items {
+			if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
+				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのitem_idとcreated_atが正しく動作していません (user_id: %d)", s1.UserID))
+			}
+
+			if item.TransactionEvidenceID == 0 {
+				// TODO: check
+				continue
+			}
+
+			ate, ok := asset.GetTransactionEvidence(item.TransactionEvidenceID)
+			if ok && item.TransactionEvidenceStatus != ate.Status {
+				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのステータスに誤りがあります (user_id: %d)", s1.UserID))
+			}
 		}
 	}
 
