@@ -6,6 +6,7 @@
     - user.isucon
     - user.isucon_admin
     - bootstrap
+    - aliyun
     - dev.deploy
 
     - kernel-tune
