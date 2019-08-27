@@ -4,7 +4,7 @@ import { TransactionComponent } from '.';
 import { MemoryRouter } from 'react-router-dom';
 import { TransactionItem } from '../../dataObjects/item';
 
-const stories = storiesOf('components/Header', module);
+const stories = storiesOf('components/TransactionComponent', module);
 
 const item: TransactionItem = {
   id: 1,
@@ -12,7 +12,7 @@ const item: TransactionItem = {
   transactionEvidenceStatus: 'wait_shipping',
   shippingStatus: 'initial',
   name: 'テスト商品',
-  thumbnailUrl: 'https://gyazo.com/8560fce19556b64c95ad091350910184',
+  thumbnailUrl: 'https://i.gyazo.com/8560fce19556b64c95ad091350910184.jpg',
   createdAt: 111111111,
 };
 

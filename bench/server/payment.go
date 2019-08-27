@@ -281,7 +281,7 @@ func (s *ServerPayment) cardHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-// for benchmarker
+// ForceSet is the function for benchmarker
 func (s *ServerPayment) ForceSet(card string, itemID int64, price int) string {
 	token := secureRandomStr(20)
 	expire := time.Now().Add(5 * time.Minute)
@@ -297,7 +297,7 @@ func (s *ServerPayment) ForceSet(card string, itemID int64, price int) string {
 	return token
 }
 
-// for benchmarker
+// GetReports is the function for benchmarker
 // コピーはしていないので注意
 func (s *ServerPayment) GetReports() map[int64]report {
 	s.reports.Lock()
