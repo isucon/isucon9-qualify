@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import { ItemListComponent } from '../components/ItemListComponent';
+import { ItemList } from '../components/ItemList';
 import { ItemData, TransactionItem } from '../dataObjects/item';
 import { UserData } from '../dataObjects/user';
 import Avatar from '@material-ui/core/Avatar';
@@ -98,7 +98,7 @@ class UserPage extends React.Component<Props, State> {
     const lastItem = items[items.length - 1];
 
     return (
-      <ItemListComponent
+      <ItemList
         items={items}
         hasNext={itemsHasNext}
         loadMore={itemsLoadMore.bind(
