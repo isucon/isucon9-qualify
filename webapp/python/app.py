@@ -560,7 +560,83 @@ def post_ship_done():
 
 @app.route("/complete", methods=["POST"])
 def post_complete():
-    return
+    ensure_valid_csrf_token()
+    user = get_user()
+    conn = dbh()
+    with conn.cursor() as c:
+        try:
+            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?"
+            c.execute(sql, flask.request.json["item_id"])
+            transaction_evidence = c.fetchone()
+            if transaction_evidence is None:
+                http_json_error(requests.codes["not_found"], "transaction_evidences not found")
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+    if transaction_evidence["seller_id"] != user["id"]:
+        http_json_error(requests.codes['forbidden'], "権限がありません")
+
+    try:
+        conn.begin()
+        with conn.cursor() as c:
+            sql = "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE"
+            c.execute(sql, flask.request.json["item_id"])
+            item = c.fetchone()
+            if item is None:
+                conn.rollback()
+                http_json_error(requests.codes["not_found"], "item not found")
+            if item["status"] != Constants.ITEM_STATUS_TRADING:
+                conn.rollback()
+                http_json_error(requests.codes["forbidden"], "商品が取引中ではありません")
+
+            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE"
+            c.execute(sql, flask.request.json["item_id"])
+            transaction_evidence = c.fetchone()
+            if transaction_evidence is None:
+                conn.rollback()
+                http_json_error(requests.codes["not_found"], "transaction_evidences not found")
+            if transaction_evidence["status"] != Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING:
+                conn.rollback()
+                http_json_error(requests.codes['forbidden'], "準備ができていません")
+
+            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE"
+            c.execute(sql, transaction_evidence["id"])
+            shipping = c.fetchone()
+
+            try:
+                host = get_shipment_service_url()
+                res = requests.post(host + "/request",
+                                    header=dict(Authorization=Constants.ISUCARI_API_TOKEN),
+                                    json=dict(reserve_id=shipping["reserve_id"]))
+                res.raise_for_status()
+            except (socket.gaierror, requests.HTTPError) as err:
+                conn.rollback()
+                app.logger.exception(err)
+                http_json_error(requests.codes["internal_server_error"], "failed to request to shipment service")
+
+            if item["status"] != Constants.SHIPPING_STATUS_DONE:
+                conn.rollback()
+                http_json_error(requests.codes["bad_request"], "shipment service側で配送完了になっていません")
+
+            sql = "UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?"
+            c.execute(sql, (
+                Constants.SHIPPING_STATUS_DONE,
+                datetime.datetime.now(),
+                transaction_evidence["id"],
+            ))
+
+            sql = "UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?"
+            c.execute(sql, (
+                Constants.ITEM_STATUS_SOLD_OUT,
+                datetime.datetime.now(),
+                item["id"],
+            ))
+
+        conn.commit()
+    except MySQLdb.Error as err:
+        app.logger.exception(err)
+        http_json_error(requests.codes['internal_server_error'], "db error")
+    return flask.jsonify(dict(transaction_evidence_id=transaction_evidence["id"]))
 
 
 @app.route("/transactions/<transaction_evidence_id>.png", methods=["GET"])
@@ -689,7 +765,17 @@ def post_register():
 
 @app.route("/reports.json", methods=["GET"])
 def get_reports():
-    return
+    try:
+        conn = dbh()
+        conn.begin()
+        with conn.cursor() as c:
+            sql = "SELECT * FROM `transaction_evidences` WHERE `id` > 15007"
+            c.execute(sql)
+            transaction_evidences = c.fetchall()
+    except MySQLdb.Error as err:
+        app.logger.exception(err)
+        http_json_error(requests.codes['internal_server_error'], "db error")
+    return flask.jsonify(dict(transaction_evidences=transaction_evidences))
 
 
 # Frontend
