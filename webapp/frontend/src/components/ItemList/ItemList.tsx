@@ -6,12 +6,16 @@ import { Item } from '../Item';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
 import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
-import {Theme} from "@material-ui/core";
+import { Theme } from '@material-ui/core';
 
 const useStyles = makeStyles((theme: Theme) => ({
+  gridList: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+  },
   grid: {
-    width: '300px',
-    height: '300px',
+    height: '100%',
   },
 }));
 
@@ -51,7 +55,9 @@ const ItemList: React.FC<Props> = function({
       hasMore={hasNext}
       loader={<CircularProgress />}
     >
-      <GridList cols={3}>{itemComponents}</GridList>
+      <GridList className={classes.gridList} cellHeight="auto" cols={3}>
+        {itemComponents}
+      </GridList>
     </InfiniteScroll>
   );
 };
