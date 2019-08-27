@@ -141,7 +141,7 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 	return nil
 }
 
-func userItemsAndItemWithLoginedSession(ctx context.Context, s1 *session.Session, userID int64) error {
+func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) error {
 	_, user, items, err := s1.UserItems(ctx, userID)
 	if err != nil {
 		return err

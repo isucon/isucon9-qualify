@@ -153,7 +153,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 		defer ActiveSellerPool.Enqueue(s2)
 
-		err = userItemsAndItemWithLoginedSession(ctx, s1, s2.UserID)
+		err = userItemsAndItem(ctx, s1, s2.UserID)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -453,7 +453,6 @@ func check(ctx context.Context, critical *fails.Critical) {
 
 	// ユーザーページをある程度見る
 	// TODO: 初期データを後ろの方までいい感じに遡りたい
-	// TODO: ユーザーをランダムにしたい
 	// TODO: 商品ページも見るのは蛇足では
 	wg.Add(1)
 	go func() {
@@ -481,7 +480,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = userItemsAndItemWithLoginedSession(ctx, s2, s1.UserID)
+			err = userItemsAndItem(ctx, s2, s1.UserID)
 			if err != nil {
 				critical.Add(err)
 
@@ -698,7 +697,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = userItemsAndItemWithLoginedSession(ctx, s1, s2.UserID)
+				err = userItemsAndItem(ctx, s1, s2.UserID)
 				if err != nil {
 					critical.Add(err)
 
