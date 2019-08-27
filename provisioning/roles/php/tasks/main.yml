@@ -27,6 +27,8 @@
     --enable-bcmath --with-bz2 --enable-calendar --enable-cli --enable-shmop
     --enable-sysvsem --enable-sysvshm --enable-sysvmsg --enable-mbregex
     --enable-mbstring --enable-pcntl --enable-sockets --with-curl --enable-zip
+  environment:
+    PHP_BUILD_EXTRA_MAKE_ARGUMENTS: "-j {{ nproc | default('1') }}"
 
 - name: Add PATH for PHP
   become: yes
