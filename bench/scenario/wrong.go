@@ -26,15 +26,10 @@ func irregularLoginWrongPassword(ctx context.Context, user1 asset.AppUser) error
 	return nil
 }
 
-func irregularSellAndBuy(ctx context.Context, user1, user2, user3 asset.AppUser) error {
-	s1, err := LoginedSession(ctx, user1)
-	if err != nil {
-		return err
-	}
-
+func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 asset.AppUser) error {
 	name, description := asset.GenText(8, false), asset.GenText(200, true)
 
-	err = s1.SellWithWrongCSRFToken(ctx, name, 100, description, 32)
+	err := s1.SellWithWrongCSRFToken(ctx, name, 100, description, 32)
 	if err != nil {
 		return err
 	}
@@ -51,11 +46,6 @@ func irregularSellAndBuy(ctx context.Context, user1, user2, user3 asset.AppUser)
 	}
 
 	targetItemID, err := sell(ctx, s1, 100)
-	if err != nil {
-		return err
-	}
-
-	s2, err := LoginedSession(ctx, user2)
 	if err != nil {
 		return err
 	}
@@ -79,7 +69,7 @@ func irregularSellAndBuy(ctx context.Context, user1, user2, user3 asset.AppUser)
 		return err
 	}
 
-	s3, err := LoginedSession(ctx, user3)
+	s3, err := loginedSession(ctx, user3)
 	if err != nil {
 		return err
 	}

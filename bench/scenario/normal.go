@@ -19,30 +19,6 @@ func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL strin
 	return s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
 }
 
-func sellAndBuy(ctx context.Context, user1, user2 asset.AppUser) error {
-	s1, err := LoginedSession(ctx, user1)
-	if err != nil {
-		return err
-	}
-
-	s2, err := LoginedSession(ctx, user2)
-	if err != nil {
-		return err
-	}
-
-	targetItemID, err := sell(ctx, s1, 100)
-	if err != nil {
-		return err
-	}
-
-	err = buyComplete(ctx, s1, s2, targetItemID, 100)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *session.Session) error {
 	targetItemID, err := sell(ctx, s1, 100)
 	if err != nil {
