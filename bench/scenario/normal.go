@@ -93,16 +93,16 @@ func transactionEvidence(ctx context.Context, s1 *session.Session) error {
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 
 		if !ok {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (item_id: %d)", item.ID))
 		}
 
 		if !(item.Description == aItem.Description) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (item_id: %d)", item.ID))
 		}
 
 		err = checkItemDetailCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (id: %d)", err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (item_id: %d)", err.Error(), item.ID))
 		}
 
 		if item.TransactionEvidenceID == 0 {
@@ -131,16 +131,16 @@ func transactionEvidence(ctx context.Context, s1 *session.Session) error {
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 
 		if !ok {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (item_id: %d)", item.ID))
 		}
 
 		if !(item.Description == aItem.Description) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (item_id: %d)", item.ID))
 		}
 
 		err = checkItemDetailCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (id: %d)", err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (itme_id: %d)", err.Error(), item.ID))
 		}
 
 		if item.TransactionEvidenceID == 0 {
@@ -171,16 +171,16 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 
 		if !ok {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (item_id: %d)", item.ID))
 		}
 
 		if !(item.Description == aItem.Description) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (item_id: %d)", item.ID))
 		}
 
 		err = checkItemDetailCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (id: %d)", err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (item_id: %d)", err.Error(), item.ID))
 		}
 
 		if item.TransactionEvidenceID == 0 {
@@ -220,16 +220,16 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 			aItem, ok := asset.GetItem(item.SellerID, item.ID)
 
 			if !ok {
-				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (id: %d)", item.ID))
+				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに存在しない商品が返ってきています (item_id: %d)", item.ID))
 			}
 
 			if !(item.Description == aItem.Description) {
-				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (id: %d)", item.ID))
+				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品説明が間違っています (item_id: %d)", item.ID))
 			}
 
 			err = checkItemDetailCategory(item, aItem)
 			if err != nil {
-				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (id: %d)", err.Error(), item.ID))
+				return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (item_id: %d)", err.Error(), item.ID))
 			}
 
 			if item.TransactionEvidenceID == 0 {
@@ -256,7 +256,7 @@ func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) er
 	for _, item := range items {
 		aItem, ok := asset.GetItem(userID, item.ID)
 		if !ok {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品 (id: %d) が返ってきています", userID, item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品 (item_id: %d) が返ってきています", userID, item.ID))
 		}
 
 		if !(item.Name == aItem.Name) {
@@ -350,17 +350,17 @@ func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Sess
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonは販売中か売り切れの商品しか出してはいけません (item_id: %d; seller_id: %d)", item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if ok && !(aItem.Name == item.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (id: %d; seller_id: %d)", item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (item_id: %d; seller_id: %d)", item.ID, item.SellerID))
 		}
 
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (id: %d)", err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (item_id: %d)", err.Error(), item.ID))
 		}
 
 		if targetItemID == item.ID {
@@ -372,7 +372,7 @@ func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Sess
 
 	if !found {
 		// Verifyでしかできない確認
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonにバンプした商品が表示されていません (id: %d)", targetItemID))
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonにバンプした商品が表示されていません (item_id: %d)", targetItemID))
 	}
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
@@ -402,12 +402,12 @@ func bumpAndNewItemsWithLoginedSession(ctx context.Context, s1, s2 *session.Sess
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if ok && !(aItem.Name == item.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (id: %d; seller_id: %d)", item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (item_id: %d; seller_id: %d)", item.ID, item.SellerID))
 		}
 
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (id: %d)", err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (item_id: %d)", err.Error(), item.ID))
 		}
 
 		createdAt = item.CreatedAt
@@ -464,23 +464,23 @@ func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (item_id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		aCategory, _ := asset.GetCategory(aItem.CategoryID)
 
 		if ok && !(aItem.Name == item.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (item_id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		if category.ID != aCategory.ParentID {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品のカテゴリに誤りがあります (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品のカテゴリに誤りがあります (item_id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonの%s (id: %d)", category.ID, err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonの%s (item_id: %d)", category.ID, err.Error(), item.ID))
 		}
 
 		createdAt = item.CreatedAt
@@ -517,17 +517,17 @@ func newCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Session
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (item_id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if ok && !(aItem.Name == item.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (item_id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (id: %d)", err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (item_id: %d)", err.Error(), item.ID))
 		}
 
 		createdAt = item.CreatedAt
@@ -570,17 +570,17 @@ func loadNewCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Ses
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonは販売中か売り切れの商品しか出してはいけません (item_id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if ok && !(aItem.Name == item.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonで返している商品の情報に誤りがあります (item_id: %d; seller_id: %d)", category.ID, item.ID, item.SellerID))
 		}
 
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (id: %d)", err.Error(), item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (item_id: %d)", err.Error(), item.ID))
 		}
 
 		createdAt = item.CreatedAt
