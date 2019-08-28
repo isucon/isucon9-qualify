@@ -89,7 +89,13 @@ func transactionEvidence(ctx context.Context, s1 *session.Session) error {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのhas_nextがfalseになっています (user_id: %d)", s1.UserID))
 	}
 
+	var createdAt int64
 	for _, item := range items {
+		if createdAt > 0 && createdAt < item.CreatedAt {
+			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonはcreated_at順である必要があります"))
+		}
+		createdAt = item.CreatedAt
+
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 
 		if !ok {
@@ -266,7 +272,13 @@ func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) er
 		return err
 	}
 
+	var createdAt int64
 	for _, item := range items {
+		if createdAt > 0 && createdAt < item.CreatedAt {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", userID))
+		}
+		createdAt = item.CreatedAt
+
 		aItem, ok := asset.GetItem(userID, item.ID)
 		if !ok {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品 (item_id: %d) が返ってきています", userID, item.ID))

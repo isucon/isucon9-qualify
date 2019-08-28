@@ -85,7 +85,7 @@ func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs map[in
 	}
 	for _, item := range items {
 		if item.SellerID != sellerID {
-			return failure.Wrap(err, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
 		}
 
 		aItem, ok := asset.GetItem(sellerID, item.ID)
@@ -150,7 +150,7 @@ func findItemFromUsersTransactions(ctx context.Context, s *session.Session, targ
 			return nextItem, nil
 		}
 	}
-	return session.ItemDetail{}, failure.Wrap(err, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
+	return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
 }
 
 func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetItemID int64, price int) error {
