@@ -90,6 +90,7 @@ var (
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
 	muItem               sync.RWMutex
+	muUser               sync.RWMutex
 	indexActiveSellerID  int32
 	indexBuyerID         int32
 )
@@ -211,13 +212,23 @@ func (u1 *AppUser) Equal(u2 *AppUser) bool {
 }
 
 func GetRandomActiveSeller() AppUser {
+	muUser.RLock()
+	defer muUser.RUnlock()
 	// 全部使い切ったらpanicするので十分なユーザー数を用意しておく
 	return users[activeSellerIDs[len(activeSellerIDs)-int(atomic.AddInt32(&indexActiveSellerID, 1))]]
 }
 
 func GetRandomBuyer() AppUser {
+	muUser.RLock()
+	defer muUser.RUnlock()
 	// 全部使い切ったらpanicするので十分なユーザー数を用意しておく
 	return users[buyerIDs[len(buyerIDs)-int(atomic.AddInt32(&indexBuyerID, 1))]]
+}
+
+func GetUser(sellerID int64) AppUser {
+	muUser.RLock()
+	defer muUser.RUnlock()
+	return users[sellerID]
 }
 
 func GetUserItemsFirst(sellerID int64) int64 {
@@ -245,6 +256,8 @@ func GetItem(sellerID, itemID int64) (AppItem, bool) {
 func SetItem(sellerID int64, itemID int64, name string, price int, description string, categoryID int) {
 	muItem.Lock()
 	defer muItem.Unlock()
+	muUser.RLock()
+	defer muUser.RUnlock()
 
 	userItems[sellerID] = append(userItems[sellerID], itemID)
 
@@ -259,6 +272,10 @@ func SetItem(sellerID int64, itemID int64, name string, price int, description s
 		CategoryID:  categoryID,
 		CreatedAt:   time.Now().Unix(),
 	}
+
+	user := users[sellerID]
+	user.NumSellItems = user.NumSellItems + 1
+	users[sellerID] = user
 }
 
 func SetItemPrice(sellerID int64, itemID int64, price int) {

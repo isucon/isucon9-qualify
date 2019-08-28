@@ -242,8 +242,25 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 	return nil
 }
 
+// ユーザページの商品をすべて数える
+// カテゴリやタイトルも確認しているので、active sellerをある程度の人数確認したら
+// 商品が大幅に削除されていないことも確認できる
+func countUserItems(ctx context.Context, s *session.Session, sellerID int64) error {
+	itemIDs := map[int64]int64{}
+	err := getItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
+	if err != nil {
+		return err
+	}
+	c := len(itemIDs)
+	buffer := 10 // TODO
+	aUser := asset.GetUser(sellerID)
+	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
+	}
+	return nil
+}
+
 func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) error {
-	// TODO: num_sell_itemsを確認したい
 	_, _, items, err := s1.UserItems(ctx, userID)
 	if err != nil {
 		return err
@@ -263,6 +280,7 @@ func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) er
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonの%s", userID, err.Error()))
 		}
+
 	}
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt

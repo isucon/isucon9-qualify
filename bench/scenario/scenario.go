@@ -158,6 +158,17 @@ func Verify(ctx context.Context) *fails.Critical {
 		if err != nil {
 			critical.Add(err)
 		}
+
+		// active sellerの全件確認
+		err = countUserItems(ctx, s2, s2.UserID)
+		if err != nil {
+			critical.Add(err)
+		}
+		// active sellerではないユーザも確認。0件でも問題ない
+		err = countUserItems(ctx, s1, s2.UserID)
+		if err != nil {
+			critical.Add(err)
+		}
 	}()
 
 	user3 := asset.GetRandomBuyer()
@@ -461,9 +472,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	// ユーザーページをある程度見る
-	// TODO: 初期データを後ろの方までいい感じに遡りたい
-	// TODO: 商品ページも見るのは蛇足では
+	// ユーザーページを見る
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -488,6 +497,17 @@ func check(ctx context.Context, critical *fails.Critical) {
 				critical.Add(err)
 
 				goto Final
+			}
+
+			// active seller ユーザページ全件確認
+			err = countUserItems(ctx, s2, s1.UserID)
+			if err != nil {
+				critical.Add(err)
+			}
+			// no active seller ユーザページ確認
+			err = countUserItems(ctx, s1, s2.UserID)
+			if err != nil {
+				critical.Add(err)
 			}
 
 			err = userItemsAndItem(ctx, s2, s1.UserID)
