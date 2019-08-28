@@ -10,12 +10,15 @@ import (
 const (
 	ErrApplication failure.StringCode = "error application"
 	ErrSession     failure.StringCode = "error session"
+	ErrCritical    failure.StringCode = "error critical"
 	ErrTimeout     failure.StringCode = "error timeout"
 )
 
 type Critical struct {
-	Msgs []string
-	mu   sync.Mutex
+	Msgs     []string
+	critical int
+
+	mu sync.Mutex
 }
 
 func NewCritical() *Critical {
@@ -23,6 +26,13 @@ func NewCritical() *Critical {
 	return &Critical{
 		Msgs: msgs,
 	}
+}
+
+func (c *Critical) GetCriticalCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.critical
 }
 
 func (c *Critical) GetMsgs() []string {
@@ -43,9 +53,11 @@ func (c *Critical) Add(err error) {
 	log.Printf("%+v", err)
 
 	if msg, ok := failure.MessageOf(err); ok {
-		switch c, _ := failure.CodeOf(err); c {
+		switch code, _ := failure.CodeOf(err); code {
 		case ErrTimeout:
 			msg += "（タイムアウトしました）"
+		case ErrCritical:
+			c.critical++
 		}
 
 		c.Msgs = append(c.Msgs, msg)

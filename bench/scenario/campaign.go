@@ -144,9 +144,8 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 
 	go func() {
 		for s := range buyerCh {
-			// TODO: ここはクリティカル扱いにして発生していたら大幅減点にしたい
 			// buyerが複数人いるとここのコードが動く
-			critical.Add(failure.New(fails.ErrApplication, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItemID, s.UserID)))
+			critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItemID, s.UserID)))
 		}
 	}()
 
