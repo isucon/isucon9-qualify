@@ -12,3 +12,4 @@ requires 'Digest::SHA';
 requires 'LWP::UserAgent';
 requires 'IO::Socket::SSL';
 requires 'Starlet';
+requires 'LWP::Protocol::https';
