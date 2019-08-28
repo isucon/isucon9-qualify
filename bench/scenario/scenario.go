@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -12,19 +13,19 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) *fails.Critical {
+func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, *fails.Critical) {
 	critical := fails.NewCritical()
 
 	// initializeだけタイムアウトを別に設定
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	_, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
+	isCampaign, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
 	if err != nil {
 		critical.Add(err)
 	}
 
-	return critical
+	return isCampaign, critical
 }
 
 func Verify(ctx context.Context) *fails.Critical {
@@ -56,7 +57,7 @@ func Verify(ctx context.Context) *fails.Critical {
 			return
 		}
 
-		err = buyComplete(ctx, s1, s2, targetItemID, 100)
+		err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, 100)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -198,7 +199,7 @@ func Verify(ctx context.Context) *fails.Critical {
 	return critical
 }
 
-func Validation(ctx context.Context, critical *fails.Critical) {
+func Validation(ctx context.Context, isCampaign bool, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -213,6 +214,15 @@ func Validation(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 		load(ctx, critical)
 	}()
+
+	if isCampaign {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			log.Print("=== enable campaign ===")
+			Campaign(ctx, critical)
+		}()
+	}
 
 	go func() {
 		wg.Wait()
@@ -734,8 +744,6 @@ func load(ctx context.Context, critical *fails.Critical) {
 	case <-ctx.Done():
 	}
 }
-
-func Campaign(critical *fails.Critical) {}
 
 func FinalCheck(ctx context.Context, critical *fails.Critical) int64 {
 	reports := sPayment.GetReports()

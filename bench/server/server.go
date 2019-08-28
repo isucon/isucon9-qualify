@@ -116,7 +116,7 @@ func userIP(r *http.Request) (net.IP, error) {
 	return userIP, nil
 }
 
-func RunServer(paymentPort, shipmentPort int, allowedIPs []net.IP) (*ServerPayment, *ServerShipment, error) {
+func RunServer(paymentPort, shipmentPort int, dataDir string, allowedIPs []net.IP) (*ServerPayment, *ServerShipment, error) {
 	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: paymentPort})
 	if err != nil {
 		return nil, nil, err
@@ -134,7 +134,7 @@ func RunServer(paymentPort, shipmentPort int, allowedIPs []net.IP) (*ServerPayme
 
 	pay.SetDelay(200 * time.Millisecond)
 
-	ship := NewShipment(false, allowedIPs)
+	ship := NewShipment(false, dataDir, allowedIPs)
 	serverShipment := &http.Server{
 		Handler: ship,
 	}

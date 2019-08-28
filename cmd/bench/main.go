@@ -48,11 +48,13 @@ func main() {
 
 	conf := Config{}
 	allowedIPStr := ""
+	dataDir := ""
 
 	flags.StringVar(&conf.TargetURLStr, "target-url", "http://127.0.0.1:8000", "target url")
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
 	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
 	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
+	flags.StringVar(&dataDir, "data-dir", "initial-data", "data directory")
 	flags.StringVar(&allowedIPStr, "allowed-ips", "", "allowed ips (comma separated)")
 
 	err := flags.Parse(os.Args[1:])
@@ -71,7 +73,7 @@ func main() {
 	}
 
 	// 外部サービスの起動
-	sp, ss, err := server.RunServer(5555, 7000, conf.AllowedIPs)
+	sp, ss, err := server.RunServer(5555, 7000, dataDir, conf.AllowedIPs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,12 +92,12 @@ func main() {
 	}
 
 	// 初期データの準備
-	asset.Initialize()
+	asset.Initialize(dataDir)
 	scenario.InitSessionPool()
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
-	cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	isCampaign, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
 		log.Print("cause error!")
@@ -137,7 +139,7 @@ func main() {
 	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる
 	// checkとloadは区別がつかないようにしないといけない。loadのリクエストはログアウト状態しかなかったので、ログアウト時のキャッシュを強くするだけでスコアがはねる問題が過去にあった
 	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
-	scenario.Validation(ctx, cerr)
+	scenario.Validation(ctx, isCampaign, cerr)
 
 	criticalMsgs = cerr.GetMsgs()
 	if len(criticalMsgs) > 10 {

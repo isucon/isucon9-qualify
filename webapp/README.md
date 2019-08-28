@@ -52,7 +52,7 @@ done
 |                       | WHO    | items    | transaction_evidences | shippings            |
 |-----------------------|--------|----------|-----------------------|----------------------|
 | postSell              | seller  | on_sale  | -                    | -                    |
-| postBuy               | buyer  | trading  | wait_shipping         | initial              |
+| postBuy  (購入)      | buyer  | trading  | wait_shipping         | initial              |
 | postShip (集荷予約)   | seller | ↓        | ↓                     | wait_pickup          |
 | postShipDone (発送完了)|  seller | ↓        | wait_done             | shipping または done |
-| postComplete          | buyer  | sold_out | done                  | done                 |
+| postComplete (取引完了)| buyer  | sold_out | done                  | done                 |

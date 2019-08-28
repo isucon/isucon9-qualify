@@ -4,9 +4,9 @@
     content: |
       fs.file-max=655360
 
-- name: Increase file limit for soft and hard nofile limit
+- name: Tune up network
+  become: yes
   copy:
-    dest: /etc/sysctl.d/91-nofiles.conf
+    dest: /etc/sysctl.d/92-net.conf
     content: |
-      *     soft nofile 655360
-      *     hard nofile 655360
+      net.core.somaxconn=65535

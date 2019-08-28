@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,6 +20,15 @@ const (
 	ItemStatusSoldOut = "sold_out"
 	ItemStatusStop    = "stop"
 	ItemStatusCancel  = "cancel"
+
+	TransactionEvidenceStatusWaitShipping = "wait_shipping"
+	TransactionEvidenceStatusWaitDone     = "wait_done"
+	TransactionEvidenceStatusDone         = "done"
+
+	ShippingsStatusInitial    = "initial"
+	ShippingsStatusWaitPickup = "wait_pickup"
+	ShippingsStatusShipping   = "shipping"
+	ShippingsStatusDone       = "done"
 
 	ItemsPerPage = 48
 
@@ -85,7 +95,7 @@ var (
 )
 
 // Initialize is a function to load initial data
-func Initialize() {
+func Initialize(dataDir string) {
 	users = make(map[int64]AppUser)
 	activeSellerIDs = make([]int64, 0, 400)
 	buyerIDs = make([]int64, 0, 1000)
@@ -96,7 +106,7 @@ func Initialize() {
 	userItems = make(map[int64][]int64)
 	transactionEvidences = make(map[int64]AppTransactionEvidence)
 
-	f, err := os.Open("initial-data/result/users_json.txt")
+	f, err := os.Open(filepath.Join(dataDir, "result/users_json.txt"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +129,7 @@ func Initialize() {
 	}
 	f.Close()
 
-	f, err = os.Open("initial-data/result/items_json.txt")
+	f, err = os.Open(filepath.Join(dataDir, "result/items_json.txt"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,7 +149,7 @@ func Initialize() {
 	}
 	f.Close()
 
-	f, err = os.Open("initial-data/result/category_json.txt")
+	f, err = os.Open(filepath.Join(dataDir, "result/category_json.txt"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,7 +172,7 @@ func Initialize() {
 	}
 	f.Close()
 
-	f, err = os.Open("initial-data/result/transaction_evidences_json.txt")
+	f, err = os.Open(filepath.Join(dataDir, "result/transaction_evidences_json.txt"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -179,7 +189,7 @@ func Initialize() {
 	}
 	f.Close()
 
-	f, err = os.Open("initial-data/keywords.tsv")
+	f, err = os.Open(filepath.Join(dataDir, "keywords.tsv"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -279,6 +289,11 @@ func GetRandomRootCategory() AppCategory {
 
 func GetRandomChildCategory() AppCategory {
 	return childCategories[rand.Intn(len(childCategories))]
+}
+
+func GetCategory(categoryID int) (AppCategory, bool) {
+	c, ok := categories[categoryID]
+	return c, ok
 }
 
 // TODO: transactionEvidencesをちゃんと管理するようにして存在しないケースをなくす

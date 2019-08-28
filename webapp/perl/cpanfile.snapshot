@@ -906,6 +906,14 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
+  Exporter-Tiny-1.002001
+    pathname: T/TO/TOBYINK/Exporter-Tiny-1.002001.tar.gz
+    provides:
+      Exporter::Shiny 1.002001
+      Exporter::Tiny 1.002001
+    requirements:
+      ExtUtils::MakeMaker 6.17
+      perl 5.006001
   ExtUtils-Config-0.008
     pathname: L/LE/LEONT/ExtUtils-Config-0.008.tar.gz
     provides:
@@ -1190,6 +1198,12 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Net::SSLeay 1.46
       Scalar::Util 0
+  IPC-Signal-1.00
+    pathname: R/RO/ROSCH/IPC-Signal-1.00.tar.gz
+    provides:
+      IPC::Signal 1.00
+    requirements:
+      ExtUtils::MakeMaker 0
   JSON-4.02
     pathname: I/IS/ISHIGAKI/JSON-4.02.tar.gz
     provides:
@@ -1289,6 +1303,41 @@ DISTRIBUTIONS
       Scalar::Util 0
       perl 5.006002
       strict 0
+  LWP-Protocol-https-6.07
+    pathname: O/OA/OALDERS/LWP-Protocol-https-6.07.tar.gz
+    provides:
+      LWP::Protocol::https 6.07
+      LWP::Protocol::https::Socket 6.07
+    requirements:
+      ExtUtils::MakeMaker 0
+      IO::Socket::SSL 1.54
+      LWP::UserAgent 6.06
+      Mozilla::CA 20110101
+      Net::HTTPS 6
+      perl 5.008001
+  List-MoreUtils-0.428
+    pathname: R/RE/REHSACK/List-MoreUtils-0.428.tar.gz
+    provides:
+      List::MoreUtils 0.428
+      List::MoreUtils::PP 0.428
+    requirements:
+      Exporter::Tiny 0.038
+      ExtUtils::MakeMaker 0
+      List::MoreUtils::XS 0.426
+  List-MoreUtils-XS-0.428
+    pathname: R/RE/REHSACK/List-MoreUtils-XS-0.428.tar.gz
+    provides:
+      List::MoreUtils::XS 0.428
+    requirements:
+      Carp 0
+      ExtUtils::MakeMaker 0
+      File::Basename 0
+      File::Copy 0
+      File::Path 0
+      File::Spec 0
+      IPC::Cmd 0
+      XSLoader 0.22
+      base 0
   MRO-Compat-0.13
     pathname: H/HA/HAARG/MRO-Compat-0.13.tar.gz
     provides:
@@ -1441,6 +1490,14 @@ DISTRIBUTIONS
       Scalar::Util 1.14
       XSLoader 0.02
       perl 5.008005
+  Mozilla-CA-20180117
+    pathname: A/AB/ABH/Mozilla-CA-20180117.tar.gz
+    provides:
+      Mozilla::CA 20180117
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test 0
+      perl 5.006
   Net-HTTP-6.19
     pathname: O/OA/OALDERS/Net-HTTP-6.19.tar.gz
     provides:
@@ -1520,6 +1577,22 @@ DISTRIBUTIONS
       perl 5.008001
       strict 0
       warnings 0
+  Parallel-Prefork-0.18
+    pathname: K/KA/KAZUHO/Parallel-Prefork-0.18.tar.gz
+    provides:
+      Parallel::Prefork 0.18
+      Parallel::Prefork::SpareWorkers undef
+      Parallel::Prefork::SpareWorkers::Scoreboard undef
+    requirements:
+      Class::Accessor::Lite 0.04
+      ExtUtils::MakeMaker 6.59
+      List::MoreUtils 0
+      Proc::Wait3 0.03
+      Scope::Guard 0
+      Signal::Mask 0
+      Test::Requires 0
+      Test::SharedFork 0
+      perl 5.008001
   Params-Classify-0.015
     pathname: Z/ZE/ZEFRAM/Params-Classify-0.015.tar.gz
     provides:
@@ -1682,6 +1755,12 @@ DISTRIBUTIONS
       Digest::SHA 0
       Module::Build::Tiny 0.034
       Plack 0.9910
+  Proc-Wait3-0.05
+    pathname: C/CT/CTILMES/Proc-Wait3-0.05.tar.gz
+    provides:
+      Proc::Wait3 0.05
+    requirements:
+      ExtUtils::MakeMaker 0
   Role-Tiny-2.000008
     pathname: H/HA/HAARG/Role-Tiny-2.000008.tar.gz
     provides:
@@ -1745,6 +1824,35 @@ DISTRIBUTIONS
       Test::Requires 0
       Tie::IxHash 0
       perl 5.008001
+  Scope-Guard-0.21
+    pathname: C/CH/CHOCOLATE/Scope-Guard-0.21.tar.gz
+    provides:
+      Scope::Guard 0.21
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test::More 0
+      perl 5.006001
+  Server-Starter-0.34
+    pathname: K/KA/KAZUHO/Server-Starter-0.34.tar.gz
+    provides:
+      Server::Starter 0.34
+      Server::Starter::Guard undef
+    requirements:
+      ExtUtils::CBuilder 0
+      Module::Build 0.4005
+      perl 5.008
+  Signal-Mask-0.008
+    pathname: L/LE/LEONT/Signal-Mask-0.008.tar.gz
+    provides:
+      Signal::Mask 0.008
+      Signal::Pending 0.008
+    requirements:
+      Carp 0
+      ExtUtils::MakeMaker 6.30
+      IPC::Signal 0
+      POSIX 0
+      strict 0
+      warnings 0
   Specio-0.44
     pathname: D/DR/DROLSKY/Specio-0.44.tar.gz
     provides:
@@ -1814,6 +1922,21 @@ DISTRIBUTIONS
       strict 0
       version 0.83
       warnings 0
+  Starlet-0.31
+    pathname: K/KA/KAZUHO/Starlet-0.31.tar.gz
+    provides:
+      Plack::Handler::Starlet undef
+      Starlet 0.31
+      Starlet::Server undef
+    requirements:
+      ExtUtils::MakeMaker 6.59
+      LWP::UserAgent 5.8
+      Parallel::Prefork 0.17
+      Plack 0.992
+      Server::Starter 0.06
+      Test::More 0.88
+      Test::TCP 2.1
+      perl 5.008001
   Stream-Buffered-0.03
     pathname: D/DO/DOY/Stream-Buffered-0.03.tar.gz
     provides:

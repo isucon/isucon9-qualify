@@ -40,7 +40,7 @@ class Service
      */
     private $renderer;
 
-    private const DATETIME_SQL_FORMAT = 'Y-m-d h:i:s';
+    private const DATETIME_SQL_FORMAT = 'Y-m-d H:i:s';
 
     private const ITEM_STATUS_ON_SALE = 'on_sale';
     private const ITEM_STATUS_TRADING = 'trading';
@@ -200,7 +200,7 @@ class Service
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
         }
 
-        exec('../sql/init.sh');
+        exec($this->settings['app']['base_dir'] . '../sql/init.sh');
 
         try {
             $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
@@ -567,6 +567,7 @@ class Service
                         'status' => $item['status'],
                         'name' => $item['name'],
                         'price' => (int) $item['price'],
+                        'description' => $item['description'],
                         'image_url' => $this->getImageUrl($item['image_name']),
                         'category_id' => (int) $item['category_id'],
                         'category' => $category,
@@ -588,10 +589,6 @@ class Service
                 if ($r === false) {
                     throw new \PDOException($sth->errorInfo());
                 }
-
-                $detail['transaction_evidence_id'] = null;
-                $detail['transaction_evidence_status'] = null;
-                $detail['shipping_status'] = null;
 
                 $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
                 if ($transactionEvidence !== false) {
@@ -901,7 +898,7 @@ class Service
         $bytes = random_bytes(16);
         $imageName = sprintf("%s.%s", bin2hex($bytes), $ext);
         try {
-            $image->moveTo(sprintf('../public/upload/%s', $imageName));
+            $image->moveTo(sprintf('%s/%s', $this->settings['app']['upload_path'], $imageName));
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'Saving image failed']);
@@ -1428,7 +1425,7 @@ class Service
 
         return $response->withStatus(StatusCode::HTTP_OK)->withJson([
             'path' => sprintf("/transactions/%d.png", (int) $transactionEvidence['id']),
-            'reserve_id' => (int) $shipping['reserve_id'],
+            'reserve_id' => (string) $shipping['reserve_id'],
         ]);
     }
 
@@ -1811,5 +1808,19 @@ class Service
             'item_created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
             'item_updated_at' => (new \DateTime($item['updated_at']))->getTimestamp(),
         ]);
+    }
+
+    public function reports(Request $request, Response $response, array $args)
+    {
+        try {
+            $sth = $this->dbh->prepare("SELECT * FROM `transaction_evidences` WHERE `id` > 15007");
+            $sth->execute([]);
+            $transactionEvidences = $sth->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            $this->logger->error($e->getMessage());
+            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+        }
+        // TODO ISO-8061 TZ Colon format 2006-01-02T15:04:05Z07:00
+        return $response->withJson($transactionEvidences, StatusCode::HTTP_OK);
     }
 }

@@ -15,8 +15,8 @@
     - golang
     - external.nginx
     - external.benchmarker
-    # TODO
-    # - benchmark-worker
+    # WIP
+    - external.benchmark-worker
 
   tasks:
     - name: Start default daemons
@@ -29,3 +29,4 @@
         enabled: yes
       with_items:
         - nginx.service
+        - benchmark-worker.service

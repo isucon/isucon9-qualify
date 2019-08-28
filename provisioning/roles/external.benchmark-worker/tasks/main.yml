@@ -1,0 +1,25 @@
+- name: Install benchmark-worker
+  command: /home/isucon/local/go/bin/go build -o bin/benchmark-worker cmd/bench-worker/main.go
+  args:
+    chdir: /home/isucon/isucari
+  environment:
+    GO111MODULE: "on"
+  become: yes
+  become_user: isucon
+
+- name: Copy benchmark-worker unit file
+  copy:
+    src: etc/systemd/system/benchmark-worker.service
+    dest: /etc/systemd/system/benchmark-worker.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - daemon-reload
+
+- name: Enable and start benchmark-worker
+  systemd:
+    name: benchmark-worker
+    state: started
+    daemon_reload: yes
+    enabled: yes
