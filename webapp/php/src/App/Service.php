@@ -567,6 +567,7 @@ class Service
                         'status' => $item['status'],
                         'name' => $item['name'],
                         'price' => (int) $item['price'],
+                        'description' => $item['description'],
                         'image_url' => $this->getImageUrl($item['image_name']),
                         'category_id' => (int) $item['category_id'],
                         'category' => $category,
