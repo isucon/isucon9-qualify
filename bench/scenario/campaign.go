@@ -75,7 +75,7 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 	}
 
 	// 真のbuyerが入るチャネル。複数来たらエラーにする
-	buyerCh := make(chan *session.Session, 0)
+	buyerCh := make(chan *session.Session)
 	defer func() {
 		// closeしないとgoroutineリークする
 		close(buyerCh)
@@ -184,6 +184,4 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 		critical.Add(err)
 		return
 	}
-
-	return
 }
