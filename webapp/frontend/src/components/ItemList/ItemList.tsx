@@ -12,7 +12,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   gridList: {
     display: 'flex',
     flexWrap: 'wrap',
-    justifyContent: 'space-around',
+    justifyContent: 'flex-start',
   },
   grid: {
     height: '100%',
