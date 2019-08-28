@@ -188,11 +188,6 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 			continue
 		}
 
-		if item.TransactionEvidenceID == 0 {
-			// TODO: check
-			continue
-		}
-
 		ate, ok := asset.GetTransactionEvidence(item.TransactionEvidenceID)
 		if ok && item.TransactionEvidenceStatus != ate.Status {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのステータスに誤りがあります (user_id: %d)", s1.UserID))
