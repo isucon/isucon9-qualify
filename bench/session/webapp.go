@@ -718,40 +718,6 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(ctx context.Context, ro
 	return rni.HasNext, rni.RootCategoryName, rni.Items, nil
 }
 
-func (s *Session) FindItemFromUsesTransactions(ctx context.Context, targetItemID int64) (ItemDetail, error) {
-	return s.findItemFromUsesTransactions(ctx, targetItemID, 0, 0, 0)
-}
-
-func (s *Session) findItemFromUsesTransactions(ctx context.Context, targetItemID, nextItemID, nextCreatedAt, loop int64) (ItemDetail, error) {
-	var hasNext bool
-	var items []ItemDetail
-	var err error
-	if nextItemID > 0 && nextCreatedAt > 0 {
-		hasNext, items, err = s.UsersTransactionsWithItemIDAndCreatedAt(ctx, nextItemID, nextCreatedAt)
-	} else {
-		hasNext, items, err = s.UsersTransactions(ctx)
-	}
-	if err != nil {
-		return ItemDetail{}, err
-	}
-
-	for _, item := range items {
-		if item.ID == targetItemID {
-			return item, nil
-		}
-		nextItemID = item.ID
-		nextCreatedAt = item.CreatedAt
-	}
-	loop = loop + 1
-	if hasNext || loop < 30 { // TODO: max pager
-		nextItem, err := s.findItemFromUsesTransactions(ctx, targetItemID, nextItemID, nextCreatedAt, loop)
-		if err != nil {
-			return nextItem, nil
-		}
-	}
-	return ItemDetail{}, failure.Wrap(err, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
-}
-
 func (s *Session) UsersTransactions(ctx context.Context) (hasNext bool, items []ItemDetail, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/users/transactions.json")
 	if err != nil {
