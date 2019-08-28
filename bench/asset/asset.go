@@ -281,6 +281,11 @@ func GetRandomChildCategory() AppCategory {
 	return childCategories[rand.Intn(len(childCategories))]
 }
 
+func GetCategory(categoryID int) (AppCategory, bool) {
+	c, ok := categories[categoryID]
+	return c, ok
+}
+
 // TODO: transactionEvidencesをちゃんと管理するようにして存在しないケースをなくす
 func GetTransactionEvidence(id int64) (AppTransactionEvidence, bool) {
 	te, ok := transactionEvidences[id]
