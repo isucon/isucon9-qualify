@@ -71,7 +71,7 @@ func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
 	return targetItemID, nil
 }
 
-func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int64, price int) error {
+func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetItemID int64, price int) error {
 	token := sPayment.ForceSet(CorrectCardNumber, targetItemID, price)
 
 	_, err := s2.Buy(ctx, targetItemID, token)
@@ -239,6 +239,47 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	if itemFromBuyer.ShippingStatus != "done" || itemFromSeller.ShippingStatus != "done" ||
 		itemFromBuyerTrx.ShippingStatus != "done" || itemFromSellerTrx.ShippingStatus != "done" {
 		return failure.New(fails.ErrApplication, failure.Messagef("取引完了後のshippingのステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+
+	return nil
+}
+
+func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int64, price int) error {
+	token := sPayment.ForceSet(CorrectCardNumber, targetItemID, price)
+
+	_, err := s2.Buy(ctx, targetItemID, token)
+	if err != nil {
+		return err
+	}
+
+	reserveID, apath, err := s1.Ship(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	md5Str, err := s1.DownloadQRURL(ctx, apath)
+	if err != nil {
+		return err
+	}
+
+	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
+	if !sShipment.CheckQRMD5(reserveID, md5Str) {
+		return failure.New(fails.ErrApplication, failure.Message("QRコードの画像に誤りがあります"))
+	}
+
+	err = s1.ShipDone(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
+	if !ok {
+		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
+	}
+
+	err = s2.Complete(ctx, targetItemID)
+	if err != nil {
+		return err
 	}
 
 	return nil
