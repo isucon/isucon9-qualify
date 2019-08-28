@@ -80,7 +80,6 @@ var (
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
 	muItem               sync.RWMutex
-	muCategory           sync.RWMutex
 	indexActiveSellerID  int32
 	indexBuyerID         int32
 )
@@ -283,8 +282,6 @@ func GetRandomChildCategory() AppCategory {
 }
 
 func GetCategory(categoryID int) (AppCategory, bool) {
-	muCategory.RLock()
-	defer muCategory.RUnlock()
 	c, ok := categories[categoryID]
 	return c, ok
 }
