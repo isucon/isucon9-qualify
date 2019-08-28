@@ -57,7 +57,7 @@ func Verify(ctx context.Context) *fails.Critical {
 			return
 		}
 
-		err = buyComplete(ctx, s1, s2, targetItemID, 100)
+		err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, 100)
 		if err != nil {
 			critical.Add(err)
 			return

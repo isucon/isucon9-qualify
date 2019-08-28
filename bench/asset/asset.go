@@ -20,6 +20,15 @@ const (
 	ItemStatusStop    = "stop"
 	ItemStatusCancel  = "cancel"
 
+	TransactionEvidenceStatusWaitShipping = "wait_shipping"
+	TransactionEvidenceStatusWaitDone     = "wait_done"
+	TransactionEvidenceStatusDone         = "done"
+
+	ShippingsStatusInitial    = "initial"
+	ShippingsStatusWaitPickup = "wait_pickup"
+	ShippingsStatusShipping   = "shipping"
+	ShippingsStatusDone       = "done"
+
 	ItemsPerPage = 48
 
 	ActiveSellerNumSellItems = 100
