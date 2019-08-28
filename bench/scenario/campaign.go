@@ -164,7 +164,7 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		critical.Add(failure.New(fails.ErrApplication, failure.Message("QRコードの画像に誤りがあります")))
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID)))
 		return
 	}
 
@@ -176,7 +176,7 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		critical.Add(failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります")))
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID)))
 		return
 	}
 
