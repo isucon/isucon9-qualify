@@ -15,6 +15,10 @@ import (
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) *fails.Critical {
 	critical := fails.NewCritical()
 
+	// initializeだけタイムアウトを別に設定
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
 	_, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
 	if err != nil {
 		critical.Add(err)
@@ -28,33 +32,53 @@ func Verify(ctx context.Context) *fails.Critical {
 
 	critical := fails.NewCritical()
 
-	user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sellAndBuy(ctx, user1, user2)
+
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
+			return
+		}
+		defer ActiveSellerPool.Enqueue(s1)
+
+		s2, err := buyerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+		defer BuyerPool.Enqueue(s2)
+
+		targetItemID, err := sell(ctx, s1, 100)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		err = buyComplete(ctx, s1, s2, targetItemID, 100)
+		if err != nil {
+			critical.Add(err)
+			return
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
+		defer ActiveSellerPool.Enqueue(s1)
 
-		s2, err := LoginedSession(ctx, user2)
+		s2, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
+		defer BuyerPool.Enqueue(s2)
 
 		err = bumpAndNewItemsWithLoginedSession(ctx, s1, s2)
 		if err != nil {
@@ -65,13 +89,12 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
+		defer BuyerPool.Enqueue(s1)
 
 		err = newCategoryItemsWithLoginedSession(ctx, s1)
 		if err != nil {
@@ -82,13 +105,12 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomActiveSeller()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
+		defer ActiveSellerPool.Enqueue(s1)
 
 		targetItemID := asset.GetUserItemsFirst(s1.UserID)
 
@@ -101,15 +123,14 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomActiveSeller()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := activeSellerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
+		defer ActiveSellerPool.Enqueue(s1)
 
-		err = transactionEvidenceWithLoginedSession(ctx, s1)
+		err = transactionEvidence(ctx, s1)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -118,16 +139,21 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1 := asset.GetRandomBuyer()
-		user2 := asset.GetRandomActiveSeller()
-
-		s1, err := LoginedSession(ctx, user1)
+		s1, err := buyerSession(ctx)
 		if err != nil {
 			critical.Add(err)
 			return
 		}
+		defer BuyerPool.Enqueue(s1)
 
-		err = userItemsAndItemWithLoginedSession(ctx, s1, user2.ID)
+		s2, err := activeSellerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+		defer ActiveSellerPool.Enqueue(s2)
+
+		err = userItemsAndItem(ctx, s1, s2.UserID)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -147,7 +173,21 @@ func Verify(ctx context.Context) *fails.Critical {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := irregularSellAndBuy(ctx, user2, user1, user3)
+		s1, err := buyerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+		defer BuyerPool.Enqueue(s1)
+
+		s2, err := buyerSession(ctx)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+		defer BuyerPool.Enqueue(s2)
+
+		err = irregularSellAndBuy(ctx, s1, s2, user3)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -189,7 +229,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
-	user1, user2, user3 := asset.GetRandomActiveSeller(), asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
+	user3 := asset.GetRandomBuyer()
 
 	// 間違ったパスワードでログインができないことをチェックする
 	// これがないとパスワードチェックを外して常にログイン成功させるチートが可能になる
@@ -224,10 +264,25 @@ func check(ctx context.Context, critical *fails.Critical) {
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
-			err := irregularSellAndBuy(ctx, user2, user1, user3)
+			s1, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			err = irregularSellAndBuy(ctx, s1, s2, user3)
 			if err != nil {
 				critical.Add(err)
 			}
+
+			BuyerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
 
 			select {
 			case <-ch:
@@ -251,25 +306,25 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
-		s2, err := LoginedSession(ctx, user2)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
 	L:
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
 
-			err := bumpAndNewItemsWithLoginedSession(ctx, s1, s2)
+			// bumpは投稿した直後だとできないので必ず新しいユーザーでやる
+			user1 := asset.GetRandomActiveSeller()
+			s1, err := loginedSession(ctx, user1)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			err = bumpAndNewItemsWithLoginedSession(ctx, s1, s2)
 			if err != nil {
 				critical.Add(err)
 
@@ -277,6 +332,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 			}
 
 		Final:
+			ActiveSellerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
+
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -290,23 +348,21 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
-		s2, err := LoginedSession(ctx, user2)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
 	L:
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
+
+			s1, err := activeSellerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
 
 			targetItemID, err := sell(ctx, s1, 100)
 			if err != nil {
@@ -330,6 +386,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 			}
 
 		Final:
+			ActiveSellerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
+
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -343,23 +402,21 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
-		s2, err := LoginedSession(ctx, user2)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
 	L:
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
+
+			s1, err := activeSellerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
 
 			targetItemID, err := sell(ctx, s1, 100)
 			if err != nil {
@@ -368,7 +425,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = transactionEvidenceWithLoginedSession(ctx, s1)
+			err = transactionEvidence(ctx, s1)
 			if err != nil {
 				critical.Add(err)
 
@@ -383,6 +440,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 			}
 
 		Final:
+			ActiveSellerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
+
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -393,28 +453,25 @@ func check(ctx context.Context, critical *fails.Critical) {
 
 	// ユーザーページをある程度見る
 	// TODO: 初期データを後ろの方までいい感じに遡りたい
-	// TODO: ユーザーをランダムにしたい
 	// TODO: 商品ページも見るのは蛇足では
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
-		s2, err := LoginedSession(ctx, user2)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
 	L:
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
+
+			s1, err := activeSellerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
 
 			targetItemID, err := sell(ctx, s1, 100)
 			if err != nil {
@@ -423,7 +480,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = userItemsAndItemWithLoginedSession(ctx, s2, s1.UserID)
+			err = userItemsAndItem(ctx, s2, s1.UserID)
 			if err != nil {
 				critical.Add(err)
 
@@ -438,6 +495,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 			}
 
 		Final:
+			ActiveSellerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
+
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -453,23 +513,21 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-
-		s1, err := LoginedSession(ctx, user1)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
-		s2, err := LoginedSession(ctx, user2)
-		if err != nil {
-			critical.Add(err)
-			return
-		}
-
 	L:
 		for j := 0; j < 10; j++ {
 			ch := time.After(5 * time.Second)
+
+			s1, err := activeSellerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
 
 			targetItemID, err := sell(ctx, s1, 100)
 			if err != nil {
@@ -493,6 +551,61 @@ func check(ctx context.Context, critical *fails.Critical) {
 			}
 
 		Final:
+			ActiveSellerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
+
+			select {
+			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+	L:
+		for j := 0; j < 5; j++ {
+			ch := time.After(5 * time.Second)
+
+			s1, err := activeSellerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			s2, err := buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				return
+			}
+
+			targetItemID, err := sell(ctx, s1, 100)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = loadTransactionEvidence(ctx, s1)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+			err = buyComplete(ctx, s1, s2, targetItemID, 100)
+			if err != nil {
+				critical.Add(err)
+
+				goto Final
+			}
+
+		Final:
+			ActiveSellerPool.Enqueue(s1)
+			BuyerPool.Enqueue(s2)
+
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -521,24 +634,23 @@ func load(ctx context.Context, critical *fails.Critical) {
 		go func() {
 			defer wg.Done()
 
-			user1, user2 := asset.GetRandomActiveSeller(), asset.GetRandomBuyer()
-			s1, err := LoginedSession(ctx, user1)
-			if err != nil {
-				critical.Add(err)
-				return
-			}
-
-			s2, err := LoginedSession(ctx, user2)
-			if err != nil {
-				critical.Add(err)
-				return
-			}
-
 		L:
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
 
-				err := loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2)
+				s1, err := activeSellerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
+				s2, err := buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
+				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2)
 				if err != nil {
 					critical.Add(err)
 
@@ -546,6 +658,9 @@ func load(ctx context.Context, critical *fails.Critical) {
 				}
 
 			Final:
+				ActiveSellerPool.Enqueue(s1)
+				BuyerPool.Enqueue(s2)
+
 				select {
 				case <-ch:
 				case <-ctx.Done():
@@ -559,24 +674,21 @@ func load(ctx context.Context, critical *fails.Critical) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			user1 := asset.GetRandomBuyer()
-			user2 := asset.GetRandomActiveSeller()
-
-			s1, err := LoginedSession(ctx, user1)
-			if err != nil {
-				critical.Add(err)
-				return
-			}
-
-			s2, err := LoginedSession(ctx, user2)
-			if err != nil {
-				critical.Add(err)
-				return
-			}
-
 		L:
 			for j := 0; j < 10; j++ {
 				ch := time.After(3 * time.Second)
+
+				s2, err := activeSellerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
+				s1, err := buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
 
 				targetItemID, err := sell(ctx, s1, 100)
 				if err != nil {
@@ -585,7 +697,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = userItemsAndItemWithLoginedSession(ctx, s1, user2.ID)
+				err = userItemsAndItem(ctx, s1, s2.UserID)
 				if err != nil {
 					critical.Add(err)
 
@@ -600,6 +712,9 @@ func load(ctx context.Context, critical *fails.Critical) {
 				}
 
 			Final:
+				ActiveSellerPool.Enqueue(s2)
+				BuyerPool.Enqueue(s1)
+
 				select {
 				case <-ch:
 				case <-ctx.Done():

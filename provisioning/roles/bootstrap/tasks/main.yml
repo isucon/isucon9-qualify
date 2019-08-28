@@ -1,6 +1,29 @@
 - name: Install Dependencies
   apt:
-    name: ['re3c', 'bison', 'gettext', 'pkg-config', 'autoconf', 'build-essential', 'libz-dev', 'libbz2-dev', 'liblzma-dev', 'libssl-dev', 'libmcrypt-dev', 'libxml2-dev', 'libsqlite3-dev', 'libmysqlclient-dev', 'libreadline-dev', 'libxslt1-dev', 'libcurl4-openssl-dev', 'libjpeg-turbo8-dev', 'libpng-dev', 'libtidy-dev']
+    name: [
+    'jq',
+    'git',
+    're2c',
+    'bison',
+    'gettext',
+    'pkg-config',
+    'autoconf',
+    'build-essential',
+    'libz-dev',
+    'libbz2-dev',
+    'liblzma-dev',
+    'libssl-dev',
+    'libmcrypt-dev',
+    'libxml2-dev',
+    'libsqlite3-dev',
+    'libmysqlclient-dev',
+    'libreadline-dev',
+    'libxslt1-dev',
+    'libcurl4-openssl-dev',
+    'libjpeg-turbo8-dev',
+    'libpng-dev',
+    'libtidy-dev',
+    ]
     state: present
     update_cache: yes
     cache_valid_time: 3600

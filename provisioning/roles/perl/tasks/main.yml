@@ -19,7 +19,7 @@
   args:
     chdir: /home/isucon
   command: |
-    /home/isucon/xbuild/perl-install 5.30.0 /home/isucon/local/perl
+    /home/isucon/xbuild/perl-install 5.30.0 /home/isucon/local/perl -- "-j {{ nproc | default('1') }}"
 
 - name: Add PATH for Perl
   become: yes

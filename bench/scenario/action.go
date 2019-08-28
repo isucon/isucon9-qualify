@@ -15,7 +15,27 @@ const (
 	FailedCardNumber  = "FA10AAAA"
 )
 
-func LoginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session, error) {
+func activeSellerSession(ctx context.Context) (*session.Session, error) {
+	s := ActiveSellerPool.Dequeue()
+	if s != nil {
+		return s, nil
+	}
+
+	user1 := asset.GetRandomActiveSeller()
+	return loginedSession(ctx, user1)
+}
+
+func buyerSession(ctx context.Context) (*session.Session, error) {
+	s := BuyerPool.Dequeue()
+	if s != nil {
+		return s, nil
+	}
+
+	user1 := asset.GetRandomBuyer()
+	return loginedSession(ctx, user1)
+}
+
+func loginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session, error) {
 	s1, err := session.NewSession()
 	if err != nil {
 		return nil, err

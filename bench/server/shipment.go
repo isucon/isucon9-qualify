@@ -326,7 +326,13 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 		log.Print(msg)
 	}
 
-	png, _ := qrcode.Encode(msg, qrcode.Low, 256)
+	png, err := qrcode.Encode(msg, qrcode.Low, 256)
+	if err != nil {
+		log.Print(err)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	h := md5.New()
 	h.Write(png)

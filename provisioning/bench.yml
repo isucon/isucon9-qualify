@@ -6,6 +6,7 @@
     - user.isucon
     - user.isucon_admin
     - bootstrap
+    - aliyun
     - external.deploy
 
     - kernel-tune
@@ -13,8 +14,6 @@
     - nginx.log-format
     - golang
     - external.nginx
-    - external.shipment
-    - external.payment
     - external.benchmarker
     # TODO
     # - benchmark-worker
@@ -30,5 +29,3 @@
         enabled: yes
       with_items:
         - nginx.service
-        - shipment.service
-        - payment.service

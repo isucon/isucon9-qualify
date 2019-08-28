@@ -14,7 +14,7 @@
     group: root
     mode: 0700
   with_items:
-    - { dest: "/etc/nginx/ssl/cert.pem",    src: "certs/isucon9q.catatsuy.org/cert.pem" }
+    - { dest: "/etc/nginx/ssl/fullchain.pem",    src: "certs/isucon9q.catatsuy.org/fullchain.pem" }
     - { dest: "/etc/nginx/ssl/privkey.pem", src: "certs/isucon9q.catatsuy.org/privkey.pem" }
 
 - name: Copy Nginx config

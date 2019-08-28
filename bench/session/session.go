@@ -122,6 +122,24 @@ func NewSession() (*Session, error) {
 	return s, nil
 }
 
+func NewSessionForInialize() (*Session, error) {
+	s := &Session{
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					// HTTPの時は無視されるだけ
+					ServerName: ShareTargetURLs.TargetHost,
+				},
+			},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return fmt.Errorf("redirect attempted")
+			},
+		},
+	}
+
+	return s, nil
+}
+
 func (s *Session) newGetRequest(u url.URL, spath string) (*http.Request, error) {
 	if len(spath) > 0 {
 		u.Path = spath
