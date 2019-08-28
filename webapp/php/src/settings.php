@@ -30,6 +30,7 @@ return [
             'dbname' => Environment::get('MYSQL_DBNAME', 'isucari'),
         ],
         'app' => [
+            'base_dir' => __DIR__ . '/../',
             'upload_path' => __DIR__ . '/../../public/upload/',
         ],
     ],

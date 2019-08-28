@@ -200,7 +200,7 @@ class Service
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
         }
 
-        exec('../sql/init.sh');
+        exec($this->settings['app']['base_dir'] . '../sql/init.sh');
 
         try {
             $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
@@ -897,7 +897,7 @@ class Service
         $bytes = random_bytes(16);
         $imageName = sprintf("%s.%s", bin2hex($bytes), $ext);
         try {
-            $image->moveTo(sprintf('../public/upload/%s', $imageName));
+            $image->moveTo(sprintf('%s/%s', $this->settings['app']['upload_path'], $imageName));
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'Saving image failed']);
