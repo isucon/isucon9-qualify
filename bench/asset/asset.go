@@ -80,6 +80,7 @@ var (
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
 	muItem               sync.RWMutex
+	muCategory           sync.RWMutex
 	indexActiveSellerID  int32
 	indexBuyerID         int32
 )
@@ -279,6 +280,13 @@ func GetRandomRootCategory() AppCategory {
 
 func GetRandomChildCategory() AppCategory {
 	return childCategories[rand.Intn(len(childCategories))]
+}
+
+func GetCategory(categoryID int) (AppCategory, bool) {
+	muCategory.RLock()
+	defer muCategory.RUnlock()
+	c, ok := categories[categoryID]
+	return c, ok
 }
 
 // TODO: transactionEvidencesをちゃんと管理するようにして存在しないケースをなくす
