@@ -36,7 +36,7 @@ class BaseLoadingButton extends React.Component<Props> {
     const { loading, buttonName, classes } = this.props;
 
     return (
-      <div className={classes.root} >
+      <div className={classes.root}>
         <Button
           className={classes.button}
           variant="contained"
