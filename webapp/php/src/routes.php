@@ -26,6 +26,7 @@ return function (App $app) {
     $app->get('/settings', \App\Service::class . ':settings');
     $app->post('/login', \App\Service::class . ':login');
     $app->post('/register', \App\Service::class . ':register');
+    $app->get('/reports.json', \App\Service::class . ':reports');
 
     // Frontend
     $app->get('/', \App\Service::class . ':index');
