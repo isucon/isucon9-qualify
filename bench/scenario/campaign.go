@@ -126,8 +126,21 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 		}()
 	}
 
-	wg.Wait()
-	buyer := <-buyerCh
+	closed := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(closed)
+	}()
+
+	var buyer *session.Session
+
+	select {
+	case buyer = <-buyerCh:
+	case <-closed:
+		// 全goroutineが終了したのにbuyerがいない場合は全員が購入に失敗している
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("商品 (item_id: %d) に対して全ユーザーが購入に失敗しました", targetItemID)))
+		return
+	}
 
 	go func() {
 		for s := range buyerCh {
