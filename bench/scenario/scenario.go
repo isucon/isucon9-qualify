@@ -745,8 +745,6 @@ func load(ctx context.Context, critical *fails.Critical) {
 	}
 }
 
-func Campaign(ctx context.Context, critical *fails.Critical) {}
-
 func FinalCheck(ctx context.Context, critical *fails.Critical) int64 {
 	reports := sPayment.GetReports()
 

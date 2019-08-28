@@ -403,6 +403,58 @@ func (s *Session) Buy(ctx context.Context, itemID int64, token string) (int64, e
 	return rb.TransactionEvidenceID, nil
 }
 
+// 人気者出品用。成功するかもしれないし、失敗するかもしれない。
+// この中では異質だが正常系ではあるのでここで定義する
+func (s *Session) BuyWithMayFail(ctx context.Context, itemID int64, token string) (int64, error) {
+	b, _ := json.Marshal(reqBuy{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+		Token:     token,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return 0, failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+	}
+
+	req = req.WithContext(ctx)
+
+	res, err := s.Do(req)
+	if err != nil {
+		return 0, failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusForbidden {
+		re := resErr{}
+		err = json.NewDecoder(res.Body).Decode(&re)
+		if err != nil {
+			return 0, failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
+		}
+
+		expectedMsg := "item is not for sale"
+
+		if re.Error != expectedMsg {
+			return 0, failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error))
+		}
+
+		// イレギュラーだが、エラーがないのに0が返っていたら正常に買えなかったという扱いにする
+		return 0, nil
+	}
+
+	err = checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return 0, err
+	}
+
+	rb := &resBuy{}
+	err = json.NewDecoder(res.Body).Decode(rb)
+	if err != nil {
+		return 0, failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
+	}
+
+	return rb.TransactionEvidenceID, nil
+}
+
 func (s *Session) Ship(ctx context.Context, itemID int64) (reserveID, apath string, err error) {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: s.csrfToken,
