@@ -1,5 +1,5 @@
 import { push } from 'connected-react-router';
-import { SellingButonComponent } from '../components/SellingButtonComponent';
+import { SellingButtonComponent } from '../components/SellingButtonComponent';
 import { connect } from 'react-redux';
 import { routes } from '../routes/Route';
 import * as React from 'react';
@@ -21,4 +21,4 @@ const mapDispatchToProps = (
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
-)(SellingButonComponent);
+)(SellingButtonComponent);
