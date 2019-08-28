@@ -12,7 +12,7 @@ import {
 } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import validator from 'validator';
-import LoadingButton from './LoadingButtonComponent';
+import { LoadingButton } from './LoadingButton';
 import { Link } from 'react-router-dom';
 import { routes } from '../routes/Route';
 

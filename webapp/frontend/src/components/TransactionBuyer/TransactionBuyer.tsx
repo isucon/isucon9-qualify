@@ -1,38 +1,24 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
 import { TransactionStatus } from '../../dataObjects/transaction';
 import { ShippingStatus } from '../../dataObjects/shipping';
-import Initial from './Buyer/Initial';
-import WaitShipping from './Buyer/WaitShipping';
-import WaitDone from './Buyer/WaitDone';
-import Done from './Buyer/Done';
+import Initial from '../Transaction/Buyer/Initial';
+import WaitShipping from '../Transaction/Buyer/WaitShipping';
+import WaitDone from '../Transaction/Buyer/WaitDone';
+import Done from '../Transaction/Buyer/Done';
 
-const useStyles = makeStyles(theme => ({
-  progress: {
-    top: 0,
-    bottom: 0,
-    right: 0,
-    left: 0,
-    margin: 'auto',
-    position: 'absolute',
-  },
-}));
-
-type Props = {
+export type Props = {
   itemId: number;
   postComplete: (itemId: number) => void;
   transactionStatus: TransactionStatus;
   shippingStatus: ShippingStatus;
 };
 
-const BuyerComponent: React.FC<Props> = ({
+const TransactionBuyer: React.FC<Props> = ({
   itemId,
   postComplete,
   transactionStatus,
   shippingStatus,
 }) => {
-  const classes = useStyles();
-
   if (shippingStatus === 'initial' && transactionStatus === 'wait_shipping') {
     return <Initial />;
   }
@@ -51,4 +37,4 @@ const BuyerComponent: React.FC<Props> = ({
   return <Done />;
 };
 
-export default BuyerComponent;
+export { TransactionBuyer };

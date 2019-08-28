@@ -1,6 +1,6 @@
 import React from 'react';
 import { TimelineItem } from '../dataObjects/item';
-import { ItemListComponent } from '../components/ItemListComponent';
+import { ItemList } from '../components/ItemList';
 import SellingButtonContainer from '../containers/SellingButtonContainer';
 import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import BasePageContainer from '../containers/BasePageContainer';
@@ -96,11 +96,7 @@ class CategoryItemListPage extends React.Component<Props, State> {
       return (
         <div className={classes.root}>
           <Typography variant="h6">{categoryName}の新着商品</Typography>
-          <ItemListComponent
-            items={items}
-            hasNext={hasNext}
-            loadMore={loadMoreItems}
-          />
+          <ItemList items={items} hasNext={hasNext} loadMore={loadMoreItems} />
           <SellingButtonContainer />
         </div>
       );

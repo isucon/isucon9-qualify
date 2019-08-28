@@ -19,16 +19,16 @@ interface SellingButtonComponentProps {
   onClick: (e: React.MouseEvent) => void;
 }
 
-const SellingButonComponent: React.FC<SellingButtonComponentProps> = ({
+const SellingButtonComponent: React.FC<SellingButtonComponentProps> = ({
   onClick,
 }) => {
   const classes = useStyles();
 
   return (
-    <Fab className={classes.fab} color="secondary" onClick={onClick}>
+    <Fab className={classes.fab} color="primary" onClick={onClick}>
       <Edit fontSize="large" />
     </Fab>
   );
 };
 
-export { SellingButonComponent };
+export { SellingButtonComponent };

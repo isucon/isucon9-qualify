@@ -1,6 +1,6 @@
 import * as React from 'react';
 import makeStyles from '@material-ui/core/styles/makeStyles';
-import { AppBar } from '@material-ui/core';
+import { AppBar, Theme } from '@material-ui/core';
 import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -10,8 +10,19 @@ import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import Typography from '@material-ui/core/Typography';
 
-const useStyles = makeStyles(theme => ({
-  //
+const useStyles = makeStyles((theme: Theme) => ({
+  appBar: {
+    color: theme.palette.primary.main,
+    backgroundColor: theme.palette.primary.contrastText,
+  },
+  text: {
+    fontWeight: theme.typography.fontWeightBold,
+    textAlign: 'center',
+    width: '100%', // センタリング
+  },
+  list: {
+    width: '200px',
+  },
 }));
 
 interface Props {
@@ -58,7 +69,7 @@ const Header: React.FC<Props> = ({
     <React.Fragment>
       {isLoggedIn && (
         <Drawer open={state.open} onClose={toggleDrawer(false)}>
-          <List>
+          <List className={classes.list}>
             <ListItem button onClick={onClickTop}>
               <ListItemText primary="新着商品" />
             </ListItem>
@@ -71,7 +82,7 @@ const Header: React.FC<Props> = ({
           </List>
         </Drawer>
       )}
-      <AppBar position="fixed">
+      <AppBar className={classes.appBar} position="fixed">
         <Toolbar>
           {isLoggedIn && (
             <IconButton
@@ -82,8 +93,8 @@ const Header: React.FC<Props> = ({
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" noWrap>
-            ヘッダー
+          <Typography className={classes.text} variant="h5" noWrap>
+            ISUCARI
           </Typography>
         </Toolbar>
       </AppBar>

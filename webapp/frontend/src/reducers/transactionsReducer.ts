@@ -1,8 +1,8 @@
 import { TransactionItem } from '../dataObjects/item';
 import { FETCH_TRANSACTIONS_SUCCESS } from '../actions/fetchTransactionsAction';
 import { FETCH_USER_PAGE_DATA_SUCCESS } from '../actions/fetchUserPageDataAction';
-import { LOCATION_CHANGE } from 'connected-react-router';
 import { ActionTypes } from '../actions/actionTypes';
+import { PATH_NAME_CHANGE } from '../actions/locationChangeAction';
 
 export interface TransactionsState {
   items: TransactionItem[];
@@ -19,7 +19,7 @@ const transactions = (
   action: ActionTypes,
 ): TransactionsState => {
   switch (action.type) {
-    case LOCATION_CHANGE:
+    case PATH_NAME_CHANGE:
       // MEMO: ページ遷移したら再度APIを叩かせるようにリセットする
       return initialState;
     case FETCH_TRANSACTIONS_SUCCESS:
