@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -175,14 +176,14 @@ type ServerShipment struct {
 	Server
 }
 
-func NewShipment(debug bool, allowedIPs []net.IP) *ServerShipment {
+func NewShipment(debug bool, dataDir string, allowedIPs []net.IP) *ServerShipment {
 	s := &ServerShipment{
 		debug: debug,
 	}
 
 	s.shipmentCache = NewShipmentStore()
 
-	f, err := os.Open("initial-data/result/shippings_json.txt")
+	f, err := os.Open(filepath.Join(dataDir, "result/shippings_json.txt"))
 	if err != nil {
 		log.Fatal(err)
 	}
