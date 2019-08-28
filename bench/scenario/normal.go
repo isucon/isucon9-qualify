@@ -243,7 +243,8 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 }
 
 func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) error {
-	_, user, items, err := s1.UserItems(ctx, userID)
+	// TODO: num_sell_itemsを確認したい
+	_, _, items, err := s1.UserItems(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -266,7 +267,7 @@ func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) er
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
 
-	_, user, items, err = s1.UserItemsWithItemIDAndCreatedAt(ctx, userID, targetItemID, targetItemCreatedAt)
+	_, _, items, err = s1.UserItemsWithItemIDAndCreatedAt(ctx, userID, targetItemID, targetItemCreatedAt)
 	if err != nil {
 		return err
 	}
@@ -276,7 +277,7 @@ func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) er
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonのitem_idとcreated_atが正しく動作していません", userID))
 		}
 
-		aItem, ok := asset.GetItem(user.ID, item.ID)
+		aItem, ok := asset.GetItem(userID, item.ID)
 		if !ok {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品が返ってきています", userID))
 		}
