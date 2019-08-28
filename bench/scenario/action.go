@@ -195,7 +195,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		return failure.New(fails.ErrApplication, failure.Message("QRコードの画像に誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = s1.ShipDone(ctx, targetItemID)
@@ -240,7 +240,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = s2.Complete(ctx, targetItemID)
@@ -306,7 +306,7 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		return failure.New(fails.ErrApplication, failure.Message("QRコードの画像に誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = s1.ShipDone(ctx, targetItemID)
@@ -316,7 +316,7 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = s2.Complete(ctx, targetItemID)
