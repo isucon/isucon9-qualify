@@ -95,7 +95,7 @@ func main() {
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
-	cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	isCampaign, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
 		log.Print("cause error!")
@@ -137,7 +137,7 @@ func main() {
 	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる
 	// checkとloadは区別がつかないようにしないといけない。loadのリクエストはログアウト状態しかなかったので、ログアウト時のキャッシュを強くするだけでスコアがはねる問題が過去にあった
 	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
-	scenario.Validation(ctx, cerr)
+	scenario.Validation(ctx, isCampaign, cerr)
 
 	criticalMsgs = cerr.GetMsgs()
 	if len(criticalMsgs) > 10 {
