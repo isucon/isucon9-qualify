@@ -1,0 +1,16 @@
+[Unit]
+Description = isucon9 qualifier benchmark worker
+
+[Service]
+WorkingDirectory=/home/isucon/isucari/
+LimitNOFILE=655360
+
+ExecStart = ./bin/benchmark-worker
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target
