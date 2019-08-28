@@ -1,13 +1,13 @@
 import { AppState } from '../index';
-import { AnyAction } from 'redux';
 import { connect } from 'react-redux';
-import BuyerComponent from '../components/Transaction/BuyerComponent';
+import { TransactionBuyer } from '../components/TransactionBuyer';
 import { postCompleteAction } from '../actions/postCompleteAction';
 import { ThunkDispatch } from 'redux-thunk';
+import { ActionTypes } from '../actions/actionTypes';
 
 const mapStateToProps = (state: AppState) => ({});
 const mapDispatchToProps = (
-  dispatch: ThunkDispatch<AppState, undefined, AnyAction>,
+  dispatch: ThunkDispatch<AppState, undefined, ActionTypes>,
 ) => ({
   postComplete: (itemId: number) => {
     dispatch(postCompleteAction(itemId));
@@ -17,4 +17,4 @@ const mapDispatchToProps = (
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
-)(BuyerComponent);
+)(TransactionBuyer);

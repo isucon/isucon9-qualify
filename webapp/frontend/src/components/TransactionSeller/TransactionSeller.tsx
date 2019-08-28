@@ -1,13 +1,13 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import {makeStyles, Theme} from '@material-ui/core/styles';
 import { TransactionStatus } from '../../dataObjects/transaction';
 import { ShippingStatus } from '../../dataObjects/shipping';
-import Initial from './Seller/Initial';
-import WaitShipping from './Seller/WaitShipping';
-import WaitDone from './Seller/WaitDone';
-import Done from './Seller/Done';
+import Initial from '../Transaction/Seller/Initial';
+import WaitShipping from '../Transaction/Seller/WaitShipping';
+import WaitDone from '../Transaction/Seller/WaitDone';
+import Done from '../Transaction/Seller/Done';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
   progress: {
     top: 0,
     bottom: 0,
@@ -18,7 +18,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-type Props = {
+export type Props = {
   itemId: number;
   transactionEvidenceId: number;
   postShipped: (itemId: number) => void;
@@ -27,7 +27,7 @@ type Props = {
   shippingStatus: ShippingStatus;
 };
 
-const SellerComponent: React.FC<Props> = ({
+const TransactionSeller: React.FC<Props> = ({
   itemId,
   transactionEvidenceId,
   postShipped,
@@ -61,4 +61,4 @@ const SellerComponent: React.FC<Props> = ({
   return <Done />;
 };
 
-export default SellerComponent;
+export { TransactionSeller };
