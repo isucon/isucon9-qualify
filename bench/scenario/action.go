@@ -79,9 +79,75 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 		return err
 	}
 
+	itemFromBuyerTrx, err := s2.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromSellerTrx, err := s1.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromBuyer, err := s2.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromSeller, err := s1.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	// status 確認
+	if itemFromBuyer.Status != "trading" || itemFromSeller.Status != "trading" ||
+		itemFromBuyerTrx.Status != "trading" || itemFromSellerTrx.Status != "trading" {
+		return failure.New(fails.ErrApplication, failure.Messagef("購入後の商品のステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.TransactionEvidenceStatus != "wait_shipping" ||
+		itemFromSeller.TransactionEvidenceStatus != "wait_shipping" ||
+		itemFromBuyerTrx.TransactionEvidenceStatus != "wait_shipping" ||
+		itemFromSellerTrx.TransactionEvidenceStatus != "wait_shipping" {
+		return failure.New(fails.ErrApplication, failure.Messagef("購入後のtransaction_evidenceのステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.ShippingStatus != "initial" || itemFromSeller.ShippingStatus != "initial" ||
+		itemFromBuyerTrx.ShippingStatus != "initial" || itemFromSellerTrx.ShippingStatus != "initial" {
+		return failure.New(fails.ErrApplication, failure.Messagef("購入後のshippingのステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+
 	reserveID, apath, err := s1.Ship(ctx, targetItemID)
 	if err != nil {
 		return err
+	}
+
+	itemFromBuyer, err = s2.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromBuyerTrx, err = s2.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromSellerTrx, err = s1.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromSeller, err = s1.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	// status 確認
+	if itemFromBuyer.Status != "trading" || itemFromSeller.Status != "trading" ||
+		itemFromBuyerTrx.Status != "trading" || itemFromSellerTrx.Status != "trading" {
+		return failure.New(fails.ErrApplication, failure.Messagef("集荷予約後の商品のステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.TransactionEvidenceStatus != "wait_shipping" ||
+		itemFromSeller.TransactionEvidenceStatus != "wait_shipping" ||
+		itemFromBuyerTrx.TransactionEvidenceStatus != "wait_shipping" ||
+		itemFromSellerTrx.TransactionEvidenceStatus != "wait_shipping" {
+		return failure.New(fails.ErrApplication, failure.Messagef("集荷予約後のtransaction_evidenceのステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.ShippingStatus != "wait_pickup" || itemFromSeller.ShippingStatus != "wait_pickup" ||
+		itemFromBuyerTrx.ShippingStatus != "wait_pickup" || itemFromSellerTrx.ShippingStatus != "wait_pickup" {
+		return failure.New(fails.ErrApplication, failure.Messagef("集荷予約後のshippingのステータスが正しくありません (item_id: %d)", targetItemID))
 	}
 
 	md5Str, err := s1.DownloadQRURL(ctx, apath)
@@ -99,6 +165,39 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 		return err
 	}
 
+	itemFromSellerTrx, err = s1.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromBuyer, err = s2.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromSeller, err = s1.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromBuyerTrx, err = s2.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	// status 確認
+	if itemFromBuyer.Status != "trading" || itemFromSeller.Status != "trading" ||
+		itemFromBuyerTrx.Status != "trading" || itemFromSellerTrx.Status != "trading" {
+		return failure.New(fails.ErrApplication, failure.Messagef("発送完了後の商品のステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.TransactionEvidenceStatus != "wait_done" ||
+		itemFromSeller.TransactionEvidenceStatus != "wait_done" ||
+		itemFromBuyerTrx.TransactionEvidenceStatus != "wait_done" ||
+		itemFromSellerTrx.TransactionEvidenceStatus != "wait_done" {
+		return failure.New(fails.ErrApplication, failure.Messagef("発送完了後のtransaction_evidenceのステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.ShippingStatus != "shipping" || itemFromSeller.ShippingStatus != "shipping" ||
+		itemFromBuyerTrx.ShippingStatus != "shipping" || itemFromSellerTrx.ShippingStatus != "shipping" {
+		return failure.New(fails.ErrApplication, failure.Messagef("発送完了後のshippingのステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
 		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
@@ -107,6 +206,39 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	err = s2.Complete(ctx, targetItemID)
 	if err != nil {
 		return err
+	}
+
+	itemFromBuyer, err = s2.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromSellerTrx, err = s1.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromSeller, err = s1.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	itemFromBuyerTrx, err = s2.FindItemFromUsesTransactions(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	// status 確認
+	if itemFromBuyer.Status != "sold_out" || itemFromSeller.Status != "sold_out" ||
+		itemFromBuyerTrx.Status != "sold_out" || itemFromSellerTrx.Status != "sold_out" {
+		return failure.New(fails.ErrApplication, failure.Messagef("取引完了後の商品のステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.TransactionEvidenceStatus != "done" ||
+		itemFromSeller.TransactionEvidenceStatus != "done" ||
+		itemFromBuyerTrx.TransactionEvidenceStatus != "done" ||
+		itemFromSellerTrx.TransactionEvidenceStatus != "done" {
+		return failure.New(fails.ErrApplication, failure.Messagef("取引完了後のtransaction_evidenceのステータスが正しくありません (item_id: %d)", targetItemID))
+	}
+	if itemFromBuyer.ShippingStatus != "done" || itemFromSeller.ShippingStatus != "done" ||
+		itemFromBuyerTrx.ShippingStatus != "done" || itemFromSellerTrx.ShippingStatus != "done" {
+		return failure.New(fails.ErrApplication, failure.Messagef("取引完了後のshippingのステータスが正しくありません (item_id: %d)", targetItemID))
 	}
 
 	return nil
