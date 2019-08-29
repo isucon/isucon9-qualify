@@ -2,10 +2,10 @@
 Description = isucon9 qualifier benchmark worker
 
 [Service]
-WorkingDirectory=/home/isucon/isucari/
+WorkingDirectory=/home/isucon/isucari
 LimitNOFILE=655360
 
-ExecStart = ./bin/benchmark-worker
+ExecStart = /home/isucon/isucari/bin/benchmark-worker
 
 Restart   = always
 Type      = simple
