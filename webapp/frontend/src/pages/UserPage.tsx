@@ -25,6 +25,9 @@ const styles = (theme: Theme): StyleRules =>
       width: '100px',
       height: '100px',
     },
+    numSellItems: {
+      marginTop: theme.spacing(1),
+    },
     tab: {
       color: theme.palette.text.primary,
       backgroundColor: theme.palette.primary.light,
@@ -190,6 +193,9 @@ class UserPage extends React.Component<Props, State> {
           </Grid>
           <Grid item xs>
             <Typography variant="h3">{user.accountName}</Typography>
+            <Typography className={classes.numSellItems} variant="h6">
+              出品数 {user.numSellItems}
+            </Typography>
           </Grid>
         </Grid>
         <Divider variant="middle" />
