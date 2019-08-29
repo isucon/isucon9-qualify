@@ -1376,10 +1376,21 @@ post '/register' => [qw/allow_json_request/] => sub {
 };
 
 # getReports
-# TODO: select * from transaction_evidences
 get '/reports.json' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
-    $c->render_json({});
+
+    my $tes = $self->dbh->select_all(
+        'SELECT * FROM `transaction_evidences` WHERE `id` > 15007'
+    );
+
+    my @transaction_evidences = ();
+    for my $te (@$tes) {
+        delete $te->{created_at};
+        delete $te->{uppdated_at};
+        push @transaction_evidences, $te;
+    }
+
+    $c->render_json(\@transaction_evidences);
 };
 
 1;
