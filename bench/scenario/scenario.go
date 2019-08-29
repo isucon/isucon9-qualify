@@ -503,11 +503,13 @@ func check(ctx context.Context, critical *fails.Critical) {
 			err = countUserItems(ctx, s2, s1.UserID)
 			if err != nil {
 				critical.Add(err)
+				goto Final
 			}
 			// no active seller ユーザページ確認
 			err = countUserItems(ctx, s1, s2.UserID)
 			if err != nil {
 				critical.Add(err)
+				goto Final
 			}
 
 			err = userItemsAndItem(ctx, s2, s1.UserID)
