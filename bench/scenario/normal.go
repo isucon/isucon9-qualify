@@ -633,7 +633,7 @@ func (s *IDsStore) Add(id int64) error {
 	s.Lock()
 	defer s.Unlock()
 	if _, ok := s.ids[id]; ok {
-		return fmt.Errorf("Duplicated ID found: %d", id)
+		return fmt.Errorf("duplicated ID found: %d", id)
 	}
 	s.ids[id] = true
 	return nil
