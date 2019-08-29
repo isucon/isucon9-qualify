@@ -95,7 +95,9 @@ class CategoryItemListPage extends React.Component<Props, State> {
 
       return (
         <div className={classes.root}>
-          <Typography variant="h6">{categoryName}の新着商品</Typography>
+          <Typography variant="h6">
+            「{categoryName}」カテゴリの新着商品一覧
+          </Typography>
           <ItemList items={items} hasNext={hasNext} loadMore={loadMoreItems} />
           <SellingButtonContainer />
         </div>

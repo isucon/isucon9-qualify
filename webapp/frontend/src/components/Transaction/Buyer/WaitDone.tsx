@@ -25,7 +25,7 @@ const WaitDone: React.FC<Props> = ({ itemId, postComplete }) => {
     <React.Fragment>
       <Typography variant="h6">出品者により商品が発送されました</Typography>
       <Typography variant="h6">
-        商品が届き次第、受取完了ボタンを押してください
+        商品が届き次第、下記の「取引完了」を押してください
       </Typography>
       <Button
         className={classes.button}
@@ -33,7 +33,7 @@ const WaitDone: React.FC<Props> = ({ itemId, postComplete }) => {
         color="primary"
         onClick={onClick}
       >
-        受取完了
+        取引完了
       </Button>
     </React.Fragment>
   );
