@@ -9,7 +9,7 @@
   become: yes
   synchronize:
     src: ../../../../webapp/
-    dest: /home/isucon/isucari
+    dest: /home/isucon/isucari/webapp
     delete: yes
     recursive: yes
 
