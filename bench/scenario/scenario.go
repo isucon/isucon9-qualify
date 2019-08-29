@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -13,35 +12,6 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
 )
-
-type IDsStore struct {
-	sync.RWMutex
-	ids map[int64]bool
-}
-
-func newIDsStore() *IDsStore {
-	m := make(map[int64]bool)
-	s := &IDsStore{
-		ids: m,
-	}
-	return s
-}
-
-func (s *IDsStore) Add(id int64) error {
-	s.Lock()
-	defer s.Unlock()
-	if _, ok := s.ids[id]; ok {
-		return fmt.Errorf("Duplicated ID found: %d", id)
-	}
-	s.ids[id] = true
-	return nil
-}
-
-func (s *IDsStore) Len() int {
-	s.RLock()
-	defer s.RUnlock()
-	return len(s.ids)
-}
 
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, *fails.Critical) {
 	critical := fails.NewCritical()
