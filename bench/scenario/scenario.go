@@ -389,7 +389,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 				return
 			}
 
-			targetItemID, err := sell(ctx, s1, 100)
+			price := priceStoreCache.Get()
+
+			targetItemID, err := sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -403,7 +405,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, 100)
+			err = buyComplete(ctx, s1, s2, targetItemID, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -443,7 +445,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 				return
 			}
 
-			targetItemID, err := sell(ctx, s1, 100)
+			price := priceStoreCache.Get()
+
+			targetItemID, err := sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -457,7 +461,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, 100)
+			err = buyComplete(ctx, s1, s2, targetItemID, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -496,7 +500,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 				return
 			}
 
-			targetItemID, err := sell(ctx, s1, 100)
+			price := priceStoreCache.Get()
+
+			targetItemID, err := sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -523,7 +529,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, 100)
+			err = buyComplete(ctx, s1, s2, targetItemID, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -565,21 +571,23 @@ func check(ctx context.Context, critical *fails.Critical) {
 				return
 			}
 
-			targetItemID, err := sell(ctx, s1, 100)
+			price := priceStoreCache.Get()
+
+			targetItemID, err := sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
 				goto Final
 			}
 
-			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItemID, 110)
+			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItemID, price+10)
 			if err != nil {
 				critical.Add(err)
 
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, 110)
+			err = buyComplete(ctx, s1, s2, targetItemID, price+10)
 			if err != nil {
 				critical.Add(err)
 
@@ -617,7 +625,9 @@ func check(ctx context.Context, critical *fails.Critical) {
 				return
 			}
 
-			targetItemID, err := sell(ctx, s1, 100)
+			price := priceStoreCache.Get()
+
+			targetItemID, err := sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -631,7 +641,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, 100)
+			err = buyComplete(ctx, s1, s2, targetItemID, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -686,7 +696,9 @@ func load(ctx context.Context, critical *fails.Critical) {
 					return
 				}
 
-				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2)
+				price := priceStoreCache.Get()
+
+				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2, price)
 				if err != nil {
 					critical.Add(err)
 
@@ -726,7 +738,9 @@ func load(ctx context.Context, critical *fails.Critical) {
 					return
 				}
 
-				targetItemID, err := sell(ctx, s1, 100)
+				price := priceStoreCache.Get()
+
+				targetItemID, err := sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 
@@ -740,7 +754,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = buyComplete(ctx, s1, s2, targetItemID, 100)
+				err = buyComplete(ctx, s1, s2, targetItemID, price)
 				if err != nil {
 					critical.Add(err)
 

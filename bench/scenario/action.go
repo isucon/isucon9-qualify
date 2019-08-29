@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"sync"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -373,6 +374,30 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	}
 
 	return nil
+}
+
+type priceStore struct {
+	price int
+	sync.RWMutex
+}
+
+var priceStoreCache *priceStore
+
+func init() {
+	priceStoreCache = &priceStore{}
+	priceStoreCache.Set(100)
+}
+
+func (s *priceStore) Get() int {
+	s.RLock()
+	defer s.RUnlock()
+	return s.price
+}
+
+func (s *priceStore) Set(price int) {
+	s.Lock()
+	defer s.Unlock()
+	s.price = price
 }
 
 func SetShipment(ss *server.ServerShipment) {

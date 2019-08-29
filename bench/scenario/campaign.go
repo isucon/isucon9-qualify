@@ -26,7 +26,7 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 
 		L:
 			for j := 0; j < 50; j++ {
-				ch := time.After(200 * time.Millisecond)
+				ch := time.After(100 * time.Millisecond)
 
 				user1 := asset.GetRandomBuyer()
 				s, err := loginedSession(ctx, user1)
@@ -51,21 +51,81 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		<-time.After(7 * time.Second)
+		<-time.After(10 * time.Second)
 
 	L:
 		for j := 0; j < ExecutionSeconds/10; j++ {
 			ch := time.After(10 * time.Second)
 
-			isIncrease := popularListing(ctx, critical, 80)
+			isIncrease := popularListing(ctx, critical, 80+j*20, 1000+j*100)
 
 			if isIncrease {
 				// goroutineを増やす
-				log.Print("increase")
+				log.Print("increase load")
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					load(ctx, critical)
+				}()
+
+				for i := 0; i < 10; i++ {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+
+					L:
+						for j := 0; j < 20; j++ {
+							ch := time.After(100 * time.Millisecond)
+
+							user1 := asset.GetRandomBuyer()
+							s, err := loginedSession(ctx, user1)
+							if err != nil {
+								// ログインに失敗しまくるとプールに溜まらないので一気に購入できなくなる
+								// その場合は失敗件数が多いという理由で失格にする
+								critical.Add(err)
+								goto Final
+							}
+							BuyerPool.Enqueue(s)
+
+						Final:
+							select {
+							case <-ch:
+							case <-ctx.Done():
+								break L
+							}
+						}
+					}()
+				}
 			}
 
 			select {
 			case <-ch:
+			case <-ctx.Done():
+				break L
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-time.After(20 * time.Second)
+
+		tick := time.Tick(10 * time.Second)
+
+	L:
+		for i := 1; i < ExecutionSeconds/10-2; i++ {
+			d := time.Duration(i * 400)
+
+			log.Print("increase delay")
+			sPayment.SetDelay(d * time.Millisecond)
+			sShipment.SetDelay(d * time.Millisecond)
+
+			priceStoreCache.Set(100 + i*50)
+
+			select {
+			case <-tick:
 			case <-ctx.Done():
 				break L
 			}
@@ -85,7 +145,7 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 
 // popularListing is 人気者出品
 // 人気者が高額の出品を行う。高額だが出品した瞬間に大量の人が購入しようとしてくる。もちろん購入できるのは一人だけ。
-func popularListing(ctx context.Context, critical *fails.Critical, num int) (isIncrease bool) {
+func popularListing(ctx context.Context, critical *fails.Critical, num int, price int) (isIncrease bool) {
 	// buyerが足りない場合はログインを意図的に遅くしている可能性があるのでペナルティとして実行しない
 	l := BuyerPool.Len()
 	if l < num+10 {
@@ -101,8 +161,6 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int) (isI
 		critical.Add(err)
 		return false
 	}
-
-	price := 1000
 
 	targetItemID, err := sell(ctx, popular, price)
 	if err != nil {
