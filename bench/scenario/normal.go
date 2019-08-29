@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"sync"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -613,4 +614,33 @@ func loadNewCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Ses
 	}
 
 	return nil
+}
+
+type IDsStore struct {
+	sync.RWMutex
+	ids map[int64]bool
+}
+
+func newIDsStore() *IDsStore {
+	m := make(map[int64]bool)
+	s := &IDsStore{
+		ids: m,
+	}
+	return s
+}
+
+func (s *IDsStore) Add(id int64) error {
+	s.Lock()
+	defer s.Unlock()
+	if _, ok := s.ids[id]; ok {
+		return fmt.Errorf("Duplicated ID found: %d", id)
+	}
+	s.ids[id] = true
+	return nil
+}
+
+func (s *IDsStore) Len() int {
+	s.RLock()
+	defer s.RUnlock()
+	return len(s.ids)
 }
