@@ -8,23 +8,10 @@
 - name: Deploy isucari
   become: yes
   synchronize:
-    src: ../../../../
+    src: ../../../../webapp/
     dest: /home/isucon/isucari
     delete: yes
     recursive: yes
-    rsync_opts:
-      - "--exclude=.git"
-      - "--exclude=.gitignore"
-      - "--exclude=/go.mod"
-      - "--exclude=/go.sum"
-      - "--exclude=bin"
-      - "--exclude=bench"
-      - "--exclude=cmd"
-      - "--exclude=LICENSE"
-      - "--exclude=Makefile"
-      - "--exclude=README.md"
-      - "--exclude=provisioning"
-      - "--exclude=initial-data"
 
 - name: Chown isucon
   become: yes
