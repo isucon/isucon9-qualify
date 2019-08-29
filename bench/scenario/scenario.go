@@ -13,6 +13,10 @@ import (
 	"github.com/morikuni/failure"
 )
 
+const (
+	ExecutionSeconds = 60
+)
+
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, *fails.Critical) {
 	critical := fails.NewCritical()
 
@@ -158,6 +162,17 @@ func Verify(ctx context.Context) *fails.Critical {
 		if err != nil {
 			critical.Add(err)
 		}
+
+		// active sellerの全件確認
+		err = countUserItems(ctx, s2, s2.UserID)
+		if err != nil {
+			critical.Add(err)
+		}
+		// active sellerではないユーザも確認。0件でも問題ない
+		err = countUserItems(ctx, s1, s2.UserID)
+		if err != nil {
+			critical.Add(err)
+		}
 	}()
 
 	user3 := asset.GetRandomBuyer()
@@ -248,7 +263,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			err := irregularLoginWrongPassword(ctx, user3)
@@ -271,7 +286,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := buyerSession(ctx)
@@ -317,7 +332,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			// bumpは投稿した直後だとできないので必ず新しいユーザーでやる
@@ -359,7 +374,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -413,7 +428,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -461,14 +476,12 @@ func check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	// ユーザーページをある程度見る
-	// TODO: 初期データを後ろの方までいい感じに遡りたい
-	// TODO: 商品ページも見るのは蛇足では
+	// ユーザーページを見る
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -487,6 +500,19 @@ func check(ctx context.Context, critical *fails.Critical) {
 			if err != nil {
 				critical.Add(err)
 
+				goto Final
+			}
+
+			// active seller ユーザページ全件確認
+			err = countUserItems(ctx, s2, s1.UserID)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
+			// no active seller ユーザページ確認
+			err = countUserItems(ctx, s1, s2.UserID)
+			if err != nil {
+				critical.Add(err)
 				goto Final
 			}
 
@@ -524,7 +550,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -576,7 +602,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 5; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -645,7 +671,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 			defer wg.Done()
 
 		L:
-			for j := 0; j < 10; j++ {
+			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
 				s1, err := activeSellerSession(ctx)
@@ -685,7 +711,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 		go func() {
 			defer wg.Done()
 		L:
-			for j := 0; j < 10; j++ {
+			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
 				s2, err := activeSellerSession(ctx)

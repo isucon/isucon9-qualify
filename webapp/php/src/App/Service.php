@@ -1820,7 +1820,13 @@ class Service
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
-        // TODO ISO-8061 TZ Colon format 2006-01-02T15:04:05Z07:00
-        return $response->withJson($transactionEvidences, StatusCode::HTTP_OK);
+
+        $t = array_map(function ($e) {
+            unset($e['updated_at']);
+            unset($e['created_at']);
+            return $e;
+        }, $transactionEvidences);
+
+        return $response->withJson($t, StatusCode::HTTP_OK);
     }
 }

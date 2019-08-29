@@ -143,7 +143,7 @@ type TransactionEvidence struct {
 	ItemDescription    string    `json:"item_description" db:"item_description"`
 	ItemCategoryID     int       `json:"item_category_id" db:"item_category_id"`
 	ItemRootCategoryID int       `json:"item_root_category_id" db:"item_root_category_id"`
-	CreatedAt          time.Time `json:"created_at" db:"created_at"`
+	CreatedAt          time.Time `json:"-" db:"created_at"`
 	UpdatedAt          time.Time `json:"-" db:"updated_at"`
 }
 
@@ -2280,7 +2280,6 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(u)
 }
 
-// TODO: select * from transaction_evidences
 func getReports(w http.ResponseWriter, r *http.Request) {
 	transactionEvidences := make([]TransactionEvidence, 0)
 	err := dbx.Select(&transactionEvidences, "SELECT * FROM `transaction_evidences` WHERE `id` > 15007")

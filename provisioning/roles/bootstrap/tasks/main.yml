@@ -29,6 +29,10 @@
     cache_valid_time: 3600
   become: yes
 
+- name: Set timezone UTC
+  become: yes
+  command: timedatectl set-timezone UTC
+
 - name: Setup xbuild
   git:
     repo: https://github.com/tagomoris/xbuild.git

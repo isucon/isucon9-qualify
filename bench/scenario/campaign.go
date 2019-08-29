@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -16,12 +17,52 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
-	go func() {
-	L:
-		for j := 0; j < 10; j++ {
-			ch := time.After(8 * time.Second)
+	// buyer用のセッションを増やしておく
+	// 500ユーザーを追加したら止まる
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-			popularListing(ctx, critical)
+		L:
+			for j := 0; j < 50; j++ {
+				ch := time.After(200 * time.Millisecond)
+
+				user1 := asset.GetRandomBuyer()
+				s, err := loginedSession(ctx, user1)
+				if err != nil {
+					// ログインに失敗しまくるとプールに溜まらないので一気に購入できなくなる
+					// その場合は失敗件数が多いという理由で失格にする
+					critical.Add(err)
+					goto Final
+				}
+				BuyerPool.Enqueue(s)
+
+			Final:
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
+			}
+		}()
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-time.After(7 * time.Second)
+
+	L:
+		for j := 0; j < ExecutionSeconds/10; j++ {
+			ch := time.After(10 * time.Second)
+
+			isIncrease := popularListing(ctx, critical, 80)
+
+			if isIncrease {
+				// goroutineを増やす
+				log.Print("increase")
+			}
 
 			select {
 			case <-ch:
@@ -44,47 +85,21 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 
 // popularListing is 人気者出品
 // 人気者が高額の出品を行う。高額だが出品した瞬間に大量の人が購入しようとしてくる。もちろん購入できるのは一人だけ。
-func popularListing(ctx context.Context, critical *fails.Critical) {
-	// buyerが足りない分を準備しておく
-	if l := BuyerPool.Len(); l < 50 {
-		count := 60 - l
-
-		var wg sync.WaitGroup
-
-		for i := 0; i < count/5; i++ {
-			for j := 0; j < 5; j++ {
-				wg.Add(1)
-
-				go func() {
-					defer wg.Done()
-
-					user1 := asset.GetRandomBuyer()
-					s, err := loginedSession(ctx, user1)
-					if err != nil {
-						critical.Add(err)
-						return
-					}
-					BuyerPool.Enqueue(s)
-				}()
-			}
-			// 一気にログインするとアプリケーションがしんどいのでほどほどにする
-			<-time.After(100 * time.Millisecond)
-		}
-
-		wg.Wait()
+func popularListing(ctx context.Context, critical *fails.Critical, num int) (isIncrease bool) {
+	// buyerが足りない場合はログインを意図的に遅くしている可能性があるのでペナルティとして実行しない
+	l := BuyerPool.Len()
+	if l < num+10 {
+		log.Printf("login user insufficient (count: %d)", l)
+		return false
 	}
 
 	// 真のbuyerが入るチャネル。複数来たらエラーにする
-	buyerCh := make(chan *session.Session)
-	defer func() {
-		// closeしないとgoroutineリークする
-		close(buyerCh)
-	}()
+	buyerCh := make(chan *session.Session, 1)
 
 	popular, err := buyerSession(ctx)
 	if err != nil {
 		critical.Add(err)
-		return
+		return false
 	}
 
 	price := 1000
@@ -92,12 +107,12 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 	targetItemID, err := sell(ctx, popular, price)
 	if err != nil {
 		critical.Add(err)
-		return
+		return false
 	}
 
 	var wg sync.WaitGroup
 
-	for i := 0; i < 50; i++ {
+	for i := 0; i < num; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -118,10 +133,10 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 
 			if transactionEvidenceID != 0 {
 				// 0でないなら真のbuyer
-				// 関数を終わらせないとデッドロックするのでgoroutineを使う
-				go func() {
-					buyerCh <- s2
-				}()
+				buyerCh <- s2
+			} else {
+				// buyerでないならもう使わないので戻す
+				BuyerPool.Enqueue(s2)
 			}
 		}()
 	}
@@ -139,49 +154,62 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 	case <-closed:
 		// 全goroutineが終了したのにbuyerがいない場合は全員が購入に失敗している
 		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("商品 (item_id: %d) に対して全ユーザーが購入に失敗しました", targetItemID)))
-		return
+		return false
 	}
 
+	defer func() {
+		// 終わったら戻しておく
+		BuyerPool.Enqueue(buyer)
+	}()
+
 	go func() {
-		for s := range buyerCh {
-			// buyerが複数人いるとここのコードが動く
-			critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItemID, s.UserID)))
+	L:
+		for {
+			select {
+			case s := <-buyerCh:
+				// buyerが複数人いるとここのコードが動く
+				critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItemID, s.UserID)))
+			case <-closed:
+				break L
+			}
 		}
 	}()
 
 	reserveID, apath, err := popular.Ship(ctx, targetItemID)
 	if err != nil {
 		critical.Add(err)
-		return
+		return false
 	}
 
 	md5Str, err := popular.DownloadQRURL(ctx, apath)
 	if err != nil {
 		critical.Add(err)
-		return
+		return false
 	}
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
 		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID)))
-		return
+		return false
 	}
 
 	err = popular.ShipDone(ctx, targetItemID)
 	if err != nil {
 		critical.Add(err)
-		return
+		return false
 	}
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
 		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID)))
-		return
+		return false
 	}
 
 	err = buyer.Complete(ctx, targetItemID)
 	if err != nil {
 		critical.Add(err)
-		return
+		return false
 	}
+
+	return true
 }
