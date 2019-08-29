@@ -9,6 +9,15 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import Typography from '@material-ui/core/Typography';
+import { ExpandLess, ExpandMore } from '@material-ui/icons';
+import Collapse from '@material-ui/core/Collapse';
+import { CategorySimple } from '../../dataObjects/category';
+import NewReleasesIcon from '@material-ui/icons/NewReleases';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import EventSeatIcon from '@material-ui/icons/EventSeat';
+import SettingsIcon from '@material-ui/icons/Settings';
+import PersonIcon from '@material-ui/icons/Person';
+import WeekendIcon from '@material-ui/icons/Weekend';
 
 const useStyles = makeStyles((theme: Theme) => ({
   appBar: {
@@ -21,33 +30,53 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: '100%', // センタリング
   },
   list: {
-    width: '200px',
+    width: '270px',
+  },
+  nested: {
+    paddingLeft: theme.spacing(4),
   },
 }));
 
 interface Props {
   isLoggedIn: boolean;
   ownUserId: number;
+  categories: CategorySimple[];
   goToTopPage: () => void;
   goToUserPage: (userId: number) => void;
   goToSettingPage: () => void;
+  goToCategoryItemList: (categoryId: number) => void;
 }
 
 const Header: React.FC<Props> = ({
   isLoggedIn,
   ownUserId,
+  categories,
   goToTopPage,
   goToUserPage,
   goToSettingPage,
+  goToCategoryItemList,
 }) => {
   const classes = useStyles();
   const [state, setState] = React.useState({
     open: false,
+    categoryExpanded: false,
   });
+
+  const { open, categoryExpanded } = state;
 
   const onClickTop = (e: React.MouseEvent) => {
     e.preventDefault();
     goToTopPage();
+  };
+
+  const onExpandCategory = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setState({ ...state, categoryExpanded: !state.categoryExpanded });
+  };
+
+  const onClickCategory = (categoryId: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    goToCategoryItemList(categoryId);
   };
 
   const onClickMyPage = (e: React.MouseEvent) => {
@@ -68,15 +97,47 @@ const Header: React.FC<Props> = ({
   return (
     <React.Fragment>
       {isLoggedIn && (
-        <Drawer open={state.open} onClose={toggleDrawer(false)}>
+        <Drawer open={open} onClose={toggleDrawer(false)}>
           <List className={classes.list}>
             <ListItem button onClick={onClickTop}>
+              <ListItemIcon>
+                <NewReleasesIcon color="primary" />
+              </ListItemIcon>
               <ListItemText primary="新着商品" />
             </ListItem>
+            <ListItem button onClick={onExpandCategory}>
+              <ListItemIcon>
+                <WeekendIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary="カテゴリ新着商品" />
+              {categoryExpanded ? <ExpandLess /> : <ExpandMore />}
+            </ListItem>
+            <Collapse in={categoryExpanded} timeout="auto" unmountOnExit>
+              <List disablePadding>
+                {categories.map((category: CategorySimple) => (
+                  <ListItem
+                    button
+                    onClick={onClickCategory(category.id)}
+                    className={classes.nested}
+                  >
+                    <ListItemIcon>
+                      <EventSeatIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText primary={category.categoryName} />
+                  </ListItem>
+                ))}
+              </List>
+            </Collapse>
             <ListItem button onClick={onClickMyPage}>
+              <ListItemIcon>
+                <PersonIcon color="primary" />
+              </ListItemIcon>
               <ListItemText primary="マイページ" />
             </ListItem>
             <ListItem button onClick={onClickMySettingPage}>
+              <ListItemIcon>
+                <SettingsIcon color="primary" />
+              </ListItemIcon>
               <ListItemText primary="設定" />
             </ListItem>
           </List>

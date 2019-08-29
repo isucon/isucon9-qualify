@@ -4,10 +4,15 @@ import { connect } from 'react-redux';
 import { push } from 'connected-react-router';
 import { routes } from '../routes/Route';
 import { Header } from '../components/Header';
+import { CategorySimple } from '../dataObjects/category';
 
 const mapStateToProps = (state: AppState) => ({
   isLoggedIn: !!state.authStatus.userId,
   ownUserId: state.authStatus.userId || 0,
+  // Note: Showing only parent category
+  categories: state.categories.categories.filter(
+    (category: CategorySimple) => category.parentId === 0,
+  ),
 });
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
@@ -19,6 +24,9 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
   },
   goToSettingPage: () => {
     dispatch(push(routes.userSetting.path));
+  },
+  goToCategoryItemList: (categoryId: number) => {
+    dispatch(push(routes.categoryTimeline.getPath(categoryId)));
   },
 });
 
