@@ -61,8 +61,8 @@ func checkItemDetailCategory(item session.ItemDetail, aItem asset.AppItem) error
 	return nil
 }
 
-func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *session.Session) error {
-	targetItemID, err := sell(ctx, s1, 100)
+func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *session.Session, price int) error {
+	targetItemID, err := sell(ctx, s1, price)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 		return err
 	}
 
-	err = buyComplete(ctx, s1, s2, targetItemID, 100)
+	err = buyComplete(ctx, s1, s2, targetItemID, price)
 	if err != nil {
 		return err
 	}
