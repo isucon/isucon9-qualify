@@ -61,6 +61,8 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 					user1 := asset.GetRandomBuyer()
 					s, err := loginedSession(ctx, user1)
 					if err != nil {
+						// ログインに失敗しまくるとプールに溜まらないので一気に購入できなくなる
+						// その場合は失敗件数が多いという理由で失格にする
 						critical.Add(err)
 						return
 					}
@@ -75,11 +77,7 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 	}
 
 	// 真のbuyerが入るチャネル。複数来たらエラーにする
-	buyerCh := make(chan *session.Session)
-	defer func() {
-		// closeしないとgoroutineリークする
-		close(buyerCh)
-	}()
+	buyerCh := make(chan *session.Session, 1)
 
 	popular, err := buyerSession(ctx)
 	if err != nil {
@@ -118,10 +116,7 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 
 			if transactionEvidenceID != 0 {
 				// 0でないなら真のbuyer
-				// 関数を終わらせないとデッドロックするのでgoroutineを使う
-				go func() {
-					buyerCh <- s2
-				}()
+				buyerCh <- s2
 			}
 		}()
 	}
@@ -143,9 +138,15 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 	}
 
 	go func() {
-		for s := range buyerCh {
-			// buyerが複数人いるとここのコードが動く
-			critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItemID, s.UserID)))
+	L:
+		for {
+			select {
+			case s := <-buyerCh:
+				// buyerが複数人いるとここのコードが動く
+				critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItemID, s.UserID)))
+			case <-closed:
+				break L
+			}
 		}
 	}()
 
