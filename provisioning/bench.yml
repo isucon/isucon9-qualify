@@ -15,7 +15,6 @@
     - golang
     - external.nginx
     - external.benchmarker
-    # WIP
     - external.benchmark-worker
 
   tasks:
