@@ -24,14 +24,16 @@ const Initial: React.FC<Props> = ({ itemId, postShipped }) => {
   return (
     <React.Fragment>
       <Typography variant="h6">商品が購入されました</Typography>
-      <Typography variant="h6">発送予約の手続きをしてください</Typography>
+      <Typography variant="h6">
+        下記の「集荷予約」を押し、集荷予約の手続きをしてください
+      </Typography>
       <Button
         className={classes.button}
         variant="contained"
         color="primary"
         onClick={onClick}
       >
-        発送予約
+        集荷予約
       </Button>
     </React.Fragment>
   );
