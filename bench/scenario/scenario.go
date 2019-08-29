@@ -13,6 +13,10 @@ import (
 	"github.com/morikuni/failure"
 )
 
+const (
+	ExecutionSeconds = 60
+)
+
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, *fails.Critical) {
 	critical := fails.NewCritical()
 
@@ -259,7 +263,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			err := irregularLoginWrongPassword(ctx, user3)
@@ -282,7 +286,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := buyerSession(ctx)
@@ -328,7 +332,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			// bumpは投稿した直後だとできないので必ず新しいユーザーでやる
@@ -370,7 +374,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -424,7 +428,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -477,7 +481,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -546,7 +550,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 10; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -598,7 +602,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 	L:
-		for j := 0; j < 5; j++ {
+		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			s1, err := activeSellerSession(ctx)
@@ -667,7 +671,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 			defer wg.Done()
 
 		L:
-			for j := 0; j < 10; j++ {
+			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
 				s1, err := activeSellerSession(ctx)
@@ -707,7 +711,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 		go func() {
 			defer wg.Done()
 		L:
-			for j := 0; j < 10; j++ {
+			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
 				s2, err := activeSellerSession(ctx)

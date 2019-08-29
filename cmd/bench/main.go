@@ -130,7 +130,7 @@ func main() {
 		return
 	}
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(20*time.Second))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(scenario.ExecutionSeconds*time.Second))
 	defer cancel()
 
 	log.Print("=== validation ===")

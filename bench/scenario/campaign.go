@@ -18,8 +18,8 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 
 	go func() {
 	L:
-		for j := 0; j < 10; j++ {
-			ch := time.After(8 * time.Second)
+		for j := 0; j < ExecutionSeconds/10; j++ {
+			ch := time.After(10 * time.Second)
 
 			popularListing(ctx, critical)
 
