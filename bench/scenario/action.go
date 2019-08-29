@@ -145,9 +145,9 @@ func findItemFromUsersTransactions(ctx context.Context, s *session.Session, targ
 	}
 	loop = loop + 1
 	if hasNext || loop < 100 { // TODO: max pager
-		nextItem, err := findItemFromUsersTransactions(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop)
+		_, err := findItemFromUsersTransactions(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop)
 		if err != nil {
-			return nextItem, err
+			return session.ItemDetail{}, err
 		}
 	}
 	return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
