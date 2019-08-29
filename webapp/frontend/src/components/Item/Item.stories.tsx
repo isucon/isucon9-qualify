@@ -3,6 +3,7 @@ import { storiesOf } from '@storybook/react';
 import { Item } from '.';
 import { MemoryRouter } from 'react-router-dom';
 import { ItemStatus } from '../../dataObjects/item';
+import { GridList } from '@material-ui/core';
 
 const stories = storiesOf('components/Item', module);
 
@@ -17,11 +18,15 @@ const mockProps = {
 stories
   .add('default', () => (
     <MemoryRouter>
-      <Item {...mockProps} />
+      <GridList>
+        <Item {...mockProps} />
+      </GridList>
     </MemoryRouter>
   ))
   .add('sold out', () => (
     <MemoryRouter>
-      <Item {...mockProps} status="sold_out" />
+      <GridList>
+        <Item {...mockProps} status="sold_out" />
+      </GridList>
     </MemoryRouter>
   ));
