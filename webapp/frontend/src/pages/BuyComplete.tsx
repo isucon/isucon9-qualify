@@ -11,6 +11,8 @@ const BuyCompletePage: React.FC<Props> = ({ itemId, onClickTransaction }) => (
   <BasePageContainer>
     <div>購入が完了しました</div>
     <Button
+      color="primary"
+      variant="contained"
       onClick={(e: React.MouseEvent) => {
         onClickTransaction(itemId);
       }}

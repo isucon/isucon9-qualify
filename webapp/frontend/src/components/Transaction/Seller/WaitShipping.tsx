@@ -3,7 +3,6 @@ import { makeStyles, Theme } from '@material-ui/core/styles';
 import { Typography } from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
-import Divider from '@material-ui/core/Divider';
 
 const useStyles = makeStyles((theme: Theme) => ({
   qrCode: {
@@ -12,9 +11,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     margin: theme.spacing(1),
   },
   button: {
-    margin: theme.spacing(1),
-  },
-  divider: {
     margin: theme.spacing(1),
   },
 }));
@@ -50,11 +46,6 @@ const WaitShipping: React.FC<Props> = ({
       </Grid>
       <Grid item xs={12}>
         <img className={classes.qrCode} src={qrCodeUrl} alt="QRコード" />
-        <Typography variant="subtitle2">TODO: reserve ID</Typography>
-        <Divider className={classes.divider} variant="middle" />
-        <Typography variant="body2">
-          うまく撮影できない場合は集荷予約番号（ReserveID）をお伝えください
-        </Typography>
       </Grid>
       <Grid item xs={12}>
         <Button
