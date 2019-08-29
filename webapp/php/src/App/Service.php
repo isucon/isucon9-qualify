@@ -1821,11 +1821,10 @@ class Service
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
 
-        $t = array_map(function ($e){
-            $r = $e;
-            unset($r['updated_at']);
-            $r['created_at'] = (new \DateTime($e['created_at']))->format(\DateTimeInterface::RFC3339);
-            return $r;
+        $t = array_map(function ($e) {
+            unset($e['updated_at']);
+            unset($e['created_at']);
+            return $e;
         }, $transactionEvidences);
 
         return $response->withJson($t, StatusCode::HTTP_OK);
