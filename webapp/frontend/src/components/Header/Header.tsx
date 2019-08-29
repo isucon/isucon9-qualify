@@ -14,10 +14,10 @@ import Collapse from '@material-ui/core/Collapse';
 import { CategorySimple } from '../../dataObjects/category';
 import NewReleasesIcon from '@material-ui/icons/NewReleases';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
-import CategoryIcon from '@material-ui/icons/Category';
 import EventSeatIcon from '@material-ui/icons/EventSeat';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PersonIcon from '@material-ui/icons/Person';
+import WeekendIcon from '@material-ui/icons/Weekend';
 
 const useStyles = makeStyles((theme: Theme) => ({
   appBar: {
@@ -107,7 +107,7 @@ const Header: React.FC<Props> = ({
             </ListItem>
             <ListItem button onClick={onExpandCategory}>
               <ListItemIcon>
-                <CategoryIcon color="primary" />
+                <WeekendIcon color="primary" />
               </ListItemIcon>
               <ListItemText primary="カテゴリ新着商品" />
               {categoryExpanded ? <ExpandLess /> : <ExpandMore />}

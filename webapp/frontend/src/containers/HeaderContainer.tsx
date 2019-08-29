@@ -11,7 +11,7 @@ const mapStateToProps = (state: AppState) => ({
   ownUserId: state.authStatus.userId || 0,
   // Note: Showing only parent category
   categories: state.categories.categories.filter(
-    (category: CategorySimple) => category.parentId !== 0,
+    (category: CategorySimple) => category.parentId === 0,
   ),
 });
 
