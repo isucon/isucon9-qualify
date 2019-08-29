@@ -44,7 +44,9 @@ type Props = CategoryItemListPageProps &
   ErrorProps;
 
 type State = {
+  loading: boolean;
   categoryIdIsValid: boolean;
+  currentCategoryId: number;
 };
 
 class CategoryItemListPage extends React.Component<Props, State> {
@@ -59,20 +61,37 @@ class CategoryItemListPage extends React.Component<Props, State> {
     }
 
     this.state = {
+      loading: this.props.loading,
       categoryIdIsValid,
+      currentCategoryId: Number(categoryId),
+    };
+  }
+
+  static getDerivedStateFromProps(nextProps: Props, prevState: State) {
+    const nextLoading = nextProps.loading;
+    const nextCategoryId = Number(nextProps.match.params.category_id);
+
+    // ページ遷移を確認した場合はデータ取得を行う
+    if (nextCategoryId !== prevState.currentCategoryId) {
+      nextProps.load(nextCategoryId);
+
+      return {
+        ...prevState,
+        loading: true,
+        currentCategoryId: nextCategoryId,
+      };
+    }
+
+    return {
+      ...prevState,
+      loading: nextLoading,
+      currentCategoryId: nextCategoryId,
     };
   }
 
   render() {
-    const {
-      classes,
-      loading,
-      items,
-      categoryId,
-      categoryName,
-      loadMore,
-      hasNext,
-    } = this.props;
+    const { classes, items, categoryName, loadMore, hasNext } = this.props;
+    const { loading, currentCategoryId: categoryId } = this.state;
     const { categoryIdIsValid } = this.state;
 
     const Content: React.FC<{}> = () => {
