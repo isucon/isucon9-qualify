@@ -1,8 +1,8 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
   progress: {
     top: 0,
     bottom: 0,
@@ -17,9 +17,7 @@ const LoadingComponent: React.FC = () => {
   const classes = useStyles();
 
   return (
-    <React.Fragment>
-      <CircularProgress size={80} className={classes.progress} />
-    </React.Fragment>
+    <CircularProgress color="primary" size={80} className={classes.progress} />
   );
 };
 
