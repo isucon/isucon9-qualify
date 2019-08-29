@@ -12,6 +12,7 @@ import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import BasePageContainer from '../containers/BasePageContainer';
 import LoadingComponent from '../components/LoadingComponent';
 import { ItemFooter } from '../components/ItemFooter';
+import { ItemImage } from '../components/ItemImage';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
@@ -20,11 +21,6 @@ const styles = (theme: Theme): StyleRules =>
     },
     title: {
       margin: theme.spacing(3),
-    },
-    itemImage: {
-      width: '100%',
-      maxWidth: '500px',
-      height: 'auto',
     },
     avatar: {
       width: '50px',
@@ -162,10 +158,11 @@ class ItemPage extends React.Component<Props> {
           </Typography>
           <Grid container spacing={2}>
             <Grid item>
-              <img
-                className={classes.itemImage}
-                alt={item.name}
-                src={item.thumbnailUrl}
+              <ItemImage
+                imageUrl={item.thumbnailUrl}
+                title={item.name}
+                isSoldOut={item.status !== 'on_sale'}
+                width={500}
               />
             </Grid>
             <Grid item xs={12} sm container>
