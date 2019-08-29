@@ -256,8 +256,8 @@ func GetItem(sellerID, itemID int64) (AppItem, bool) {
 func SetItem(sellerID int64, itemID int64, name string, price int, description string, categoryID int) {
 	muItem.Lock()
 	defer muItem.Unlock()
-	muUser.RLock()
-	defer muUser.RUnlock()
+	muUser.Lock()
+	defer muUser.Unlock()
 
 	userItems[sellerID] = append(userItems[sellerID], itemID)
 
