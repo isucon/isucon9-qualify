@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -12,6 +13,35 @@ import (
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
 )
+
+type IDsStore struct {
+	sync.RWMutex
+	ids map[int64]bool
+}
+
+func newIDsStore() *IDsStore {
+	m := make(map[int64]bool)
+	s := &IDsStore{
+		ids: m,
+	}
+	return s
+}
+
+func (s *IDsStore) Add(id int64) error {
+	s.Lock()
+	defer s.Unlock()
+	if _, ok := s.ids[id]; ok {
+		return fmt.Errorf("Duplicated ID found: %d", id)
+	}
+	s.ids[id] = true
+	return nil
+}
+
+func (s *IDsStore) Len() int {
+	s.RLock()
+	defer s.RUnlock()
+	return len(s.ids)
+}
 
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, *fails.Critical) {
 	critical := fails.NewCritical()
@@ -155,6 +185,17 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer ActiveSellerPool.Enqueue(s2)
 
 		err = userItemsAndItem(ctx, s1, s2.UserID)
+		if err != nil {
+			critical.Add(err)
+		}
+
+		// active sellerの全件確認
+		err = countUserItems(ctx, s2, s2.UserID)
+		if err != nil {
+			critical.Add(err)
+		}
+		// active sellerではないユーザも確認。0件でも問題ない
+		err = countUserItems(ctx, s1, s2.UserID)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -461,9 +502,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	// ユーザーページをある程度見る
-	// TODO: 初期データを後ろの方までいい感じに遡りたい
-	// TODO: 商品ページも見るのは蛇足では
+	// ユーザーページを見る
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -487,6 +526,19 @@ func check(ctx context.Context, critical *fails.Critical) {
 			if err != nil {
 				critical.Add(err)
 
+				goto Final
+			}
+
+			// active seller ユーザページ全件確認
+			err = countUserItems(ctx, s2, s1.UserID)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
+			// no active seller ユーザページ確認
+			err = countUserItems(ctx, s1, s2.UserID)
+			if err != nil {
+				critical.Add(err)
 				goto Final
 			}
 

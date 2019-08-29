@@ -89,7 +89,13 @@ func transactionEvidence(ctx context.Context, s1 *session.Session) error {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのhas_nextがfalseになっています (user_id: %d)", s1.UserID))
 	}
 
+	var createdAt int64
 	for _, item := range items {
+		if createdAt > 0 && createdAt < item.CreatedAt {
+			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonはcreated_at順である必要があります"))
+		}
+		createdAt = item.CreatedAt
+
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 
 		if !ok {
@@ -242,14 +248,37 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 	return nil
 }
 
+// ユーザページの商品をすべて数える
+// カテゴリやタイトルも確認しているので、active sellerをある程度の人数確認したら
+// 商品が大幅に削除されていないことも確認できる
+func countUserItems(ctx context.Context, s *session.Session, sellerID int64) error {
+	itemIDs := newIDsStore()
+	err := getItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
+	if err != nil {
+		return err
+	}
+	c := itemIDs.Len()
+	buffer := 10 // TODO
+	aUser := asset.GetUser(sellerID)
+	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
+	}
+	return nil
+}
+
 func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) error {
-	// TODO: num_sell_itemsを確認したい
 	_, _, items, err := s1.UserItems(ctx, userID)
 	if err != nil {
 		return err
 	}
 
+	var createdAt int64
 	for _, item := range items {
+		if createdAt > 0 && createdAt < item.CreatedAt {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", userID))
+		}
+		createdAt = item.CreatedAt
+
 		aItem, ok := asset.GetItem(userID, item.ID)
 		if !ok {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品 (item_id: %d) が返ってきています", userID, item.ID))
@@ -263,6 +292,7 @@ func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) er
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonの%s", userID, err.Error()))
 		}
+
 	}
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
