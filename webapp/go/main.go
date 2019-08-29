@@ -143,7 +143,7 @@ type TransactionEvidence struct {
 	ItemDescription    string    `json:"item_description" db:"item_description"`
 	ItemCategoryID     int       `json:"item_category_id" db:"item_category_id"`
 	ItemRootCategoryID int       `json:"item_root_category_id" db:"item_root_category_id"`
-	CreatedAt          time.Time `json:"created_at" db:"created_at"`
+	CreatedAt          time.Time `json:"-" db:"created_at"`
 	UpdatedAt          time.Time `json:"-" db:"updated_at"`
 }
 
