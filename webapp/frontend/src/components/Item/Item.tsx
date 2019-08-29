@@ -35,6 +35,7 @@ const Item: React.FC<Props> = ({ itemId, imageUrl, title, price, status }) => {
             imageUrl={imageUrl}
             title={title}
             isSoldOut={status !== 'on_sale'}
+            width={300}
           />
           <GridListTileBar title={title} subtitle={`${price}ｲｽｺｲﾝ`} />
         </GridListTile>
