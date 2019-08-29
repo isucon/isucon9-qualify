@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -154,12 +155,21 @@ func findBenchmarkTargetServer(job *Job) (*Server, error) {
 	return nil, fmt.Errorf("benchmark target server not found")
 }
 
-func getExternalServiceSuffix() string {
-	return "01" //FIXME
+func getExternalServiceSuffix() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimPrefix(hostname, "bench"), nil
 }
 
 func runBenchmarker(job *Job) (*JobResult, error) {
 	target, err := findBenchmarkTargetServer(job)
+	if err != nil {
+		return &JobResult{}, err
+	}
+
+	suffix, err := getExternalServiceSuffix()
 	if err != nil {
 		return &JobResult{}, err
 	}
@@ -169,8 +179,8 @@ func runBenchmarker(job *Job) (*JobResult, error) {
 	cmd := exec.CommandContext(
 		ctx,
 		"/home/isucon/isucari/bin/benchmarker",
-		fmt.Sprintf("-payment-url=https://%s", fmt.Sprintf("payment%s.isucon9q.catatsuy.org", getExternalServiceSuffix())),
-		fmt.Sprintf("-shipment-url=https://%s", fmt.Sprintf("shipment%s.isucon9q.catatsuy.org", getExternalServiceSuffix())),
+		fmt.Sprintf("-payment-url=https://%s", fmt.Sprintf("payment%s.isucon9q.catatsuy.org", suffix)),
+		fmt.Sprintf("-shipment-url=https://%s", fmt.Sprintf("shipment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-target-url=https://%s", target.GlobalIP),
 		fmt.Sprintf("-allowed-ips=%s", target.GlobalIP),
 		fmt.Sprintf("-data-dir=/home/isucon/isucari/initial-data"))
