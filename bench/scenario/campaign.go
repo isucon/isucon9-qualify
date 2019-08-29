@@ -117,6 +117,9 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 			if transactionEvidenceID != 0 {
 				// 0でないなら真のbuyer
 				buyerCh <- s2
+			} else {
+				// buyerでないならもう使わないので戻す
+				BuyerPool.Enqueue(s2)
 			}
 		}()
 	}
@@ -136,6 +139,11 @@ func popularListing(ctx context.Context, critical *fails.Critical) {
 		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("商品 (item_id: %d) に対して全ユーザーが購入に失敗しました", targetItemID)))
 		return
 	}
+
+	defer func() {
+		// 終わったら戻しておく
+		BuyerPool.Enqueue(buyer)
+	}()
 
 	go func() {
 	L:
