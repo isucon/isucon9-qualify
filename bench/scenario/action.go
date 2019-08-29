@@ -113,7 +113,7 @@ func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs map[in
 	if hasNext || loop < 30 { // TODO: max pager
 		err := getItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 	return nil
@@ -147,7 +147,7 @@ func findItemFromUsersTransactions(ctx context.Context, s *session.Session, targ
 	if hasNext || loop < 30 { // TODO: max pager
 		nextItem, err := findItemFromUsersTransactions(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop)
 		if err != nil {
-			return nextItem, nil
+			return nextItem, err
 		}
 	}
 	return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
