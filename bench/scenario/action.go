@@ -71,7 +71,7 @@ func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
 	return targetItemID, nil
 }
 
-func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs map[int64]int64, sellerID, nextItemID, nextCreatedAt, loop int64) error {
+func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsStore, sellerID, nextItemID, nextCreatedAt, loop int64) error {
 	var hasNext bool
 	var items []session.ItemSimple
 	var err error
@@ -102,10 +102,10 @@ func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs map[in
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonの%s", sellerID, err.Error()))
 		}
 
-		if _, ok := itemIDs[item.ID]; ok {
+		err = itemIDs.Add(item.ID)
+		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに同じ商品がありました (item_id: %d)", sellerID, item.ID))
 		}
-		itemIDs[item.ID] = item.ID
 		nextItemID = item.ID
 		nextCreatedAt = item.CreatedAt
 	}

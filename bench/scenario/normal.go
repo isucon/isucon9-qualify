@@ -252,12 +252,12 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 // カテゴリやタイトルも確認しているので、active sellerをある程度の人数確認したら
 // 商品が大幅に削除されていないことも確認できる
 func countUserItems(ctx context.Context, s *session.Session, sellerID int64) error {
-	itemIDs := map[int64]int64{}
+	itemIDs := newIDsStore()
 	err := getItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
 	if err != nil {
 		return err
 	}
-	c := len(itemIDs)
+	c := itemIDs.Len()
 	buffer := 10 // TODO
 	aUser := asset.GetUser(sellerID)
 	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer {
