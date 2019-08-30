@@ -111,7 +111,7 @@ func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsSt
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext || loop < 100 { // TODO: max pager
+	if hasNext && loop < 100 { // TODO: max pager
 		err := getItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 		if err != nil {
 			return err
@@ -145,7 +145,7 @@ func findItemFromUsersTransactions(ctx context.Context, s *session.Session, targ
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext || loop < 100 { // TODO: max pager
+	if hasNext && loop < 100 { // TODO: max pager
 		_, err := findItemFromUsersTransactions(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop)
 		if err != nil {
 			return session.ItemDetail{}, err
