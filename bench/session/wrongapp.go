@@ -66,8 +66,8 @@ func (s *Session) LoginWithWrongPassword(ctx context.Context, accountName, passw
 	return nil
 }
 
-func (s *Session) SellWithWrongCSRFToken(ctx context.Context, name string, price int, description string, categoryID int) error {
-	file, err := os.Open("webapp/public/upload/sample.jpg")
+func (s *Session) SellWithWrongCSRFToken(ctx context.Context, fileName, name string, price int, description string, categoryID int) error {
+	file, err := os.Open(fileName)
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
 	}
@@ -75,7 +75,7 @@ func (s *Session) SellWithWrongCSRFToken(ctx context.Context, name string, price
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "sample.jpg")
+	part, err := writer.CreateFormFile("image", "upload.jpg")
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
@@ -125,8 +125,8 @@ func (s *Session) SellWithWrongCSRFToken(ctx context.Context, name string, price
 	return nil
 }
 
-func (s *Session) SellWithWrongPrice(ctx context.Context, name string, price int, description string, categoryID int) error {
-	file, err := os.Open("webapp/public/upload/sample.jpg")
+func (s *Session) SellWithWrongPrice(ctx context.Context, fileName, name string, price int, description string, categoryID int) error {
+	file, err := os.Open(fileName)
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
 	}
@@ -134,7 +134,7 @@ func (s *Session) SellWithWrongPrice(ctx context.Context, name string, price int
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "sample.jpg")
+	part, err := writer.CreateFormFile("image", "upload.jpg")
 	if err != nil {
 		return failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}

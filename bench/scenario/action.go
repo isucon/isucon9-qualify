@@ -60,9 +60,9 @@ func loginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session,
 }
 
 func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
-	name, description, categoryID := asset.GenText(8, false), asset.GenText(200, true), 32
+	fileName, name, description, categoryID := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true), 32
 
-	targetItemID, err := s1.Sell(ctx, name, price, description, categoryID)
+	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, categoryID)
 	if err != nil {
 		return 0, err
 	}
