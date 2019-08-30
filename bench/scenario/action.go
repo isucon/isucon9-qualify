@@ -72,6 +72,19 @@ func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
 	return targetItemID, nil
 }
 
+func sellForFileName(ctx context.Context, s1 *session.Session, price int) (int64, string, error) {
+	fileName, name, description, categoryID := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true), 32
+
+	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, categoryID)
+	if err != nil {
+		return 0, "", err
+	}
+
+	asset.SetItem(s1.UserID, targetItemID, name, price, description, categoryID)
+
+	return targetItemID, fileName, nil
+}
+
 func getItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *IDsStore, nextItemID, nextCreatedAt, loop, maxPage int64) error {
 	var hasNext bool
 	var items []session.ItemSimple
