@@ -788,13 +788,13 @@ func load(ctx context.Context, critical *fails.Critical) {
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
-				s2, err = activeSellerSession(ctx)
+				s1, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				s1, err = buyerSession(ctx)
+				s2, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -861,13 +861,13 @@ func load(ctx context.Context, critical *fails.Critical) {
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
-				s1, err = buyerSession(ctx)
+				s1, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				s2, err = activeSellerSession(ctx)
+				s2, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -889,7 +889,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 				// ユーザのページを全部みる。
 				// activeユーザ3ページ
-				err = countUserItems(ctx, s1, s2.UserID)
+				err = countUserItems(ctx, s2, s1.UserID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -902,14 +902,14 @@ func load(ctx context.Context, critical *fails.Critical) {
 						critical.Add(err)
 						goto Final
 					}
-					err = countUserItems(ctx, s3, s1.UserID)
+					err = countUserItems(ctx, s3, s2.UserID)
 					if err != nil {
 						critical.Add(err)
 						goto Final
 					}
 				}
 
-				err = userItemsAndItem(ctx, s1, s2.UserID)
+				err = userItemsAndItem(ctx, s3, s1.UserID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -921,8 +921,9 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				ActiveSellerPool.Enqueue(s2)
-				BuyerPool.Enqueue(s1)
+				ActiveSellerPool.Enqueue(s1)
+				BuyerPool.Enqueue(s2)
+				BuyerPool.Enqueue(s3)
 
 			Final:
 				select {

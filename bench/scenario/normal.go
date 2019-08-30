@@ -741,12 +741,11 @@ func (s *IDsStore) RandomIds(num int) []int64 {
 	if len(s.ids) < num {
 		num = len(s.ids)
 	}
-	ids := make([]int64, 0, num)
+	ids := make([]int64, 0, len(s.ids))
 	for id := range s.ids {
 		ids = append(ids, id)
-		if len(ids) == num {
-			break
-		}
 	}
-	return ids
+	rand.Shuffle(len(ids), func(i, j int) { ids[i], ids[j] = ids[j], ids[i] })
+
+	return ids[0:num]
 }
