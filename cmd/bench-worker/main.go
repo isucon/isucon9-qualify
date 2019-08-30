@@ -226,6 +226,7 @@ func main() {
 			log.Println(err)
 		}
 
+		log.Println(jobResult.Stdout)
 		if err := report(*apiEndpoint, job, jobResult); err != nil {
 			log.Println(err)
 		}
