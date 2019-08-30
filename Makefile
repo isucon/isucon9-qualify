@@ -25,6 +25,3 @@ staticcheck:
 
 clean:
 	rm -rf bin/*
-
-fmt:
-	go fmt ./...
