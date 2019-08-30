@@ -51,7 +51,7 @@ def dbh():
         port=os.getenv('MYSQL_PORT', 3306),
         user=os.getenv('MYSQL_USER', 'isucari'),
         password=os.getenv('MYSQL_PASS', 'isucari'),
-        dbname=os.getenv('MYSQL_DBNAME', 'isucari'),
+        db=os.getenv('MYSQL_DBNAME', 'isucari'),
         charset='utf8mb4',
         cursorclass=MySQLdb.cursors.DictCursor,
         autocommit=True,
@@ -63,7 +63,7 @@ def dbh():
 
 
 def http_json_error(code, msg):
-    flask.abort(flask.jsonify({'error': msg}), code)
+    flask.abort(flask.jsonify(code, {'error': msg}))
 
 
 def random_string(length):
