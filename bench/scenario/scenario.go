@@ -285,20 +285,23 @@ func check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 
+		var s1, s2 *session.Session
+		var err error
+
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
-			s1, err := buyerSession(ctx)
+			s1, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			s2, err := buyerSession(ctx)
+			s2, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
 			err = irregularSellAndBuy(ctx, s1, s2, user3)
@@ -309,6 +312,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 			BuyerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -331,22 +335,26 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+		var s1, s2 *session.Session
+		var err error
+
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
 			// bumpは投稿した直後だとできないので必ず新しいユーザーでやる
 			user1 := asset.GetRandomActiveSeller()
-			s1, err := loginedSession(ctx, user1)
+			s1, err = loginedSession(ctx, user1)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			s2, err := buyerSession(ctx)
+			s2, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
 			err = bumpAndNewItemsWithLoginedSession(ctx, s1, s2)
@@ -356,10 +364,10 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-		Final:
 			ActiveSellerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -373,25 +381,33 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+		var s1, s2 *session.Session
+		var err error
+		var targetItemID int64
+		var price int
+
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
-			s1, err := activeSellerSession(ctx)
+			s1, err = activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
-			s2, err := buyerSession(ctx)
+			s2, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+
+				goto Final
 			}
 
-			price := priceStoreCache.Get()
+			price = priceStoreCache.Get()
 
-			targetItemID, err := sell(ctx, s1, price)
+			targetItemID, err = sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -412,10 +428,10 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-		Final:
 			ActiveSellerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -429,25 +445,31 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+		var s1, s2 *session.Session
+		var err error
+		var price int
+		var targetItemID int64
+
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
-			s1, err := activeSellerSession(ctx)
+			s1, err = activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			s2, err := buyerSession(ctx)
+			s2, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			price := priceStoreCache.Get()
+			price = priceStoreCache.Get()
 
-			targetItemID, err := sell(ctx, s1, price)
+			targetItemID, err = sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -468,10 +490,10 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-		Final:
 			ActiveSellerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -484,25 +506,31 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+		var s1, s2 *session.Session
+		var err error
+		var price int
+		var targetItemID int64
+
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
-			s1, err := activeSellerSession(ctx)
+			s1, err = activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			s2, err := buyerSession(ctx)
+			s2, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			price := priceStoreCache.Get()
+			price = priceStoreCache.Get()
 
-			targetItemID, err := sell(ctx, s1, price)
+			targetItemID, err = sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -536,10 +564,10 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-		Final:
 			ActiveSellerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -555,25 +583,31 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+		var s1, s2 *session.Session
+		var err error
+		var price int
+		var targetItemID int64
+
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
-			s1, err := activeSellerSession(ctx)
+			s1, err = activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			s2, err := buyerSession(ctx)
+			s2, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			price := priceStoreCache.Get()
+			price = priceStoreCache.Get()
 
-			targetItemID, err := sell(ctx, s1, price)
+			targetItemID, err = sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -594,10 +628,10 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-		Final:
 			ActiveSellerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -609,25 +643,31 @@ func check(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+		var s1, s2 *session.Session
+		var err error
+		var price int
+		var targetItemID int64
+
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
 			ch := time.After(5 * time.Second)
 
-			s1, err := activeSellerSession(ctx)
+			s1, err = activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			s2, err := buyerSession(ctx)
+			s2, err = buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
-				return
+				goto Final
 			}
 
-			price := priceStoreCache.Get()
+			price = priceStoreCache.Get()
 
-			targetItemID, err := sell(ctx, s1, price)
+			targetItemID, err = sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -648,10 +688,10 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-		Final:
 			ActiveSellerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
+		Final:
 			select {
 			case <-ch:
 			case <-ctx.Done():
@@ -680,23 +720,27 @@ func load(ctx context.Context, critical *fails.Critical) {
 		go func() {
 			defer wg.Done()
 
+			var s1, s2 *session.Session
+			var err error
+			var price int
+
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
-				s1, err := activeSellerSession(ctx)
+				s1, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
-					return
+					goto Final
 				}
 
-				s2, err := buyerSession(ctx)
+				s2, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
-					return
+					goto Final
 				}
 
-				price := priceStoreCache.Get()
+				price = priceStoreCache.Get()
 
 				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2, price)
 				if err != nil {
@@ -705,10 +749,10 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-			Final:
 				ActiveSellerPool.Enqueue(s1)
 				BuyerPool.Enqueue(s2)
 
+			Final:
 				select {
 				case <-ch:
 				case <-ctx.Done():
@@ -722,25 +766,31 @@ func load(ctx context.Context, critical *fails.Critical) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
+			var s1, s2 *session.Session
+			var err error
+			var price int
+			var targetItemID int64
+
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
-				s2, err := activeSellerSession(ctx)
+				s2, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
-					return
+					goto Final
 				}
 
-				s1, err := buyerSession(ctx)
+				s1, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
-					return
+					goto Final
 				}
 
-				price := priceStoreCache.Get()
+				price = priceStoreCache.Get()
 
-				targetItemID, err := sell(ctx, s1, price)
+				targetItemID, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 
@@ -761,10 +811,10 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-			Final:
 				ActiveSellerPool.Enqueue(s2)
 				BuyerPool.Enqueue(s1)
 
+			Final:
 				select {
 				case <-ch:
 				case <-ctx.Done():
