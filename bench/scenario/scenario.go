@@ -835,10 +835,10 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-			Final:
 				ActiveSellerPool.Enqueue(s1)
 				BuyerPool.Enqueue(s2)
 
+			Final:
 				select {
 				case <-ch:
 				case <-ctx.Done():
@@ -920,10 +920,10 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-			Final:
 				ActiveSellerPool.Enqueue(s2)
 				BuyerPool.Enqueue(s1)
 
+			Final:
 				select {
 				case <-ch:
 				case <-ctx.Done():
@@ -977,10 +977,10 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-			Final:
 				ActiveSellerPool.Enqueue(s1)
 				BuyerPool.Enqueue(s2)
 
+			Final:
 				select {
 				case <-ch:
 				case <-ctx.Done():
