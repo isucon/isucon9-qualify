@@ -756,7 +756,6 @@ func load(ctx context.Context, critical *fails.Critical) {
 				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2, price)
 				if err != nil {
 					critical.Add(err)
-
 					goto Final
 				}
 
@@ -831,7 +830,6 @@ func load(ctx context.Context, critical *fails.Critical) {
 				err = buyComplete(ctx, s1, s2, targetItemID, price)
 				if err != nil {
 					critical.Add(err)
-
 					goto Final
 				}
 
@@ -866,19 +864,19 @@ func load(ctx context.Context, critical *fails.Critical) {
 				s1, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
-					return
+					goto Final
 				}
 
 				s2, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
-					return
+					goto Final
 				}
 
 				s3, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
-					return
+					goto Final
 				}
 
 				price = priceStoreCache.Get()
@@ -886,7 +884,6 @@ func load(ctx context.Context, critical *fails.Critical) {
 				targetItemID, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
-
 					goto Final
 				}
 
@@ -921,7 +918,6 @@ func load(ctx context.Context, critical *fails.Critical) {
 				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
 				if err != nil {
 					critical.Add(err)
-
 					goto Final
 				}
 
