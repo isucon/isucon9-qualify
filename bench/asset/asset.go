@@ -258,6 +258,8 @@ func GetRandomBuyer() AppUser {
 	return users[buyerIDs[len(buyerIDs)-int(atomic.AddInt32(&indexBuyerID, 1))]]
 }
 
+// TODO buyerは大きいのでやめたほうがよい
+// 今のところ、Verifyでしかつかってない
 func GetRandomBuyerIDs(num int) []int64 {
 	len := len(buyerIDs)
 	if num > len {
@@ -294,8 +296,7 @@ func GetUserItems(sellerID int64) []int64 {
 func GetItem(sellerID, itemID int64) (AppItem, bool) {
 	i, ok := getItem(sellerID, itemID)
 	for j := 1; !ok && j < 1025; j = j * 2 {
-		log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-		time.Sleep(time.Duration(j) * time.Millisecond)
+		<-time.After(time.Duration(j) * time.Millisecond)
 		i, ok = getItem(sellerID, itemID)
 	}
 	return i, ok

@@ -66,7 +66,7 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					load(ctx, critical)
+					Load(ctx, critical)
 				}()
 
 				for i := 0; i < 10; i++ {
