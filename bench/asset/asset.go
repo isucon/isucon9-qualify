@@ -243,12 +243,16 @@ func GetRandomActiveSellerIDs(num int) []int64 {
 	if num > len {
 		num = len
 	}
-	newIDs := make([]int64, 0, len)
-	for _, id := range activeSellerIDs {
-		newIDs = append(newIDs, id)
+	newIDs := make([]int64, 0, num)
+	s := rand.Intn(len)
+	for i := 0; i < num; i++ {
+		newIDs = append(newIDs, activeSellerIDs[s])
+		s++
+		if s == len {
+			s = 0
+		}
 	}
-	rand.Shuffle(len, func(i, j int) { newIDs[i], newIDs[j] = newIDs[j], newIDs[i] })
-	return newIDs[0:num]
+	return newIDs
 }
 
 func GetRandomBuyer() AppUser {
@@ -258,19 +262,21 @@ func GetRandomBuyer() AppUser {
 	return users[buyerIDs[len(buyerIDs)-int(atomic.AddInt32(&indexBuyerID, 1))]]
 }
 
-// TODO buyerは大きいのでやめたほうがよい
-// 今のところ、Verifyでしかつかってない
 func GetRandomBuyerIDs(num int) []int64 {
 	len := len(buyerIDs)
 	if num > len {
 		num = len
 	}
-	newIDs := make([]int64, 0, len)
-	for _, id := range buyerIDs {
-		newIDs = append(newIDs, id)
+	newIDs := make([]int64, 0, num)
+	s := rand.Intn(len)
+	for i := 0; i < num; i++ {
+		newIDs = append(newIDs, buyerIDs[s])
+		s++
+		if s == len {
+			s = 0
+		}
 	}
-	rand.Shuffle(len, func(i, j int) { newIDs[i], newIDs[j] = newIDs[j], newIDs[i] })
-	return newIDs[0:num]
+	return newIDs
 }
 
 func GetUser(sellerID int64) AppUser {

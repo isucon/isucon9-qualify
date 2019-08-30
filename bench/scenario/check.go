@@ -235,10 +235,15 @@ func Check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = checkTransactionEvidence(ctx, s1, 3, 20)
+			err = checkTransactionEvidence(ctx, s1, 1, 20)
 			if err != nil {
 				critical.Add(err)
+				goto Final
+			}
 
+			err = checkTransactionEvidence(ctx, s1, 10, 20)
+			if err != nil {
+				critical.Add(err)
 				goto Final
 			}
 
