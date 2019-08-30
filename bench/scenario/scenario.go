@@ -854,31 +854,36 @@ func load(ctx context.Context, critical *fails.Critical) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			var s1, s2, s3 *session.Session
+			var err error
+			var price int
+			var targetItemID int64
+
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
-				s1, err := buyerSession(ctx)
+				s1, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					return
 				}
 
-				s2, err := activeSellerSession(ctx)
+				s2, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					return
 				}
 
-				s3, err := buyerSession(ctx)
+				s3, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					return
 				}
 
-				price := priceStoreCache.Get()
+				price = priceStoreCache.Get()
 
-				targetItemID, err := sell(ctx, s1, price)
+				targetItemID, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 
@@ -939,26 +944,30 @@ func load(ctx context.Context, critical *fails.Critical) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			var s1, s2 *session.Session
+			var err error
+			var price int
+			var targetItemID int64
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
-				s1, err := activeSellerSession(ctx)
+				s1, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					return
 				}
 
-				s2, err := buyerSession(ctx)
+				s2, err = buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					return
 				}
 
-				price := priceStoreCache.Get()
+				price = priceStoreCache.Get()
 
-				targetItemID, err := sell(ctx, s1, price)
+				targetItemID, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 
