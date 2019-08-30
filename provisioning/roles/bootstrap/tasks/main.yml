@@ -23,6 +23,7 @@
     'libjpeg-turbo8-dev',
     'libpng-dev',
     'libtidy-dev',
+    'libffi-dev',
     ]
     state: present
     update_cache: yes
