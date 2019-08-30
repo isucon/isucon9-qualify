@@ -174,14 +174,14 @@ def post_initialize():
 @app.route("/new_items.json", methods=["GET"])
 def get_new_items():
     # TODO: check err
-    if request.args.get('item_id') is not None:
-        item_id = int(request.args.get('item_id'))
+    if flask.request.args.get('item_id') is not None:
+        item_id = int(flask.request.args.get('item_id'))
 
         if item_id <= 0:
             http_json_error(requests.codes['bad_request'], 'item_id param error')
 
-    if request.args.get('created_at') is not None:
-        created_at = int(request.args.get('created_at'))
+    if flask.request.args.get('created_at') is not None:
+        created_at = int(flask.request.args.get('created_at'))
 
         if created_at <= 0:
             http_json_error(requests.codes['bad_request'], 'created_at param error')
@@ -212,7 +212,7 @@ def get_new_items():
 
         item_simples = []
 
-    except MySQL.db.Error as err:
+    except MySQLdb.Error as err:
         pass
 
     return
