@@ -169,6 +169,10 @@ func runBenchmarker(job *Job) (*JobResult, error) {
 	if err != nil {
 		return &JobResult{}, err
 	}
+	allowedIPs := []string{}
+	for _, server := range job.Team.Servers {
+		allowedIPs = append(allowedIPs, server.GlobalIP)
+	}
 
 	suffix, err := getExternalServiceSuffix()
 	if err != nil {
@@ -183,7 +187,7 @@ func runBenchmarker(job *Job) (*JobResult, error) {
 		fmt.Sprintf("-payment-url=https://%s", fmt.Sprintf("payment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-shipment-url=https://%s", fmt.Sprintf("shipment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-target-url=https://%s", target.GlobalIP),
-		fmt.Sprintf("-allowed-ips=%s", target.GlobalIP),
+		fmt.Sprintf("-allowed-ips=%s", strings.Join(allowedIPs, ",")),
 		fmt.Sprintf("-data-dir=/home/isucon/isucari/initial-data"))
 
 	var (
