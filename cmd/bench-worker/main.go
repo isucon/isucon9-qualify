@@ -213,28 +213,21 @@ func main() {
 	flag.Parse()
 
 	ticker := time.NewTicker(*interval)
-	for {
-		select {
-		case <-ticker.C:
-			job, err := dequeue(*apiEndpoint)
-			if err != nil {
-				if err == errorJobNotFound {
-					// job not found
-				}
-				log.Println(err)
-				continue
-			}
-
-			jobResult, err := runBenchmarker(job)
-			if err != nil {
-				log.Println(err)
-			}
-
-			if err := report(*apiEndpoint, job, jobResult); err != nil {
-				log.Println(err)
-			}
-			log.Printf("job:%d reported", job.ID)
+	for range ticker.C {
+		job, err := dequeue(*apiEndpoint)
+		if err != nil {
+			log.Println(err)
+			continue
 		}
-	}
 
+		jobResult, err := runBenchmarker(job)
+		if err != nil {
+			log.Println(err)
+		}
+
+		if err := report(*apiEndpoint, job, jobResult); err != nil {
+			log.Println(err)
+		}
+		log.Printf("job:%d reported", job.ID)
+	}
 }
