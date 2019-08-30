@@ -202,7 +202,7 @@ func runBenchmarker(job *Job) (*JobResult, error) {
 
 	return &JobResult{
 		Stdout: stdout.String(),
-		Stderr: stderr.String(),
+		Stderr: stderrStr,
 	}, err
 }
 
