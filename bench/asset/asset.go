@@ -247,8 +247,8 @@ func GetUserItems(sellerID int64) []int64 {
 
 func GetItem(sellerID, itemID int64) (AppItem, bool) {
 	i, ok := getItem(sellerID, itemID)
-	if !ok {
-		<-time.After(2 * time.Millisecond) // TODO
+	for j := 1; !ok && j < 1025; j = j * 2 {
+		<-time.After(time.Duration(j) * time.Millisecond)
 		i, ok = getItem(sellerID, itemID)
 	}
 	return i, ok
