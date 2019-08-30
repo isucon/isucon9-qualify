@@ -161,12 +161,14 @@ func Verify(ctx context.Context) *fails.Critical {
 		err = userItemsAndItem(ctx, s1, s2.UserID)
 		if err != nil {
 			critical.Add(err)
+			return
 		}
 
 		// active sellerの全件確認
 		err = countUserItems(ctx, s2, s2.UserID)
 		if err != nil {
 			critical.Add(err)
+			return
 		}
 		// active sellerではないユーザも確認。0件でも問題ない
 		err = countUserItems(ctx, s1, s2.UserID)
