@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"sync"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -60,8 +61,35 @@ func checkItemDetailCategory(item session.ItemDetail, aItem asset.AppItem) error
 	return nil
 }
 
-func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *session.Session) error {
-	targetItemID, err := sell(ctx, s1, 100)
+func getItem(ctx context.Context, s *session.Session, targetItemID int64) error {
+	item, err := s.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+	aItem, ok := asset.GetItem(item.SellerID, item.ID)
+	if !ok {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonに存在しない商品が返ってきています", targetItemID))
+	}
+
+	if !(item.Description == aItem.Description) {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
+	}
+
+	err = checkItemDetailCategory(*item, aItem)
+	if err != nil {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの%s", targetItemID, err.Error()))
+	}
+
+	err = checkItemDetailCategory(*item, aItem)
+	if err != nil {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s (item_id: %d)", err.Error(), item.ID))
+	}
+
+	return nil
+}
+
+func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *session.Session, price int) error {
+	targetItemID, err := sell(ctx, s1, price)
 	if err != nil {
 		return err
 	}
@@ -71,7 +99,7 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 		return err
 	}
 
-	err = buyComplete(ctx, s1, s2, targetItemID, 100)
+	err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
 	if err != nil {
 		return err
 	}
@@ -89,7 +117,13 @@ func transactionEvidence(ctx context.Context, s1 *session.Session) error {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonのhas_nextがfalseになっています (user_id: %d)", s1.UserID))
 	}
 
+	var createdAt int64
 	for _, item := range items {
+		if createdAt > 0 && createdAt < item.CreatedAt {
+			return failure.New(fails.ErrApplication, failure.Message("/users/transactions.jsonはcreated_at順である必要があります"))
+		}
+		createdAt = item.CreatedAt
+
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 
 		if !ok {
@@ -242,14 +276,109 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 	return nil
 }
 
+// Timelineの商品をたどる
+func newItemsAndItems(ctx context.Context, s *session.Session, maxPage int64, checkItem int) error {
+	itemIDs := newIDsStore()
+	err := getItemIDsFromNewItems(ctx, s, itemIDs, 0, 0, 0, maxPage)
+	if err != nil {
+		return err
+	}
+	c := itemIDs.Len()
+	// 全件チェックの時だけチェック
+	// countUserItemsでもチェックしているので、商品数が最低数あればよい
+	if (maxPage == 0 && c < 30000) || c < checkItem {
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+	}
+
+	chkItemIDs := itemIDs.RandomIDs(checkItem)
+	for _, itemID := range chkItemIDs {
+		err := getItem(ctx, s, itemID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// カテゴリページの商品をたどる
+func newCategoryItemsAndItems(ctx context.Context, s *session.Session, categoryID int, maxPage int64, checkItem int) error {
+	category, ok := asset.GetCategory(categoryID)
+	if !ok || category.ParentID != 0 {
+		// benchmarkerのバグになるかと
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json カテゴリIDが正しくありません", categoryID))
+	}
+	itemIDs := newIDsStore()
+	err := getItemIDsFromCategory(ctx, s, itemIDs, categoryID, 0, 0, 0, maxPage)
+	if err != nil {
+		return err
+	}
+	c := itemIDs.Len()
+	/*
+		mysql> alter table items add root_category_id int unsigned NOT NULL after category_id;
+		mysql> update items i join categories c on i.category_id=c.id set i.root_category_id = c.parent_id;
+		mysql> select root_category_id,count(*) from items group by root_category_id;
+		+------------------+----------+
+		| root_category_id | count(*) |
+		+------------------+----------+
+		|                1 |     3886 |
+		|               10 |     7192 |
+		|               20 |     8501 |
+		|               30 |     7461 |
+		|               40 |     7734 |
+		|               50 |     5125 |
+		|               60 |    10395 |
+		+------------------+----------+
+		7 rows in set (0.04 sec)
+	*/
+	// 全件チェックの時だけチェック
+	// countUserItemsでもチェックしているので、商品数が最低数あればよい
+	if (maxPage == 0 && c < 3000) || c < checkItem {
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
+	}
+
+	chkItemIDs := itemIDs.RandomIDs(checkItem)
+	for _, itemID := range chkItemIDs {
+		err := getItem(ctx, s, itemID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ユーザページの商品をすべて数える
+// カテゴリやタイトルも確認しているので、active sellerをある程度の人数確認したら
+// 商品が大幅に削除されていないことも確認できる
+func countUserItems(ctx context.Context, s *session.Session, sellerID int64) error {
+	itemIDs := newIDsStore()
+	err := getItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
+	if err != nil {
+		return err
+	}
+	c := itemIDs.Len()
+	buffer := 10 // TODO
+	aUser := asset.GetUser(sellerID)
+	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
+	}
+	return nil
+}
+
 func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) error {
-	// TODO: num_sell_itemsを確認したい
 	_, _, items, err := s1.UserItems(ctx, userID)
 	if err != nil {
 		return err
 	}
 
+	var createdAt int64
 	for _, item := range items {
+		if createdAt > 0 && createdAt < item.CreatedAt {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", userID))
+		}
+		createdAt = item.CreatedAt
+
 		aItem, ok := asset.GetItem(userID, item.ID)
 		if !ok {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品 (item_id: %d) が返ってきています", userID, item.ID))
@@ -263,6 +392,7 @@ func userItemsAndItem(ctx context.Context, s1 *session.Session, userID int64) er
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonの%s", userID, err.Error()))
 		}
+
 	}
 
 	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
@@ -583,4 +713,48 @@ func loadNewCategoryItemsWithLoginedSession(ctx context.Context, s1 *session.Ses
 	}
 
 	return nil
+}
+
+type IDsStore struct {
+	sync.RWMutex
+	ids map[int64]bool
+}
+
+func newIDsStore() *IDsStore {
+	m := make(map[int64]bool)
+	s := &IDsStore{
+		ids: m,
+	}
+	return s
+}
+
+func (s *IDsStore) Add(id int64) error {
+	s.Lock()
+	defer s.Unlock()
+	if _, ok := s.ids[id]; ok {
+		return fmt.Errorf("duplicated ID found: %d", id)
+	}
+	s.ids[id] = true
+	return nil
+}
+
+func (s *IDsStore) Len() int {
+	s.RLock()
+	defer s.RUnlock()
+	return len(s.ids)
+}
+
+func (s *IDsStore) RandomIDs(num int) []int64 {
+	s.RLock()
+	defer s.RUnlock()
+	if len(s.ids) < num {
+		num = len(s.ids)
+	}
+	ids := make([]int64, 0, len(s.ids))
+	for id := range s.ids {
+		ids = append(ids, id)
+	}
+	rand.Shuffle(len(ids), func(i, j int) { ids[i], ids[j] = ids[j], ids[i] })
+
+	return ids[0:num]
 }

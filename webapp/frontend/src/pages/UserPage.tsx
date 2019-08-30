@@ -1,9 +1,10 @@
 import React, { ReactElement } from 'react';
-import { ItemListComponent } from '../components/ItemListComponent';
+import { ItemList } from '../components/ItemList';
 import { ItemData, TransactionItem } from '../dataObjects/item';
 import { UserData } from '../dataObjects/user';
 import Avatar from '@material-ui/core/Avatar';
-import { createStyles, Grid, Theme, WithStyles } from '@material-ui/core';
+import { createStyles, Theme, WithStyles } from '@material-ui/core';
+import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
 import SellingButtonContainer from '../containers/SellingButtonContainer';
@@ -23,6 +24,9 @@ const styles = (theme: Theme): StyleRules =>
       margin: theme.spacing(3),
       width: '100px',
       height: '100px',
+    },
+    numSellItems: {
+      marginTop: theme.spacing(1),
     },
     tab: {
       color: theme.palette.text.primary,
@@ -61,24 +65,54 @@ type Props = UserPageProps &
 
 type State = {
   tabValue: any;
+  loading: boolean;
+  currentPageUserId: number;
+  isMyPage: boolean;
 };
 
 class UserPage extends React.Component<Props, State> {
   private ITEM_LIST_TAB = 0;
   private TRANSACTION_LIST_TAB = 1;
-  private readonly isMyPage: boolean;
 
   constructor(props: Props) {
     super(props);
 
     const pageUserId = Number(this.props.match.params.user_id);
-    this.isMyPage = this.props.loggedInUserId === pageUserId;
-    this.props.load(pageUserId, this.isMyPage);
+    const isMyPage = this.props.loggedInUserId === pageUserId;
+    this.props.load(pageUserId, isMyPage);
     this.state = {
       tabValue: this.ITEM_LIST_TAB,
+      loading: this.props.loading,
+      currentPageUserId: pageUserId,
+      isMyPage,
     };
 
     this._handleChange = this._handleChange.bind(this);
+  }
+
+  static getDerivedStateFromProps(nextProps: Props, prevState: State) {
+    const nextLoading = nextProps.loading;
+    const nextPageUserId = Number(nextProps.match.params.user_id);
+    const nextIsMyPage = nextProps.loggedInUserId === nextPageUserId;
+
+    // ページ遷移を確認した場合はデータ取得を行う
+    if (nextPageUserId !== prevState.currentPageUserId) {
+      nextProps.load(nextPageUserId, nextIsMyPage);
+
+      return {
+        ...prevState,
+        loading: true,
+        isMyPage: nextIsMyPage,
+        currentPageUserId: nextPageUserId,
+      };
+    }
+
+    return {
+      ...prevState,
+      loading: nextLoading,
+      currentPageUserId: nextPageUserId,
+      isMyPage: nextIsMyPage,
+    };
   }
 
   _handleChange(e: React.ChangeEvent<{}>, newValue: any) {
@@ -98,7 +132,7 @@ class UserPage extends React.Component<Props, State> {
     const lastItem = items[items.length - 1];
 
     return (
-      <ItemListComponent
+      <ItemList
         items={items}
         hasNext={itemsHasNext}
         loadMore={itemsLoadMore.bind(
@@ -135,8 +169,8 @@ class UserPage extends React.Component<Props, State> {
   }
 
   render() {
-    const { loading, user, classes } = this.props;
-    const { tabValue } = this.state;
+    const { user, classes } = this.props;
+    const { tabValue, loading, isMyPage } = this.state;
 
     if (loading) {
       return <LoadingComponent />;
@@ -159,12 +193,15 @@ class UserPage extends React.Component<Props, State> {
           </Grid>
           <Grid item xs>
             <Typography variant="h3">{user.accountName}</Typography>
+            <Typography className={classes.numSellItems} variant="h6">
+              出品数 {user.numSellItems}
+            </Typography>
           </Grid>
         </Grid>
         <Divider variant="middle" />
         <Tabs value={tabValue} onChange={this._handleChange}>
           <Tab label="出品商品" id="tab--item-list" />
-          {this.isMyPage && <Tab label="取引一覧" id="tab--item-list" />}
+          {isMyPage && <Tab label="取引一覧" id="tab--item-list" />}
         </Tabs>
         <div
           className={classes.list}
@@ -173,7 +210,7 @@ class UserPage extends React.Component<Props, State> {
         >
           {this._getItemList()}
         </div>
-        {this.isMyPage && (
+        {isMyPage && (
           <div
             className={classes.list}
             id="tab--transactions-list"

@@ -27,7 +27,11 @@ class AppClient {
     });
   }
 
-  async post(path: string, params: any = {}): Promise<Response> {
+  async post(
+    path: string,
+    params: any = {},
+    csrfCheckRequired: boolean = true,
+  ): Promise<Response> {
     let requestOption: RequestInit = {
       method: 'POST',
       mode: 'same-origin',
@@ -37,7 +41,10 @@ class AppClient {
       credentials: 'same-origin',
     };
 
-    params.csrf_token = await this.getCsrfToken();
+    if (csrfCheckRequired) {
+      params.csrf_token = await this.getCsrfToken();
+    }
+
     requestOption.body = JSON.stringify(params);
 
     return await fetch(path, requestOption);

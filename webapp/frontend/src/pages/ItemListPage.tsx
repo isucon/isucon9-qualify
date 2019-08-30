@@ -1,6 +1,6 @@
 import React from 'react';
 import { TimelineItem } from '../dataObjects/item';
-import { ItemListComponent } from '../components/ItemListComponent';
+import { ItemList } from '../components/ItemList';
 import SellingButtonContainer from '../containers/SellingButtonContainer';
 import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import BasePageContainer from '../containers/BasePageContainer';
@@ -59,11 +59,7 @@ class ItemListPage extends React.Component<Props> {
       );
       return (
         <div className={classes.root}>
-          <ItemListComponent
-            items={items}
-            loadMore={loadMoreItems}
-            hasNext={hasNext}
-          />
+          <ItemList items={items} loadMore={loadMoreItems} hasNext={hasNext} />
           <SellingButtonContainer />
         </div>
       );

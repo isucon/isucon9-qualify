@@ -16,7 +16,7 @@ import { themeInstance } from '../theme';
 const styles = (theme: Theme): StyleRules =>
   createStyles({
     container: {
-      paddingTop: theme.spacing(7),
+      paddingTop: theme.spacing(12),
     },
   });
 

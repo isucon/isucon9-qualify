@@ -19,6 +19,9 @@ import Select from '@material-ui/core/Select';
 
 const styles = (theme: Theme): StyleRules =>
   createStyles({
+    title: {
+      marginBottom: theme.spacing(2),
+    },
     form: {
       width: '80%',
       marginTop: theme.spacing(1),
@@ -149,7 +152,7 @@ class SellFormComponent extends React.Component<
 
     return (
       <React.Fragment>
-        <Typography component="h1" variant="h5">
+        <Typography className={classes.title} component="h1" variant="h5">
           出品ページ
         </Typography>
         <form className={classes.form} noValidate>

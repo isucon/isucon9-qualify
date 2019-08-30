@@ -1,0 +1,31 @@
+- name: Check Installed Ruby
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon
+  command: /home/isucon/local/ruby/bin/ruby -e "puts RUBY_VERSION"
+  register: ruby_version_output
+  changed_when: ruby_version_output is failed
+  ignore_errors: true
+
+- name: Debug ruby_version_output
+  debug:
+    var: ruby_version_output
+
+- name: Install Ruby 2.6.4
+  become: yes
+  become_user: isucon
+  when: ruby_version_output is failed or ruby_version_output.stdout != "2.6.4"
+  args:
+    chdir: /home/isucon
+  command: |
+    /home/isucon/xbuild/ruby-install 2.6.4 /home/isucon/local/ruby
+
+- name: Add PATH for ruby
+  become: yes
+  become_user: isucon
+  blockinfile:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK ruby"
+    dest: /home/isucon/.bash_profile
+    content: |
+      export PATH=/home/isucon/local/ruby/bin:$PATH

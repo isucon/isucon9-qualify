@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"sync"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -71,11 +72,154 @@ func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
 	return targetItemID, nil
 }
 
-func FindItemFromUsesTransactions(ctx context.Context, s *session.Session, targetItemID int64) (session.ItemDetail, error) {
-	return findItemFromUsesTransactions(ctx, s, targetItemID, 0, 0, 0)
+func getItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *IDsStore, nextItemID, nextCreatedAt, loop, maxPage int64) error {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, items, err = s.NewItemsWithItemIDAndCreatedAt(ctx, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, items, err = s.NewItems(ctx)
+	}
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if !ok {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに存在しない商品 (item_id: %d) が返ってきています", item.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの商品の名前が間違えています (item_id: %d)", item.ID))
+		}
+
+		err := checkItemSimpleCategory(item, aItem)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの%s", err.Error()))
+		}
+
+		err = itemIDs.Add(item.ID)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに同じ商品がありました (item_id: %d)", item.ID))
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return nil
+	}
+	if hasNext && loop < 100 { // TODO: max pager
+		err := getItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+
 }
 
-func findItemFromUsesTransactions(ctx context.Context, s *session.Session, targetItemID, nextItemID, nextCreatedAt, loop int64) (session.ItemDetail, error) {
+func getItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *IDsStore, categoryID int, nextItemID, nextCreatedAt, loop, maxPage int64) error {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, _, items, err = s.NewCategoryItemsWithItemIDAndCreatedAt(ctx, categoryID, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, _, items, err = s.NewCategoryItems(ctx, categoryID)
+	}
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if !ok {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonに存在しない商品 (item_id: %d) が返ってきています", categoryID, item.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの商品の名前が間違えています", categoryID))
+		}
+
+		err := checkItemSimpleCategory(item, aItem)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの%s", categoryID, err.Error()))
+		}
+
+		err = itemIDs.Add(item.ID)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonに同じ商品がありました (item_id: %d)", categoryID, item.ID))
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return nil
+	}
+	if hasNext && loop < 100 { // TODO: max pager
+		err := getItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsStore, sellerID, nextItemID, nextCreatedAt, loop int64) error {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, _, items, err = s.UserItemsWithItemIDAndCreatedAt(ctx, sellerID, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, _, items, err = s.UserItems(ctx, sellerID)
+	}
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		if item.SellerID != sellerID {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
+		}
+
+		aItem, ok := asset.GetItem(sellerID, item.ID)
+		if !ok {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに存在しない商品 (item_id: %d) が返ってきています", sellerID, item.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonの商品の名前が間違えています", sellerID))
+		}
+
+		err := checkItemSimpleCategory(item, aItem)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonの%s", sellerID, err.Error()))
+		}
+
+		err = itemIDs.Add(item.ID)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonに同じ商品がありました (item_id: %d)", sellerID, item.ID))
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if hasNext && loop < 100 { // TODO: max pager
+		err := getItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func FindItemFromUsersTransactions(ctx context.Context, s *session.Session, targetItemID int64) (session.ItemDetail, error) {
+	return findItemFromUsersTransactions(ctx, s, targetItemID, 0, 0, 0)
+}
+
+func findItemFromUsersTransactions(ctx context.Context, s *session.Session, targetItemID, nextItemID, nextCreatedAt, loop int64) (session.ItemDetail, error) {
 	var hasNext bool
 	var items []session.ItemDetail
 	var err error
@@ -96,13 +240,13 @@ func findItemFromUsesTransactions(ctx context.Context, s *session.Session, targe
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext || loop < 30 { // TODO: max pager
-		nextItem, err := findItemFromUsesTransactions(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop)
+	if hasNext && loop < 100 { // TODO: max pager
+		_, err := findItemFromUsersTransactions(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop)
 		if err != nil {
-			return nextItem, nil
+			return session.ItemDetail{}, err
 		}
 	}
-	return session.ItemDetail{}, failure.Wrap(err, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
+	return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
 }
 
 func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetItemID int64, price int) error {
@@ -113,11 +257,11 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return err
 	}
 
-	itemFromBuyerTrx, err := FindItemFromUsesTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err := FindItemFromUsersTransactions(ctx, s2, targetItemID)
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err := FindItemFromUsesTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err := FindItemFromUsersTransactions(ctx, s1, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -157,11 +301,11 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = FindItemFromUsesTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = FindItemFromUsersTransactions(ctx, s2, targetItemID)
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err = FindItemFromUsesTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = FindItemFromUsersTransactions(ctx, s1, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -203,7 +347,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return err
 	}
 
-	itemFromSellerTrx, err = FindItemFromUsesTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = FindItemFromUsersTransactions(ctx, s1, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -215,7 +359,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = FindItemFromUsesTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = FindItemFromUsersTransactions(ctx, s2, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -252,7 +396,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err = FindItemFromUsesTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = FindItemFromUsersTransactions(ctx, s1, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -260,7 +404,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = FindItemFromUsesTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = FindItemFromUsersTransactions(ctx, s2, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -325,6 +469,30 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	}
 
 	return nil
+}
+
+type priceStore struct {
+	price int
+	sync.RWMutex
+}
+
+var priceStoreCache *priceStore
+
+func init() {
+	priceStoreCache = &priceStore{}
+	priceStoreCache.Set(100)
+}
+
+func (s *priceStore) Get() int {
+	s.RLock()
+	defer s.RUnlock()
+	return s.price
+}
+
+func (s *priceStore) Set(price int) {
+	s.Lock()
+	defer s.Unlock()
+	s.price = price
 }
 
 func SetShipment(ss *server.ServerShipment) {

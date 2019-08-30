@@ -1,30 +1,35 @@
 import React from 'react';
-import { TimelineItem } from '../dataObjects/item';
+import { TimelineItem } from '../../dataObjects/item';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import GridList from '@material-ui/core/GridList';
-import { ItemComponent } from './ItemComponent';
+import { Item } from '../Item';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
 import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
+import { Theme } from '@material-ui/core';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
+  gridList: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
   grid: {
-    width: '300px',
-    height: '300px',
+    height: '100%',
   },
 }));
 
-interface ItemListPageProps {
+export interface Props {
   items: TimelineItem[];
   hasNext: boolean;
   loadMore: (page: number) => void;
 }
 
-const ItemListComponent: React.FC<ItemListPageProps> = function({
+const ItemList: React.FC<Props> = function({
   items,
   hasNext,
   loadMore,
-}: ItemListPageProps) {
+}: Props) {
   const classes = useStyles();
 
   const itemComponents = [];
@@ -32,11 +37,12 @@ const ItemListComponent: React.FC<ItemListPageProps> = function({
   for (const item of items) {
     itemComponents.push(
       <GridListTile className={classes.grid} key={item.id}>
-        <ItemComponent
+        <Item
           itemId={item.id}
           imageUrl={item.thumbnailUrl}
           title={item.name}
           price={item.price}
+          status={item.status}
         />
       </GridListTile>,
     );
@@ -49,9 +55,11 @@ const ItemListComponent: React.FC<ItemListPageProps> = function({
       hasMore={hasNext}
       loader={<CircularProgress />}
     >
-      <GridList cols={3}>{itemComponents}</GridList>
+      <GridList className={classes.gridList} cellHeight="auto" cols={3}>
+        {itemComponents}
+      </GridList>
     </InfiniteScroll>
   );
 };
 
-export { ItemListComponent };
+export { ItemList };

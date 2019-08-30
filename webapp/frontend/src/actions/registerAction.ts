@@ -19,7 +19,7 @@ type ThunkResult<R> = ThunkAction<R, AppState, undefined, RegisterActions>;
 
 export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
   return (dispatch: ThunkDispatch<AppState, any, RegisterActions>) => {
-    AppClient.post('/register', payload)
+    AppClient.post('/register', payload, false)
       .then(async (response: Response) => {
         if (response.status !== 200) {
           const errRes: ErrorRes = await response.json();

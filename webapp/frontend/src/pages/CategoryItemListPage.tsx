@@ -1,6 +1,6 @@
 import React from 'react';
 import { TimelineItem } from '../dataObjects/item';
-import { ItemListComponent } from '../components/ItemListComponent';
+import { ItemList } from '../components/ItemList';
 import SellingButtonContainer from '../containers/SellingButtonContainer';
 import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import BasePageContainer from '../containers/BasePageContainer';
@@ -44,7 +44,9 @@ type Props = CategoryItemListPageProps &
   ErrorProps;
 
 type State = {
+  loading: boolean;
   categoryIdIsValid: boolean;
+  currentCategoryId: number;
 };
 
 class CategoryItemListPage extends React.Component<Props, State> {
@@ -59,20 +61,37 @@ class CategoryItemListPage extends React.Component<Props, State> {
     }
 
     this.state = {
+      loading: this.props.loading,
       categoryIdIsValid,
+      currentCategoryId: Number(categoryId),
+    };
+  }
+
+  static getDerivedStateFromProps(nextProps: Props, prevState: State) {
+    const nextLoading = nextProps.loading;
+    const nextCategoryId = Number(nextProps.match.params.category_id);
+
+    // ページ遷移を確認した場合はデータ取得を行う
+    if (nextCategoryId !== prevState.currentCategoryId) {
+      nextProps.load(nextCategoryId);
+
+      return {
+        ...prevState,
+        loading: true,
+        currentCategoryId: nextCategoryId,
+      };
+    }
+
+    return {
+      ...prevState,
+      loading: nextLoading,
+      currentCategoryId: nextCategoryId,
     };
   }
 
   render() {
-    const {
-      classes,
-      loading,
-      items,
-      categoryId,
-      categoryName,
-      loadMore,
-      hasNext,
-    } = this.props;
+    const { classes, items, categoryName, loadMore, hasNext } = this.props;
+    const { loading, currentCategoryId: categoryId } = this.state;
     const { categoryIdIsValid } = this.state;
 
     const Content: React.FC<{}> = () => {
@@ -95,12 +114,10 @@ class CategoryItemListPage extends React.Component<Props, State> {
 
       return (
         <div className={classes.root}>
-          <Typography variant="h6">{categoryName}の新着商品</Typography>
-          <ItemListComponent
-            items={items}
-            hasNext={hasNext}
-            loadMore={loadMoreItems}
-          />
+          <Typography variant="h6">
+            「{categoryName}」カテゴリの新着商品一覧
+          </Typography>
+          <ItemList items={items} hasNext={hasNext} loadMore={loadMoreItems} />
           <SellingButtonContainer />
         </div>
       );

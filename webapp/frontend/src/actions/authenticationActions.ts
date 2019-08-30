@@ -22,10 +22,14 @@ export function postLoginAction(
   password: string,
 ): ThunkResult<void> {
   return (dispatch: ThunkDispatch<AppState, any, AuthActions>) => {
-    AppClient.post('/login', {
-      account_name: accountName,
-      password: password,
-    })
+    AppClient.post(
+      '/login',
+      {
+        account_name: accountName,
+        password: password,
+      },
+      false,
+    )
       .then(async (response: Response) => {
         if (response.status !== 200) {
           const errRes: ErrorRes = await response.json();

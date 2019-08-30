@@ -41,6 +41,8 @@ class Constants(object):
     PAYMENT_SERVICE_ISUCARI_API_KEY = 'a15400e46c83635eb181-946abb51ff26a868317c'
     PAYMENT_SERVICE_ISUCARI_SHOP_ID = '11'
 
+    ITEMS_PER_PAGE = 48
+    TRANSACTIONS_PER_PAGE = 10
 
 def dbh():
     if hasattr(flask.g, 'db'):
@@ -51,7 +53,7 @@ def dbh():
         port=os.getenv('MYSQL_PORT', 3306),
         user=os.getenv('MYSQL_USER', 'isucari'),
         password=os.getenv('MYSQL_PASS', 'isucari'),
-        dbname=os.getenv('MYSQL_DBNAME', 'isucari'),
+        db=os.getenv('MYSQL_DBNAME', 'isucari'),
         charset='utf8mb4',
         cursorclass=MySQLdb.cursors.DictCursor,
         autocommit=True,
@@ -63,7 +65,7 @@ def dbh():
 
 
 def http_json_error(code, msg):
-    flask.abort(flask.jsonify({'error': msg}), code)
+    flask.abort(flask.jsonify(code, {'error': msg}))
 
 
 def random_string(length):
@@ -79,7 +81,7 @@ def get_user():
         conn = dbh()
         with conn.cursor() as c:
             sql = "SELECT * FROM `users` WHERE `id` = %s"
-            c.execute(sql, user_id)
+            c.execute(sql, [user_id])
             user = c.fetchone()
             if user is None:
                 http_json_error(requests.codes['not_found'], "user not found")
@@ -88,18 +90,32 @@ def get_user():
         http_json_error(requests.codes['internal_server_error'], "db error")
     return user
 
+def get_user_simple_by_id(user_id):
+    try:
+        conn = dbh()
+        with conn.cursor() as c:
+            sql = "SELECT * FROM `users` WHERE `id` = %s"
+            c.execute(sql, [user_id])
+            user = c.fetchone()
+            if user is None:
+                http_json_error(requests.codes['not_found'], "user not found")
+    except MySQLdb.Error as err:
+        app.logger.exception(err)
+        http_json_error(requests.codes['internal_server_error'], "db error")
+    return user
 
 def get_category_by_id(category_id):
     conn = dbh()
-    sql = "SELECT * FROM `categories` WHERE `id` = %d"
+    sql = "SELECT * FROM `categories` WHERE `id` = %s"
     with conn.cursor() as c:
-        c.execute(sql, category_id)
+        c.execute(sql, (category_id,))
         category = c.fetchone()
         # TODO: check err
-    if category['parent_category_id'] != 0:
-        parent = get_category_by_id(category['parent_category_id'])
+    if category['parent_id'] != 0:
+        parent = get_category_by_id(category['parent_id'])
+        print(parent)
         if parent is not None:
-            category['parent_category_name'] = parent['name']
+            category['parent_category_name'] = parent['category_name']
     return category
 
 
@@ -107,6 +123,10 @@ def to_user_json(user):
     del (user['hashed_password'], user['last_bump'], user['created_at'])
     return user
 
+def to_item_json(item):
+    item["created_at"] = int(item["created_at"].timestamp())
+    item["updated_at"] = int(item["updated_at"].timestamp())
+    return item
 
 def ensure_required_payload(keys=None):
     if keys is None:
@@ -153,27 +173,304 @@ def post_initialize():
 
 @app.route("/new_items.json", methods=["GET"])
 def get_new_items():
+    # TODO: check err
+    if flask.request.args.get('item_id') is not None:
+        item_id = int(flask.request.args.get('item_id'))
+
+        if item_id <= 0:
+            http_json_error(requests.codes['bad_request'], 'item_id param error')
+
+    if flask.request.args.get('created_at') is not None:
+        created_at = int(flask.request.args.get('created_at'))
+
+        if created_at <= 0:
+            http_json_error(requests.codes['bad_request'], 'created_at param error')
+
+    items = []
+
+    try:
+        conn = dbh()
+        with conn.cursor() as c:
+            if item_id > 0 and created_at > 0:
+                # paging
+                sql = "SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?"
+                c.execute(sql, (
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    created_at.timestamp(),
+                    item_id,
+                    int(Constants.ITEMS_PER_PAGE) + 1,
+                ))
+            else:
+                # 1st page
+                sql = "SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?"
+                c.execute(sql, (
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    int(Constants.ITEMS_PER_PAGE) + 1
+                ))
+
+        item_simples = []
+
+    except MySQLdb.Error as err:
+        pass
+
     return
 
 
 @app.route("/new_items/<root_category_id>.json", methods=["GET"])
 def get_new_category_items(root_category_id=None):
-    return
+    conn = dbh()
 
+    root_category = get_category_by_id(root_category_id)
+
+    item_id = 0 # FIXME:
+    created_at = 0 # FIXME:
+
+
+    category_ids = []
+    with conn.cursor() as c:
+        try:
+            sql = "SELECT id FROM `categories` WHERE parent_id=%s"
+            c.execute(sql, (
+                root_category_id,
+            ))
+
+
+            while True:
+                category = c.fetchone()
+                if category is None:
+                    break
+                category_ids.append(category["id"])
+
+
+
+            if item_id > 0 and created_at > 0:
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN (%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, (
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+                    category_ids,
+        			datetime.datetime.fromtimestamp(created_at),
+        			item_id,
+                    Constants.ITEMS_PER_PAGE+1,
+                ))
+            else:
+
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") ORDER BY created_at DESC, id DESC LIMIT %s"
+                c.execute(sql, (
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+                    *category_ids,
+                    Constants.ITEMS_PER_PAGE+1,
+                ))
+
+            item_simples = []
+            while True:
+                item = c.fetchone()
+
+                if item is None:
+                    break
+
+                seller = get_user_simple_by_id(item["seller_id"])
+                category = get_category_by_id(item["category_id"])
+
+                item = to_item_json(item)
+                item["category"] = category
+                item["seller"] = to_user_json(seller)
+
+                print(item)
+                item_simples.append(item)
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+    has_next = False
+    if len(item_simples) > Constants.ITEMS_PER_PAGE:
+        has_next = True
+        item_simples = item_simples[:Constants.ITEMS_PER_PAGE]
+
+    return flask.jsonify(dict(
+        root_category_id=root_category["id"],
+        root_category_name=root_category["category_name"],
+        items=item_simples,
+        has_next=has_next,
+    ))
 
 @app.route("/users/transactions.json", methods=["GET"])
 def get_transactions():
-    return
+    user = get_user()
+    conn = dbh()
 
+    item_id = 0 # FIXME:
+    created_at = 0 # FIXME:
+
+    with conn.cursor() as c:
+
+        try:
+
+            if item_id > 0 and created_at > 0:
+                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s) AND `status` IN (%s,%s,%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, (
+                    user['id'],
+                    user['id'],
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_TRADING,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+        			Constants.ITEM_STATUS_CANCEL,
+        			Constants.ITEM_STATUS_STOP,
+        			datetime.datetime.fromtimestamp(created_at),
+        			item_id,
+                    Constants.TRANSACTIONS_PER_PAGE+1,
+                ))
+
+            else:
+                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s ) AND `status` IN (%s,%s,%s,%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, [
+                    user['id'],
+                    user['id'],
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_TRADING,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+        			Constants.ITEM_STATUS_CANCEL,
+        			Constants.ITEM_STATUS_STOP,
+                    Constants.TRANSACTIONS_PER_PAGE+1,
+                ])
+
+            item_details = []
+            while True:
+                item = c.fetchone()
+
+                if item is None:
+                    break
+
+                seller = get_user_simple_by_id(item["seller_id"])
+                category = get_category_by_id(item["category_id"])
+
+                item = to_item_json(item)
+                item["category"] = category
+                item["seller"] = to_user_json(seller)
+
+                print(item)
+                item_details.append(item)
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+    has_next = False
+    if len(item_details) > Constants.TRANSACTIONS_PER_PAGE:
+        has_next = True
+        item_details = item_details[:Constants.TRANSACTIONS_PER_PAGE]
+
+    return flask.jsonify(dict(
+        items=item_details,
+        has_next=has_next,
+    ))
 
 @app.route("/users/<user_id>.json", methods=["GET"])
 def get_user_items(user_id=None):
-    return
+    user = get_user_simple_by_id(user_id)
+    conn = dbh()
+
+    item_id = 0 # FIXME:
+    created_at = 0 # FIXME:
+
+
+    with conn.cursor() as c:
+
+        try:
+
+            if item_id > 0 and created_at > 0:
+                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, (
+                    user['id'],
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_TRADING,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+        			datetime.datetime.fromtimestamp(created_at),
+        			item_id,
+                    Constants.ITEMS_PER_PAGE+1,
+                ))
+
+            else:
+                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, (
+                    user['id'],
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_TRADING,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.TRANSACTIONS_PER_PAGE+1,
+                ))
+
+            item_simples = []
+            while True:
+                item = c.fetchone()
+
+                if item is None:
+                    break
+
+                seller = get_user_simple_by_id(item["seller_id"])
+                category = get_category_by_id(item["category_id"])
+
+                item = to_item_json(item)
+                item["category"] = category
+                item["seller"] = to_user_json(seller)
+
+                print(item)
+                item_simples.append(item)
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+    has_next = False
+    if len(item_simples) > Constants.ITEMS_PER_PAGE:
+        has_next = True
+        item_simples = item_simples[:Constants.ITEMS_PER_PAGE]
+
+    return flask.jsonify(dict(
+        user=to_user_json(user),
+        items=item_simples,
+        has_next=has_next,
+    ))
 
 
 @app.route("/items/<item_id>.json", methods=["GET"])
 def get_item(item_id=None):
-    return
+    user = get_user()
+    conn = dbh()
+
+    with conn.cursor() as c:
+
+        try:
+            sql = "SELECT * FROM `items` WHERE `id` = %s"
+            c.execute(sql, (
+                item_id
+            ))
+            item = c.fetchone()
+            if item is None:
+                http_json_error(requests.codes['not_found'], "item not found")
+
+
+
+            seller = get_user_simple_by_id(item["seller_id"])
+            category = get_category_by_id(item["category_id"])
+
+            item = to_item_json(item)
+            item["category"] = category
+            item["seller"] = to_user_json(seller)
+
+            if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
+                buyer = get_user_simple_by_id(item["buyer_id"])
+                item["buyer"] = to_user_json(buyer)
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+    return flask.jsonify(item)
 
 
 @app.route("/itemds/edit", methods=["POST"])
@@ -388,8 +685,8 @@ def post_sell():
             if seller is None:
                 conn.rollback()
                 http_json_error(requests['not_found'], 'user not found')
-            sql = """INSERT INTO `items` 
-            (`seller_id`, `status`, `name`, `price`, `description`, `image_name`, `category_id`) 
+            sql = """INSERT INTO `items`
+            (`seller_id`, `status`, `name`, `price`, `description`, `image_name`, `category_id`)
              VALUES (?, ?, ?, ?, ?, ?, ?)"""
             c.execute(sql, (
                 seller['id'],
@@ -722,11 +1019,11 @@ def post_login():
         conn = dbh()
         sql = "SELECT * FROM `users` WHERE `account_name` = %s"
         with conn.cursor() as c:
-            c.execute(sql, (flask.request.json['account_name']))
+            c.execute(sql, [flask.request.json['account_name']])
             user = c.fetchone()
+
             if user is None or \
-                    not bcrypt.checkpw(flask.request.json['password'].encode('utf-8'),
-                                       user['hashed_password'].encode('utf-8')):
+                    not bcrypt.checkpw(flask.request.json['password'].encode('utf-8'), user['hashed_password']):
                 http_json_error(requests.codes['unauthorized'], 'アカウント名かパスワードが間違えています')
     except MySQLdb.Error as err:
         app.logger.exception(err)
@@ -747,7 +1044,7 @@ def post_register():
         conn = dbh()
         with conn.cursor() as c:
             sql = "INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (%s, %s, %s)"
-            c.execute(sql, (flask.request.json['account_name'], hashedpw, flask.request.json['address']))
+            c.execute(sql, [flask.request.json['account_name'], hashedpw, flask.request.json['address']])
         conn.commit()
         user_id = c.lastrowid
     except MySQLdb.Error as err:

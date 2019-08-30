@@ -5,5 +5,12 @@ export const themeInstance = createMuiTheme({
     background: {
       default: '#fff',
     },
+    primary: {
+      main: '#f44436',
+    },
+    secondary: {
+      main: '#4fc3f7',
+      contrastText: '#fff',
+    },
   },
 });

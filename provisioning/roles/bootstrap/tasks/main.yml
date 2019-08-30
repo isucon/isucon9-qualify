@@ -23,11 +23,16 @@
     'libjpeg-turbo8-dev',
     'libpng-dev',
     'libtidy-dev',
+    'libffi-dev',
     ]
     state: present
     update_cache: yes
     cache_valid_time: 3600
   become: yes
+
+- name: Set timezone UTC
+  become: yes
+  command: timedatectl set-timezone UTC
 
 - name: Setup xbuild
   git:

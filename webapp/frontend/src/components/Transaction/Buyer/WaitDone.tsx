@@ -1,9 +1,13 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import { Typography } from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 
-const useStyles = makeStyles(theme => ({}));
+const useStyles = makeStyles((theme: Theme) => ({
+  button: {
+    margin: theme.spacing(1),
+  },
+}));
 
 type Props = {
   itemId: number;
@@ -21,9 +25,16 @@ const WaitDone: React.FC<Props> = ({ itemId, postComplete }) => {
     <React.Fragment>
       <Typography variant="h6">出品者により商品が発送されました</Typography>
       <Typography variant="h6">
-        商品が届き次第、受取完了ボタンを押してください
+        商品が届き次第、下記の「取引完了」を押してください
       </Typography>
-      <Button onClick={onClick}>受取完了</Button>
+      <Button
+        className={classes.button}
+        variant="contained"
+        color="primary"
+        onClick={onClick}
+      >
+        取引完了
+      </Button>
     </React.Fragment>
   );
 };
