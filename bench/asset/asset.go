@@ -218,11 +218,37 @@ func GetRandomActiveSeller() AppUser {
 	return users[activeSellerIDs[len(activeSellerIDs)-int(atomic.AddInt32(&indexActiveSellerID, 1))]]
 }
 
+func GetRandomActiveSellerIDs(num int) []int64 {
+	len := len(activeSellerIDs)
+	if num > len {
+		num = len
+	}
+	newIDs := make([]int64, 0, len)
+	for _, id := range activeSellerIDs {
+		newIDs = append(newIDs, id)
+	}
+	rand.Shuffle(len, func(i, j int) { newIDs[i], newIDs[j] = newIDs[j], newIDs[i] })
+	return newIDs[0:num]
+}
+
 func GetRandomBuyer() AppUser {
 	muUser.RLock()
 	defer muUser.RUnlock()
 	// 全部使い切ったらpanicするので十分なユーザー数を用意しておく
 	return users[buyerIDs[len(buyerIDs)-int(atomic.AddInt32(&indexBuyerID, 1))]]
+}
+
+func GetRandomBuyerIDs(num int) []int64 {
+	len := len(buyerIDs)
+	if num > len {
+		num = len
+	}
+	newIDs := make([]int64, 0, len)
+	for _, id := range buyerIDs {
+		newIDs = append(newIDs, id)
+	}
+	rand.Shuffle(len, func(i, j int) { newIDs[i], newIDs[j] = newIDs[j], newIDs[i] })
+	return newIDs[0:num]
 }
 
 func GetUser(sellerID int64) AppUser {
@@ -248,7 +274,8 @@ func GetUserItems(sellerID int64) []int64 {
 func GetItem(sellerID, itemID int64) (AppItem, bool) {
 	i, ok := getItem(sellerID, itemID)
 	for j := 1; !ok && j < 1025; j = j * 2 {
-		<-time.After(time.Duration(j) * time.Millisecond)
+		log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+		time.Sleep(time.Duration(j) * time.Millisecond)
 		i, ok = getItem(sellerID, itemID)
 	}
 	return i, ok
