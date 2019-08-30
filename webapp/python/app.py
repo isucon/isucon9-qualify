@@ -364,7 +364,38 @@ def get_user_items(user_id=None):
 
 @app.route("/items/<item_id>.json", methods=["GET"])
 def get_item(item_id=None):
-    return
+    user = get_user()
+    conn = dbh()
+
+    with conn.cursor() as c:
+
+        try:
+            sql = "SELECT * FROM `items` WHERE `id` = %s"
+            c.execute(sql, (
+                item_id
+            ))
+            item = c.fetchone()
+            if item is None:
+                http_json_error(requests.codes['not_found'], "item not found")
+
+
+
+            seller = get_user_simple_by_id(item["seller_id"])
+            category = get_category_by_id(item["category_id"])
+
+            item = to_item_json(item)
+            item["category"] = category
+            item["seller"] = to_user_json(seller)
+
+            if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
+                buyer = get_user_simple_by_id(item["buyer_id"])
+                item["buyer"] = to_user_json(buyer)
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+    return flask.jsonify(item)
 
 
 @app.route("/itemds/edit", methods=["POST"])
