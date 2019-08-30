@@ -161,12 +161,14 @@ func Verify(ctx context.Context) *fails.Critical {
 		err = userItemsAndItem(ctx, s1, s2.UserID)
 		if err != nil {
 			critical.Add(err)
+			return
 		}
 
 		// active sellerの全件確認
 		err = countUserItems(ctx, s2, s2.UserID)
 		if err != nil {
 			critical.Add(err)
+			return
 		}
 		// active sellerではないユーザも確認。0件でも問題ない
 		err = countUserItems(ctx, s1, s2.UserID)
@@ -421,7 +423,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, price)
+			err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -715,7 +717,9 @@ func load(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
-	for i := 0; i < 10; i++ {
+	// load scenario #1
+	// カテゴリを少しみてbuy
+	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -723,6 +727,226 @@ func load(ctx context.Context, critical *fails.Critical) {
 			var s1, s2 *session.Session
 			var err error
 			var price int
+			var categories []asset.AppCategory
+		L:
+			for j := 0; j < ExecutionSeconds/3; j++ {
+				ch := time.After(3 * time.Second)
+
+				s1, err = activeSellerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				s2, err = buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				price = priceStoreCache.Get()
+
+				categories = asset.GetRootCategories()
+				for _, category := range categories {
+					err = newCategoryItemsAndItems(ctx, s1, category.ID, 20, 15)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+				}
+
+				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				ActiveSellerPool.Enqueue(s1)
+				BuyerPool.Enqueue(s2)
+
+			Final:
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
+			}
+		}()
+	}
+
+	// load scenario #2
+	// どちらかというとカテゴリを中心にみていく
+	for i := 0; i < 6; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			var s1, s2 *session.Session
+			var err error
+			var price int
+			var targetItemID int64
+			var item *session.ItemDetail
+		L:
+			for j := 0; j < ExecutionSeconds/3; j++ {
+				ch := time.After(3 * time.Second)
+
+				s1, err = activeSellerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				s2, err = buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				price = priceStoreCache.Get()
+
+				targetItemID, err = sell(ctx, s1, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				item, err = s1.Item(ctx, targetItemID)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = newCategoryItemsAndItems(ctx, s2, item.Category.ParentID, 20, 5)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = transactionEvidence(ctx, s1)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				// ここは厳密なcheckをしない
+				err = buyComplete(ctx, s1, s2, targetItemID, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				ActiveSellerPool.Enqueue(s1)
+				BuyerPool.Enqueue(s2)
+
+			Final:
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
+			}
+		}()
+	}
+
+	// load scenario #3
+	// どちらかというとuserを中心にみていく
+	for i := 0; i < 6; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var s1, s2, s3 *session.Session
+			var err error
+			var price int
+			var targetItemID int64
+
+		L:
+			for j := 0; j < ExecutionSeconds/3; j++ {
+				ch := time.After(3 * time.Second)
+
+				s1, err = activeSellerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				s2, err = buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				s3, err = buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				price = priceStoreCache.Get()
+
+				targetItemID, err = sell(ctx, s1, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				// ユーザのページを全部みる。
+				// activeユーザ3ページ
+				err = countUserItems(ctx, s2, s1.UserID)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+				// 商品数がすくないところもみにいく
+				// indexつけるだけで速くなる
+				for l := 0; l < 4; l++ {
+					err = countUserItems(ctx, s1, s3.UserID)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+					err = countUserItems(ctx, s3, s2.UserID)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+				}
+
+				err = userItemsAndItem(ctx, s3, s1.UserID)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				ActiveSellerPool.Enqueue(s1)
+				BuyerPool.Enqueue(s2)
+				BuyerPool.Enqueue(s3)
+
+			Final:
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
+			}
+		}()
+	}
+
+	// load scenario #4
+	// NewItemみてbuy
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var s1, s2 *session.Session
+			var err error
+			var price int
+			var targetItemID int64
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -742,77 +966,26 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2, price)
+				targetItemID, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
+					goto Final
+				}
 
+				err = newItemsAndItems(ctx, s2, 30, 50)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				if err != nil {
+					critical.Add(err)
 					goto Final
 				}
 
 				ActiveSellerPool.Enqueue(s1)
 				BuyerPool.Enqueue(s2)
-
-			Final:
-				select {
-				case <-ch:
-				case <-ctx.Done():
-					break L
-				}
-			}
-		}()
-	}
-
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			var s1, s2 *session.Session
-			var err error
-			var price int
-			var targetItemID int64
-
-		L:
-			for j := 0; j < ExecutionSeconds/3; j++ {
-				ch := time.After(3 * time.Second)
-
-				s2, err = activeSellerSession(ctx)
-				if err != nil {
-					critical.Add(err)
-					goto Final
-				}
-
-				s1, err = buyerSession(ctx)
-				if err != nil {
-					critical.Add(err)
-					goto Final
-				}
-
-				price = priceStoreCache.Get()
-
-				targetItemID, err = sell(ctx, s1, price)
-				if err != nil {
-					critical.Add(err)
-
-					goto Final
-				}
-
-				err = userItemsAndItem(ctx, s1, s2.UserID)
-				if err != nil {
-					critical.Add(err)
-
-					goto Final
-				}
-
-				err = buyComplete(ctx, s1, s2, targetItemID, price)
-				if err != nil {
-					critical.Add(err)
-
-					goto Final
-				}
-
-				ActiveSellerPool.Enqueue(s2)
-				BuyerPool.Enqueue(s1)
 
 			Final:
 				select {

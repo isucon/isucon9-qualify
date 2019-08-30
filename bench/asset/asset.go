@@ -246,6 +246,15 @@ func GetUserItems(sellerID int64) []int64 {
 }
 
 func GetItem(sellerID, itemID int64) (AppItem, bool) {
+	i, ok := getItem(sellerID, itemID)
+	if !ok {
+		<-time.After(2 * time.Millisecond) // TODO
+		i, ok = getItem(sellerID, itemID)
+	}
+	return i, ok
+}
+
+func getItem(sellerID, itemID int64) (AppItem, bool) {
 	muItem.RLock()
 	defer muItem.RUnlock()
 
@@ -302,6 +311,10 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 
 func GetRandomRootCategory() AppCategory {
 	return rootCategories[rand.Intn(len(rootCategories))]
+}
+
+func GetRootCategories() []AppCategory {
+	return rootCategories
 }
 
 func GetRandomChildCategory() AppCategory {
