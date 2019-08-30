@@ -220,8 +220,83 @@ def get_new_items():
 
 @app.route("/new_items/<root_category_id>.json", methods=["GET"])
 def get_new_category_items(root_category_id=None):
-    return
+    conn = dbh()
 
+    root_category = get_category_by_id(root_category_id)
+
+    item_id = 0 # FIXME:
+    created_at = 0 # FIXME:
+
+
+    category_ids = []
+    with conn.cursor() as c:
+        try:
+            sql = "SELECT id FROM `categories` WHERE parent_id=%s"
+            c.execute(sql, (
+                root_category_id,
+            ))
+
+
+            while True:
+                category = c.fetchone()
+                if category is None:
+                    break
+                category_ids.append(category["id"])
+
+
+
+            if item_id > 0 and created_at > 0:
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN (%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, (
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+                    category_ids,
+        			datetime.datetime.fromtimestamp(created_at),
+        			item_id,
+                    Constants.ITEMS_PER_PAGE+1,
+                ))
+            else:
+
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") ORDER BY created_at DESC, id DESC LIMIT %s"
+                c.execute(sql, (
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+                    *category_ids,
+                    Constants.ITEMS_PER_PAGE+1,
+                ))
+
+            item_simples = []
+            while True:
+                item = c.fetchone()
+
+                if item is None:
+                    break
+
+                seller = get_user_simple_by_id(item["seller_id"])
+                category = get_category_by_id(item["category_id"])
+
+                item = to_item_json(item)
+                item["category"] = category
+                item["seller"] = to_user_json(seller)
+
+                print(item)
+                item_simples.append(item)
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+    has_next = False
+    if len(item_simples) > Constants.ITEMS_PER_PAGE:
+        has_next = True
+        item_simples = item_simples[:Constants.ITEMS_PER_PAGE]
+
+    return flask.jsonify(dict(
+        root_category_id=root_category["id"],
+        root_category_name=root_category["category_name"],
+        items=item_simples,
+        has_next=has_next,
+    ))
 
 @app.route("/users/transactions.json", methods=["GET"])
 def get_transactions():
