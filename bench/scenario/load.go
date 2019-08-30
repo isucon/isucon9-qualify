@@ -169,6 +169,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var err error
 			var price int
 			var targetItemID int64
+			var userIDs []int64
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -202,11 +203,15 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				// ユーザのページを全部みる。
 				// activeユーザ3ページ
-				err = loadUserItemsAndItems(ctx, s2, s1.UserID, 10)
-				if err != nil {
-					critical.Add(err)
-					goto Final
+				userIDs = asset.GetRandomActiveSellerIDs(3)
+				for _, userID := range userIDs {
+					err = loadUserItemsAndItems(ctx, s2, userID, 20)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
 				}
+
 				// 商品数がすくないところもみにいく
 				// indexつけるだけで速くなる
 				for l := 0; l < 4; l++ {
