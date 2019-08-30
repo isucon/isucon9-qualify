@@ -72,6 +72,54 @@ func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
 	return targetItemID, nil
 }
 
+func getItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *IDsStore, nextItemID, nextCreatedAt, loop, maxPage int64) error {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, items, err = s.NewItemsWithItemIDAndCreatedAt(ctx, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, items, err = s.NewItems(ctx)
+	}
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if !ok {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに存在しない商品 (item_id: %d) が返ってきています", item.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの商品の名前が間違えています (item_id: %d)", item.ID))
+		}
+
+		err := checkItemSimpleCategory(item, aItem)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの%s", err.Error()))
+		}
+
+		err = itemIDs.Add(item.ID)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに同じ商品がありました (item_id: %d)", item.ID))
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return nil
+	}
+	if hasNext && loop < 100 { // TODO: max pager
+		err := getItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+
+}
+
 func getItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *IDsStore, categoryID int, nextItemID, nextCreatedAt, loop, maxPage int64) error {
 	var hasNext bool
 	var items []session.ItemSimple
@@ -117,7 +165,6 @@ func getItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *ID
 		}
 	}
 	return nil
-
 }
 
 func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsStore, sellerID, nextItemID, nextCreatedAt, loop int64) error {

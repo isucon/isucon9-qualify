@@ -702,7 +702,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 				categories := asset.GetRootCategories()
 				for _, category := range categories {
-					err = newCategoryItems(ctx, s1, category.ID, 1)
+					err = newCategoryItemsAndItems(ctx, s1, category.ID, 20, 15)
 					if err != nil {
 						critical.Add(err)
 						goto Final
@@ -731,7 +731,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #2
 	// どちらかというとカテゴリを中心にみていく
-	for i := 0; i < 9; i++ {
+	for i := 0; i < 6; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -767,12 +767,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = newCategoryItems(ctx, s1, item.Category.ParentID, 5)
-				if err != nil {
-					critical.Add(err)
-					goto Final
-				}
-				err = newCategoryItems(ctx, s2, item.Category.ParentID, 15)
+				err = newCategoryItemsAndItems(ctx, s2, item.Category.ParentID, 20, 5)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -813,7 +808,7 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #3
 	// どちらかというとuserを中心にみていく
-	for i := 0; i < 9; i++ {
+	for i := 0; i < 6; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -886,6 +881,63 @@ func load(ctx context.Context, critical *fails.Critical) {
 			Final:
 				ActiveSellerPool.Enqueue(s2)
 				BuyerPool.Enqueue(s1)
+
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
+			}
+		}()
+	}
+
+	// load scenario #4
+	// NewItemみてbuy
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+		L:
+			for j := 0; j < ExecutionSeconds/3; j++ {
+				ch := time.After(3 * time.Second)
+
+				s1, err := activeSellerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
+				s2, err := buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
+				price := priceStoreCache.Get()
+
+				targetItemID, err := sell(ctx, s1, price)
+				if err != nil {
+					critical.Add(err)
+
+					goto Final
+				}
+
+				err = newItemsAndItems(ctx, s2, 30, 50)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+			Final:
+				ActiveSellerPool.Enqueue(s1)
+				BuyerPool.Enqueue(s2)
 
 				select {
 				case <-ch:
