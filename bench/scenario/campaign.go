@@ -112,7 +112,8 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 		<-time.After(20 * time.Second)
 
-		tick := time.Tick(10 * time.Second)
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
 
 	L:
 		for i := 1; i < ExecutionSeconds/10-2; i++ {
@@ -125,7 +126,7 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 			priceStoreCache.Set(100 + i*50)
 
 			select {
-			case <-tick:
+			case <-ticker.C:
 			case <-ctx.Done():
 				break L
 			}
