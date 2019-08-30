@@ -238,11 +238,45 @@ func GetRandomActiveSeller() AppUser {
 	return users[activeSellerIDs[len(activeSellerIDs)-int(atomic.AddInt32(&indexActiveSellerID, 1))]]
 }
 
+func GetRandomActiveSellerIDs(num int) []int64 {
+	len := len(activeSellerIDs)
+	if num > len {
+		num = len
+	}
+	newIDs := make([]int64, 0, num)
+	s := rand.Intn(len)
+	for i := 0; i < num; i++ {
+		newIDs = append(newIDs, activeSellerIDs[s])
+		s++
+		if s == len {
+			s = 0
+		}
+	}
+	return newIDs
+}
+
 func GetRandomBuyer() AppUser {
 	muUser.RLock()
 	defer muUser.RUnlock()
 	// 全部使い切ったらpanicするので十分なユーザー数を用意しておく
 	return users[buyerIDs[len(buyerIDs)-int(atomic.AddInt32(&indexBuyerID, 1))]]
+}
+
+func GetRandomBuyerIDs(num int) []int64 {
+	len := len(buyerIDs)
+	if num > len {
+		num = len
+	}
+	newIDs := make([]int64, 0, num)
+	s := rand.Intn(len)
+	for i := 0; i < num; i++ {
+		newIDs = append(newIDs, buyerIDs[s])
+		s++
+		if s == len {
+			s = 0
+		}
+	}
+	return newIDs
 }
 
 func GetUser(sellerID int64) AppUser {
