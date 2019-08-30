@@ -293,9 +293,73 @@ def get_transactions():
         items=item_details,
         has_next=has_next,
     ))
+
 @app.route("/users/<user_id>.json", methods=["GET"])
 def get_user_items(user_id=None):
-    return
+    user = get_user_simple_by_id(user_id)
+    conn = dbh()
+
+    item_id = 0 # FIXME:
+    created_at = 0 # FIXME:
+
+
+    with conn.cursor() as c:
+
+        try:
+
+            if item_id > 0 and created_at > 0:
+                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, (
+                    user['id'],
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_TRADING,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+        			datetime.datetime.fromtimestamp(created_at),
+        			item_id,
+                    Constants.ITEMS_PER_PAGE+1,
+                ))
+
+            else:
+                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                c.execute(sql, (
+                    user['id'],
+        			Constants.ITEM_STATUS_ON_SALE,
+        			Constants.ITEM_STATUS_TRADING,
+        			Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.TRANSACTIONS_PER_PAGE+1,
+                ))
+
+            item_simples = []
+            while True:
+                item = c.fetchone()
+
+                if item is None:
+                    break
+
+                seller = get_user_simple_by_id(item["seller_id"])
+                category = get_category_by_id(item["category_id"])
+
+                item = to_item_json(item)
+                item["category"] = category
+                item["seller"] = to_user_json(seller)
+
+                print(item)
+                item_simples.append(item)
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+    has_next = False
+    if len(item_simples) > Constants.ITEMS_PER_PAGE:
+        has_next = True
+        item_simples = item_simples[:Constants.ITEMS_PER_PAGE]
+
+    return flask.jsonify(dict(
+        user=to_user_json(user),
+        items=item_simples,
+        has_next=has_next,
+    ))
 
 
 @app.route("/items/<item_id>.json", methods=["GET"])
