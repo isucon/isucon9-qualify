@@ -1,0 +1,32 @@
+---
+- name: Check Installed Python
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon
+  command: /home/isucon/local/python/bin/python -V
+  register: python_version_output
+  changed_when: python_version_output is failed
+  ignore_errors: true
+
+- name: Debug python_version_output
+  debug:
+    var: python_version_output
+
+- name: Install Python 3.7.4
+  become: yes
+  become_user: isucon
+  when: python_version_output is failed or python_version_output.stdout != "Python 3.7.4"
+  args:
+    chdir: /home/isucon
+  command: |
+    /home/isucon/xbuild/python-install 3.7.4 /home/isucon/local/python
+
+- name: Add PATH for Python
+  become: yes
+  become_user: isucon
+  blockinfile:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK python"
+    dest: /home/isucon/.bash_profile
+    content: |
+      export PATH=/home/isucon/local/python/bin:$PATH
