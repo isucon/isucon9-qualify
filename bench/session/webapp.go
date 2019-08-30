@@ -311,8 +311,8 @@ func (s *Session) SetSettings(ctx context.Context) error {
 	return nil
 }
 
-func (s *Session) Sell(ctx context.Context, name string, price int, description string, categoryID int) (int64, error) {
-	file, err := os.Open("webapp/public/upload/sample.jpg")
+func (s *Session) Sell(ctx context.Context, fileName, name string, price int, description string, categoryID int) (int64, error) {
+	file, err := os.Open(fileName)
 	if err != nil {
 		return 0, failure.Wrap(err, failure.Message("POST /sell: 画像のOpenに失敗しました"))
 	}
@@ -320,7 +320,7 @@ func (s *Session) Sell(ctx context.Context, name string, price int, description 
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "sample.jpg")
+	part, err := writer.CreateFormFile("image", "upload.jpg")
 	if err != nil {
 		return 0, failure.Wrap(err, failure.Message("POST /sell: リクエストに失敗しました"))
 	}
