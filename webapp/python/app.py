@@ -41,6 +41,7 @@ class Constants(object):
     PAYMENT_SERVICE_ISUCARI_API_KEY = 'a15400e46c83635eb181-946abb51ff26a868317c'
     PAYMENT_SERVICE_ISUCARI_SHOP_ID = '11'
 
+    ITEMS_PER_PAGE = '48'
 
 def dbh():
     if hasattr(flask.g, 'db'):
@@ -88,6 +89,8 @@ def get_user():
         http_json_error(requests.codes['internal_server_error'], "db error")
     return user
 
+def get_user_simple_by_id():
+    return
 
 def get_category_by_id(category_id):
     conn = dbh()
@@ -153,6 +156,47 @@ def post_initialize():
 
 @app.route("/new_items.json", methods=["GET"])
 def get_new_items():
+    # TODO: check err
+    if request.args.get('item_id') is not None:
+        item_id = int(request.args.get('item_id'))
+
+        if item_id <= 0:
+            http_json_error(requests.codes['bad_request'], 'item_id param error')
+
+    if request.args.get('created_at') is not None:
+        created_at = int(request.args.get('created_at'))
+
+        if created_at <= 0:
+            http_json_error(requests.codes['bad_request'], 'created_at param error')
+
+    items = []
+
+    try:
+        conn = dbh()
+        with conn.cursor() as c:
+            if item_id > 0 and created_at > 0:
+                # paging
+                sql = "SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?"
+                c.execute(sql, (
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    created_at.timestamp(),
+                    item_id,
+                    int(Constants.ITEMS_PER_PAGE) + 1,
+                ))
+            else:
+                # 1st page
+                sql = "SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?"
+                c.execute(sql, (
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    int(Constants.ITEMS_PER_PAGE) + 1
+                ))
+
+        item_simples = []
+
+    except MySQL.db.Error as err:
+
     return
 
 
