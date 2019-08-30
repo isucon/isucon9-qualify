@@ -79,7 +79,7 @@ def get_user():
         conn = dbh()
         with conn.cursor() as c:
             sql = "SELECT * FROM `users` WHERE `id` = %s"
-            c.execute(sql, user_id)
+            c.execute(sql, [user_id])
             user = c.fetchone()
             if user is None:
                 http_json_error(requests.codes['not_found'], "user not found")
@@ -722,11 +722,11 @@ def post_login():
         conn = dbh()
         sql = "SELECT * FROM `users` WHERE `account_name` = %s"
         with conn.cursor() as c:
-            c.execute(sql, (flask.request.json['account_name']))
+            c.execute(sql, [flask.request.json['account_name']])
             user = c.fetchone()
+
             if user is None or \
-                    not bcrypt.checkpw(flask.request.json['password'].encode('utf-8'),
-                                       user['hashed_password'].encode('utf-8')):
+                    not bcrypt.checkpw(flask.request.json['password'].encode('utf-8'), user['hashed_password']):
                 http_json_error(requests.codes['unauthorized'], 'アカウント名かパスワードが間違えています')
     except MySQLdb.Error as err:
         app.logger.exception(err)
@@ -747,7 +747,7 @@ def post_register():
         conn = dbh()
         with conn.cursor() as c:
             sql = "INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (%s, %s, %s)"
-            c.execute(sql, (flask.request.json['account_name'], hashedpw, flask.request.json['address']))
+            c.execute(sql, [flask.request.json['account_name'], hashedpw, flask.request.json['address']])
         conn.commit()
         user_id = c.lastrowid
     except MySQLdb.Error as err:
