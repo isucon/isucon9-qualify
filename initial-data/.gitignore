@@ -1,3 +1,4 @@
 result/*.sql
 result/*.txt
 !result/category_json.txt
+images/

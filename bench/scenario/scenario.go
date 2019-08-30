@@ -2,7 +2,11 @@ package scenario
 
 import (
 	"context"
+	"crypto/md5"
+	"fmt"
+	"io"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -55,9 +59,41 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 		defer BuyerPool.Enqueue(s2)
 
-		targetItemID, err := sell(ctx, s1, 100)
+		targetItemID, fileName, err := sellForFileName(ctx, s1, 100)
 		if err != nil {
 			critical.Add(err)
+			return
+		}
+
+		f, err := os.Open(fileName)
+		if err != nil {
+			critical.Add(failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルを開くことに失敗しました")))
+			return
+		}
+
+		h := md5.New()
+		_, err = io.Copy(h, f)
+		if err != nil {
+			critical.Add(failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルのmd5値を取ることに失敗しました")))
+			return
+		}
+
+		expectedMD5Str := fmt.Sprintf("%x", h.Sum(nil))
+
+		item, err := s1.Item(ctx, targetItemID)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		md5Str, err := s1.DownloadItemImageURL(ctx, item.ImageURL)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		if expectedMD5Str != md5Str {
+			critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの画像のmd5値が間違っています expected: %s; actual: %s", item.ImageURL, expectedMD5Str, md5Str)))
 			return
 		}
 
