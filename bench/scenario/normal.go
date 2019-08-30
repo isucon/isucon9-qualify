@@ -290,7 +290,7 @@ func newItemsAndItems(ctx context.Context, s *session.Session, maxPage int64, ch
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
 	}
 
-	chkItemIDs := itemIDs.RandomIds(checkItem)
+	chkItemIDs := itemIDs.RandomIDs(checkItem)
 	for _, itemID := range chkItemIDs {
 		err := getItem(ctx, s, itemID)
 		if err != nil {
@@ -336,6 +336,15 @@ func newCategoryItemsAndItems(ctx context.Context, s *session.Session, categoryI
 	if (maxPage == 0 && c < 3000) || c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
+
+	chkItemIDs := itemIDs.RandomIDs(checkItem)
+	for _, itemID := range chkItemIDs {
+		err := getItem(ctx, s, itemID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -735,7 +744,7 @@ func (s *IDsStore) Len() int {
 	return len(s.ids)
 }
 
-func (s *IDsStore) RandomIds(num int) []int64 {
+func (s *IDsStore) RandomIDs(num int) []int64 {
 	s.RLock()
 	defer s.RUnlock()
 	if len(s.ids) < num {
