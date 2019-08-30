@@ -150,7 +150,12 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
-		err = verifyTransactionEvidence(ctx, s1, 10, 30)
+		err = verifyTransactionEvidence(ctx, s1, 3, 27)
+		if err != nil {
+			critical.Add(err)
+		}
+
+		err = verifyTransactionEvidence(ctx, s1, 10, 5)
 		if err != nil {
 			critical.Add(err)
 		}
