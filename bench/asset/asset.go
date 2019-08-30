@@ -304,6 +304,10 @@ func GetRandomRootCategory() AppCategory {
 	return rootCategories[rand.Intn(len(rootCategories))]
 }
 
+func GetRootCategories() []AppCategory {
+	return rootCategories
+}
+
 func GetRandomChildCategory() AppCategory {
 	return childCategories[rand.Intn(len(childCategories))]
 }

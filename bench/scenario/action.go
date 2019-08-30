@@ -72,6 +72,54 @@ func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
 	return targetItemID, nil
 }
 
+func getItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *IDsStore, categoryID int, nextItemID, nextCreatedAt, loop, maxPage int64) error {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, _, items, err = s.NewCategoryItemsWithItemIDAndCreatedAt(ctx, categoryID, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, _, items, err = s.NewCategoryItems(ctx, categoryID)
+	}
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if !ok {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonに存在しない商品 (item_id: %d) が返ってきています", categoryID, item.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの商品の名前が間違えています", categoryID))
+		}
+
+		err := checkItemSimpleCategory(item, aItem)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの%s", categoryID, err.Error()))
+		}
+
+		err = itemIDs.Add(item.ID)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonに同じ商品がありました (item_id: %d)", categoryID, item.ID))
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return nil
+	}
+	if hasNext && loop < 100 { // TODO: max pager
+		err := getItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+
+}
+
 func getItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsStore, sellerID, nextItemID, nextCreatedAt, loop int64) error {
 	var hasNext bool
 	var items []session.ItemSimple

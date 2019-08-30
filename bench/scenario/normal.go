@@ -72,7 +72,7 @@ func loadSellNewCategoryBuyWithLoginedSession(ctx context.Context, s1, s2 *sessi
 		return err
 	}
 
-	err = buyComplete(ctx, s1, s2, targetItemID, price)
+	err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
 	if err != nil {
 		return err
 	}
@@ -246,6 +246,44 @@ func loadTransactionEvidence(ctx context.Context, s1 *session.Session) error {
 		}
 	}
 
+	return nil
+}
+
+// カテゴリページの商品をたどる
+func newCategoryItems(ctx context.Context, s *session.Session, categoryID int, maxPage int64) error {
+	category, ok := asset.GetCategory(categoryID)
+	if !ok || category.ParentID != 0 {
+		// benchmarkerのバグになるかと
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json カテゴリIDが正しくありません", categoryID))
+	}
+	itemIDs := newIDsStore()
+	err := getItemIDsFromCategory(ctx, s, itemIDs, categoryID, 0, 0, 0, maxPage)
+	if err != nil {
+		return err
+	}
+	c := itemIDs.Len()
+	/*
+		mysql> alter table items add root_category_id int unsigned NOT NULL after category_id;
+		mysql> update items i join categories c on i.category_id=c.id set i.root_category_id = c.parent_id;
+		mysql> select root_category_id,count(*) from items group by root_category_id;
+		+------------------+----------+
+		| root_category_id | count(*) |
+		+------------------+----------+
+		|                1 |     3886 |
+		|               10 |     7192 |
+		|               20 |     8501 |
+		|               30 |     7461 |
+		|               40 |     7734 |
+		|               50 |     5125 |
+		|               60 |    10395 |
+		+------------------+----------+
+		7 rows in set (0.04 sec)
+	*/
+	// 全件チェックの時だけチェック
+	// countUserItemsでもチェックしているので、商品数が最低数あればよい
+	if maxPage == 0 && c < 3000 {
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
+	}
 	return nil
 }
 

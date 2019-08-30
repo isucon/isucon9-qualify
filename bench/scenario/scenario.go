@@ -405,7 +405,7 @@ func check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, price)
+			err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
 			if err != nil {
 				critical.Add(err)
 
@@ -675,7 +675,9 @@ func load(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
-	for i := 0; i < 10; i++ {
+	// load scenario #1
+	// カテゴリを少しみてbuy
+	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -698,6 +700,15 @@ func load(ctx context.Context, critical *fails.Critical) {
 
 				price := priceStoreCache.Get()
 
+				categories := asset.GetRootCategories()
+				for _, category := range categories {
+					err = newCategoryItems(ctx, s1, category.ID, 1)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+				}
+
 				err = loadSellNewCategoryBuyWithLoginedSession(ctx, s1, s2, price)
 				if err != nil {
 					critical.Add(err)
@@ -718,7 +729,91 @@ func load(ctx context.Context, critical *fails.Critical) {
 		}()
 	}
 
-	for i := 0; i < 10; i++ {
+	// load scenario #2
+	// どちらかというとカテゴリを中心にみていく
+	for i := 0; i < 9; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+		L:
+			for j := 0; j < ExecutionSeconds/3; j++ {
+				ch := time.After(3 * time.Second)
+
+				s1, err := activeSellerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
+				s2, err := buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
+				price := priceStoreCache.Get()
+				var item *session.ItemDetail
+
+				targetItemID, err := sell(ctx, s1, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				item, err = s1.Item(ctx, targetItemID)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = newCategoryItems(ctx, s1, item.Category.ParentID, 5)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+				err = newCategoryItems(ctx, s2, item.Category.ParentID, 15)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = transactionEvidence(ctx, s1)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				// ここは厳密なcheckをしない
+				err = buyComplete(ctx, s1, s2, targetItemID, price)
+				if err != nil {
+					critical.Add(err)
+
+					goto Final
+				}
+
+				item, err = s1.Item(ctx, targetItemID)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+			Final:
+				ActiveSellerPool.Enqueue(s1)
+				BuyerPool.Enqueue(s2)
+
+				select {
+				case <-ch:
+				case <-ctx.Done():
+					break L
+				}
+			}
+		}()
+	}
+
+	// load scenario #3
+	// どちらかというとuserを中心にみていく
+	for i := 0; i < 9; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -726,13 +821,19 @@ func load(ctx context.Context, critical *fails.Critical) {
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
 
+				s1, err := buyerSession(ctx)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+
 				s2, err := activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					return
 				}
 
-				s1, err := buyerSession(ctx)
+				s3, err := buyerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					return
@@ -747,14 +848,35 @@ func load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
+				// ユーザのページを全部みる。
+				// activeユーザ3ページ
+				err = countUserItems(ctx, s1, s2.UserID)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+				// 商品数がすくないところもみにいく
+				// indexつけるだけで速くなる
+				for l := 0; l < 4; l++ {
+					err = countUserItems(ctx, s1, s3.UserID)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+					err = countUserItems(ctx, s3, s1.UserID)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+				}
+
 				err = userItemsAndItem(ctx, s1, s2.UserID)
 				if err != nil {
 					critical.Add(err)
-
 					goto Final
 				}
 
-				err = buyComplete(ctx, s1, s2, targetItemID, price)
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
 				if err != nil {
 					critical.Add(err)
 
