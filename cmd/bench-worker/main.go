@@ -102,9 +102,9 @@ func dequeue(ep string) (*Job, error) {
 
 func joinN(messages []string, n int) string {
 	if len(messages) > n {
-		strings.Join(messages[:n], ",")
+		strings.Join(messages[:n], ",\n")
 	}
-	return strings.Join(messages, ",")
+	return strings.Join(messages, ",\n")
 }
 
 func report(ep string, job *Job, jobResult *JobResult) error {
