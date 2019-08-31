@@ -87,7 +87,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	}
 
 	// load scenario #2
-	// 出品 => newitem => そのカテゴリ => getTransactions => buy
+	// 出品 => そのカテゴリ => getTransactions => buy
 	for i := 0; i < NumLoadScenario2; i++ {
 		wg.Add(1)
 		go func() {
@@ -128,12 +128,6 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = loadNewItemsAndItems(ctx, s2, 10, 20)
-				if err != nil {
-					critical.Add(err)
-					goto Final
-				}
-
 				err = loadNewCategoryItemsAndItems(ctx, s1, item.Category.ParentID, 30, 20)
 				if err != nil {
 					critical.Add(err)
@@ -147,6 +141,12 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				}
 
 				err = loadTransactionEvidence(ctx, s2, 0, 0)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = loadTransactionEvidence(ctx, s1, 10, 20)
 				if err != nil {
 					critical.Add(err)
 					goto Final
