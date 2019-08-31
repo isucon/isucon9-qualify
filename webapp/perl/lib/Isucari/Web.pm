@@ -108,11 +108,11 @@ sub error_with_msg {
 sub dbh {
     my $self = shift;
     $self->{_dbh} ||= do {
-        my $host = $ENV{DB_HOST} // '127.0.0.1';
-        my $port = $ENV{DB_PORT} // 3306;
-        my $database = $ENV{DB_DATABASE} // 'isucari';
-        my $user = $ENV{DB_USER} // 'isucari';
-        my $password = $ENV{DB_PASS} // 'isucari';
+        my $host = $ENV{MYSQL_HOST} // '127.0.0.1';
+        my $port = $ENV{MYSQL_PORT} // 3306;
+        my $database = $ENV{MYSQL_DBNAME} // 'isucari';
+        my $user = $ENV{MYSQL_USER} // 'isucari';
+        my $password = $ENV{MYSQL_PASS} // 'isucari';
         my $dsn = "dbi:mysql:database=$database;host=$host;port=$port";
         DBIx::Sunny->connect($dsn, $user, $password, {
             mysql_enable_utf8mb4 => 1,
