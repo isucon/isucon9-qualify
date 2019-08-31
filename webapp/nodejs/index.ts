@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 
 import TraceError from "trace-error";
-import createFastify, { FastifyRequest, FastifyReply } from "fastify";
+import createFastify, {FastifyRequest, FastifyReply} from "fastify";
 // @ts-ignore
 import fastifyMysql from "fastify-mysql";
 import fastifyCookie from "fastify-cookie";
@@ -57,7 +57,7 @@ const DefaultShipmentServiceURL = "http://localhost:7000";
 const ItemMinPrice = 100;
 const ItemMaxPrice = 1000000;
 const ItemPriceErrMsg =
-  "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください";
+    "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください";
 const ItemStatusOnSale = "on_sale";
 const ItemStatusTrading = "trading";
 const ItemStatusSoldOut = "sold_out";
@@ -200,115 +200,26 @@ async function getConnection() {
 
 // API
 
-fastify.post("/initialize", async (req, reply) => {
-  const ri: ReqInitialize = req.body;
-
-  await execFile("../sql/init.sh");
-
-  const conn = await getConnection();
-
-  await conn.query(
-    "INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
-    ["payment_service_url", ri.payment_service_url]
-  );
-
-  await conn.query(
-    "INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
-    ["shipment_service_url", ri.shipment_service_url]
-  );
-
-  const res = {
-    // Campaign 実施時は true にする
-    is_campaign: false
-  };
-
-  reply
-    .code(200)
-    .type("application/json")
-    .send(res);
-});
-
-fastify.get("/new_items.json", (_req, reply) => {
-  TODO();
-});
-
-fastify.get("/new_items/:root_category_id.json", (req, reply) => {
-  const rootCategoryId: string = req.params.root_category_id;
-  TODO();
-});
-
-fastify.get("/users/transactions.json", (req, reply) => {
-  TODO();
-});
-
-fastify.get("/users/:user_id.json", (req, reply) => {
-  const userId: string = req.params.user_id;
-  TODO();
-});
-
-fastify.get("/items/:item_id.json", (req, reply) => {
-  const itemId: string = req.params.item_id;
-  TODO();
-});
-
-fastify.post("/items/edit", (req, reply) => {
-  TODO();
-});
-
-fastify.post("/buy", (req, reply) => {
-  TODO();
-});
-
-fastify.post("/sell", (req, reply) => {
-  TODO();
-});
-
-fastify.post("/ship", (req, reply) => {
-  TODO();
-});
-
-fastify.post("/ship_done", (req, reply) => {
-  TODO();
-});
-
-fastify.post("/complete", (req, reply) => {
-  TODO();
-});
-
-fastify.get("/transactions/:transaction_evidence_id.png", (req, reply) => {
-  const transactionEvidenceId: string = req.params.transaction_evidence_id;
-  TODO();
-});
-
-fastify.post("/bump", (req, reply) => {
-  TODO();
-});
-
-fastify.get("/settings", (req, reply) => {
-  TODO();
-});
-
-fastify.post("/login", (req, reply) => {
-  TODO();
-});
-
-fastify.post("/register", (req, reply) => {
-  TODO();
-});
-
-fastify.get("/reports.json", (req, reply) => {
-  TODO();
-});
+fastify.post("/initialize", getInitialize);
+fastify.get("/new_items.json", getNewItems);
+fastify.get("/new_items/:root_category_id.json", getNewCategoryItems);
+fastify.get("/users/transactions.json", getTransactions);
+fastify.get("/users/:user_id.json", getUserItems);
+fastify.get("/items/:item_id.json", getItem);
+fastify.post("/items/edit", postItemEdit);
+fastify.post("/buy", postBuy);
+fastify.post("/sell", postSell);
+fastify.post("/ship", postShip)
+fastify.post("/ship_done", postShipDone);
+fastify.post("/complete", postComplete);
+fastify.get("/transactions/:transaction_evidence_id.png", getQRCode);
+fastify.post("/bump", postBump);
+fastify.get("/settings", getSettings);
+fastify.post("/login", postLogin);
+fastify.post("/register", postRegister);
+fastify.get("/reports.json", getReports);
 
 // Frontend
-
-async function getIndex(_req: any, reply: FastifyReply<ServerResponse>) {
-  const html = await fs.promises.readFile(
-    path.join(__dirname, "public/index.html")
-  );
-  reply.type("text/html").send(html);
-}
-
 fastify.get("/", getIndex);
 fastify.get("/login", getIndex);
 fastify.get("/register", getIndex);
@@ -319,8 +230,96 @@ fastify.get("/items/:item_id/edit", getIndex);
 fastify.get("/items/:item_id/buy", getIndex);
 fastify.get("/buy/complete", getIndex);
 
+async function getIndex(_req: any, reply: FastifyReply<ServerResponse>) {
+  const html = await fs.promises.readFile(
+      path.join(__dirname, "public/index.html")
+  );
+  reply.type("text/html").send(html);
+}
+
+async function getInitialize(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+  const ri: ReqInitialize = req.body;
+
+  await execFile("../sql/init.sh");
+
+  const conn = await getConnection();
+
+  await conn.query(
+      "INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+      ["payment_service_url", ri.payment_service_url]
+  );
+
+  await conn.query(
+      "INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
+      ["shipment_service_url", ri.shipment_service_url]
+  );
+
+  const res = {
+    // Campaign 実施時は true にする
+    is_campaign: false
+  };
+
+  reply
+      .code(200)
+      .type("application/json")
+      .send(res);
+}
+
+async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+  const rootCategoryId: string = req.params.root_category_id;
+}
+
+async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+async function getReports(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
 fastify.listen(8000, (err, _address) => {
   if (err) {
     throw new TraceError("Failed to listening", err);
   }
 });
+
