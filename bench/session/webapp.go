@@ -161,14 +161,6 @@ type resBuy struct {
 	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
 }
 
-type reqSell struct {
-	CSRFToken   string `json:"csrf_token"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int    `json:"price"`
-	CategoryID  int    `json:"category_id"`
-}
-
 type reqShip struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
