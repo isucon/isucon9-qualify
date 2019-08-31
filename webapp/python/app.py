@@ -570,7 +570,6 @@ def get_item(item_id=None):
     conn = dbh()
 
     with conn.cursor() as c:
-
         try:
             sql = "SELECT * FROM `items` WHERE `id` = %s"
             c.execute(sql, (item_id,))
@@ -589,27 +588,27 @@ def get_item(item_id=None):
                 buyer = get_user_simple_by_id(item["buyer_id"])
                 item["buyer"] = to_user_json(buyer)
 
-            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
-            c.execute(sql, [item['id']])
-            transaction_evidence = c.fetchone()
-            if not transaction_evidence:
-                http_json_error(requests.codes['not_found'], "transaction_evidence not found")
+                sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
+                c.execute(sql, (item['id'],))
+                transaction_evidence = c.fetchone()
+                # if not transaction_evidence:
+                #     http_json_error(requests.codes['not_found'], "transaction_evidence not found")
 
-            print("transaction_evidence", transaction_evidence)
+                print("transaction_evidence", transaction_evidence)
 
-            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
-            c.execute(sql, [transaction_evidence["id"]])
-            shipping = c.fetchone()
-            if not shipping:
-                http_json_error(requests.codes['not_found'], "shipping not found")
+                sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
+                c.execute(sql, (transaction_evidence["id"],))
+                shipping = c.fetchone()
+                if not shipping:
+                    http_json_error(requests.codes['not_found'], "shipping not found")
 
-            print("shipping", shipping)
+                print("shipping", shipping)
 
-            ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
-            print("ssr", ssr)
-            item["transaction_evidence_id"] = transaction_evidence["id"]
-            item["transaction_evidence_status"] = transaction_evidence["status"]
-            item["shipping_status"] = ssr["status"]
+                ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
+                print("ssr", ssr)
+                item["transaction_evidence_id"] = transaction_evidence["id"]
+                item["transaction_evidence_status"] = transaction_evidence["status"]
+                item["shipping_status"] = ssr["status"]
 
         except MySQLdb.Error as err:
             app.logger.exception(err)
