@@ -240,9 +240,9 @@ def get_new_items():
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
-                    created_at.timestamp(),
+                    datetime.datetime.fromtimestamp(created_at),
                     item_id,
-                    int(Constants.ITEMS_PER_PAGE) + 1,
+                    Constants.ITEMS_PER_PAGE + 1,
                 ))
             else:
                 # 1st page
@@ -250,15 +250,40 @@ def get_new_items():
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
-                    int(Constants.ITEMS_PER_PAGE) + 1
+                    Constants.ITEMS_PER_PAGE + 1
                 ))
 
-        item_simples = []
+            item_simples = []
+
+            while True:
+                item = c.fetchone()
+
+                if item is None:
+                    break
+
+                seller = get_user_simple_by_id(item["seller_id"])
+                category = get_category_by_id(item["category_id"])
+
+                item = to_item_json(item)
+                item["category"] = category
+                item["seller"] = to_user_json(seller)
+
+                print(item)
+                item_simples.append(item)
+
+            has_next = False
+            if len(item_simples) > Constants.ITEMS_PER_PAGE:
+                has_next = True
+                item_simples = item_simples[:Constants.ITEMS_PER_PAGE]
 
     except MySQLdb.Error as err:
-        pass
+        app.logger.exception(err)
+        http_json_error(requests.codes['internal_server_error'], "db error")
 
-    return
+    return flask.jsonify(dict(
+        items=item_simples,
+        has_next=has_next,
+        ))
 
 
 @app.route("/new_items/<root_category_id>.json", methods=["GET"])
