@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from "http";
-import util from "util";
+import util, {types} from "util";
 import childProcess from "child_process";
 import path from "path";
 import fs from "fs";
@@ -9,6 +9,7 @@ import createFastify, {FastifyRequest, FastifyReply} from "fastify";
 // @ts-ignore
 import fastifyMysql from "fastify-mysql";
 import fastifyCookie from "fastify-cookie";
+import fastifySession from 'fastify-session'
 import fastifyStatic from "fastify-static";
 
 const execFile = util.promisify(childProcess.execFile);
@@ -177,12 +178,15 @@ fastify.register(fastifyStatic, {
   root: path.join(__dirname, "public")
 });
 
+fastify.register(fastifyCookie);
+fastify.register(fastifySession, {secret: '123456789012345678901234567890123'});
+
 fastify.register(fastifyMysql, {
-  host: process.env.DB_HOST || "127.0.0.1",
-  port: process.env.DB_PORT || "3306",
-  user: process.env.DB_USER || "isucari",
-  password: process.env.DB_PASS || "isucari",
-  database: process.env.DB_DATABASE || "isucari",
+  host: process.env.MYSQL_HOST || "127.0.0.1",
+  port: process.env.MYSQL_PORT || "3306",
+  user: process.env.MYSQL_USER || "isucari",
+  password: process.env.MYSQL_PASS || "isucari",
+  database: process.env.MYSQL_DBNAME || "isucari",
 
   promise: true
 });
@@ -306,6 +310,23 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 }
 
 async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+  const csrfToken = getCsrfToken(req);
+
+  const res = { User: null as User | null, PaymentServiceURL: null as string | null, Categories: null as Category[] | null};
+  const user = await getUser(req);
+
+  res.User = user;
+  res.PaymentServiceURL = getPaymentServiceURL();
+
+  const categories: Category[] = [];
+  // TODO:
+  res.Categories = categories;
+
+  reply
+      .code(200)
+      .type("application/json")
+      .send(res)
+
 }
 
 async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -315,6 +336,21 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
 }
 
 async function getReports(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+}
+
+function getCsrfToken(req: FastifyRequest) {
+
+}
+
+async function getUser(req: FastifyRequest): Promise<User|null> {
+  return null;
+}
+
+function getPaymentServiceURL(): string {
+  return "";
+}
+
+function getSession(req: FastifyRequest) {
 }
 
 fastify.listen(8000, (err, _address) => {
