@@ -114,7 +114,11 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 
 	var jobResultStdout JobResultStdout
 	if err := json.NewDecoder(strings.NewReader(jobResult.Stdout)).Decode(&jobResultStdout); err != nil {
-		return err
+		jobResultStdout = JobResultStdout{
+			Pass: false,
+			Score: 0,
+			Messages: []string{"unknown failure"},
+		}
 	}
 
 	result := Result{
@@ -235,6 +239,7 @@ func main() {
 		}
 
 		log.Println(jobResult.Stdout)
+		log.Println(jobResult.Stderr)
 		if err := report(*apiEndpoint, job, jobResult); err != nil {
 			log.Println(err)
 		}
