@@ -44,6 +44,20 @@ class Constants(object):
     ITEMS_PER_PAGE = 48
     TRANSACTIONS_PER_PAGE = 10
 
+
+class HttpException(Exception):
+    status_code = 500
+
+    def __init__(self, status_code, message):
+        Exception.__init__(self)
+        self.message = message
+        self.status_code = status_code
+
+    def get_response(self):
+        response = flask.jsonify({'error': self.message})
+        response.status_code = self.status_code
+        return response
+
 def dbh():
     if hasattr(flask.g, 'db'):
         return flask.g.db
@@ -65,7 +79,11 @@ def dbh():
 
 
 def http_json_error(code, msg):
-    flask.abort(flask.jsonify(code, {'error': msg}))
+    raise HttpException(code, msg)
+
+@app.errorhandler(HttpException)
+def handle_http_exception(error):
+    return error.get_response()
 
 
 def random_string(length):
@@ -285,11 +303,11 @@ def get_new_category_items(root_category_id=None):
 
 
             if item_id > 0 and created_at > 0:
-                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN (%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
         			Constants.ITEM_STATUS_ON_SALE,
         			Constants.ITEM_STATUS_SOLD_OUT,
-                    category_ids,
+                    *category_ids,
         			datetime.datetime.fromtimestamp(created_at),
         			item_id,
                     Constants.ITEMS_PER_PAGE+1,
@@ -536,9 +554,7 @@ def get_item(item_id=None):
 
         try:
             sql = "SELECT * FROM `items` WHERE `id` = %s"
-            c.execute(sql, (
-                item_id
-            ))
+            c.execute(sql, (item_id,))
             item = c.fetchone()
             if item is None:
                 http_json_error(requests.codes['not_found'], "item not found")
