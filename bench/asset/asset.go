@@ -89,8 +89,11 @@ var (
 	userItems            map[int64][]int64
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
+	imageFiles           []string
 	muItem               sync.RWMutex
 	muUser               sync.RWMutex
+	muImageFile          sync.Mutex
+	indexImageFile       int
 	indexActiveSellerID  int32
 	indexBuyerID         int32
 )
@@ -106,6 +109,7 @@ func Initialize(dataDir string) {
 	childCategories = make([]AppCategory, 0, 50)
 	userItems = make(map[int64][]int64)
 	transactionEvidences = make(map[int64]AppTransactionEvidence)
+	imageFiles = make([]string, 0, 10000)
 
 	f, err := os.Open(filepath.Join(dataDir, "result/users_json.txt"))
 	if err != nil {
@@ -203,8 +207,24 @@ func Initialize(dataDir string) {
 	}
 	f.Close()
 
+	d, err := os.Open(filepath.Join(dataDir, "images"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer d.Close()
+
+	files, err := d.Readdir(-1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		imageFiles = append(imageFiles, filepath.Join(dataDir, "images", file.Name()))
+	}
+
 	rand.Shuffle(len(activeSellerIDs), func(i, j int) { activeSellerIDs[i], activeSellerIDs[j] = activeSellerIDs[j], activeSellerIDs[i] })
 	rand.Shuffle(len(buyerIDs), func(i, j int) { buyerIDs[i], buyerIDs[j] = buyerIDs[j], buyerIDs[i] })
+	rand.Shuffle(len(imageFiles), func(i, j int) { imageFiles[i], imageFiles[j] = imageFiles[j], imageFiles[i] })
 }
 
 func (u1 *AppUser) Equal(u2 *AppUser) bool {
@@ -218,11 +238,45 @@ func GetRandomActiveSeller() AppUser {
 	return users[activeSellerIDs[len(activeSellerIDs)-int(atomic.AddInt32(&indexActiveSellerID, 1))]]
 }
 
+func GetRandomActiveSellerIDs(num int) []int64 {
+	len := len(activeSellerIDs)
+	if num > len {
+		num = len
+	}
+	newIDs := make([]int64, 0, num)
+	s := rand.Intn(len)
+	for i := 0; i < num; i++ {
+		newIDs = append(newIDs, activeSellerIDs[s])
+		s++
+		if s == len {
+			s = 0
+		}
+	}
+	return newIDs
+}
+
 func GetRandomBuyer() AppUser {
 	muUser.RLock()
 	defer muUser.RUnlock()
 	// 全部使い切ったらpanicするので十分なユーザー数を用意しておく
 	return users[buyerIDs[len(buyerIDs)-int(atomic.AddInt32(&indexBuyerID, 1))]]
+}
+
+func GetRandomBuyerIDs(num int) []int64 {
+	len := len(buyerIDs)
+	if num > len {
+		num = len
+	}
+	newIDs := make([]int64, 0, num)
+	s := rand.Intn(len)
+	for i := 0; i < num; i++ {
+		newIDs = append(newIDs, buyerIDs[s])
+		s++
+		if s == len {
+			s = 0
+		}
+	}
+	return newIDs
 }
 
 func GetUser(sellerID int64) AppUser {
@@ -307,6 +361,19 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 	item.CreatedAt = createdAt
 
 	items[key] = item
+}
+
+func GetRandomImageFileName() string {
+	muImageFile.Lock()
+	defer muImageFile.Unlock()
+
+	indexImageFile--
+
+	if indexImageFile < 0 {
+		indexImageFile = len(imageFiles) - 1
+	}
+
+	return imageFiles[indexImageFile]
 }
 
 func GetRandomRootCategory() AppCategory {

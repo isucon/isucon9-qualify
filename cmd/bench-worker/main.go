@@ -61,8 +61,9 @@ type JobResultStdout struct {
 
 const (
 	apiEndpointDev   = "http://portal-dev.isucon9.hinatan.net"
-	defaultInterval  = 1 * time.Second
-	maxStderrLength  = 1 * 1024 * 1024
+	defaultInterval  = 3 * time.Second
+	maxStderrLength  = 8 * 1024 * 1024
+	maxNumMessage    = 20
 	maxBenchmarkTime = 150 * time.Second
 )
 
@@ -102,9 +103,9 @@ func dequeue(ep string) (*Job, error) {
 
 func joinN(messages []string, n int) string {
 	if len(messages) > n {
-		strings.Join(messages[:n], ",")
+		strings.Join(messages[:n], ",\n")
 	}
-	return strings.Join(messages, ",")
+	return strings.Join(messages, ",\n")
 }
 
 func report(ep string, job *Job, jobResult *JobResult) error {
@@ -118,7 +119,7 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 		ID:       job.ID,
 		Score:    jobResultStdout.Score,
 		IsPassed: jobResultStdout.Pass,
-		Reason:   joinN(jobResultStdout.Messages, 5),
+		Reason:   joinN(jobResultStdout.Messages, maxNumMessage),
 		Stdout:   jobResult.Stdout,
 		Stderr:   jobResult.Stderr,
 	}
@@ -168,6 +169,10 @@ func runBenchmarker(job *Job) (*JobResult, error) {
 	if err != nil {
 		return &JobResult{}, err
 	}
+	allowedIPs := []string{}
+	for _, server := range job.Team.Servers {
+		allowedIPs = append(allowedIPs, server.GlobalIP)
+	}
 
 	suffix, err := getExternalServiceSuffix()
 	if err != nil {
@@ -182,7 +187,7 @@ func runBenchmarker(job *Job) (*JobResult, error) {
 		fmt.Sprintf("-payment-url=https://%s", fmt.Sprintf("payment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-shipment-url=https://%s", fmt.Sprintf("shipment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-target-url=https://%s", target.GlobalIP),
-		fmt.Sprintf("-allowed-ips=%s", target.GlobalIP),
+		fmt.Sprintf("-allowed-ips=%s", strings.Join(allowedIPs, ",")),
 		fmt.Sprintf("-data-dir=/home/isucon/isucari/initial-data"))
 
 	var (
@@ -225,6 +230,7 @@ func main() {
 			log.Println(err)
 		}
 
+		log.Println(jobResult.Stdout)
 		if err := report(*apiEndpoint, job, jobResult); err != nil {
 			log.Println(err)
 		}
