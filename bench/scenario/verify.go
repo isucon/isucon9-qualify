@@ -2,9 +2,6 @@ package scenario
 
 import (
 	"context"
-	"crypto/md5"
-	"fmt"
-	"io"
 	"os"
 	"sync"
 
@@ -49,14 +46,11 @@ func Verify(ctx context.Context) *fails.Critical {
 			return
 		}
 
-		h := md5.New()
-		_, err = io.Copy(h, f)
+		expectedMD5Str, err := calcMD5(f)
 		if err != nil {
-			critical.Add(failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルのmd5値を取ることに失敗しました")))
+			critical.Add(err)
 			return
 		}
-
-		expectedMD5Str := fmt.Sprintf("%x", h.Sum(nil))
 
 		item, err := s1.Item(ctx, targetItemID)
 		if err != nil {

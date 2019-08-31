@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -47,9 +48,33 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 		return err
 	}
 
-	targetItemID, err := sell(ctx, s1, price)
+	targetItemID, fileName, err := sellForFileName(ctx, s1, 100)
 	if err != nil {
 		return err
+	}
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルを開くことに失敗しました"))
+	}
+
+	expectedMD5Str, err := calcMD5(f)
+	if err != nil {
+		return err
+	}
+
+	item, err := s1.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	itemMD5Str, err := s1.DownloadItemImageURL(ctx, item.ImageURL)
+	if err != nil {
+		return err
+	}
+
+	if expectedMD5Str != itemMD5Str {
+		return failure.New(fails.ErrApplication, failure.Messagef("%sの画像のmd5値が間違っています expected: %s; actual: %s", item.ImageURL, expectedMD5Str, itemMD5Str))
 	}
 
 	err = s1.BuyWithFailed(ctx, targetItemID, "", http.StatusForbidden, "自分の商品は買えません")
