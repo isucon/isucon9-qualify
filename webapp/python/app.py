@@ -143,9 +143,9 @@ def ensure_valid_csrf_token():
 
 def get_config(name):
     conn = dbh()
-    sql = "SELECT * FROM `configs` WHERE `name` = ?"
+    sql = "SELECT * FROM `configs` WHERE `name` = %s"
     with conn.cursor() as c:
-        c.execute(sql, name)
+        c.execute(sql, (name,))
         config = c.fetchone()
     return config
 
@@ -162,6 +162,22 @@ def get_payment_service_url():
     if config is None:
         return "http://localhost:5000"
     return config['val']
+
+
+def api_shipment_status(shipment_url, params={}):
+
+    try:
+        res = requests.post(
+            shipment_url + "/status",
+            headers=dict(Authorization=Constants.ISUCARI_API_TOKEN),
+            json=params,
+        )
+        res.raise_for_status()
+    except (socket.gaierror, requests.HTTPError) as err:
+        app.logger.exception(err)
+        http_json_error(requests.codes['internal_server_error'])
+
+    return res.json()
 
 
 # API
@@ -388,6 +404,30 @@ def get_transactions():
 
                 print(item)
                 item_details.append(item)
+
+                with conn.cursor() as c2:
+                    sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
+                    c2.execute(sql, [item['id']])
+                    transaction_evidence = c2.fetchone()
+                    if not transaction_evidence:
+                        http_json_error(requests.codes['not_found'], "transaction_evidence not found")
+
+                    print("transaction_evidence", transaction_evidence)
+
+                    sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
+                    c2.execute(sql, [transaction_evidence["id"]])
+                    shipping = c2.fetchone()
+                    if not shipping:
+                        http_json_error(requests.codes['not_found'], "shipping not found")
+
+                    print("shipping", shipping)
+
+                    ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
+                    print("ssr", ssr)
+                    item["transaction_evidence_id"] = transaction_evidence["id"]
+                    item["transaction_evidence_status"] = transaction_evidence["status"]
+                    item["shipping_status"] = ssr["status"]
+
 
         except MySQLdb.Error as err:
             app.logger.exception(err)
