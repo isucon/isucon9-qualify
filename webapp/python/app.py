@@ -132,7 +132,7 @@ def ensure_required_payload(keys=None):
     if keys is None:
         keys = []
     for k in keys:
-        if k not in flask.request.json or len(flask.request.json[k]) == 0:
+        if not flask.request.json.get(k):
             http_json_error(requests.codes['bad_request'], 'all parameters are required')
 
 
@@ -184,7 +184,10 @@ def api_shipment_status(shipment_url, params={}):
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
     subprocess.call(["../sql/init.sh"])
-    return ('', 204)
+
+    return flask.jsonify({
+        "is_campaign": False, # TODO: Campaign 実施時は true にする
+    })
 
 
 @app.route("/new_items.json", methods=["GET"])
@@ -215,7 +218,7 @@ def get_new_items():
         with conn.cursor() as c:
             if item_id > 0 and created_at > 0:
                 # paging
-                sql = "SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?"
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
@@ -225,7 +228,7 @@ def get_new_items():
                 ))
             else:
                 # 1st page
-                sql = "SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?"
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
@@ -582,8 +585,8 @@ def post_item_edit():
     conn = dbh()
     with conn.cursor() as c:
         try:
-            sql = "SELECT * FROM `items` WHERE `id` = ?"
-            c.execute(sql, user['id'])
+            sql = "SELECT * FROM `items` WHERE `id` = %s"
+            c.execute(sql, (user['id'],))
             item = c.fetchone()
             if item is None:
                 http_json_error(requests.codes['not_found'], "item not found")
@@ -596,21 +599,21 @@ def post_item_edit():
     conn.begin()
     with conn.cursor() as c:
         try:
-            sql = "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, (flask.request.json["item_id"],))
             item = c.fetchone()
             if item["status"] != Constants.ITEM_STATUS_ON_SALE:
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "販売中の商品以外編集できません")
-            sql = "UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?"
+            sql = "UPDATE `items` SET `price` = %s, `updated_at` = %s WHERE `id` = %s"
             c.execute(sql, (
                 flask.request.json["price"],
                 datetime.datetime.now(),
                 flask.request.json["item_id"]
             ))
 
-            sql = "SELECT * FROM `items` WHERE `id` = ?"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `items` WHERE `id` = %s"
+            c.execute(sql, (flask.request.json["item_id"],))
             item = c.fetchone()
             conn.commit()
         except MySQLdb.Error as err:
@@ -634,8 +637,8 @@ def post_buy():
     try:
         conn.begin()
         with conn.cursor() as c:
-            sql = "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, (flask.request.json['item_id']))
+            sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, (flask.request.json['item_id'],))
             item = c.fetchone()
             if item is None:
                 conn.rollback()
@@ -646,8 +649,8 @@ def post_buy():
             if item['seller_id'] == buyer['id']:
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "自分の商品は買えません")
-            sql = "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, (item['seller_id']))
+            sql = "SELECT * FROM `users` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, (item['seller_id'],))
             seller = c.fetchone()
             if seller is None:
                 conn.rollback()
@@ -656,7 +659,7 @@ def post_buy():
             # TODO: check category error
             sql = "INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, " \
                   "`item_price`, `item_description`, `item_category_id`, `item_root_category_id`) " \
-                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                  "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
             c.execute(sql, (
                 item['seller_id'],
                 buyer['id'],
@@ -669,7 +672,7 @@ def post_buy():
                 category['parent_id'],
             ))
             transaction_evidence_id = c.lastrowid()
-            sql = "UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?"
+            sql = "UPDATE `items` SET `buyer_id` = %s, `status` = %s, `updated_at` = %s WHERE `id` = %s"
             c.execute(sql, (
                 buyer['id'],
                 Constants.ITEM_STATUS_TRADING,
@@ -723,7 +726,7 @@ def post_buy():
 
             sql = "INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, " \
                   "`reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) " \
-                  "VALUES (?,?,?,?,?,?,?,?,?,?,?) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
             c.execute(sql, (
                 transaction_evidence_id,
                 Constants.SHIPPING_STATUS_INITIAL,
@@ -757,7 +760,7 @@ def post_sell():
         http_json_error(requests.codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
 
     category = get_category_by_id(flask.request.form['category_id'])
-    if category['parent_category_id'] == 0:
+    if category['parent_id'] == 0:
         http_json_error(requests.codes['bad_request'], 'Incorrect category ID')
     user = get_user()
     if flask.request.files['image'] not in flask.request.files:
@@ -775,7 +778,7 @@ def post_sell():
     try:
         conn = dbh()
         conn.begin()
-        sql = "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE"
+        sql = "SELECT * FROM `users` WHERE `id` = %s FOR UPDATE"
         with conn.cursor() as c:
             c.execute(sql, (user['id']))
             seller = c.fetchone()
@@ -784,7 +787,7 @@ def post_sell():
                 http_json_error(requests['not_found'], 'user not found')
             sql = """INSERT INTO `items`
             (`seller_id`, `status`, `name`, `price`, `description`, `image_name`, `category_id`)
-             VALUES (?, ?, ?, ?, ?, ?, ?)"""
+             VALUES (%s, %s, %s, %s, %s, %s, %s)"""
             c.execute(sql, (
                 seller['id'],
                 Constants.ITEM_STATUS_ON_SALE,
@@ -795,7 +798,7 @@ def post_sell():
                 flask.request.form['category_id'],
             ))
             item_id = c.lastrowid
-            sql = "UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?"
+            sql = "UPDATE `users` SET `num_sell_items`=%s, `last_bump`=%s WHERE `id`=%s"
             c.execute(sql, (seller['num_sell_items'] + 1, datetime.datetime.now()))
             conn.commit()
     except MySQLdb.Error as err:
@@ -814,8 +817,8 @@ def post_ship():
     conn = dbh()
     with conn.cursor() as c:
         try:
-            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
+            c.execute(sql, (flask.request.json["item_id"],))
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 http_json_error(requests.codes["not_found"], "transaction_evidences not found")
@@ -828,8 +831,8 @@ def post_ship():
     try:
         conn.begin()
         with conn.cursor() as c:
-            sql = "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, (flask.request.json["item_id"],))
             item = c.fetchone()
             if item is None:
                 conn.rollback()
@@ -838,8 +841,8 @@ def post_ship():
                 conn.rollback()
                 http_json_error(requests.codes["forbidden"], "商品が取引中ではありません")
 
-            sql = "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, transaction_evidence["id"])
+            sql = "SELECT * FROM `transaction_evidences` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, (transaction_evidence["id"],))
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 conn.rollback()
@@ -848,8 +851,8 @@ def post_ship():
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "準備ができていません")
 
-            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE"
-            c.execute(sql, transaction_evidence["id"])
+            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s FOR UPDATE"
+            c.execute(sql, (transaction_evidence["id"],))
             shipping = c.fetchone()
             if shipping is None:
                 conn.rollback()
@@ -866,7 +869,7 @@ def post_ship():
                 app.logger.exception(err)
                 http_json_error(requests.codes["internal_server_error"], "failed to request to shipment service")
 
-            sql = "UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?"
+            sql = "UPDATE `shippings` SET `status` = %s, `img_binary` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
                 Constants.SHIPPING_STATUS_WAIT_PICKUP,
                 io.BytesIO(res.content),
@@ -887,8 +890,8 @@ def post_ship_done():
     conn = dbh()
     with conn.cursor() as c:
         try:
-            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
+            c.execute(sql, [flask.request.json["item_id"]])
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 http_json_error(requests.codes["not_found"], "transaction_evidences not found")
@@ -901,8 +904,8 @@ def post_ship_done():
     try:
         conn.begin()
         with conn.cursor() as c:
-            sql = "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, [flask.request.json["item_id"]])
             item = c.fetchone()
             if item is None:
                 conn.rollback()
@@ -911,8 +914,8 @@ def post_ship_done():
                 conn.rollback()
                 http_json_error(requests.codes["forbidden"], "商品が取引中ではありません")
 
-            sql = "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, transaction_evidence["id"])
+            sql = "SELECT * FROM `transaction_evidences` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, [transaction_evidence["id"]])
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 conn.rollback()
@@ -921,8 +924,8 @@ def post_ship_done():
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "準備ができていません")
 
-            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE"
-            c.execute(sql, transaction_evidence["id"])
+            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s FOR UPDATE"
+            c.execute(sql, [transaction_evidence["id"]])
             shipping = c.fetchone()
             if shipping is None:
                 conn.rollback()
@@ -939,7 +942,7 @@ def post_ship_done():
                 app.logger.exception(err)
                 http_json_error(requests.codes["internal_server_error"], "failed to request to shipment service")
 
-            sql = "UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?"
+            sql = "UPDATE `shippings` SET `status` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
                 Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_DONE,
                 datetime.datetime.now(),
@@ -959,8 +962,8 @@ def post_complete():
     conn = dbh()
     with conn.cursor() as c:
         try:
-            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
+            c.execute(sql, (flask.request.json["item_id"],))
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 http_json_error(requests.codes["not_found"], "transaction_evidences not found")
@@ -973,8 +976,8 @@ def post_complete():
     try:
         conn.begin()
         with conn.cursor() as c:
-            sql = "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, [flask.request.json["item_id"]])
             item = c.fetchone()
             if item is None:
                 conn.rollback()
@@ -983,8 +986,8 @@ def post_complete():
                 conn.rollback()
                 http_json_error(requests.codes["forbidden"], "商品が取引中ではありません")
 
-            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE"
-            c.execute(sql, flask.request.json["item_id"])
+            sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s FOR UPDATE"
+            c.execute(sql, [flask.request.json["item_id"]])
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 conn.rollback()
@@ -993,8 +996,8 @@ def post_complete():
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "準備ができていません")
 
-            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE"
-            c.execute(sql, transaction_evidence["id"])
+            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s FOR UPDATE"
+            c.execute(sql, [transaction_evidence["id"]])
             shipping = c.fetchone()
 
             try:
@@ -1012,14 +1015,14 @@ def post_complete():
                 conn.rollback()
                 http_json_error(requests.codes["bad_request"], "shipment service側で配送完了になっていません")
 
-            sql = "UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?"
+            sql = "UPDATE `shippings` SET `status` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
                 Constants.SHIPPING_STATUS_DONE,
                 datetime.datetime.now(),
                 transaction_evidence["id"],
             ))
 
-            sql = "UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?"
+            sql = "UPDATE `items` SET `status` = %s, `updated_at` = %s WHERE `id` = %s"
             c.execute(sql, (
                 Constants.ITEM_STATUS_SOLD_OUT,
                 datetime.datetime.now(),
@@ -1048,8 +1051,8 @@ def post_bump():
         conn = dbh()
         conn.begin()
         with conn.cursor() as c:
-            sql = "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, (flask.request.json['item_id']))
+            sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, (flask.request.json['item_id'],))
             target_item = c.fetchone()
             if target_item is None:
                 conn.rollback()
@@ -1058,8 +1061,8 @@ def post_bump():
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "自分の商品以外は編集できません")
 
-            sql = "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE"
-            c.execute(sql, (user['id']))
+            sql = "SELECT * FROM `users` WHERE `id` = %s FOR UPDATE"
+            c.execute(sql, (user['id'],))
             seller = c.fetchone()
             if seller is None:
                 conn.rollback()
@@ -1068,14 +1071,14 @@ def post_bump():
             if seller['last_bump'] + datetime.timedelta(seconds=3) < now:
                 http_json_error(requests.codes['forbidden'], "Bump not allowed")
 
-            sql = "UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?"
-            c.execute(sql, (target_item['id']))
+            sql = "UPDATE `items` SET `created_at`=%s, `updated_at`=%s WHERE id=%s"
+            c.execute(sql, (now, now, target_item['id'],))
 
-            sql = "UPDATE `users` SET `last_bump`=? WHERE id=?"
-            c.execute(sql, (now, user['id']))
+            sql = "UPDATE `users` SET `last_bump`=%s WHERE id=%s"
+            c.execute(sql, (now, user['id'],))
 
-            sql = "SELECT * FROM `items` WHERE `id` = ?"
-            c.execute(sql, target_item['id'])
+            sql = "SELECT * FROM `items` WHERE `id` = %s"
+            c.execute(sql, (target_item['id'],))
             target_item = c.fetchone()
 
         conn.commit()
