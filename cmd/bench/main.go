@@ -165,6 +165,9 @@ func main() {
 
 	msgs := append(uniqMsgs(criticalMsgs), cMsgs...)
 
+	// TODO: criticalMsgsの数によってscoreを減点する
+	// TODO: criticalなエラーが発生していたら大幅減点・失格にする
+
 	if len(cMsgs) > 0 {
 		output := Output{
 			Pass:     false,
