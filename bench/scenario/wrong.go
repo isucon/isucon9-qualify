@@ -28,22 +28,22 @@ func irregularLoginWrongPassword(ctx context.Context, user1 asset.AppUser) error
 }
 
 func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 asset.AppUser) error {
-	fileName, name, description := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true)
+	fileName, name, description, categoryID := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true), asset.GetRandomChildCategory().ID
 
 	price := priceStoreCache.Get()
 
-	err := s1.SellWithWrongCSRFToken(ctx, fileName, name, price, description, 32)
+	err := s1.SellWithWrongCSRFToken(ctx, fileName, name, price, description, categoryID)
 	if err != nil {
 		return err
 	}
 
 	// 変な値段で買えない
-	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMinPrice-1, description, 32)
+	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMinPrice-1, description, categoryID)
 	if err != nil {
 		return err
 	}
 
-	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMaxPrice+1, description, 32)
+	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMaxPrice+1, description, categoryID)
 	if err != nil {
 		return err
 	}
