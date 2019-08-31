@@ -286,10 +286,10 @@ func verifyBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
 	}
 
 	// 簡易チェック
-	createdAt := items[0].CreatedAt
+	var createdAt int64
 	found := false
 	for _, item := range items {
-		if createdAt < item.CreatedAt {
+		if createdAt > 0 && createdAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonはcreated_at順である必要があります"))
 		}
 
@@ -330,12 +330,8 @@ func verifyBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items)))
 	}
 
-	createdAt = items[0].CreatedAt
+	createdAt = targetItemCreatedAt
 	for _, item := range items {
-		if !(item.ID < targetItemID && item.CreatedAt <= targetItemCreatedAt) {
-			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonのitem_idとcreated_atが正しく動作していません"))
-		}
-
 		if createdAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonはcreated_at順である必要があります"))
 		}
@@ -402,12 +398,10 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 	if err != nil {
 		return err
 	}
-	var createdAt int64
 	for _, item := range items {
-		if createdAt > 0 && createdAt < item.CreatedAt {
+		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
 		}
-		createdAt = item.CreatedAt
 
 		if item.Category.ParentID != categoryID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
@@ -484,12 +478,10 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 		return err
 	}
 
-	var createdAt int64
 	for _, item := range items {
-		if createdAt > 0 && createdAt < item.CreatedAt {
+		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
 		}
-		createdAt = item.CreatedAt
 
 		if item.BuyerID != s.UserID && item.Seller.ID != s.UserID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに購入・出品していない商品が含まれます (item_id: %d, user_id: %d)", item.ID, s.UserID))
@@ -585,12 +577,10 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 	if err != nil {
 		return err
 	}
-	var createdAt int64
 	for _, item := range items {
-		if createdAt > 0 && createdAt < item.CreatedAt {
+		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", sellerID))
 		}
-		createdAt = item.CreatedAt
 
 		if item.SellerID != sellerID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
