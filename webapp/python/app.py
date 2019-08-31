@@ -58,6 +58,7 @@ class HttpException(Exception):
         response.status_code = self.status_code
         return response
 
+
 def dbh():
     if hasattr(flask.g, 'db'):
         return flask.g.db
@@ -80,6 +81,7 @@ def dbh():
 
 def http_json_error(code, msg):
     raise HttpException(code, msg)
+
 
 @app.errorhandler(HttpException)
 def handle_http_exception(error):
@@ -108,6 +110,7 @@ def get_user():
         http_json_error(requests.codes['internal_server_error'], "db error")
     return user
 
+
 def get_user_simple_by_id(user_id):
     try:
         conn = dbh()
@@ -121,6 +124,7 @@ def get_user_simple_by_id(user_id):
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
     return user
+
 
 def get_category_by_id(category_id):
     conn = dbh()
@@ -141,10 +145,12 @@ def to_user_json(user):
     del (user['hashed_password'], user['last_bump'], user['created_at'])
     return user
 
+
 def to_item_json(item):
     item["created_at"] = int(item["created_at"].timestamp())
     item["updated_at"] = int(item["updated_at"].timestamp())
     return item
+
 
 def ensure_required_payload(keys=None):
     if keys is None:
@@ -204,7 +210,7 @@ def post_initialize():
     subprocess.call(["../sql/init.sh"])
 
     return flask.jsonify({
-        "is_campaign": False, # TODO: Campaign 実施時は true にする
+        "is_campaign": False,  # TODO: Campaign 実施時は true にする
     })
 
 
@@ -217,17 +223,15 @@ def get_new_items():
 
     item_id_str = flask.request.args.get('item_id')
     if item_id_str:
-        if not item_id_str.isdecimal() or int(item_id_str)<0:
+        if not item_id_str.isdecimal() or int(item_id_str) < 0:
             http_json_error(requests.codes['bad_request'], "item_id param error")
         item_id = int(item_id_str)
 
-
     created_at_str = flask.request.args.get('created_at')
     if created_at_str:
-        if not created_at_str.isdecimal() or int(created_at_str)<0:
+        if not created_at_str.isdecimal() or int(created_at_str) < 0:
             http_json_error(requests.codes['bad_request'], "created_at param error")
         created_at = int(created_at_str)
-
 
     items = []
 
@@ -283,7 +287,7 @@ def get_new_items():
     return flask.jsonify(dict(
         items=item_simples,
         has_next=has_next,
-        ))
+    ))
 
 
 @app.route("/new_items/<root_category_id>.json", methods=["GET"])
@@ -297,18 +301,15 @@ def get_new_category_items(root_category_id=None):
 
     item_id_str = flask.request.args.get('item_id')
     if item_id_str:
-        if not item_id_str.isdecimal() or int(item_id_str)<0:
+        if not item_id_str.isdecimal() or int(item_id_str) < 0:
             http_json_error(requests.codes['bad_request'], "item_id param error")
         item_id = int(item_id_str)
 
-
     created_at_str = flask.request.args.get('created_at')
     if created_at_str:
-        if not created_at_str.isdecimal() or int(created_at_str)<0:
+        if not created_at_str.isdecimal() or int(created_at_str) < 0:
             http_json_error(requests.codes['bad_request'], "created_at param error")
         created_at = int(created_at_str)
-
-
 
     category_ids = []
     with conn.cursor() as c:
@@ -318,33 +319,30 @@ def get_new_category_items(root_category_id=None):
                 root_category_id,
             ))
 
-
             while True:
                 category = c.fetchone()
                 if category is None:
                     break
                 category_ids.append(category["id"])
 
-
-
             if item_id > 0 and created_at > 0:
                 sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
-        			Constants.ITEM_STATUS_ON_SALE,
-        			Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_SOLD_OUT,
                     *category_ids,
-        			datetime.datetime.fromtimestamp(created_at),
-        			item_id,
-                    Constants.ITEMS_PER_PAGE+1,
+                    datetime.datetime.fromtimestamp(created_at),
+                    item_id,
+                    Constants.ITEMS_PER_PAGE + 1,
                 ))
             else:
 
                 sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") ORDER BY created_at DESC, id DESC LIMIT %s"
                 c.execute(sql, (
-        			Constants.ITEM_STATUS_ON_SALE,
-        			Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_SOLD_OUT,
                     *category_ids,
-                    Constants.ITEMS_PER_PAGE+1,
+                    Constants.ITEMS_PER_PAGE + 1,
                 ))
 
             item_simples = []
@@ -380,6 +378,7 @@ def get_new_category_items(root_category_id=None):
         has_next=has_next,
     ))
 
+
 @app.route("/users/transactions.json", methods=["GET"])
 def get_transactions():
     user = get_user()
@@ -390,17 +389,15 @@ def get_transactions():
 
     item_id_str = flask.request.args.get('item_id')
     if item_id_str:
-        if not item_id_str.isdecimal() or int(item_id_str)<0:
+        if not item_id_str.isdecimal() or int(item_id_str) < 0:
             http_json_error(requests.codes['bad_request'], "item_id param error")
         item_id = int(item_id_str)
 
-
     created_at_str = flask.request.args.get('created_at')
     if created_at_str:
-        if not created_at_str.isdecimal() or int(created_at_str)<0:
+        if not created_at_str.isdecimal() or int(created_at_str) < 0:
             http_json_error(requests.codes['bad_request'], "created_at param error")
         created_at = int(created_at_str)
-
 
     with conn.cursor() as c:
 
@@ -411,14 +408,14 @@ def get_transactions():
                 c.execute(sql, (
                     user['id'],
                     user['id'],
-        			Constants.ITEM_STATUS_ON_SALE,
-        			Constants.ITEM_STATUS_TRADING,
-        			Constants.ITEM_STATUS_SOLD_OUT,
-        			Constants.ITEM_STATUS_CANCEL,
-        			Constants.ITEM_STATUS_STOP,
-        			datetime.datetime.fromtimestamp(created_at),
-        			item_id,
-                    Constants.TRANSACTIONS_PER_PAGE+1,
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_TRADING,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.ITEM_STATUS_CANCEL,
+                    Constants.ITEM_STATUS_STOP,
+                    datetime.datetime.fromtimestamp(created_at),
+                    item_id,
+                    Constants.TRANSACTIONS_PER_PAGE + 1,
                 ))
 
             else:
@@ -426,12 +423,12 @@ def get_transactions():
                 c.execute(sql, [
                     user['id'],
                     user['id'],
-        			Constants.ITEM_STATUS_ON_SALE,
-        			Constants.ITEM_STATUS_TRADING,
-        			Constants.ITEM_STATUS_SOLD_OUT,
-        			Constants.ITEM_STATUS_CANCEL,
-        			Constants.ITEM_STATUS_STOP,
-                    Constants.TRANSACTIONS_PER_PAGE+1,
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_TRADING,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.ITEM_STATUS_CANCEL,
+                    Constants.ITEM_STATUS_STOP,
+                    Constants.TRANSACTIONS_PER_PAGE + 1,
                 ])
 
             item_details = []
@@ -474,7 +471,6 @@ def get_transactions():
                     item["transaction_evidence_status"] = transaction_evidence["status"]
                     item["shipping_status"] = ssr["status"]
 
-
         except MySQLdb.Error as err:
             app.logger.exception(err)
             http_json_error(requests.codes['internal_server_error'], "db error")
@@ -489,6 +485,7 @@ def get_transactions():
         has_next=has_next,
     ))
 
+
 @app.route("/users/<user_id>.json", methods=["GET"])
 def get_user_items(user_id=None):
     user = get_user_simple_by_id(user_id)
@@ -499,42 +496,39 @@ def get_user_items(user_id=None):
 
     item_id_str = flask.request.args.get('item_id')
     if item_id_str:
-        if not item_id_str.isdecimal() or int(item_id_str)<0:
+        if not item_id_str.isdecimal() or int(item_id_str) < 0:
             http_json_error(requests.codes['bad_request'], "item_id param error")
         item_id = int(item_id_str)
 
-
     created_at_str = flask.request.args.get('created_at')
     if created_at_str:
-        if not created_at_str.isdecimal() or int(created_at_str)<0:
+        if not created_at_str.isdecimal() or int(created_at_str) < 0:
             http_json_error(requests.codes['bad_request'], "created_at param error")
         created_at = int(created_at_str)
 
     with conn.cursor() as c:
-
         try:
-
             if item_id > 0 and created_at > 0:
                 print(item_id, created_at, datetime.datetime.fromtimestamp(created_at))
                 sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
-        			Constants.ITEM_STATUS_ON_SALE,
-        			Constants.ITEM_STATUS_TRADING,
-        			Constants.ITEM_STATUS_SOLD_OUT,
-        			datetime.datetime.fromtimestamp(created_at),
-        			item_id,
-                    Constants.ITEMS_PER_PAGE+1,
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_TRADING,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    datetime.datetime.fromtimestamp(created_at),
+                    item_id,
+                    Constants.ITEMS_PER_PAGE + 1,
                 ))
 
             else:
                 sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
-        			Constants.ITEM_STATUS_ON_SALE,
-        			Constants.ITEM_STATUS_TRADING,
-        			Constants.ITEM_STATUS_SOLD_OUT,
-                    Constants.TRANSACTIONS_PER_PAGE+1,
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_TRADING,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.TRANSACTIONS_PER_PAGE + 1,
                 ))
 
             item_simples = []
@@ -584,8 +578,6 @@ def get_item(item_id=None):
             if item is None:
                 http_json_error(requests.codes['not_found'], "item not found")
 
-
-
             seller = get_user_simple_by_id(item["seller_id"])
             category = get_category_by_id(item["category_id"])
 
@@ -596,7 +588,6 @@ def get_item(item_id=None):
             if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
                 buyer = get_user_simple_by_id(item["buyer_id"])
                 item["buyer"] = to_user_json(buyer)
-
 
             sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
             c.execute(sql, [item['id']])
@@ -1243,13 +1234,13 @@ def get_reports():
 @app.route("/transactions/<transaction_id>")
 @app.route("/users/<user_id>")
 @app.route("/users/setting")
-def get_index():
+def get_index(*args, **kwargs):
     # if "user_id" in flask.session:
     #    return flask.redirect('/', 303)
     return flask.render_template('index.html')
 
 
-## Assets
+# Assets
 # @app.route("/*")
 
 if __name__ == "__main__":
