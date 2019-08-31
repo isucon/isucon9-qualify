@@ -2,6 +2,9 @@ package scenario
 
 import (
 	"context"
+	"crypto/md5"
+	"fmt"
+	"io"
 	"sync"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -305,6 +308,16 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	}
 
 	return nil
+}
+
+func calcMD5(f io.Reader) (string, error) {
+	h := md5.New()
+	_, err := io.Copy(h, f)
+	if err != nil {
+		return "", failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルのmd5値を取ることに失敗しました"))
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 type priceStore struct {
