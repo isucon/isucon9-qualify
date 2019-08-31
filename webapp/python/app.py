@@ -174,17 +174,23 @@ def post_initialize():
 @app.route("/new_items.json", methods=["GET"])
 def get_new_items():
     # TODO: check err
-    if flask.request.args.get('item_id') is not None:
-        item_id = int(flask.request.args.get('item_id'))
 
-        if item_id <= 0:
-            http_json_error(requests.codes['bad_request'], 'item_id param error')
+    item_id = 0
+    created_at = 0
 
-    if flask.request.args.get('created_at') is not None:
-        created_at = int(flask.request.args.get('created_at'))
+    item_id_str = flask.request.args.get('item_id')
+    if item_id_str:
+        if not item_id_str.isdecimal() or int(item_id_str)<0:
+            http_json_error(requests.codes['bad_request'], "item_id param error")
+        item_id = int(item_id_str)
 
-        if created_at <= 0:
-            http_json_error(requests.codes['bad_request'], 'created_at param error')
+
+    created_at_str = flask.request.args.get('created_at')
+    if created_at_str:
+        if not created_at_str.isdecimal() or int(created_at_str)<0:
+            http_json_error(requests.codes['bad_request'], "created_at param error")
+        created_at = int(created_at)
+
 
     items = []
 
@@ -224,8 +230,22 @@ def get_new_category_items(root_category_id=None):
 
     root_category = get_category_by_id(root_category_id)
 
-    item_id = 0 # FIXME:
-    created_at = 0 # FIXME:
+    item_id = 0
+    created_at = 0
+
+    item_id_str = flask.request.args.get('item_id')
+    if item_id_str:
+        if not item_id_str.isdecimal() or int(item_id_str)<0:
+            http_json_error(requests.codes['bad_request'], "item_id param error")
+        item_id = int(item_id_str)
+
+
+    created_at_str = flask.request.args.get('created_at')
+    if created_at_str:
+        if not created_at_str.isdecimal() or int(created_at_str)<0:
+            http_json_error(requests.codes['bad_request'], "created_at param error")
+        created_at = int(created_at)
+
 
 
     category_ids = []
@@ -303,8 +323,22 @@ def get_transactions():
     user = get_user()
     conn = dbh()
 
-    item_id = 0 # FIXME:
-    created_at = 0 # FIXME:
+    item_id = 0
+    created_at = 0
+
+    item_id_str = flask.request.args.get('item_id')
+    if item_id_str:
+        if not item_id_str.isdecimal() or int(item_id_str)<0:
+            http_json_error(requests.codes['bad_request'], "item_id param error")
+        item_id = int(item_id_str)
+
+
+    created_at_str = flask.request.args.get('created_at')
+    if created_at_str:
+        if not created_at_str.isdecimal() or int(created_at_str)<0:
+            http_json_error(requests.codes['bad_request'], "created_at param error")
+        created_at = int(created_at)
+
 
     with conn.cursor() as c:
 
