@@ -41,6 +41,12 @@ func Validation(ctx context.Context, isCampaign bool, critical *fails.Critical) 
 		Check(ctx, critical)
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		Load(ctx, critical)
+	}()
+
 	if isCampaign {
 		wg.Add(1)
 		go func() {
