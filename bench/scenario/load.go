@@ -11,13 +11,20 @@ import (
 	"github.com/morikuni/failure"
 )
 
+const (
+	NumLoadScenario1 = 3
+	NumLoadScenario2 = 6
+	NumLoadScenario3 = 6
+	NumLoadScenario4 = 3
+)
+
 func Load(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
 	// load scenario #1
 	// カテゴリを少しみてbuy
-	for i := 0; i < 3; i++ {
+	for i := 0; i < NumLoadScenario1; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -53,7 +60,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				categories = asset.GetRootCategories()
 				for _, category := range categories {
-					err = loadNewCategoryItemsAndItems(ctx, s1, category.ID, 20, 15)
+					err = loadNewCategoryItemsAndItems(ctx, s1, category.ID, 20, 20)
 					if err != nil {
 						critical.Add(err)
 						goto Final
@@ -80,8 +87,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	}
 
 	// load scenario #2
-	// どちらかというとカテゴリを中心にみていく
-	for i := 0; i < 6; i++ {
+	// 出品 => newitem => そのカテゴリ => getTransactions => buy
+	for i := 0; i < NumLoadScenario2; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -121,13 +128,19 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = loadNewCategoryItemsAndItems(ctx, s2, item.Category.ParentID, 20, 5)
+				err = loadNewItemsAndItems(ctx, s2, 10, 20)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				err = loadTransactionEvidence(ctx, s1, 10, 10)
+				err = loadNewCategoryItemsAndItems(ctx, s1, item.Category.ParentID, 30, 20)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				err = loadTransactionEvidence(ctx, s1, 10, 20)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -161,7 +174,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #3
 	// どちらかというとuserを中心にみていく
-	for i := 0; i < 6; i++ {
+	for i := 0; i < NumLoadScenario3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -249,7 +262,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #4
 	// NewItemみてbuy
-	for i := 0; i < 3; i++ {
+	for i := 0; i < NumLoadScenario4; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
