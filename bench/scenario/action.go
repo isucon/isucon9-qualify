@@ -320,6 +320,10 @@ func calcMD5(f io.Reader) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
+func getImageURL(imageName string) string {
+	return fmt.Sprintf("/upload/%s", imageName)
+}
+
 type priceStore struct {
 	price int
 	sync.RWMutex
