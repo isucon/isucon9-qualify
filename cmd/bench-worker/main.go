@@ -89,6 +89,7 @@ func dequeue(ep string) (*Job, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, errorJobNotFound
@@ -140,6 +141,7 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return err
