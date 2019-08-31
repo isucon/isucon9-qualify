@@ -208,7 +208,7 @@ def get_new_items():
     if created_at_str:
         if not created_at_str.isdecimal() or int(created_at_str)<0:
             http_json_error(requests.codes['bad_request'], "created_at param error")
-        created_at = int(created_at)
+        created_at = int(created_at_str)
 
 
     items = []
@@ -263,7 +263,7 @@ def get_new_category_items(root_category_id=None):
     if created_at_str:
         if not created_at_str.isdecimal() or int(created_at_str)<0:
             http_json_error(requests.codes['bad_request'], "created_at param error")
-        created_at = int(created_at)
+        created_at = int(created_at_str)
 
 
 
@@ -356,7 +356,7 @@ def get_transactions():
     if created_at_str:
         if not created_at_str.isdecimal() or int(created_at_str)<0:
             http_json_error(requests.codes['bad_request'], "created_at param error")
-        created_at = int(created_at)
+        created_at = int(created_at_str)
 
 
     with conn.cursor() as c:
@@ -451,15 +451,28 @@ def get_user_items(user_id=None):
     user = get_user_simple_by_id(user_id)
     conn = dbh()
 
-    item_id = 0 # FIXME:
-    created_at = 0 # FIXME:
+    item_id = 0
+    created_at = 0
 
+    item_id_str = flask.request.args.get('item_id')
+    if item_id_str:
+        if not item_id_str.isdecimal() or int(item_id_str)<0:
+            http_json_error(requests.codes['bad_request'], "item_id param error")
+        item_id = int(item_id_str)
+
+
+    created_at_str = flask.request.args.get('created_at')
+    if created_at_str:
+        if not created_at_str.isdecimal() or int(created_at_str)<0:
+            http_json_error(requests.codes['bad_request'], "created_at param error")
+        created_at = int(created_at_str)
 
     with conn.cursor() as c:
 
         try:
 
             if item_id > 0 and created_at > 0:
+                print(item_id, created_at, datetime.datetime.fromtimestamp(created_at))
                 sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
