@@ -31,7 +31,9 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	// 理論上そのエンドポイントを高速化することで出せるスコアに上限が出るので、他のエンドポイントを最適化する必要性が出る
 
 	// load scenario #1
-	// カテゴリを少しみてbuy
+	// 出品
+	// カテゴリをみて 7カテゴリ x (20ページ + 20item) = 280
+	// buywithcheck
 	for i := 0; i < NumLoadScenario1; i++ {
 		wg.Add(1)
 		go func() {
@@ -95,7 +97,11 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	}
 
 	// load scenario #2
-	// 出品 => そのカテゴリ => getTransactions => buy
+	// 出品
+	// その商品
+	// そのカテゴリ 30ページ 30商品
+	// getTransactions　(10ページ 20商品) x 2
+	// buy
 	for i := 0; i < NumLoadScenario2; i++ {
 		wg.Add(1)
 		go func() {
@@ -182,6 +188,9 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #3
 	// どちらかというとuserを中心にみていく
+	// 出品
+	// アクティブユーザ 3人 * (3ページ + 20件)
+	// buy with check
 	for i := 0; i < NumLoadScenario3; i++ {
 		wg.Add(1)
 		go func() {
@@ -270,6 +279,9 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #4
 	// NewItemみてbuy
+	// 出品
+	// 新着 30ページ 50商品
+	// buy with check
 	for i := 0; i < NumLoadScenario4; i++ {
 		wg.Add(1)
 		go func() {
