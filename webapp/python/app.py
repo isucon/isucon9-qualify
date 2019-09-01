@@ -150,10 +150,20 @@ def to_user_json(user):
     return user
 
 
-def to_item_json(item):
+def to_item_json(item, simple=False):
     item["created_at"] = int(item["created_at"].timestamp())
     item["updated_at"] = int(item["updated_at"].timestamp())
-    return item
+
+    keys = (
+        "id", "seller_id", "seller", "buyer_id", "buyer", "status", "name", "price", "description",
+        "image_url", "category_id", "category", "transaction_evidence_id", "transaction_evidence_status",
+        "shipping_status", "created_at",
+    )
+
+    if simple:
+        keys = ("id", "seller_id", "seller", "status", "name", "price", "image_url", "category_id", "category", "created_at")
+
+    return {k:v for k,v in item.items() if k in keys}
 
 
 def ensure_required_payload(keys=None):
@@ -274,10 +284,10 @@ def get_new_items():
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=True)
 
                 print(item)
                 item_simples.append(item)
@@ -362,10 +372,10 @@ def get_new_category_items(root_category_id=None):
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=True)
 
                 print(item)
                 item_simples.append(item)
@@ -449,10 +459,10 @@ def get_transactions():
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=False)
 
                 print(item)
                 item_details.append(item)
@@ -537,7 +547,7 @@ def get_user_items(user_id=None):
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
                     Constants.ITEM_STATUS_SOLD_OUT,
-                    Constants.TRANSACTIONS_PER_PAGE + 1,
+                    Constants.ITEMS_PER_PAGE + 1,
                 ))
 
             item_simples = []
@@ -550,10 +560,10 @@ def get_user_items(user_id=None):
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=True)
 
                 print(item)
                 item_simples.append(item)
@@ -590,10 +600,10 @@ def get_item(item_id=None):
             seller = get_user_simple_by_id(item["seller_id"])
             category = get_category_by_id(item["category_id"])
 
-            item = to_item_json(item)
             item["category"] = category
             item["seller"] = to_user_json(seller)
             item["image_url"] = get_image_url(item["image_name"])
+            item = to_item_json(item, simple=False)
 
             if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
                 buyer = get_user_simple_by_id(item["buyer_id"])
@@ -935,7 +945,7 @@ def post_ship():
             sql = "UPDATE `shippings` SET `status` = %s, `img_binary` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
                 Constants.SHIPPING_STATUS_WAIT_PICKUP,
-                io.BytesIO(res.content),
+                res.content,
                 datetime.datetime.now(),
                 transaction_evidence["id"],
             ))
@@ -944,7 +954,7 @@ def post_ship():
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
     return flask.jsonify(dict(
-        path="/transactions/%d.png".format(transaction_evidence["id"]),
+        path="/transactions/{}.png".format(transaction_evidence["id"]),
         reserve_id=shipping["reserve_id"],
     ))
 
@@ -997,20 +1007,14 @@ def post_ship_done():
                 conn.rollback()
                 http_json_error(requests.codes["not_found"], "shipping not found")
 
-            try:
-                host = get_shipment_service_url()
-                res = requests.post(host + "/request",
-                                    headers=dict(Authorization=Constants.ISUCARI_API_TOKEN),
-                                    json=dict(reserve_id=shipping["reserve_id"]))
-                res.raise_for_status()
-            except (socket.gaierror, requests.HTTPError) as err:
-                conn.rollback()
-                app.logger.exception(err)
-                http_json_error(requests.codes["internal_server_error"], "failed to request to shipment service")
+            ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
+
+            if ssr["status"] not in (Constants.SHIPPING_STATUS_DONE, Constants.SHIPPING_STATUS_SHIPPING):
+                http_json_error(requests.codes["forbidden"], "shipment service側で配送中か配送完了になっていません")
 
             sql = "UPDATE `shippings` SET `status` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
-                Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_DONE,
+                ssr["status"],
                 datetime.datetime.now(),
                 transaction_evidence["id"],
             ))
@@ -1105,7 +1109,7 @@ def post_complete():
 @app.route("/transactions/<transaction_evidence_id>.png", methods=["GET"])
 def get_qrcode(transaction_evidence_id):
     if transaction_evidence_id:
-        if not transaction_evidence_id.isdecimal() or int(transaction_evidence_id) < 0:
+        if not transaction_evidence_id.isdecimal() or int(transaction_evidence_id) <= 0:
             http_json_error(requests.codes['bad_request'], "incorrect transaction_evidence id")
 
     seller = get_user()
@@ -1142,10 +1146,9 @@ def get_qrcode(transaction_evidence_id):
             app.logger.exception(err)
             http_json_error(requests.codes['internal_server_error'], "db error")
 
-        img_binary = read_image(shipping["img_binary"])
-        res = make_response(img_binary)
-        res.headers.set('Content-Type', 'image/png')
-        res.headers.set('Content-Disposition', 'attachment', filename='{}.png'.format(transaction_evidence_id))
+    img_binary = shipping["img_binary"]
+    res = flask.make_response(img_binary)
+    res.headers.set('Content-Type', 'image/png')
 
     return  res
 
