@@ -62,17 +62,18 @@ func loginedSession(ctx context.Context, user1 asset.AppUser) (*session.Session,
 	return s1, nil
 }
 
-func sell(ctx context.Context, s1 *session.Session, price int) (int64, error) {
+func sell(ctx context.Context, s1 *session.Session, price int) (asset.AppItem, error) {
 	fileName, name, description, categoryID := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true), asset.GetRandomChildCategory().ID
 
 	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, categoryID)
 	if err != nil {
-		return 0, err
+		return asset.AppItem{}, err
 	}
 
 	asset.SetItem(s1.UserID, targetItemID, name, price, description, categoryID)
+	aItem, _ := asset.GetItem(s1.UserID, targetItemID)
 
-	return targetItemID, nil
+	return aItem, nil
 }
 
 func sellForFileName(ctx context.Context, s1 *session.Session, price int) (int64, string, error) {
@@ -96,11 +97,11 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return err
 	}
 
-	itemFromBuyerTrx, err := findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err := findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err := findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err := findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -140,11 +141,11 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -186,7 +187,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return err
 	}
 
-	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -198,7 +199,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -235,7 +236,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -243,7 +244,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}
