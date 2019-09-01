@@ -777,7 +777,7 @@ func checkGetItem(ctx context.Context, s *session.Session, targetItemID int64) e
 	}
 
 	if item.BuyerID != 0 && item.Buyer == nil {
-		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの購入者情報が正しくありません", targetItemID))
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonのbuyer_idがあるのに購入者の情報がありません", targetItemID))
 	}
 
 	if item.BuyerID != 0 && item.Buyer.ID != item.BuyerID {
