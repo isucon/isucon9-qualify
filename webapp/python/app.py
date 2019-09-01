@@ -943,7 +943,10 @@ def post_ship():
     except MySQLdb.Error as err:
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
-    return flask.jsonify(dict(path="/transactions/%d.png".format(transaction_evidence["id"])))
+    return flask.jsonify(dict(
+        path="/transactions/%d.png".format(transaction_evidence["id"]),
+        reserve_id=shipping["reserve_id"],
+    ))
 
 
 @app.route("/ship_done", methods=["POST"])
