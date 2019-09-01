@@ -924,7 +924,7 @@ def post_ship():
             try:
                 host = get_shipment_service_url()
                 res = requests.post(host + "/request",
-                                    header=dict(Authorization=Constants.ISUCARI_API_TOKEN),
+                                    headers=dict(Authorization=Constants.ISUCARI_API_TOKEN),
                                     json=dict(reserve_id=shipping["reserve_id"]))
                 res.raise_for_status()
             except (socket.gaierror, requests.HTTPError) as err:
@@ -997,7 +997,7 @@ def post_ship_done():
             try:
                 host = get_shipment_service_url()
                 res = requests.post(host + "/request",
-                                    header=dict(Authorization=Constants.ISUCARI_API_TOKEN),
+                                    headers=dict(Authorization=Constants.ISUCARI_API_TOKEN),
                                     json=dict(reserve_id=shipping["reserve_id"]))
                 res.raise_for_status()
             except (socket.gaierror, requests.HTTPError) as err:
@@ -1066,7 +1066,7 @@ def post_complete():
             try:
                 host = get_shipment_service_url()
                 res = requests.post(host + "/request",
-                                    header=dict(Authorization=Constants.ISUCARI_API_TOKEN),
+                                    headers=dict(Authorization=Constants.ISUCARI_API_TOKEN),
                                     json=dict(reserve_id=shipping["reserve_id"]))
                 res.raise_for_status()
             except (socket.gaierror, requests.HTTPError) as err:
@@ -1100,7 +1100,7 @@ def post_complete():
 
 
 @app.route("/transactions/<transaction_evidence_id>.png", methods=["GET"])
-def get_qrcode():
+def get_qrcode(transaction_evidence_id):
     return
 
 
