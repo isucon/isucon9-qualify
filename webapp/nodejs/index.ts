@@ -180,8 +180,11 @@ type ReqRegister = {
     account_name?: string,
     address?: string,
     password?: string,
+}
 
-
+type ReqLogin = {
+    account_name?: string,
+    password?: string,
 }
 
 type ResNewItems = {
@@ -687,6 +690,43 @@ async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerRespon
 }
 
 async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const rr: ReqLogin = req.body
+
+    const accountName = rr.account_name;
+    const password = rr.password;
+
+    if (accountName === undefined || accountName === "" || password === undefined || password === "") {
+
+        outputErrorMessage(reply, "all parameters are required", 400);
+        return;
+    }
+
+    const conn = await getConnection();
+    const [rows] = await conn.query("SELECT * FROM `users` WHERE `account_name` = ?", [accountName])
+    let user: User | null = null;
+    for (const row of rows) {
+        user = row as User;
+    }
+
+    if (user === null) {
+        outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        return;
+    }
+
+    if (!await comparePassword(password, user.hashed_password)) {
+        outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        return;
+    }
+
+    reply.setCookie("user_id", user.id.toString(), {
+        path: "/",
+    });
+
+    reply
+        .code(200)
+        .type("application/json;charset=utf-8")
+        .send(user);
+
 }
 
 async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -836,6 +876,14 @@ async function encryptPassword(password: string): Promise<string> {
             resolve(hash);
         });
     })
+}
+
+async function comparePassword(inputPassword: string, hashedPassword: string): Promise<boolean> {
+    return await new Promise((resolve) => {
+        bcrypt.compare(inputPassword, hashedPassword.toString(), (err, isValid) => {
+            resolve(isValid);
+        });
+    });
 }
 
 function getImageURL(image_name: string) {
