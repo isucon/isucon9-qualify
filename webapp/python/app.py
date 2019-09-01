@@ -649,7 +649,7 @@ def post_item_edit():
 
     price = int(flask.request.json['item_price'])
     item_id = int(flask.request.json['item_id'])
-    if not 100 <= price <= 100000:
+    if not 100 <= price <= 1000000:
         http_json_error(requests.codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
     user = get_user()
     conn = dbh()
@@ -828,7 +828,7 @@ def post_sell():
             http_json_error(requests.codes['bad_request'], 'all parameters are required')
 
     price = int(flask.request.form['price'])
-    if not 100 <= price <= 100000:
+    if not 100 <= price <= 1000000:
         http_json_error(requests.codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
 
     category = get_category_by_id(flask.request.form['category_id'])
