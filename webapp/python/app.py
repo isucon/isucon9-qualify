@@ -1301,7 +1301,7 @@ def get_reports():
     except MySQLdb.Error as err:
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
-    return flask.jsonify(dict(transaction_evidences=transaction_evidences))
+    return flask.jsonify(transaction_evidences)
 
 
 # Frontend
