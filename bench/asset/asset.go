@@ -380,7 +380,7 @@ func SetItemPrice(sellerID int64, itemID int64, price int) {
 	items[key] = item
 }
 
-func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
+func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) AppItem {
 	muItem.Lock()
 	defer muItem.Unlock()
 
@@ -389,6 +389,7 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 	item.CreatedAt = createdAt
 
 	items[key] = item
+	return item
 }
 
 func GetRandomImageFileName() string {

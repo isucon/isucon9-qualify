@@ -97,11 +97,11 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return err
 	}
 
-	itemFromBuyerTrx, err := findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err := findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err := findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err := findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -141,11 +141,11 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return err
 	}
 
-	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID)
+	itemFromSellerTrx, err = findItemFromUsersTransactions(ctx, s1, targetItemID, 0)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
-	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID)
+	itemFromBuyerTrx, err = findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
 		return err
 	}

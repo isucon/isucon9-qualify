@@ -119,14 +119,12 @@ func Check(ctx context.Context, critical *fails.Critical) {
 	}()
 
 	// check scenario #3
-	// bumpしてから新着をチェックする
-	// TODO: 新着はbumpが新着に出ていることを確認してから、初期データを後ろの方までいい感じに遡りたい
-	// TODO: 速度が上がるとbumpしたものが新着に無くなる可能性があるので、created_at的になければ更に遡るようにする
+	// bumpしてからカテゴリ新着をチェックする
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		var s1, s2, s3 *session.Session
+		var s1, s2 *session.Session
 		var err error
 
 	L:
@@ -154,24 +152,6 @@ func Check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			s3, err = activeSellerSession(ctx)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			err = checkTransactionEvidence(ctx, s3, 3, 20)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			err = checkTransactionEvidence(ctx, s3, 10, 20)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
 			ActiveSellerPool.Enqueue(s1)
 			BuyerPool.Enqueue(s2)
 
@@ -186,6 +166,8 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 	// check scenario #4
 	// 出品した商品を編集する（100円を110円とかにする）
+	// 出品した商品を探す
+	// さいごは購入
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -220,19 +202,32 @@ func Check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			// TODO 打った商品探す
+			// 売った商品探す
+			_, err = findItemFromUsers(ctx, s1, targetItem, 2)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
+			_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
+			_, err = findItemFromUsersTransactions(ctx, s1, targetItem.ID, 5)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
 
 			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItem.ID, price+10)
 			if err != nil {
 				critical.Add(err)
-
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItem.ID, price+10)
+			err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price+10)
 			if err != nil {
 				critical.Add(err)
-
 				goto Final
 			}
 
@@ -266,87 +261,16 @@ func checkBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
 		return err
 	}
 
-	asset.SetItemCreatedAt(s1.UserID, targetItemID, newCreatedAt)
+	targetItem := asset.SetItemCreatedAt(s1.UserID, targetItemID, newCreatedAt)
 
-	hasNext, items, err := s2.NewItems(ctx)
+	_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
 	if err != nil {
 		return err
 	}
 
-	if !hasNext {
-		return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonのhas_nextがfalseです"))
-	}
-
-	if len(items) != asset.ItemsPerPage {
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items)))
-	}
-
-	// 簡易チェック
-	var createdAt int64
-	found := false
-	for _, item := range items {
-		if createdAt > 0 && createdAt < item.CreatedAt {
-			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonはcreated_at順である必要があります"))
-		}
-
-		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonは販売中か売り切れの商品しか出してはいけません (item_id: %d; seller_id: %d)", item.ID, item.SellerID))
-		}
-
-		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if ok && !(aItem.Name == item.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (item_id: %d; seller_id: %d)", item.ID, item.SellerID))
-		}
-
-		err := checkItemSimpleCategory(item, aItem)
-		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (item_id: %d)", err.Error(), item.ID))
-		}
-
-		if targetItemID == item.ID {
-			found = true
-		}
-
-		createdAt = item.CreatedAt
-	}
-
-	if !found {
-		// Verifyでしかできない確認
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonにバンプした商品が表示されていません (item_id: %d)", targetItemID))
-	}
-
-	targetItemID, targetItemCreatedAt := items[len(items)/2].ID, items[len(items)/2].CreatedAt
-
-	hasNext, items, err = s2.NewItemsWithItemIDAndCreatedAt(ctx, targetItemID, targetItemCreatedAt)
+	_, err = findItemFromUsers(ctx, s1, targetItem, 3)
 	if err != nil {
 		return err
-	}
-
-	if hasNext && (len(items) != asset.ItemsPerPage) {
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品数が違います: expected: %d; actual: %d", asset.ItemsPerPage, len(items)))
-	}
-
-	createdAt = targetItemCreatedAt
-	for _, item := range items {
-		if createdAt < item.CreatedAt {
-			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonはcreated_at順である必要があります"))
-		}
-
-		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Message("/new_items.jsonは販売中か売り切れの商品しか出してはいけません"))
-		}
-
-		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if ok && !(aItem.Name == item.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの商品情報に誤りがあります (item_id: %d; seller_id: %d)", item.ID, item.SellerID))
-		}
-
-		err := checkItemSimpleCategory(item, aItem)
-		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonの%s (item_id: %d)", err.Error(), item.ID))
-		}
-
-		createdAt = item.CreatedAt
 	}
 
 	return nil
