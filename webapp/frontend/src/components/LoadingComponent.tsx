@@ -1,6 +1,7 @@
 import React from 'react';
-import { makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, MuiThemeProvider, Theme } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import { themeInstance } from '../theme';
 
 const useStyles = makeStyles((theme: Theme) => ({
   progress: {
@@ -16,8 +17,15 @@ const useStyles = makeStyles((theme: Theme) => ({
 const LoadingComponent: React.FC = () => {
   const classes = useStyles();
 
+  // MEMO: Wrap component by MuiThemeProvider again to ignore this bug. https://github.com/mui-org/material-ui/issues/14044
   return (
-    <CircularProgress color="primary" size={80} className={classes.progress} />
+    <MuiThemeProvider theme={themeInstance}>
+      <CircularProgress
+        color="primary"
+        size={80}
+        className={classes.progress}
+      />
+    </MuiThemeProvider>
   );
 };
 
