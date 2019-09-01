@@ -130,7 +130,7 @@ export function fetchUserPageDataAction(
       })
       .catch((err: Error) => {
         if (err instanceof NotFoundError) {
-          dispatch(notFoundError());
+          dispatch(notFoundError(err.message));
         }
 
         dispatch(

@@ -30,11 +30,12 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
       .then(() => AppClient.get(`/items/${itemId}.json`))
       .then(async (response: Response) => {
         if (!response.ok) {
+          const errRes: ErrorRes = await response.json();
+
           if (response.status === 404) {
-            throw new NotFoundError('Item not found');
+            throw new NotFoundError(errRes.error);
           }
 
-          const errRes: ErrorRes = await response.json();
           throw new AppResponseError(errRes.error, response);
         }
 
@@ -72,7 +73,7 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
       })
       .catch((err: Error) => {
         if (err instanceof NotFoundError) {
-          dispatch(notFoundError());
+          dispatch(notFoundError(err.message));
           return;
         }
 
