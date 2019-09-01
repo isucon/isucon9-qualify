@@ -547,7 +547,7 @@ def get_user_items(user_id=None):
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
                     Constants.ITEM_STATUS_SOLD_OUT,
-                    Constants.TRANSACTIONS_PER_PAGE + 1,
+                    Constants.ITEMS_PER_PAGE + 1,
                 ))
 
             item_simples = []
