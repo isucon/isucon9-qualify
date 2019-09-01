@@ -222,10 +222,9 @@ async function getConnection() {
 
 // API
 
-fastify.get("/initialize", postInitialize);
 fastify.post("/initialize", postInitialize);
 fastify.get("/new_items.json", getNewItems);
-fastify.get("/new_items/:root_category_id.json", getNewCategoryItems);
+fastify.get("/new_items/:root_category_id(^\\d+).json", getNewCategoryItems);
 fastify.get("/users/transactions.json", getTransactions);
 fastify.get("/users/:user_id.json", getUserItems);
 fastify.get("/items/:item_id.json", getItem);
@@ -338,10 +337,10 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
         }
     }
 
-    const itemSimples: ItemSimple[] = [];
+    let itemSimples: ItemSimple[] = [];
 
     for (const item of items) {
-        const seller = await getUserSimpleBy(conn, item.seller_id);
+        const seller = await getUserSimpleByID(conn, item.seller_id);
         if (seller === null) {
             outputErrorMessage(reply, "seller not found", 404)
             return;
@@ -366,8 +365,13 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
         });
     }
 
+    let hasNext = false;
+    if (itemSimples.length > ItemsPerPage) {
+        hasNext = true;
+        itemSimples = itemSimples.splice(0, itemSimples.length-1)
+    }
     const res: ResNewItems = {
-        has_next: false,
+        has_next: hasNext,
         items: itemSimples,
     };
 
@@ -378,7 +382,125 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
 }
 
 async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
-    const rootCategoryId: string = req.params.root_category_id;
+    const rootCategoryIdStr: string = req.params.root_category_id;
+    console.log(req.params);
+    const rootCategoryId: number = parseInt(rootCategoryIdStr, 10);
+    if (rootCategoryId === null || isNaN(rootCategoryId)) {
+        console.log(rootCategoryIdStr);
+        console.log(rootCategoryId);
+        outputErrorMessage(reply, "incorrect category id", 400);
+        return;
+    }
+
+    const conn = await getConnection();
+    const rootCategory = await getCategoryByID(conn, rootCategoryId);
+    if (rootCategory ===  null || rootCategory.parent_id !== 0) {
+        outputErrorMessage(reply, "category not found");
+        return;
+    }
+
+    const categoryIDs: number[] = [];
+    const [rows,] = await conn.query("SELECT id FROM `categories` WHERE parent_id=?", [rootCategory.id]);
+    for (const row of rows) {
+        categoryIDs.push(row.id);
+    }
+
+    const itemIDStr = req.query.item_id;
+    let itemID = 0;
+    if (itemIDStr !== undefined && itemIDStr !== "") {
+        itemID = parseInt(itemIDStr, 10);
+        if (isNaN(itemID) || itemID <= 0) {
+            outputErrorMessage(reply, "item_id param error", 400);
+            return;
+        }
+    }
+    const createdAtStr = req.query.created_at;
+    let createdAt = 0;
+    if (createdAtStr !== undefined && createdAtStr !== "") {
+        createdAt = parseInt(createdAtStr, 10);
+        if (isNaN(createdAt) || createdAt <= 0) {
+            outputErrorMessage(reply, "created_at param error", 400);
+            return;
+        }
+    }
+
+    const items: Item[] = [];
+    if (itemID > 0 && createdAt > 0) {
+        const [rows] = await conn.query(
+            "SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            [
+                ItemStatusOnSale,
+                ItemStatusSoldOut,
+                new Date(createdAt),
+                itemID,
+                ItemsPerPage+1,
+            ]
+        );
+
+        for (const row of rows) {
+            items.push(row as Item);
+        }
+    } else {
+        const [rows] = await conn.query(
+            "SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            [
+                ItemStatusOnSale,
+                ItemStatusSoldOut,
+                ItemsPerPage+1,
+            ]
+        );
+
+        for (const row of rows) {
+            items.push(row as Item);
+        }
+    }
+
+    let itemSimples: ItemSimple[] = [];
+
+    for (const item of items) {
+        const seller = await getUserSimpleByID(conn, item.seller_id);
+        if (seller === null) {
+            outputErrorMessage(reply, "seller not found", 404)
+            return;
+        }
+        const category = await getCategoryByID(conn, item.category_id);
+        if (category === null) {
+            outputErrorMessage(reply, "category not found", 404)
+            return;
+        }
+
+        itemSimples.push({
+            id: item.id,
+            seller_id: item.seller_id,
+            seller: seller,
+            status: item.status,
+            name: item.name,
+            price: item.price,
+            image_url: getImageURL(item.image_name),
+            category_id: item.category_id,
+            category: category,
+            created_at: item.created_at.getTime(),
+        });
+    }
+
+    let hasNext = false;
+    if (itemSimples.length > ItemsPerPage) {
+        hasNext = true;
+        itemSimples = itemSimples.splice(0, itemSimples.length-1)
+    }
+
+    const res = {
+        root_category_id: rootCategory.id,
+        root_category_name: rootCategory.category_name,
+        items: itemSimples,
+        has_next: hasNext,
+    }
+
+    reply
+        .code(200)
+        .type("application/json")
+        .send(res);
+
 }
 
 async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -474,8 +596,8 @@ function outputErrorMessage(reply: FastifyReply<ServerResponse>, message: string
         .send({"error": message});
 }
 
-async function getUserSimpleBy(conn: MySQLQueryable, userId: number): Promise<UserSimple | null> {
-    const [rows,] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [userId]);
+async function getUserSimpleByID(conn: MySQLQueryable, userID: number): Promise<UserSimple | null> {
+    const [rows,] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [userID]);
     for (const row of rows) {
         const user = row as User;
         const userSimple: UserSimple = {
