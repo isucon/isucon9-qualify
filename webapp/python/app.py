@@ -150,10 +150,20 @@ def to_user_json(user):
     return user
 
 
-def to_item_json(item):
+def to_item_json(item, simple=False):
     item["created_at"] = int(item["created_at"].timestamp())
     item["updated_at"] = int(item["updated_at"].timestamp())
-    return item
+
+    keys = (
+        "id", "seller_id", "seller", "buyer_id", "buyer", "status", "name", "price", "description",
+        "image_url", "category_id", "category", "transaction_evidence_id", "transaction_evidence_status",
+        "shipping_status", "created_at",
+    )
+
+    if simple:
+        keys = ("id", "seller_id", "seller", "status", "name", "price", "image_url", "category_id", "category", "created_at")
+
+    return {k:v for k,v in item.items() if k in keys}
 
 
 def ensure_required_payload(keys=None):
@@ -274,10 +284,10 @@ def get_new_items():
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=True)
 
                 print(item)
                 item_simples.append(item)
@@ -362,10 +372,10 @@ def get_new_category_items(root_category_id=None):
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=True)
 
                 print(item)
                 item_simples.append(item)
@@ -449,10 +459,10 @@ def get_transactions():
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=False)
 
                 print(item)
                 item_details.append(item)
@@ -550,10 +560,10 @@ def get_user_items(user_id=None):
                 seller = get_user_simple_by_id(item["seller_id"])
                 category = get_category_by_id(item["category_id"])
 
-                item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
+                item = to_item_json(item, simple=True)
 
                 print(item)
                 item_simples.append(item)
@@ -590,10 +600,10 @@ def get_item(item_id=None):
             seller = get_user_simple_by_id(item["seller_id"])
             category = get_category_by_id(item["category_id"])
 
-            item = to_item_json(item)
             item["category"] = category
             item["seller"] = to_user_json(seller)
             item["image_url"] = get_image_url(item["image_name"])
+            item = to_item_json(item, simple=False)
 
             if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
                 buyer = get_user_simple_by_id(item["buyer_id"])
