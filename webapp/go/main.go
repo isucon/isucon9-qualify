@@ -611,9 +611,10 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	if itemID > 0 && createdAt > 0 {
 		// paging
 		err := dbx.Select(&items,
-			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `status` IN (?,?) AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
+			time.Unix(createdAt, 0),
 			time.Unix(createdAt, 0),
 			itemID,
 			ItemsPerPage+1,
@@ -726,10 +727,11 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	if itemID > 0 && createdAt > 0 {
 		// paging
 		inQuery, inArgs, err = sqlx.In(
-			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `status` IN (?,?) AND `root_category_id` = ? AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `status` IN (?,?) AND `root_category_id` = ? AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			rootCategoryID,
+			time.Unix(createdAt, 0),
 			time.Unix(createdAt, 0),
 			itemID,
 			ItemsPerPage+1,
@@ -855,11 +857,12 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 	if itemID > 0 && createdAt > 0 {
 		// paging
 		err := dbx.Select(&items,
-			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			userSimple.ID,
 			ItemStatusOnSale,
 			ItemStatusTrading,
 			ItemStatusSoldOut,
+			time.Unix(createdAt, 0),
 			time.Unix(createdAt, 0),
 			itemID,
 			ItemsPerPage+1,
@@ -957,13 +960,15 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	if itemID > 0 && createdAt > 0 {
 		// paging
 		err := dbx.Select(&items,
-			"(SELECT * FROM `items` WHERE `seller_id` = ? AND `created_at` <= ? AND `id` < ?) "+
-				"UNION (SELECT * FROM `items` WHERE `buyer_id` = ? AND `created_at` <= ? AND `id` < ?) "+
+			"(SELECT * FROM `items` WHERE `seller_id` = ? AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?)) "+
+				"UNION (SELECT * FROM `items` WHERE `buyer_id` = ? AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?)) "+
 				"ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			user.ID,
 			time.Unix(createdAt, 0),
+			time.Unix(createdAt, 0),
 			itemID,
 			user.ID,
+			time.Unix(createdAt, 0),
 			time.Unix(createdAt, 0),
 			itemID,
 			TransactionsPerPage+1,
@@ -1086,6 +1091,8 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 		hasNext = true
 		itemDetails = itemDetails[0:TransactionsPerPage]
 	}
+
+	// log.Printf("user_id: %d, items: %d, has_next: %v, req_created: %d, req_item: %d", user.ID, len(itemDetails), hasNext, createdAt, itemID)
 
 	rts := resTransactions{
 		Items:   itemDetails,
