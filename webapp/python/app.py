@@ -627,12 +627,13 @@ def get_item(item_id=None):
     return flask.jsonify(item)
 
 
-@app.route("/itemds/edit", methods=["POST"])
+@app.route("/items/edit", methods=["POST"])
 def post_item_edit():
     ensure_valid_csrf_token()
-    ensure_required_payload(['price'])
+    ensure_required_payload(['item_price', 'item_id'])
 
-    price = int(flask.request.json['price'])
+    price = int(flask.request.json['item_price'])
+    item_id = int(flask.request.json['item_id'])
     if not 100 <= price <= 100000:
         http_json_error(requests.codes['bad_request'], "商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください")
     user = get_user()
@@ -640,11 +641,13 @@ def post_item_edit():
     with conn.cursor() as c:
         try:
             sql = "SELECT * FROM `items` WHERE `id` = %s"
-            c.execute(sql, (user['id'],))
+            c.execute(sql, (item_id,))
             item = c.fetchone()
             if item is None:
                 http_json_error(requests.codes['not_found'], "item not found")
             if item["seller_id"] != user["id"]:
+
+                print("ITEM", flask.session, item, user)
                 http_json_error(requests.codes['forbidden'], "自分の商品以外は編集できません")
         except MySQLdb.Error as err:
             app.logger.exception(err)
@@ -661,7 +664,7 @@ def post_item_edit():
                 http_json_error(requests.codes['forbidden'], "販売中の商品以外編集できません")
             sql = "UPDATE `items` SET `price` = %s, `updated_at` = %s WHERE `id` = %s"
             c.execute(sql, (
-                flask.request.json["price"],
+                flask.request.json["item_price"],
                 datetime.datetime.now(),
                 flask.request.json["item_id"]
             ))
