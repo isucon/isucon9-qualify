@@ -1,6 +1,6 @@
 # ISUCARI アプリケーション仕様
 
-<img src="../frontend/public/logo.png" alt="ロゴ" style="height: 300px" />
+<img src="../frontend/public/logo.png" alt="ロゴ" height="300px" />
 
 ISUCARIは椅子を売りたい人/買いたい人をつなげるフリマアプリです。
 従来のECサービスと比べて以下の特徴があります。
