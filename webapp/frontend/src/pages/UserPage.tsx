@@ -12,7 +12,7 @@ import BasePageContainer from '../containers/BasePageContainer';
 import { ErrorProps, PageComponentWithError } from '../hoc/withBaseComponent';
 import { RouteComponentProps } from 'react-router';
 import LoadingComponent from '../components/LoadingComponent';
-import { TransactionListComponent } from '../components/TransactionListComponent';
+import { TransactionList } from '../components/TransactionList';
 import Tabs from '@material-ui/core/Tabs/Tabs';
 import Tab from '@material-ui/core/Tab/Tab';
 import { StyleRules } from '@material-ui/core/styles';
@@ -156,7 +156,7 @@ class UserPage extends React.Component<Props, State> {
     const lastTransaction = transactions[transactions.length - 1];
 
     return (
-      <TransactionListComponent
+      <TransactionList
         items={transactions}
         hasNext={transactionsHasNext}
         loadMore={transactionsLoadMore.bind(

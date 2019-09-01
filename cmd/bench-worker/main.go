@@ -117,7 +117,7 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 		jobResultStdout = JobResultStdout{
 			Pass: false,
 			Score: 0,
-			Messages: []string{"unknown failure"},
+			Messages: []string{"運営に連絡してください"},
 		}
 	}
 

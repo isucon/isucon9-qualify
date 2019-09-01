@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { storiesOf } from '@storybook/react';
-import { TransactionComponent } from '.';
+import { TransactionList } from '.';
 import { MemoryRouter } from 'react-router-dom';
 import { TransactionItem } from '../../dataObjects/item';
 
-const stories = storiesOf('components/TransactionComponent', module);
+const stories = storiesOf('components/TransactionList', module);
 
 const item: TransactionItem = {
   id: 1,
@@ -16,19 +16,27 @@ const item: TransactionItem = {
   createdAt: 111111111,
 };
 
+const mockProps = {
+  items: [item],
+  hasNext: false,
+  loadMore: (createdAt: number, itemId: number, page: number) => {},
+};
+
 stories
   .add('default', () => (
     <MemoryRouter>
-      <TransactionComponent item={item} />
+      <TransactionList {...mockProps} />
     </MemoryRouter>
   ))
-  .add('long name', () => (
+  .add('many transactions', () => (
     <MemoryRouter>
-      <TransactionComponent
-        item={Object.assign({}, item, {
-          name:
-            'looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong name',
-        })}
+      <TransactionList
+        {...mockProps}
+        items={Array(30)
+          .fill(item)
+          .map((item: TransactionItem, index: number) =>
+            Object.assign({}, item, { id: item.id + index }),
+          )}
       />
     </MemoryRouter>
   ));

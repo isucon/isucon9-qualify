@@ -910,28 +910,28 @@ func (s *Session) UserItemsWithItemIDAndCreatedAt(ctx context.Context, userID, i
 	return rui.HasNext, rui.User, rui.Items, nil
 }
 
-func (s *Session) Item(ctx context.Context, itemID int64) (item *ItemDetail, err error) {
+func (s *Session) Item(ctx context.Context, itemID int64) (item ItemDetail, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/items/%d.json", itemID))
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
+		return ItemDetail{}, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
+		return ItemDetail{}, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
 	}
 	defer res.Body.Close()
 
 	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return nil, err
+		return ItemDetail{}, err
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&item)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: JSONデコードに失敗しました", itemID))
+		return ItemDetail{}, failure.Wrap(err, failure.Messagef("GET /items/%d.json: JSONデコードに失敗しました", itemID))
 	}
 
 	return item, nil

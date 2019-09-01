@@ -105,7 +105,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var err error
 			var price int
 			var targetItemID int64
-			var item *session.ItemDetail
+			var item session.ItemDetail
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)

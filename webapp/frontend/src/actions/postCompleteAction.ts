@@ -73,5 +73,6 @@ export function postCompleteFailAction(error: string): PostCompleteFailAction {
   return {
     type: POST_COMPLETE_FAIL,
     snackBarMessage: error,
+    variant: 'error',
   };
 }

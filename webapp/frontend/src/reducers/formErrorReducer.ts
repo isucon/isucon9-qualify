@@ -27,8 +27,6 @@ const formError = (
   action: ActionTypes,
 ): FormErrorState => {
   switch (action.type) {
-    case LOGIN_FAIL:
-    case REGISTER_FAIL:
     case USING_CARD_FAIL:
     case BUY_FAIL:
     case SELLING_ITEM_FAIL: {
