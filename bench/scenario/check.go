@@ -17,15 +17,17 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 	user3 := asset.GetRandomBuyer()
 
+	// check scenario #1
 	// 間違ったパスワードでログインができないことをチェックする
 	// これがないとパスワードチェックを外して常にログイン成功させるチートが可能になる
+	// 出品・購入はしない
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
-			ch := time.After(5 * time.Second)
+			ch := time.After(8 * time.Second)
 
 			err := irregularLoginWrongPassword(ctx, user3)
 			if err != nil {
@@ -40,18 +42,23 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	// エラー処理が除かれていないかの確認
-	// ここだけsellとbuyの間に他の処理がない
+	// check scenario #2
+	// - カテゴリをチェック
+	// - ユーザをチェック
+	// - エラー処理が除かれていないかの確認
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
 		var s1, s2 *session.Session
 		var err error
+		var category asset.AppCategory
+		var userIDs []int64
+		var userID int64
 
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
-			ch := time.After(5 * time.Second)
+			ch := time.After(10 * time.Second)
 
 			s1, err = buyerSession(ctx)
 			if err != nil {
@@ -60,6 +67,35 @@ func Check(ctx context.Context, critical *fails.Critical) {
 			}
 
 			s2, err = buyerSession(ctx)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
+
+			category = asset.GetRandomRootCategory()
+			err = checkNewCategoryItemsAndItems(ctx, s1, category.ID, 10, 15)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
+
+			// active seller ユーザページ全件確認
+			userIDs = asset.GetRandomActiveSellerIDs(5)
+			for _, userID = range userIDs {
+				err = checkUserItemsAndItems(ctx, s1, userID, 5)
+				if err != nil {
+					critical.Add(err)
+					return
+				}
+			}
+
+			// no active seller ユーザページ確認
+			err = checkUserItemsAndItems(ctx, s1, s2.UserID, 0)
+			if err != nil {
+				critical.Add(err)
+				goto Final
+			}
+			err = checkUserItemsAndItems(ctx, s2, s1.UserID, 0)
 			if err != nil {
 				critical.Add(err)
 				goto Final
@@ -82,14 +118,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	// 以下の関数はすべてsellとbuyの間に他の処理を挟む
-	// 今回の問題は決済総額がスコアになるのでMySQLを守るためにGETの速度を落とすチートが可能
-	// それを防ぐためにsellしたあとに他のエンドポイントにリクエストを飛ばして完了してからbuyされる
-	// シナリオとしてはGETで色んなページを見てから初めて購入に結びつくという動きをするのは自然
-	// 最適化が難しいエンドポイントの速度をわざと落として、最適化が簡単なエンドポイントに負荷を偏らせるチートを防ぐために
-	// すべてのシナリオはチャネルを使って一定時間より早く再実行はしないようにする
-	// 理論上そのエンドポイントを高速化することで出せるスコアに上限が出るので、他のエンドポイントを最適化する必要性が出る
-
+	// check scenario #3
 	// bumpしてから新着をチェックする
 	// TODO: 新着はbumpが新着に出ていることを確認してから、初期データを後ろの方までいい感じに遡りたい
 	// TODO: 速度が上がるとbumpしたものが新着に無くなる可能性があるので、created_at的になければ更に遡るようにする
@@ -97,7 +126,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 	go func() {
 		defer wg.Done()
 
-		var s1, s2 *session.Session
+		var s1, s2, s3 *session.Session
 		var err error
 
 	L:
@@ -125,65 +154,21 @@ func Check(ctx context.Context, critical *fails.Critical) {
 				goto Final
 			}
 
-			ActiveSellerPool.Enqueue(s1)
-			BuyerPool.Enqueue(s2)
-
-		Final:
-			select {
-			case <-ch:
-			case <-ctx.Done():
-				break L
-			}
-		}
-	}()
-
-	// カテゴリ新着をある程度見る
-	// TODO: 初期データを後ろの方までいい感じに遡りたい
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		var s1, s2 *session.Session
-		var err error
-		var targetItemID int64
-		var price int
-		var category asset.AppCategory
-
-	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
-			ch := time.After(5 * time.Second)
-
-			s1, err = activeSellerSession(ctx)
+			s3, err = activeSellerSession(ctx)
 			if err != nil {
 				critical.Add(err)
 				goto Final
 			}
 
-			s2, err = buyerSession(ctx)
+			err = checkTransactionEvidence(ctx, s3, 3, 20)
 			if err != nil {
 				critical.Add(err)
 				goto Final
 			}
 
-			price = priceStoreCache.Get()
-
-			targetItemID, err = sell(ctx, s1, price)
+			err = checkTransactionEvidence(ctx, s3, 10, 20)
 			if err != nil {
 				critical.Add(err)
-				goto Final
-			}
-
-			category = asset.GetRandomRootCategory()
-			err = checkNewCategoryItemsAndItems(ctx, s1, category.ID, 10, 15)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
-			if err != nil {
-				critical.Add(err)
-
 				goto Final
 			}
 
@@ -199,143 +184,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	// 取引一覧をある程度見る
-	// TODO: 初期データを後ろの方までいい感じに遡りたい
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		var s1, s2 *session.Session
-		var err error
-		var price int
-		var targetItemID int64
-
-	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
-			ch := time.After(5 * time.Second)
-
-			s1, err = activeSellerSession(ctx)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			s2, err = buyerSession(ctx)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			price = priceStoreCache.Get()
-
-			targetItemID, err = sell(ctx, s1, price)
-			if err != nil {
-				critical.Add(err)
-
-				goto Final
-			}
-
-			err = checkTransactionEvidence(ctx, s1, 3, 20)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			err = checkTransactionEvidence(ctx, s1, 10, 20)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			err = buyComplete(ctx, s1, s2, targetItemID, price)
-			if err != nil {
-				critical.Add(err)
-
-				goto Final
-			}
-
-			ActiveSellerPool.Enqueue(s1)
-			BuyerPool.Enqueue(s2)
-
-		Final:
-			select {
-			case <-ch:
-			case <-ctx.Done():
-				break L
-			}
-		}
-	}()
-
-	// ユーザーページを見る
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		var s1, s2 *session.Session
-		var err error
-		var price int
-		var targetItemID int64
-
-	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
-			ch := time.After(5 * time.Second)
-
-			s1, err = activeSellerSession(ctx)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			s2, err = buyerSession(ctx)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			price = priceStoreCache.Get()
-
-			targetItemID, err = sell(ctx, s1, price)
-			if err != nil {
-				critical.Add(err)
-
-				goto Final
-			}
-
-			// active seller ユーザページ全件確認
-			err = checkUserItemsAndItems(ctx, s2, s1.UserID, 10)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-			// no active seller ユーザページ確認
-			err = checkUserItemsAndItems(ctx, s1, s2.UserID, 0)
-			if err != nil {
-				critical.Add(err)
-				goto Final
-			}
-
-			err = buyComplete(ctx, s1, s2, targetItemID, price)
-			if err != nil {
-				critical.Add(err)
-
-				goto Final
-			}
-
-			ActiveSellerPool.Enqueue(s1)
-			BuyerPool.Enqueue(s2)
-
-		Final:
-			select {
-			case <-ch:
-			case <-ctx.Done():
-				break L
-			}
-		}
-	}()
-
-	// 商品ページをいくつか見る
-	// TODO: 初期データをもう少し詰めてから実装する
-
+	// check scenario #4
 	// 出品した商品を編集する（100円を110円とかにする）
 	wg.Add(1)
 	go func() {
@@ -348,7 +197,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
-			ch := time.After(5 * time.Second)
+			ch := time.After(10 * time.Second)
 
 			s1, err = activeSellerSession(ctx)
 			if err != nil {
@@ -370,6 +219,8 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 				goto Final
 			}
+
+			// 打った商品探す
 
 			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItemID, price+10)
 			if err != nil {
