@@ -11,6 +11,7 @@ import { PaymentResponseError } from '../errors/PaymentResponseError';
 import { AppResponseError } from '../errors/AppResponseError';
 import { ResponseError } from '../errors/ResponseError';
 import { AppState } from '../index';
+import { shopID } from '../config';
 
 export const BUY_START = 'BUY_START';
 export const BUY_SUCCESS = 'BUY_SUCCESS';
@@ -37,7 +38,7 @@ export function buyItemAction(
       .then(() => {
         return PaymentClient.post('/card', {
           card_number: cardNumber,
-          shop_id: '11', // TODO getting from /settings
+          shop_id: shopID,
         } as CardReq);
       })
       .then((response: Response) => {
