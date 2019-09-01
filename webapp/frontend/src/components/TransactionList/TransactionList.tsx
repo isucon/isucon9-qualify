@@ -1,16 +1,20 @@
 import React from 'react';
-import { TransactionItem } from '../dataObjects/item';
+import { TransactionItem } from '../../dataObjects/item';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
 import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
-import { TransactionComponent } from './TransactionComponent';
+import { TransactionComponent } from '../TransactionComponent';
+import { Theme } from '@material-ui/core';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: Theme) => ({
   grid: {
     width: '900px',
     height: '300px',
+  },
+  tile: {
+    overflow: 'inherit',
   },
 }));
 
@@ -20,7 +24,7 @@ interface Props {
   loadMore: (createdAt: number, itemId: number, page: number) => void;
 }
 
-const TransactionListComponent: React.FC<Props> = function({
+const TransactionList: React.FC<Props> = function({
   items,
   hasNext,
   loadMore,
@@ -31,7 +35,11 @@ const TransactionListComponent: React.FC<Props> = function({
 
   for (const item of items) {
     transactionsComponents.push(
-      <GridListTile className={classes.grid} key={item.id}>
+      <GridListTile
+        className={classes.grid}
+        classes={{ tile: classes.tile }}
+        key={item.id}
+      >
         <TransactionComponent item={item} />
       </GridListTile>,
     );
@@ -46,9 +54,11 @@ const TransactionListComponent: React.FC<Props> = function({
       hasMore={hasNext}
       loader={<CircularProgress />}
     >
-      <GridList cols={1}>{transactionsComponents}</GridList>
+      <GridList cols={1} cellHeight="auto" spacing={6}>
+        {transactionsComponents}
+      </GridList>
     </InfiniteScroll>
   );
 };
 
-export { TransactionListComponent };
+export { TransactionList };

@@ -14,17 +14,21 @@ const useStyles = makeStyles((theme: Theme) => ({
   card: {
     display: 'flex',
   },
+  cardContent: {
+    display: 'grid',
+  },
   detail: {
     display: 'flex',
     flexDirection: 'column',
   },
   itemTitle: {
     paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(3),
     paddingBottom: theme.spacing(2),
   },
   img: {
-    width: '100px',
-    height: '100%',
+    width: '130px',
+    height: '130px',
   },
 }));
 
@@ -49,8 +53,8 @@ const TransactionComponent: React.FC<Props> = ({ item }) => {
         />
       </RouteLink>
       <div className={classes.detail}>
-        <CardContent>
-          <Typography className={classes.itemTitle} variant="h6">
+        <CardContent className={classes.cardContent}>
+          <Typography className={classes.itemTitle} noWrap variant="subtitle1">
             {item.name}
           </Typography>
           <TransactionLabel itemStatus={item.status} />
