@@ -132,8 +132,8 @@ type ItemDetail = {
     id: number;
     seller_id: number;
     seller: UserSimple;
-    buyer_id: number;
-    buyer: UserSimple;
+    buyer_id?: number;
+    buyer?: UserSimple;
     status: string;
     name: string;
     price: number;
@@ -141,10 +141,10 @@ type ItemDetail = {
     image_url: string;
     category_id: number;
     category: Category;
-    transaction_evidence_id: number;
-    transaction_evidence_status: string;
-    shipping_status: string;
-    created_at: Date;
+    transaction_evidence_id?: number;
+    transaction_evidence_status?: string;
+    shipping_status?: string;
+    created_at: number;
 };
 
 type TransactionEvidence = {
@@ -162,7 +162,18 @@ type TransactionEvidence = {
     updated_at: Date;
 };
 
-type Shipping = {};
+type Shipping = {
+    transaction_evidence_id: number;
+    status: string;
+    item_name: string;
+    item_id: number;
+    reserve_id: string;
+    reserve_time: number;
+    to_address: string;
+    to_name: string;
+    from_address: string;
+    from_name: string;
+};
 
 type Category = {
     id: number,
@@ -632,13 +643,93 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     const conn = await getConnection();
     const user = await getLoginUser(req, conn);
+    if (user === null) {
+        outputErrorMessage(reply, "no session", 404);
+        return;
+    }
 
-    const res = {};
+    const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [itemId]);
+    let item: Item | null = null;
+
+    for (const row of rows) {
+        item = row as Item;
+    }
+
+    if (item === null) {
+        outputErrorMessage(reply, "item not found", 404);
+        return;
+    }
+
+    const category = await getCategoryByID(conn, item.category_id);
+    if (category === null) {
+        outputErrorMessage(reply, "category not found", 404)
+        return;
+    }
+
+    const seller = await getUserSimpleByID(conn, item.seller_id);
+    if (seller === null) {
+        outputErrorMessage(reply, "seller not found", 404)
+        return;
+    }
+
+    const itemDetail : ItemDetail = {
+        id: item.id,
+        seller_id: item.seller_id,
+        seller: seller,
+        // buyer_id
+        // buyer
+        status: item.status,
+        name: item.name,
+        price: item.price,
+        description: item.description,
+        image_url: getImageURL(item.image_name),
+        category_id: item.category_id,
+        category: category,
+        // transaction_evidence_id
+        // transaction_evidence_status
+        // shipping_status
+        created_at: item.created_at.getTime(),
+    };
+
+    if ((user.id === item.seller_id || user.id === item.buyer_id) && item.buyer_id === undefined) {
+        const buyer = await getUserSimpleByID(conn, item.buyer_id);
+        if (buyer === null) {
+            outputErrorMessage(reply, "buyer not found", 404);
+            return;
+        }
+
+        itemDetail.buyer_id = item.buyer_id;
+        itemDetail.buyer = buyer;
+
+        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [item.id]);
+        let transactionEvidence: TransactionEvidence | null = null;
+        for (const row of rows) {
+            transactionEvidence = row as TransactionEvidence;
+        }
+
+        if (transactionEvidence !== null) {
+            const [rows] = await conn.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id])
+            let shipping: Shipping | null = null;
+            for (const row of rows) {
+                shipping = row as Shipping;
+            }
+
+            if (shipping === null) {
+                outputErrorMessage(reply, "shipping not found", 404);
+                return;
+            }
+
+            itemDetail.transaction_evidence_id = transactionEvidence.id;
+            itemDetail.transaction_evidence_status = transactionEvidence.status;
+            itemDetail.shipping_status = shipping.status;
+        }
+
+    }
 
     reply
         .code(200)
         .type("application/json")
-        .send(res);
+        .send(itemDetail);
 }
 
 async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
