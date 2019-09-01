@@ -206,6 +206,8 @@ def api_shipment_status(shipment_url, params={}):
 
     return res.json()
 
+def get_image_url(image_name):
+    return "/upload/{}".format(image_name)
 
 # API
 @app.route("/initialize", methods=["POST"])
@@ -274,6 +276,7 @@ def get_new_items():
                 item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
+                item["image_url"] = get_image_url(item["image_name"])
 
                 print(item)
                 item_simples.append(item)
@@ -361,6 +364,7 @@ def get_new_category_items(root_category_id=None):
                 item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
+                item["image_url"] = get_image_url(item["image_name"])
 
                 print(item)
                 item_simples.append(item)
@@ -447,6 +451,7 @@ def get_transactions():
                 item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
+                item["image_url"] = get_image_url(item["image_name"])
 
                 print(item)
                 item_details.append(item)
@@ -586,6 +591,7 @@ def get_item(item_id=None):
             item = to_item_json(item)
             item["category"] = category
             item["seller"] = to_user_json(seller)
+            item["image_url"] = get_image_url(item["image_name"])
 
             if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
                 buyer = get_user_simple_by_id(item["buyer_id"])
