@@ -73,5 +73,6 @@ export function postShippedFailAction(error: string): PostShippedFailAction {
   return {
     type: POST_SHIPPED_FAIL,
     snackBarMessage: error,
+    variant: 'error',
   };
 }

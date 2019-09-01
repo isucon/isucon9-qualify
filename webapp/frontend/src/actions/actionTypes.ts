@@ -18,6 +18,7 @@ import { SettingsActions } from './settingsAction';
 import { FetchItemActions } from './fetchItemAction';
 import { RouterAction } from 'connected-react-router';
 import { SnackBarActions } from './snackBarAction';
+import { SnackBarVariant } from '../components/SnackBar';
 
 type LibraryActions = RouterAction;
 
@@ -44,4 +45,5 @@ export type ActionTypes =
 
 export interface SnackBarAction<T> extends Action<T> {
   snackBarMessage: string;
+  variant: SnackBarVariant;
 }
