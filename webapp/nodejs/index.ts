@@ -174,6 +174,7 @@ type Shipping = {
     to_name: string;
     from_address: string;
     from_name: string;
+    img_binary: Uint8Array,
 };
 
 type Category = {
@@ -257,7 +258,7 @@ fastify.post("/sell", postSell);
 fastify.post("/ship", postShip)
 fastify.post("/ship_done", postShipDone);
 fastify.post("/complete", postComplete);
-fastify.get("/transactions/:transaction_evidence_id.png", getQRCode);
+fastify.get("/transactions/:transaction_evidence_id(^\\d+).png", getQRCode);
 fastify.post("/bump", postBump);
 fastify.get("/settings", getSettings);
 fastify.post("/login", postLogin);
@@ -910,6 +911,66 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
 }
 
 async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const transactionEvidenceIdStr: string = req.params.transaction_evidence_id;
+    const transactionEvidenceId: number = parseInt(transactionEvidenceIdStr, 10);
+    if (transactionEvidenceId === null || isNaN(transactionEvidenceId)) {
+        outputErrorMessage(reply, "incorrect transaction_evidence id", 400);
+        return;
+    }
+
+    const conn = await getConnection();
+    const seller = await getLoginUser(req, conn);
+    if (seller === null) {
+        outputErrorMessage(reply, "no session", 404);
+        return;
+    }
+
+    let transactionEvidence: TransactionEvidence | null = null;
+    {
+        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `id` = ?", [transactionEvidenceId]);
+        for (const row of rows) {
+            transactionEvidence = row as TransactionEvidence;
+        }
+    }
+
+    if (transactionEvidence === null) {
+        outputErrorMessage(reply, "transaction_evidence not found", 404);
+        return;
+    }
+
+    if (transactionEvidence.seller_id !== seller.id) {
+        outputErrorMessage(reply, "権限がありません", 403);
+        return;
+    }
+
+    let shipping: Shipping | null = null;
+    {
+        const [rows] = await conn.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id]);
+        for (const row of rows) {
+            shipping = row as Shipping;
+        }
+    }
+
+    if (shipping === null) {
+        outputErrorMessage(reply, "shippings not found", 404);
+        return;
+    }
+
+    if (shipping.status !== ShippingsStatusWaitPickup && shipping.status !== ShippingsStatusShipping) {
+        outputErrorMessage(reply, "qrcode not available", 403);
+        return;
+    }
+
+    if (shipping.img_binary.byteLength === 0) {
+        outputErrorMessage(reply, "empty qrcode image")
+        return;
+    }
+
+    reply
+        .code(200)
+        .type("image/png")
+        .send(shipping.img_binary);
+
 }
 
 async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
