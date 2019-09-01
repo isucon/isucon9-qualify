@@ -603,11 +603,15 @@ def get_item(item_id=None):
             item["category"] = category
             item["seller"] = to_user_json(seller)
             item["image_url"] = get_image_url(item["image_name"])
+            item["buyer"] = {}
+            item["buyer_id"] = 0
             item = to_item_json(item, simple=False)
 
             if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
                 buyer = get_user_simple_by_id(item["buyer_id"])
+
                 item["buyer"] = to_user_json(buyer)
+                item["buyer_id"] = buyer["id"]
 
                 sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
                 c.execute(sql, (item['id'],))
@@ -615,7 +619,6 @@ def get_item(item_id=None):
                 # if not transaction_evidence:
                 #     http_json_error(requests.codes['not_found'], "transaction_evidence not found")
 
-                print("transaction_evidence", transaction_evidence)
 
                 sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
                 c.execute(sql, (transaction_evidence["id"],))
