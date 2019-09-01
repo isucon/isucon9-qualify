@@ -1,6 +1,6 @@
 import * as React from 'react';
 import makeStyles from '@material-ui/core/styles/makeStyles';
-import { AppBar, Theme } from '@material-ui/core';
+import { AppBar, MuiThemeProvider, Theme } from '@material-ui/core';
 import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -18,6 +18,7 @@ import EventSeatIcon from '@material-ui/icons/EventSeat';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PersonIcon from '@material-ui/icons/Person';
 import WeekendIcon from '@material-ui/icons/Weekend';
+import { themeInstance } from '../../theme';
 
 const useStyles = makeStyles((theme: Theme) => ({
   appBar: {
@@ -94,8 +95,9 @@ const Header: React.FC<Props> = ({
     setState({ ...state, open });
   };
 
+  // MEMO: Wrap component by MuiThemeProvider again to ignore this bug. https://github.com/mui-org/material-ui/issues/14044
   return (
-    <React.Fragment>
+    <MuiThemeProvider theme={themeInstance}>
       {isLoggedIn && (
         <Drawer open={open} onClose={toggleDrawer(false)}>
           <List className={classes.list}>
@@ -159,7 +161,7 @@ const Header: React.FC<Props> = ({
           </Typography>
         </Toolbar>
       </AppBar>
-    </React.Fragment>
+    </MuiThemeProvider>
   );
 };
 
