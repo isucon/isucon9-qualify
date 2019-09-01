@@ -11,6 +11,7 @@ import fastifyMysql from "fastify-mysql";
 import fastifyCookie from "fastify-cookie";
 import fastifyStatic from "fastify-static";
 import bcrypt from "bcrypt";
+import {create} from "domain";
 
 const execFile = util.promisify(childProcess.execFile);
 
@@ -523,6 +524,164 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
 }
 
 async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const conn = await getConnection();
+    const user = await getLoginUser(req, conn);
+
+    if (user === null) {
+        outputErrorMessage(reply, "no session", 404);
+        return;
+    }
+
+    const query = req.query;
+    let itemId = 0;
+    if (query['item_id'] !== undefined) {
+        itemId = parseInt(query['item_id'], 10);
+        if (isNaN(itemId) || itemId <= 0) {
+            outputErrorMessage(reply, "item_id param error", 400);
+            return
+        }
+    }
+
+    let createdAt = 0;
+    if (query['created_at'] !== undefined) {
+        createdAt = parseInt(query['created_at'], 10);
+        if (isNaN(createdAt) || createdAt <= 0) {
+            outputErrorMessage(reply, "created_at param error", 400);
+            return
+        }
+    }
+
+    await conn.beginTransaction();
+    const items: Item[] = [];
+    if (itemId > 0 && createdAt > 0) {
+        const [rows] = await conn.query(
+            "SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            [
+                user.id,
+                user.id,
+                ItemStatusOnSale,
+                ItemStatusTrading,
+                ItemStatusSoldOut,
+                ItemStatusCancel,
+                ItemStatusStop,
+                new Date(createdAt),
+                itemId,
+                TransactionsPerPage+1,
+            ]
+        );
+
+        for (const row of rows) {
+            items.push(row as Item);
+        }
+
+    } else {
+        const [rows] = await conn.query(
+            "SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            [
+                user.id,
+                user.id,
+                ItemStatusOnSale,
+                ItemStatusTrading,
+                ItemStatusSoldOut,
+                ItemStatusCancel,
+                ItemStatusStop,
+                TransactionsPerPage+1
+            ]
+        );
+
+        for (const row of rows) {
+            items.push(row as Item);
+        }
+    }
+
+    let itemDetails: ItemDetail[] = [];
+    for (const item of items) {
+        const category = await getCategoryByID(conn, item.category_id);
+        if (category === null) {
+            outputErrorMessage(reply, "category not found", 404)
+            await conn.rollback();
+            return;
+        }
+
+        const seller = await getUserSimpleByID(conn, item.seller_id);
+        if (seller === null) {
+            outputErrorMessage(reply, "seller not found", 404)
+            await conn.rollback();
+            return;
+        }
+
+        const itemDetail : ItemDetail = {
+            id: item.id,
+            seller_id: item.seller_id,
+            seller: seller,
+            // buyer_id
+            // buyer
+            status: item.status,
+            name: item.name,
+            price: item.price,
+            description: item.description,
+            image_url: getImageURL(item.image_name),
+            category_id: item.category_id,
+            category: category,
+            // transaction_evidence_id
+            // transaction_evidence_status
+            // shipping_status
+            created_at: item.created_at.getTime(),
+        };
+
+        if (item.buyer_id !== undefined) {
+            const buyer = await getUserSimpleByID(conn, item.buyer_id);
+            if (buyer === null) {
+                outputErrorMessage(reply, "buyer not found", 404);
+                await conn.rollback();
+                return;
+            }
+        }
+
+        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [item.id]);
+        let transactionEvidence: TransactionEvidence | null = null;
+        for (const row of rows) {
+            transactionEvidence = row as TransactionEvidence;
+        }
+
+        if (transactionEvidence !== null) {
+            const [rows] = await conn.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id]);
+
+            let shipping: Shipping | null = null;
+            for (const row of rows) {
+                shipping = row as Shipping;
+            }
+
+            if (shipping === null) {
+                outputErrorMessage(reply, "shipping not found", 404);
+                await conn.rollback();
+                return;
+            }
+
+            // TODO APIShipmentStatus
+
+            itemDetail.transaction_evidence_id = transactionEvidence.id;
+            itemDetail.transaction_evidence_status = transactionEvidence.status;
+            itemDetail.shipping_status = ShippingsStatusDone; // TODO
+        }
+
+        itemDetails.push(itemDetail);
+
+    }
+
+    await conn.commit();
+
+    let hasNext = false;
+    if (itemDetails.length > TransactionsPerPage) {
+        hasNext = true;
+        itemDetails = itemDetails.slice(0, TransactionsPerPage);
+    }
+
+    reply
+        .code(200)
+        .type("application/json;charset=utf-8")
+        .send({has_next: hasNext, items: itemDetails});
+
 }
 
 async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -619,7 +778,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
     let hasNext = false;
     if (itemSimples.length > ItemsPerPage) {
         hasNext = true;
-        itemSimples = itemSimples.splice(0, itemSimples.length - 1)
+        itemSimples = itemSimples.slice(0, ItemsPerPage);
     }
     const res: ResUserItems = {
         user: userSimple,
