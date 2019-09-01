@@ -603,8 +603,6 @@ def get_item(item_id=None):
             item["category"] = category
             item["seller"] = to_user_json(seller)
             item["image_url"] = get_image_url(item["image_name"])
-            item["buyer"] = {}
-            item["buyer_id"] = 0
             item = to_item_json(item, simple=False)
 
             if (user["id"] == item["seller_id"] or user["id"] == item["buyer_id"]) and item["buyer_id"]:
@@ -633,6 +631,9 @@ def get_item(item_id=None):
                 item["transaction_evidence_id"] = transaction_evidence["id"]
                 item["transaction_evidence_status"] = transaction_evidence["status"]
                 item["shipping_status"] = ssr["status"]
+            else:
+                item["buyer"] = {}
+                item["buyer_id"] = 0
 
         except MySQLdb.Error as err:
             app.logger.exception(err)
