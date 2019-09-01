@@ -4,13 +4,11 @@ import { postRegisterAction } from '../actions/registerAction';
 import { RegisterReq } from '../types/appApiTypes';
 import { AppState } from '../index';
 import { ThunkDispatch } from 'redux-thunk';
-import { AnyAction } from 'redux';
+import { ActionTypes } from '../actions/actionTypes';
 
-const mapStateToProps = (state: AppState) => ({
-  error: state.formError.error,
-});
+const mapStateToProps = (state: AppState) => ({});
 const mapDispatchToProps = (
-  dispatch: ThunkDispatch<AppState, undefined, AnyAction>,
+  dispatch: ThunkDispatch<AppState, undefined, ActionTypes>,
 ) => ({
   register: (params: RegisterReq) => {
     dispatch(postRegisterAction(params));

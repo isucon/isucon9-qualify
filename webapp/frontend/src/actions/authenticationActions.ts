@@ -1,11 +1,11 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { CallHistoryMethodAction, push } from 'connected-react-router';
 import { routes } from '../routes/Route';
 import { AppState } from '../index';
 import { ErrorRes, LoginRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
+import { SnackBarAction } from './actionTypes';
 
 export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
 export const LOGIN_FAIL = 'LOGIN_FAIL';
@@ -49,11 +49,7 @@ export function postLoginAction(
         dispatch(push(routes.top.path));
       })
       .catch((err: Error) => {
-        dispatch(
-          loginFailAction({
-            error: err.message,
-          }),
-        );
+        dispatch(loginFailAction(err.message));
       });
   };
 }
@@ -78,14 +74,12 @@ export function loginSuccessAction(newAuthState: {
   };
 }
 
-export interface LoginFailAction {
-  type: typeof LOGIN_FAIL;
-  payload: FormErrorState;
-}
+export interface LoginFailAction extends SnackBarAction<typeof LOGIN_FAIL> {}
 
-export function loginFailAction(newErros: FormErrorState): LoginFailAction {
+export function loginFailAction(error: string): LoginFailAction {
   return {
     type: LOGIN_FAIL,
-    payload: newErros,
+    snackBarMessage: error,
+    variant: 'error',
   };
 }
