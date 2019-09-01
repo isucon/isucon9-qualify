@@ -1104,7 +1104,50 @@ def post_complete():
 
 @app.route("/transactions/<transaction_evidence_id>.png", methods=["GET"])
 def get_qrcode(transaction_evidence_id):
-    return
+    if transaction_evidence_id:
+        if not transaction_evidence_id.isdecimal() or int(transaction_evidence_id) < 0:
+            http_json_error(requests.codes['bad_request'], "incorrect transaction_evidence id")
+
+    seller = get_user()
+    conn = dbh()
+
+    with conn.cursor() as c:
+        try:
+            sql = "SELECT * FROM `transaction_evidences` WHERE `id` = %s"
+            c.execute(sql, (transaction_evidence_id,))
+            transaction_evidence = c.fetchone()
+
+            if transaction_evidence is None:
+                http_json_error(requests.codes['not_found'], "transaction_evidences not found")
+
+            print(transaction_evidence)
+            print(seller)
+            if transaction_evidence["seller_id"] != seller["id"]:
+                http_json_error(requests.codes['forbidden'], "権限がありません")
+
+            sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
+            c.execute(sql, (transaction_evidence["id"],))
+            shipping = c.fetchone()
+
+            if shipping is None:
+                http_json_error(requests.codes['not_found'], "shippings not found")
+
+            if shipping["status"] != Constants.SHIPPING_STATUS_WAIT_PICKUP and shipping["status"] != Constants.SHIPPING_STATUS_SHIPPING:
+                http_json_error(requests.codes['forbidden'], "qrcode not available")
+
+            if len(shipping["img_binary"]) == 0:
+                http_json_error(requests.codes['internal_server_error'], "empty qrcode image")
+
+        except MySQLdb.Error as err:
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
+        img_binary = read_image(shipping["img_binary"])
+        res = make_response(img_binary)
+        res.headers.set('Content-Type', 'image/png')
+        res.headers.set('Content-Disposition', 'attachment', filename='{}.png'.format(transaction_evidence_id))
+
+    return  res
 
 
 @app.route("/bump", methods=["POST"])
