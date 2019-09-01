@@ -1,5 +1,5 @@
 import {IncomingMessage, ServerResponse} from "http";
-import util, {types} from "util";
+import util, {isNullOrUndefined, types} from "util";
 import childProcess from "child_process";
 import path from "path";
 import fs from "fs";
@@ -184,6 +184,12 @@ type ResNewItems = {
     items: ItemSimple[],
 }
 
+type ResUserItems = {
+    user: UserSimple,
+    has_next: boolean,
+    items: ItemSimple[],
+}
+
 const fastify = createFastify({
     logger: true
 });
@@ -226,7 +232,7 @@ fastify.post("/initialize", postInitialize);
 fastify.get("/new_items.json", getNewItems);
 fastify.get("/new_items/:root_category_id(^\\d+).json", getNewCategoryItems);
 fastify.get("/users/transactions.json", getTransactions);
-fastify.get("/users/:user_id.json", getUserItems);
+fastify.get("/users/:user_id(^\\d+).json", getUserItems);
 fastify.get("/items/:item_id.json", getItem);
 fastify.post("/items/edit", postItemEdit);
 fastify.post("/buy", postBuy);
@@ -368,7 +374,7 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     let hasNext = false;
     if (itemSimples.length > ItemsPerPage) {
         hasNext = true;
-        itemSimples = itemSimples.splice(0, itemSimples.length-1)
+        itemSimples = itemSimples.splice(0, itemSimples.length - 1)
     }
     const res: ResNewItems = {
         has_next: hasNext,
@@ -394,7 +400,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
 
     const conn = await getConnection();
     const rootCategory = await getCategoryByID(conn, rootCategoryId);
-    if (rootCategory ===  null || rootCategory.parent_id !== 0) {
+    if (rootCategory === null || rootCategory.parent_id !== 0) {
         outputErrorMessage(reply, "category not found");
         return;
     }
@@ -433,7 +439,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
                 ItemStatusSoldOut,
                 new Date(createdAt),
                 itemID,
-                ItemsPerPage+1,
+                ItemsPerPage + 1,
             ]
         );
 
@@ -446,7 +452,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
             [
                 ItemStatusOnSale,
                 ItemStatusSoldOut,
-                ItemsPerPage+1,
+                ItemsPerPage + 1,
             ]
         );
 
@@ -486,7 +492,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     let hasNext = false;
     if (itemSimples.length > ItemsPerPage) {
         hasNext = true;
-        itemSimples = itemSimples.splice(0, itemSimples.length-1)
+        itemSimples = itemSimples.splice(0, itemSimples.length - 1)
     }
 
     const res = {
@@ -507,6 +513,111 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
 }
 
 async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const userIdStr = req.params.user_id;
+    const userId = parseInt(userIdStr, 10);
+    if (userId === undefined || isNaN(userId)) {
+        outputErrorMessage(reply, "incorrect user id", 400);
+        return;
+    }
+
+    const conn = await getConnection();
+    const userSimple = await getUserSimpleByID(conn, userId);
+    if (userSimple === null) {
+        outputErrorMessage(reply, "user not found", 404);
+        return;
+    }
+
+    const itemIDStr = req.query.item_id;
+    let itemID = 0;
+    if (itemIDStr !== undefined && itemIDStr !== "") {
+        itemID = parseInt(itemIDStr, 10);
+        if (isNaN(itemID) || itemID <= 0) {
+            outputErrorMessage(reply, "item_id param error", 400);
+            return;
+        }
+    }
+    const createdAtStr = req.query.created_at;
+    let createdAt = 0;
+    if (createdAtStr !== undefined && createdAtStr !== "") {
+        createdAt = parseInt(createdAtStr, 10);
+        if (isNaN(createdAt) || createdAt <= 0) {
+            outputErrorMessage(reply, "created_at param error", 400);
+            return;
+        }
+    }
+
+    const items: Item[] = [];
+    if (itemID > 0 && createdAt > 0) {
+        const [rows] = await conn.query(
+            "SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            [
+                userSimple.id,
+                ItemStatusOnSale,
+                ItemStatusTrading,
+                ItemStatusSoldOut,
+                new Date(createdAt),
+                itemID,
+                ItemsPerPage + 1,
+            ]
+        );
+
+        for (const row of rows) {
+            items.push(row as Item);
+        }
+    } else {
+        const [rows] = await conn.query(
+            "SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            [
+                userSimple.id,
+                ItemStatusOnSale,
+                ItemStatusTrading,
+                ItemStatusSoldOut,
+                ItemsPerPage + 1,
+            ]
+        );
+
+        for (const row of rows) {
+            items.push(row as Item);
+        }
+    }
+
+    let itemSimples: ItemSimple[] = [];
+    for (const item of items) {
+        const category = await getCategoryByID(conn, item.category_id);
+        if (category === null) {
+            outputErrorMessage(reply, "category not found", 404)
+            return;
+        }
+
+        itemSimples.push({
+            id: item.id,
+            seller_id: item.seller_id,
+            seller: userSimple,
+            status: item.status,
+            name: item.name,
+            price: item.price,
+            image_url: getImageURL(item.image_name),
+            category_id: item.category_id,
+            category: category,
+            created_at: item.created_at.getTime(),
+        });
+    }
+
+    let hasNext = false;
+    if (itemSimples.length > ItemsPerPage) {
+        hasNext = true;
+        itemSimples = itemSimples.splice(0, itemSimples.length - 1)
+    }
+    const res: ResUserItems = {
+        user: userSimple,
+        has_next: hasNext,
+        items: itemSimples,
+    };
+
+    reply
+        .code(200)
+        .type("application/json")
+        .send(res);
 }
 
 async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
