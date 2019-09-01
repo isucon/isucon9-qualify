@@ -9,8 +9,8 @@ import createFastify, {FastifyRequest, FastifyReply} from "fastify";
 // @ts-ignore
 import fastifyMysql from "fastify-mysql";
 import fastifyCookie from "fastify-cookie";
-import fastifySession from 'fastify-session'
 import fastifyStatic from "fastify-static";
+import bcrypt from "bcrypt";
 
 const execFile = util.promisify(childProcess.execFile);
 
@@ -55,7 +55,6 @@ function TODO() {
     throw new Error("Not yet implemented!");
 }
 
-const sessionName = "session_isucari";
 const DefaultPaymentServiceURL = "http://localhost:5555";
 const DefaultShipmentServiceURL = "http://localhost:7000";
 const ItemMinPrice = 100;
@@ -177,6 +176,14 @@ type ReqInitialize = {
     shipment_service_url: string;
 };
 
+type ReqRegister = {
+    account_name?: string,
+    address?: string,
+    password?: string,
+
+
+}
+
 type ResNewItems = {
     root_category_id?: number,
     root_category_name?: string,
@@ -199,11 +206,6 @@ fastify.register(fastifyStatic, {
 });
 
 fastify.register(fastifyCookie);
-fastify.register(fastifySession, {
-    secret: '123456789012345678901234567890123',
-    cookieName: sessionName,
-    cookie: {secure: false}
-});
 
 fastify.register(fastifyMysql, {
     host: process.env.MYSQL_HOST || "127.0.0.1",
@@ -389,11 +391,8 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
 
 async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
     const rootCategoryIdStr: string = req.params.root_category_id;
-    console.log(req.params);
     const rootCategoryId: number = parseInt(rootCategoryIdStr, 10);
     if (rootCategoryId === null || isNaN(rootCategoryId)) {
-        console.log(rootCategoryIdStr);
-        console.log(rootCategoryId);
         outputErrorMessage(reply, "incorrect category id", 400);
         return;
     }
@@ -628,6 +627,15 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         return;
     }
 
+    const conn = await getConnection();
+    const user = await getLoginUser(req, conn);
+
+    const res = {};
+
+    reply
+        .code(200)
+        .type("application/json")
+        .send(res);
 }
 
 async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -682,6 +690,58 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
 }
 
 async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const rr: ReqRegister = req.body
+
+
+    const accountName = rr.account_name;
+    const address = rr.address;
+    const password = rr.password;
+
+    if (accountName === undefined || accountName === "" || password === undefined || password === "" || address === undefined || address === "") {
+        outputErrorMessage(reply, "all parameters are required", 400);
+        return;
+    }
+
+    const conn = await getConnection();
+
+    const [rows] = await conn.query(
+        "SELECT * FROM `users` WHERE `account_name` = ?",
+        [
+            accountName,
+        ]
+    );
+
+    if (rows.length > 0) {
+        outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        return;
+    }
+
+    const hashedPassword = await encryptPassword(password);
+
+    const [result,] = await conn.query(
+        "INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)",
+        [
+            accountName,
+            hashedPassword,
+            address,
+        ]
+    );
+
+    const user = {
+        id: result.insertId,
+        account_name: accountName,
+        address: address,
+    };
+
+    reply.setCookie("user_id", user.id.toString(), {
+        path: "/",
+    });
+
+    reply
+        .code(200)
+        .type("application/json")
+        .send(user);
+
 }
 
 async function getReports(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -725,6 +785,19 @@ function outputErrorMessage(reply: FastifyReply<ServerResponse>, message: string
         .send({"error": message});
 }
 
+async function getLoginUser(req: FastifyRequest, conn: MySQLQueryable): Promise<User | null> {
+    let userId: number;
+    if (req.cookies.user_id !== undefined && req.cookies.user_id !== "") {
+        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [req.cookies.user_id]);
+        for (const row of rows) {
+            const user = row as User;
+            return user;
+        }
+    }
+
+    return null;
+}
+
 async function getUserSimpleByID(conn: MySQLQueryable, userID: number): Promise<UserSimple | null> {
     const [rows,] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [userID]);
     for (const row of rows) {
@@ -752,6 +825,17 @@ async function getCategoryByID(conn: MySQLQueryable, categoryId: number): Promis
         return category;
     }
     return null;
+}
+
+async function encryptPassword(password: string): Promise<string> {
+    return await new Promise((resolve) => {
+        bcrypt.hash(password, 10, (err, hash) => {
+            if (err != null) {
+                throw err;
+            }
+            resolve(hash);
+        });
+    })
 }
 
 function getImageURL(image_name: string) {
