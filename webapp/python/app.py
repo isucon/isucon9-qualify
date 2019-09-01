@@ -1074,7 +1074,7 @@ def post_complete():
             if transaction_evidence is None:
                 conn.rollback()
                 http_json_error(requests.codes["not_found"], "transaction_evidences not found")
-            if transaction_evidence["status"] != Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING:
+            if transaction_evidence["status"] != Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_DONE:
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "準備ができていません")
 
