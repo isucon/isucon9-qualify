@@ -11,13 +11,30 @@ import (
 	"github.com/morikuni/failure"
 )
 
+const (
+	NumLoadScenario1 = 3
+	NumLoadScenario2 = 6
+	NumLoadScenario3 = 6
+	NumLoadScenario4 = 3
+)
+
 func Load(ctx context.Context, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
+	// 以下の関数はすべてsellとbuyの間に他の処理を挟む
+	// 今回の問題は決済総額がスコアになるのでMySQLを守るためにGETの速度を落とすチートが可能
+	// それを防ぐためにsellしたあとに他のエンドポイントにリクエストを飛ばして完了してからbuyされる
+	// シナリオとしてはGETで色んなページを見てから初めて購入に結びつくという動きをするのは自然
+	// 最適化が難しいエンドポイントの速度をわざと落として、最適化が簡単なエンドポイントに負荷を偏らせるチートを防ぐために
+	// すべてのシナリオはチャネルを使って一定時間より早く再実行はしないようにする
+	// 理論上そのエンドポイントを高速化することで出せるスコアに上限が出るので、他のエンドポイントを最適化する必要性が出る
+
 	// load scenario #1
-	// カテゴリを少しみてbuy
-	for i := 0; i < 3; i++ {
+	// 出品
+	// カテゴリをみて 7カテゴリ x (20ページ + 20item) = 280
+	// buywithcheck
+	for i := 0; i < NumLoadScenario1; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -26,7 +43,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var err error
 			var price int
 			var categories []asset.AppCategory
-			var targetItemID int64
+			var targetItem asset.AppItem
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
@@ -45,7 +62,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -53,14 +70,14 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				categories = asset.GetRootCategories()
 				for _, category := range categories {
-					err = loadNewCategoryItemsAndItems(ctx, s1, category.ID, 20, 15)
+					err = loadNewCategoryItemsAndItems(ctx, s1, category.ID, 20, 20)
 					if err != nil {
 						critical.Add(err)
 						goto Final
 					}
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -80,8 +97,12 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	}
 
 	// load scenario #2
-	// どちらかというとカテゴリを中心にみていく
-	for i := 0; i < 6; i++ {
+	// 出品
+	// その商品
+	// そのカテゴリ 30ページ 30商品
+	// getTransactions　(10ページ 20商品) x 2
+	// buy
+	for i := 0; i < NumLoadScenario2; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -89,8 +110,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var s1, s2 *session.Session
 			var err error
 			var price int
-			var targetItemID int64
-			var item *session.ItemDetail
+			var targetItem asset.AppItem
+			var item session.ItemDetail
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
@@ -109,25 +130,25 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				item, err = s1.Item(ctx, targetItemID)
+				item, err = s1.Item(ctx, targetItem.ID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				err = loadNewCategoryItemsAndItems(ctx, s2, item.Category.ParentID, 20, 5)
+				err = loadNewCategoryItemsAndItems(ctx, s1, item.Category.ParentID, 30, 20)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				err = loadTransactionEvidence(ctx, s1, 10, 10)
+				err = loadTransactionEvidence(ctx, s1, 10, 20)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -139,8 +160,14 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
+				err = loadTransactionEvidence(ctx, s1, 10, 20)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
 				// ここは厳密なcheckをしない
-				err = buyComplete(ctx, s1, s2, targetItemID, price)
+				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -161,14 +188,17 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #3
 	// どちらかというとuserを中心にみていく
-	for i := 0; i < 6; i++ {
+	// 出品
+	// アクティブユーザ 3人 * (3ページ + 20件)
+	// buy with check
+	for i := 0; i < NumLoadScenario3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			var s1, s2, s3 *session.Session
 			var err error
 			var price int
-			var targetItemID int64
+			var targetItem asset.AppItem
 			var userIDs []int64
 
 		L:
@@ -195,7 +225,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -227,7 +257,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					}
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -249,14 +279,17 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #4
 	// NewItemみてbuy
-	for i := 0; i < 3; i++ {
+	// 出品
+	// 新着 30ページ 50商品
+	// buy with check
+	for i := 0; i < NumLoadScenario4; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			var s1, s2 *session.Session
 			var err error
 			var price int
-			var targetItemID int64
+			var targetItem asset.AppItem
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -276,7 +309,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -288,7 +321,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final

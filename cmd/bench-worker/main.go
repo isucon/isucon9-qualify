@@ -60,11 +60,12 @@ type JobResultStdout struct {
 }
 
 const (
-	apiEndpointDev   = "http://portal-dev.isucon9.hinatan.net"
-	defaultInterval  = 3 * time.Second
-	maxStderrLength  = 8 * 1024 * 1024
-	maxNumMessage    = 20
-	maxBenchmarkTime = 150 * time.Second
+	apiEndpointDev         = "http://portal-dev.isucon9.hinatan.net"
+	defaultInterval        = 3 * time.Second
+	maxStderrLength        = 8 * 1024 * 1024
+	maxNumMessage          = 20
+	maxBenchmarkTime       = 150 * time.Second
+	defaultBenchmarkerPath = "/home/isucon/isucari/bin/benchmarker"
 )
 
 var (
@@ -88,6 +89,7 @@ func dequeue(ep string) (*Job, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, errorJobNotFound
@@ -112,7 +114,11 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 
 	var jobResultStdout JobResultStdout
 	if err := json.NewDecoder(strings.NewReader(jobResult.Stdout)).Decode(&jobResultStdout); err != nil {
-		return err
+		jobResultStdout = JobResultStdout{
+			Pass: false,
+			Score: 0,
+			Messages: []string{"運営に連絡してください"},
+		}
 	}
 
 	result := Result{
@@ -139,6 +145,7 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return err
@@ -164,7 +171,7 @@ func getExternalServiceSuffix() (string, error) {
 	return strings.TrimPrefix(hostname, "bench"), nil
 }
 
-func runBenchmarker(job *Job) (*JobResult, error) {
+func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 	target, err := findBenchmarkTargetServer(job)
 	if err != nil {
 		return &JobResult{}, err
@@ -183,7 +190,7 @@ func runBenchmarker(job *Job) (*JobResult, error) {
 	defer cancel()
 	cmd := exec.CommandContext(
 		ctx,
-		"/home/isucon/isucari/bin/benchmarker",
+		benchmarkerPath,
 		fmt.Sprintf("-payment-url=https://%s", fmt.Sprintf("payment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-shipment-url=https://%s", fmt.Sprintf("shipment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-target-url=https://%s", target.GlobalIP),
@@ -215,6 +222,7 @@ func main() {
 
 	apiEndpoint := flag.String("ep", apiEndpointDev, "API Endpoint")
 	interval := flag.Duration("interval", defaultInterval, "Dequeuing interval second")
+	benchmarkerPath := flag.String("benchmarker", defaultBenchmarkerPath, "Benchmarker path")
 	flag.Parse()
 
 	ticker := time.NewTicker(*interval)
@@ -225,12 +233,13 @@ func main() {
 			continue
 		}
 
-		jobResult, err := runBenchmarker(job)
+		jobResult, err := runBenchmarker(*benchmarkerPath, job)
 		if err != nil {
 			log.Println(err)
 		}
 
 		log.Println(jobResult.Stdout)
+		log.Println(jobResult.Stderr)
 		if err := report(*apiEndpoint, job, jobResult); err != nil {
 			log.Println(err)
 		}

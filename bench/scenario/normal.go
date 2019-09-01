@@ -61,11 +61,97 @@ func checkItemDetailCategory(item session.ItemDetail, aItem asset.AppItem) error
 	return nil
 }
 
-func findItemFromUsersTransactions(ctx context.Context, s *session.Session, targetItemID int64) (session.ItemDetail, error) {
-	return findItemFromUsersTransactionsAll(ctx, s, targetItemID, 0, 0, 0)
+func findItemFromUsers(ctx context.Context, s *session.Session, targetItem asset.AppItem, maxPage int64) (session.ItemSimple, error) {
+	return findItemFromUsersAll(ctx, s, targetItem.SellerID, targetItem.ID, 0, 0, 0, maxPage)
 }
 
-func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, targetItemID, nextItemID, nextCreatedAt, loop int64) (session.ItemDetail, error) {
+func findItemFromUsersAll(ctx context.Context, s *session.Session, sellerID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage int64) (session.ItemSimple, error) {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, _, items, err = s.UserItemsWithItemIDAndCreatedAt(ctx, sellerID, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, _, items, err = s.UserItems(ctx, sellerID)
+	}
+	if err != nil {
+		return session.ItemSimple{}, err
+	}
+	for _, item := range items {
+		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", sellerID))
+		}
+		if item.SellerID != sellerID {
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
+		}
+
+		if item.ID == targetItemID {
+			return item, nil
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json から商品を探すことができませんでした　(item_id: %d)", sellerID, targetItemID))
+	}
+	if hasNext && loop < 100 { // TODO: max pager
+		return findItemFromUsersAll(ctx, s, sellerID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
+	}
+	return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json から商品を探すことができませんでした　(item_id: %d)", sellerID, targetItemID))
+}
+
+func findItemFromNewCategory(ctx context.Context, s *session.Session, targetItem asset.AppItem, maxPage int64) (session.ItemSimple, error) {
+	targetCategory, ok := asset.GetCategory(targetItem.CategoryID)
+	if !ok || targetCategory.ParentID == 0 {
+		// データ不整合・ベンチマーカのバグの可能性
+		return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("商品のカテゴリを探すことができませんでした (item_id: %d)", targetItem.ID))
+	}
+	targetRootCategoryID := targetCategory.ParentID
+	return findItemFromNewCategoryAll(ctx, s, targetRootCategoryID, targetItem.ID, 0, 0, 0, maxPage)
+}
+
+func findItemFromNewCategoryAll(ctx context.Context, s *session.Session, categoryID int, targetItemID, nextItemID, nextCreatedAt, loop, maxPage int64) (session.ItemSimple, error) {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, _, items, err = s.NewCategoryItemsWithItemIDAndCreatedAt(ctx, categoryID, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, _, items, err = s.NewCategoryItems(ctx, categoryID)
+	}
+	if err != nil {
+		return session.ItemSimple{}, err
+	}
+	for _, item := range items {
+		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
+		}
+		if item.Category.ParentID != categoryID {
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
+		}
+
+		if item.ID == targetItemID {
+			return item, nil
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json から商品を探すことができませんでした　(item_id: %d)", categoryID, targetItemID))
+	}
+	if hasNext && loop < 100 { // TODO: max pager
+		return findItemFromNewCategoryAll(ctx, s, categoryID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
+	}
+	return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json から商品を探すことができませんでした　(item_id: %d)", categoryID, targetItemID))
+}
+
+func findItemFromUsersTransactions(ctx context.Context, s *session.Session, targetItemID, maxPage int64) (session.ItemDetail, error) {
+	return findItemFromUsersTransactionsAll(ctx, s, targetItemID, 0, 0, 0, maxPage)
+}
+
+func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, targetItemID, nextItemID, nextCreatedAt, loop, maxPage int64) (session.ItemDetail, error) {
 	var hasNext bool
 	var items []session.ItemDetail
 	var err error
@@ -79,6 +165,14 @@ func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, t
 	}
 
 	for _, item := range items {
+		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
+			return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
+		}
+
+		if item.BuyerID != s.UserID && item.Seller.ID != s.UserID {
+			return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに購入・出品していない商品が含まれます (item_id: %d, user_id: %d)", item.ID, s.UserID))
+		}
+
 		if item.ID == targetItemID {
 			return item, nil
 		}
@@ -86,11 +180,11 @@ func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, t
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
+	}
 	if hasNext && loop < 100 { // TODO: max pager
-		_, err := findItemFromUsersTransactionsAll(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop)
-		if err != nil {
-			return session.ItemDetail{}, err
-		}
+		return findItemFromUsersTransactionsAll(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
 }

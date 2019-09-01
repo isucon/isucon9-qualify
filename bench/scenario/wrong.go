@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
@@ -27,29 +28,53 @@ func irregularLoginWrongPassword(ctx context.Context, user1 asset.AppUser) error
 }
 
 func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 asset.AppUser) error {
-	fileName, name, description := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true)
+	fileName, name, description, categoryID := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true), asset.GetRandomChildCategory().ID
 
 	price := priceStoreCache.Get()
 
-	err := s1.SellWithWrongCSRFToken(ctx, fileName, name, price, description, 32)
+	err := s1.SellWithWrongCSRFToken(ctx, fileName, name, price, description, categoryID)
 	if err != nil {
 		return err
 	}
 
 	// 変な値段で買えない
-	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMinPrice-1, description, 32)
+	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMinPrice-1, description, categoryID)
 	if err != nil {
 		return err
 	}
 
-	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMaxPrice+1, description, 32)
+	err = s1.SellWithWrongPrice(ctx, fileName, name, session.ItemMaxPrice+1, description, categoryID)
 	if err != nil {
 		return err
 	}
 
-	targetItemID, err := sell(ctx, s1, price)
+	targetItemID, fileName, err := sellForFileName(ctx, s1, 100)
 	if err != nil {
 		return err
+	}
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルを開くことに失敗しました"))
+	}
+
+	expectedMD5Str, err := calcMD5(f)
+	if err != nil {
+		return err
+	}
+
+	item, err := s1.Item(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	itemMD5Str, err := s1.DownloadItemImageURL(ctx, item.ImageURL)
+	if err != nil {
+		return err
+	}
+
+	if expectedMD5Str != itemMD5Str {
+		return failure.New(fails.ErrApplication, failure.Messagef("%sの画像のmd5値が間違っています expected: %s; actual: %s", item.ImageURL, expectedMD5Str, itemMD5Str))
 	}
 
 	err = s1.BuyWithFailed(ctx, targetItemID, "", http.StatusForbidden, "自分の商品は買えません")

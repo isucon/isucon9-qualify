@@ -23,7 +23,7 @@ const WaitDone: React.FC<Props> = ({ itemId, postComplete }) => {
 
   return (
     <React.Fragment>
-      <Typography variant="h6">出品者により商品が発送されました</Typography>
+      <Typography variant="h6">商品が発送されました</Typography>
       <Typography variant="h6">
         商品が届き次第、下記の「取引完了」を押してください
       </Typography>

@@ -161,14 +161,6 @@ type resBuy struct {
 	TransactionEvidenceID int64 `json:"transaction_evidence_id"`
 }
 
-type reqSell struct {
-	CSRFToken   string `json:"csrf_token"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int    `json:"price"`
-	CategoryID  int    `json:"category_id"`
-}
-
 type reqShip struct {
 	CSRFToken string `json:"csrf_token"`
 	ItemID    int64  `json:"item_id"`
@@ -918,28 +910,28 @@ func (s *Session) UserItemsWithItemIDAndCreatedAt(ctx context.Context, userID, i
 	return rui.HasNext, rui.User, rui.Items, nil
 }
 
-func (s *Session) Item(ctx context.Context, itemID int64) (item *ItemDetail, err error) {
+func (s *Session) Item(ctx context.Context, itemID int64) (item ItemDetail, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, fmt.Sprintf("/items/%d.json", itemID))
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
+		return ItemDetail{}, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
+		return ItemDetail{}, failure.Wrap(err, failure.Messagef("GET /items/%d.json: リクエストに失敗しました", itemID))
 	}
 	defer res.Body.Close()
 
 	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return nil, err
+		return ItemDetail{}, err
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&item)
 	if err != nil {
-		return nil, failure.Wrap(err, failure.Messagef("GET /items/%d.json: JSONデコードに失敗しました", itemID))
+		return ItemDetail{}, failure.Wrap(err, failure.Messagef("GET /items/%d.json: JSONデコードに失敗しました", itemID))
 	}
 
 	return item, nil

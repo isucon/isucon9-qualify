@@ -229,6 +229,8 @@ func (s *ServerShipment) createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+
 	ship := shipment{}
 	err := json.NewDecoder(r.Body).Decode(&ship)
 	if err != nil {
@@ -274,6 +276,8 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
 	req := requestReq{}
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -340,6 +344,8 @@ func (s *ServerShipment) requestHandler(w http.ResponseWriter, r *http.Request) 
 
 	s.shipmentCache.SetQRMD5(req.ReserveID, fmt.Sprintf("%x", h.Sum(nil)))
 
+	w.Header().Set("Content-Type", "image/png")
+
 	w.Write(png)
 }
 
@@ -347,6 +353,8 @@ func (s *ServerShipment) acceptHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	id := query.Get("id")
 	token := query.Get("token")
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
 	if token != fmt.Sprintf("%x", shipmentHash.Sum([]byte(id))) {
 		b, _ := json.Marshal(errorRes{Error: "wrong parameters"})
@@ -378,6 +386,8 @@ func (s *ServerShipment) statusHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 
 	req := shipmentStatusReq{}
 	err := json.NewDecoder(r.Body).Decode(&req)

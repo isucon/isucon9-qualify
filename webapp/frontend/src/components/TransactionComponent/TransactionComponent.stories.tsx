@@ -16,8 +16,19 @@ const item: TransactionItem = {
   createdAt: 111111111,
 };
 
-stories.add('default', () => (
-  <MemoryRouter>
-    <TransactionComponent item={item} />
-  </MemoryRouter>
-));
+stories
+  .add('default', () => (
+    <MemoryRouter>
+      <TransactionComponent item={item} />
+    </MemoryRouter>
+  ))
+  .add('long name', () => (
+    <MemoryRouter>
+      <TransactionComponent
+        item={Object.assign({}, item, {
+          name:
+            'looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong name',
+        })}
+      />
+    </MemoryRouter>
+  ));

@@ -149,6 +149,8 @@ func (s *ServerPayment) tokenHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+
 	tr := tokenReq{}
 	err := json.NewDecoder(req.Body).Decode(&tr)
 	if err != nil {

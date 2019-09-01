@@ -78,6 +78,11 @@ type AppTransactionEvidence struct {
 	UpdatedAt          int64  `json:"updated_at"`
 }
 
+type ImageMD5 struct {
+	Name string `json:"name"`
+	MD5  string `json:"md5"`
+}
+
 var (
 	users                map[int64]AppUser
 	activeSellerIDs      []int64
@@ -90,6 +95,7 @@ var (
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
 	imageFiles           []string
+	imageMD5Lists        map[string]string
 	muItem               sync.RWMutex
 	muUser               sync.RWMutex
 	muImageFile          sync.Mutex
@@ -110,6 +116,7 @@ func Initialize(dataDir string) {
 	userItems = make(map[int64][]int64)
 	transactionEvidences = make(map[int64]AppTransactionEvidence)
 	imageFiles = make([]string, 0, 10000)
+	imageMD5Lists = make(map[string]string)
 
 	f, err := os.Open(filepath.Join(dataDir, "result/users_json.txt"))
 	if err != nil {
@@ -191,6 +198,23 @@ func Initialize(dataDir string) {
 			log.Fatal(err)
 		}
 		transactionEvidences[te.ID] = te
+	}
+	f.Close()
+
+	f, err = os.Open(filepath.Join(dataDir, "image_files_md5_json.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner = bufio.NewScanner(f)
+	im := ImageMD5{}
+
+	for scanner.Scan() {
+		err := json.Unmarshal([]byte(scanner.Text()), &im)
+		if err != nil {
+			log.Fatal(err)
+		}
+		imageMD5Lists[im.Name] = im.MD5
 	}
 	f.Close()
 
@@ -299,6 +323,10 @@ func GetUserItems(sellerID int64) []int64 {
 	return userItems[sellerID]
 }
 
+func GetImageMD5(imageURL string) (md5Str string) {
+	return imageMD5Lists[imageURL]
+}
+
 func GetItem(sellerID, itemID int64) (AppItem, bool) {
 	i, ok := getItem(sellerID, itemID)
 	for j := 1; !ok && j < 1025; j = j * 2 {
@@ -352,7 +380,7 @@ func SetItemPrice(sellerID int64, itemID int64, price int) {
 	items[key] = item
 }
 
-func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
+func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) AppItem {
 	muItem.Lock()
 	defer muItem.Unlock()
 
@@ -361,6 +389,7 @@ func SetItemCreatedAt(sellerID int64, itemID int64, createdAt int64) {
 	item.CreatedAt = createdAt
 
 	items[key] = item
+	return item
 }
 
 func GetRandomImageFileName() string {

@@ -163,7 +163,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 		return false
 	}
 
-	targetItemID, err := sell(ctx, popular, price)
+	targetItem, err := sell(ctx, popular, price)
 	if err != nil {
 		critical.Add(err)
 		return false
@@ -176,7 +176,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 		go func() {
 			defer wg.Done()
 
-			token := sPayment.ForceSet(CorrectCardNumber, targetItemID, price)
+			token := sPayment.ForceSet(CorrectCardNumber, targetItem.ID, price)
 
 			s2, err := buyerSession(ctx)
 			if err != nil {
@@ -184,7 +184,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 				return
 			}
 
-			transactionEvidenceID, err := s2.BuyWithMayFail(ctx, targetItemID, token)
+			transactionEvidenceID, err := s2.BuyWithMayFail(ctx, targetItem.ID, token)
 			if err != nil {
 				critical.Add(err)
 				return
@@ -212,7 +212,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 	case buyer = <-buyerCh:
 	case <-closed:
 		// 全goroutineが終了したのにbuyerがいない場合は全員が購入に失敗している
-		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("商品 (item_id: %d) に対して全ユーザーが購入に失敗しました", targetItemID)))
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("商品 (item_id: %d) に対して全ユーザーが購入に失敗しました", targetItem.ID)))
 		return false
 	}
 
@@ -227,14 +227,14 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 			select {
 			case s := <-buyerCh:
 				// buyerが複数人いるとここのコードが動く
-				critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItemID, s.UserID)))
+				critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItem.ID, s.UserID)))
 			case <-closed:
 				break L
 			}
 		}
 	}()
 
-	reserveID, apath, err := popular.Ship(ctx, targetItemID)
+	reserveID, apath, err := popular.Ship(ctx, targetItem.ID)
 	if err != nil {
 		critical.Add(err)
 		return false
@@ -248,11 +248,11 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID)))
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
 		return false
 	}
 
-	err = popular.ShipDone(ctx, targetItemID)
+	err = popular.ShipDone(ctx, targetItem.ID)
 	if err != nil {
 		critical.Add(err)
 		return false
@@ -260,11 +260,11 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID)))
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
 		return false
 	}
 
-	err = buyer.Complete(ctx, targetItemID)
+	err = buyer.Complete(ctx, targetItem.ID)
 	if err != nil {
 		critical.Add(err)
 		return false
