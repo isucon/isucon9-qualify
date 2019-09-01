@@ -668,19 +668,26 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
     const csrfToken = getCsrfToken(req);
 
-    const res = {
-        User: null as User | null,
-        PaymentServiceURL: null as string | null,
-        Categories: null as Category[] | null
-    };
-    const user = await getUser(req);
+    const conn = await getConnection();
+    const user = await getLoginUser(req, conn);
 
-    res.User = user;
-    res.PaymentServiceURL = getPaymentServiceURL();
+    const res = {
+        user: null as User | null,
+        payment_service_url: null as string | null,
+        categories: null as Category[] | null,
+        csrf_token: null as string | null,
+    };
+
+    res.user = user;
+    res.payment_service_url = getPaymentServiceURL();
+    res.csrf_token = csrfToken;
 
     const categories: Category[] = [];
-    // TODO:
-    res.Categories = categories;
+    const [rows] = await conn.query("SELECT * FROM `categories`", []);
+    for (const row of rows) {
+        categories.push(row as Category);
+    }
+    res.categories = categories;
 
     reply
         .code(200)
@@ -798,11 +805,20 @@ async function getReports(req: FastifyRequest, reply: FastifyReply<ServerRespons
         .send(transactionEvidences);
 }
 
-function getCsrfToken(req: FastifyRequest) {
-
+function getCsrfToken(req: FastifyRequest): string {
+    return ""
 }
 
-async function getUser(req: FastifyRequest): Promise<User | null> {
+async function getLoginUser(req: FastifyRequest, conn: MySQLQueryable): Promise<User | null> {
+    let userId: number;
+    if (req.cookies.user_id !== undefined && req.cookies.user_id !== "") {
+        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [req.cookies.user_id]);
+        for (const row of rows) {
+            const user = row as User;
+            return user;
+        }
+    }
+
     return null;
 }
 
@@ -823,19 +839,6 @@ function outputErrorMessage(reply: FastifyReply<ServerResponse>, message: string
     reply.code(status)
         .type("application/json")
         .send({"error": message});
-}
-
-async function getLoginUser(req: FastifyRequest, conn: MySQLQueryable): Promise<User | null> {
-    let userId: number;
-    if (req.cookies.user_id !== undefined && req.cookies.user_id !== "") {
-        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [req.cookies.user_id]);
-        for (const row of rows) {
-            const user = row as User;
-            return user;
-        }
-    }
-
-    return null;
 }
 
 async function getUserSimpleByID(conn: MySQLQueryable, userID: number): Promise<UserSimple | null> {
