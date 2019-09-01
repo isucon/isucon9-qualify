@@ -1030,24 +1030,28 @@ def post_complete():
     ensure_valid_csrf_token()
     user = get_user()
     conn = dbh()
+
+    item_id = flask.request.json["item_id"]
+
     with conn.cursor() as c:
         try:
             sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
-            c.execute(sql, (flask.request.json["item_id"],))
+            c.execute(sql, (item_id,))
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 http_json_error(requests.codes["not_found"], "transaction_evidences not found")
         except MySQLdb.Error as err:
             app.logger.exception(err)
             http_json_error(requests.codes['internal_server_error'], "db error")
-    if transaction_evidence["seller_id"] != user["id"]:
+
+    if transaction_evidence["buyer_id"] != user["id"]:
         http_json_error(requests.codes['forbidden'], "権限がありません")
 
     try:
         conn.begin()
         with conn.cursor() as c:
             sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
-            c.execute(sql, [flask.request.json["item_id"]])
+            c.execute(sql, (item_id,))
             item = c.fetchone()
             if item is None:
                 conn.rollback()
@@ -1057,7 +1061,7 @@ def post_complete():
                 http_json_error(requests.codes["forbidden"], "商品が取引中ではありません")
 
             sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s FOR UPDATE"
-            c.execute(sql, [flask.request.json["item_id"]])
+            c.execute(sql, (item_id,))
             transaction_evidence = c.fetchone()
             if transaction_evidence is None:
                 conn.rollback()
@@ -1070,24 +1074,23 @@ def post_complete():
             c.execute(sql, [transaction_evidence["id"]])
             shipping = c.fetchone()
 
-            try:
-                host = get_shipment_service_url()
-                res = requests.post(host + "/request",
-                                    headers=dict(Authorization=Constants.ISUCARI_API_TOKEN),
-                                    json=dict(reserve_id=shipping["reserve_id"]))
-                res.raise_for_status()
-            except (socket.gaierror, requests.HTTPError) as err:
-                conn.rollback()
-                app.logger.exception(err)
-                http_json_error(requests.codes["internal_server_error"], "failed to request to shipment service")
+            ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
 
-            if item["status"] != Constants.SHIPPING_STATUS_DONE:
+            if ssr["status"] != Constants.SHIPPING_STATUS_DONE:
                 conn.rollback()
                 http_json_error(requests.codes["bad_request"], "shipment service側で配送完了になっていません")
 
             sql = "UPDATE `shippings` SET `status` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
                 Constants.SHIPPING_STATUS_DONE,
+                datetime.datetime.now(),
+                transaction_evidence["id"],
+            ))
+
+
+            sql = "UPDATE `transaction_evidences` SET `status` = %s, `updated_at` = %s WHERE `id` = %s"
+            c.execute(sql, (
+                Constants.TRANSACTION_EVIDENCE_STATUS_DONE,
                 datetime.datetime.now(),
                 transaction_evidence["id"],
             ))
