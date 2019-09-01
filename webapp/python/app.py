@@ -19,6 +19,7 @@ static_folder = base_path / 'public'
 
 app = flask.Flask(__name__, static_folder=str(static_folder), static_url_path='')
 app.config['SECRET_KEY'] = 'isucari'
+app.config['UPLOAD_FOLDER'] = '../public/upload'
 
 
 class Constants(object):
@@ -820,7 +821,8 @@ def post_sell():
     if category['parent_id'] == 0:
         http_json_error(requests.codes['bad_request'], 'Incorrect category ID')
     user = get_user()
-    if flask.request.files['image'] not in flask.request.files:
+
+    if "image" not in flask.request.files:
         http_json_error(requests.codes['internal_server_error'], 'image error')
 
     file = flask.request.files['image']
@@ -837,7 +839,7 @@ def post_sell():
         conn.begin()
         sql = "SELECT * FROM `users` WHERE `id` = %s FOR UPDATE"
         with conn.cursor() as c:
-            c.execute(sql, (user['id']))
+            c.execute(sql, (user['id'],))
             seller = c.fetchone()
             if seller is None:
                 conn.rollback()
@@ -856,7 +858,11 @@ def post_sell():
             ))
             item_id = c.lastrowid
             sql = "UPDATE `users` SET `num_sell_items`=%s, `last_bump`=%s WHERE `id`=%s"
-            c.execute(sql, (seller['num_sell_items'] + 1, datetime.datetime.now()))
+            c.execute(sql, (
+                seller['num_sell_items'] + 1,
+                datetime.datetime.now(),
+                seller['id'],
+            ))
             conn.commit()
     except MySQLdb.Error as err:
         app.logger.exception(err)
