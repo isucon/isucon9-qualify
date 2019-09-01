@@ -997,20 +997,14 @@ def post_ship_done():
                 conn.rollback()
                 http_json_error(requests.codes["not_found"], "shipping not found")
 
-            try:
-                host = get_shipment_service_url()
-                res = requests.post(host + "/request",
-                                    headers=dict(Authorization=Constants.ISUCARI_API_TOKEN),
-                                    json=dict(reserve_id=shipping["reserve_id"]))
-                res.raise_for_status()
-            except (socket.gaierror, requests.HTTPError) as err:
-                conn.rollback()
-                app.logger.exception(err)
-                http_json_error(requests.codes["internal_server_error"], "failed to request to shipment service")
+            ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
+
+            if ssr["status"] not in (Constants.SHIPPING_STATUS_DONE, Constants.SHIPPING_STATUS_SHIPPING):
+                http_json_error(requests.codes["forbidden"], "shipment service側で配送中か配送完了になっていません")
 
             sql = "UPDATE `shippings` SET `status` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
-                Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_DONE,
+                ssr["status"],
                 datetime.datetime.now(),
                 transaction_evidence["id"],
             ))
