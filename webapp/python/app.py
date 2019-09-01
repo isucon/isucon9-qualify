@@ -552,6 +552,7 @@ def get_user_items(user_id=None):
                 item = to_item_json(item)
                 item["category"] = category
                 item["seller"] = to_user_json(seller)
+                item["image_url"] = get_image_url(item["image_name"])
 
                 print(item)
                 item_simples.append(item)
