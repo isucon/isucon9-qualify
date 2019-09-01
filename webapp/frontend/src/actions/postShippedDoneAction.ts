@@ -79,5 +79,6 @@ export function postShippedDoneFailAction(
   return {
     type: POST_SHIPPED_DONE_FAIL,
     snackBarMessage: error,
+    variant: 'error',
   };
 }

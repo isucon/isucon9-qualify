@@ -8,7 +8,7 @@ stories
   .add('default', () => (
     <SnackBar
       open={true}
-      variant="default"
+      variant="success"
       message={'message'}
       handleClose={(e: React.MouseEvent) => {}}
     />

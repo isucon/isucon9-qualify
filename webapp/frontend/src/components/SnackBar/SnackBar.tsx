@@ -19,7 +19,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     fontSize: 20,
     marginRight: theme.spacing(1),
   },
-  default: {
+  success: {
     backgroundColor: theme.palette.secondary.main,
   },
   error: {
@@ -27,20 +27,20 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-type snackBarVariant = 'default' | 'error';
+export type SnackBarVariant = 'success' | 'error';
 
 type Props = {
   open: boolean;
-  variant: snackBarVariant;
+  variant: SnackBarVariant;
   message?: string;
   handleClose: (event: React.MouseEvent) => void;
 };
 
 const getIcon = (
-  variant: snackBarVariant,
+  variant: SnackBarVariant,
 ): typeof CheckCircleIcon | typeof ErrorIcon => {
   switch (variant) {
-    case 'default':
+    case 'success':
       return CheckCircleIcon;
     case 'error':
       return ErrorIcon;

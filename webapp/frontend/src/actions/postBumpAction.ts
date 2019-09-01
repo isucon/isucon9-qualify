@@ -59,6 +59,7 @@ export function postBumpSuccessAction(): PostBumpSuccessAction {
   return {
     type: POST_BUMP_SUCCESS,
     snackBarMessage: 'BUMPに成功しました',
+    variant: 'success',
   };
 }
 
@@ -69,5 +70,6 @@ export function postBumpFailAction(error: string): PostBumpFailAction {
   return {
     type: POST_BUMP_FAIL,
     snackBarMessage: error,
+    variant: 'error',
   };
 }
