@@ -41,7 +41,7 @@ const WaitShipping: React.FC<Props> = ({
           配達員に下記QRコードをお見せください
         </Typography>
         <Typography variant="h6">
-          配達員に商品を渡したら下記の「集荷完了」を押してください
+          配達員に商品を渡したら下記の「発送完了」を押してください
         </Typography>
       </Grid>
       <Grid item xs={12}>
@@ -54,7 +54,7 @@ const WaitShipping: React.FC<Props> = ({
           color="primary"
           onClick={onClick}
         >
-          集荷完了
+          発送完了
         </Button>
       </Grid>
     </Grid>
