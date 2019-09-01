@@ -1298,6 +1298,10 @@ def get_reports():
             sql = "SELECT * FROM `transaction_evidences` WHERE `id` > 15007"
             c.execute(sql)
             transaction_evidences = c.fetchall()
+
+            for k in transaction_evidences:
+                del k["created_at"]
+                del k["updated_at"]
     except MySQLdb.Error as err:
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
