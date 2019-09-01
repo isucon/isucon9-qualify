@@ -1,17 +1,12 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
-import {
-  ErrorRes,
-  ItemSimple,
-  UserItemsReq,
-  UserItemsRes,
-} from '../types/appApiTypes';
-import { AppResponseError } from '../errors/AppResponseError';
+import { ItemSimple, UserItemsReq, UserItemsRes } from '../types/appApiTypes';
 import { TimelineItem } from '../dataObjects/item';
-import { NotFoundError } from '../errors/NotFoundError';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { AppState } from '../index';
+import { ErrorActions } from './errorAction';
+import { checkAppResponse } from '../actionHelper/responseChecker';
+import { ajaxErrorHandler } from '../actionHelper/ajaxErrorHandler';
 
 export const FETCH_USER_ITEMS_START = 'FETCH_USER_ITEMS_START';
 export const FETCH_USER_ITEMS_SUCCESS = 'FETCH_USER_ITEMS_SUCCESS';
@@ -20,7 +15,8 @@ export const FETCH_USER_ITEMS_FAIL = 'FETCH_USER_ITEMS_FAIL';
 export type FetchUserItemsActions =
   | FetchUserItemsStartAction
   | FetchUserItemsSuccessAction
-  | FetchUserItemsFailAction;
+  | FetchUserItemsFailAction
+  | ErrorActions;
 type ThunkResult<R> = ThunkAction<
   R,
   AppState,
@@ -45,14 +41,7 @@ export function fetchUserItemsAction(
         } as UserItemsReq);
       })
       .then(async (response: Response) => {
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new NotFoundError('UserItems not found');
-          }
-
-          const errRes: ErrorRes = await response.json();
-          throw new AppResponseError(errRes.error, response);
-        }
+        await checkAppResponse(response);
 
         return await response.json();
       })
@@ -73,9 +62,10 @@ export function fetchUserItemsAction(
       })
       .catch((err: Error) => {
         dispatch(
-          fetchUserItemsFailAction({
-            error: err.message,
-          }),
+          ajaxErrorHandler<FetchUserItemsActions>(
+            err,
+            fetchUserItemsFailAction,
+          ),
         );
       });
   };
@@ -110,14 +100,11 @@ const fetchUserItemsSuccessAction = (payload: {
 
 export interface FetchUserItemsFailAction
   extends Action<typeof FETCH_USER_ITEMS_FAIL> {
-  payload: FormErrorState;
+  message: string;
 }
 
 const fetchUserItemsFailAction = (
-  newError: FormErrorState,
+  message: string,
 ): FetchUserItemsFailAction => {
-  return {
-    type: FETCH_USER_ITEMS_FAIL,
-    payload: newError,
-  };
+  return { type: FETCH_USER_ITEMS_FAIL, message };
 };

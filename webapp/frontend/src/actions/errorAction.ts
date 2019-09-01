@@ -14,8 +14,12 @@ export function notFoundError(message: string): NotFoundErrorAction {
 }
 
 export interface InternalServerErrorAction
-  extends Action<typeof INTERNAL_SERVER_ERROR> {}
+  extends Action<typeof INTERNAL_SERVER_ERROR> {
+  message: string;
+}
 
-export function internalServerError(): InternalServerErrorAction {
-  return { type: INTERNAL_SERVER_ERROR };
+export function internalServerError(
+  message: string,
+): InternalServerErrorAction {
+  return { type: INTERNAL_SERVER_ERROR, message };
 }

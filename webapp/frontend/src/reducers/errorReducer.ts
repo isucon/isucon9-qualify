@@ -43,7 +43,11 @@ const error = (
     case FETCH_USER_ITEMS_FAIL:
     case FETCH_USER_PAGE_DATA_FAIL:
     case FETCH_SETTINGS_FAIL:
-      return { errorType: InternalServerError, errorCode: 500 };
+      return {
+        errorType: InternalServerError,
+        errorCode: 500,
+        errorMessage: action.message,
+      };
     default:
       return { errorType: NoError };
   }

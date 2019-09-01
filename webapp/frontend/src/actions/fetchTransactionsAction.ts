@@ -2,18 +2,17 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
 import {
-  ErrorRes,
   ItemDetail,
   UserTransactionsReq,
   UserTransactionsRes,
 } from '../types/appApiTypes';
-import { AppResponseError } from '../errors/AppResponseError';
 import { TransactionItem } from '../dataObjects/item';
-import { NotFoundError } from '../errors/NotFoundError';
 import { TransactionStatus } from '../dataObjects/transaction';
 import { ShippingStatus } from '../dataObjects/shipping';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { AppState } from '../index';
+import { ErrorActions } from './errorAction';
+import { ajaxErrorHandler } from '../actionHelper/ajaxErrorHandler';
+import { checkAppResponse } from '../actionHelper/responseChecker';
 
 export const FETCH_TRANSACTIONS_START = 'FETCH_TRANSACTIONS_START';
 export const FETCH_TRANSACTIONS_SUCCESS = 'FETCH_TRANSACTIONS_SUCCESS';
@@ -22,7 +21,8 @@ export const FETCH_TRANSACTIONS_FAIL = 'FETCH_TRANSACTIONS_FAIL';
 export type FetchTransactionActions =
   | FetchTransactionsStartAction
   | FetchTransactionsSuccessAction
-  | FetchTransactionsFailAction;
+  | FetchTransactionsFailAction
+  | ErrorActions;
 type ThunkResult<R> = ThunkAction<
   R,
   AppState,
@@ -46,14 +46,7 @@ export function fetchTransactionsAction(
         } as UserTransactionsReq);
       })
       .then(async (response: Response) => {
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new NotFoundError('Transactions not found');
-          }
-
-          const errRes: ErrorRes = await response.json();
-          throw new AppResponseError(errRes.error, response);
-        }
+        await checkAppResponse(response);
 
         return await response.json();
       })
@@ -75,9 +68,10 @@ export function fetchTransactionsAction(
       })
       .catch((err: Error) => {
         dispatch(
-          fetchTransactionsFailAction({
-            error: err.message,
-          }),
+          ajaxErrorHandler<FetchTransactionActions>(
+            err,
+            fetchTransactionsFailAction,
+          ),
         );
       });
   };
@@ -112,14 +106,14 @@ const fetchTransactionsSuccessAction = (payload: {
 
 export interface FetchTransactionsFailAction
   extends Action<typeof FETCH_TRANSACTIONS_FAIL> {
-  payload: FormErrorState;
+  message: string;
 }
 
 const fetchTransactionsFailAction = (
-  newErrors: FormErrorState,
+  message: string,
 ): FetchTransactionsFailAction => {
   return {
     type: FETCH_TRANSACTIONS_FAIL,
-    payload: newErrors,
+    message,
   };
 };

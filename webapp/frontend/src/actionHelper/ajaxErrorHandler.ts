@@ -1,12 +1,17 @@
 import { NotFoundError } from '../errors/NotFoundError';
-import { internalServerError, notFoundError } from '../actions/errorAction';
+import {
+  internalServerError,
+  InternalServerErrorAction,
+  notFoundError,
+  NotFoundErrorAction,
+} from '../actions/errorAction';
 import { InternalServerError } from '../errors/InternalServerError';
-import { ActionTypes } from '../actions/actionTypes';
+import { Action } from 'redux';
 
-export function ajaxErrorHandler(
+export function ajaxErrorHandler<T extends Action<any>>(
   err: Error,
-  actionCreater: (message: string) => ActionTypes,
-): ActionTypes {
+  actionCreate: (message: string) => T,
+): T | NotFoundErrorAction | InternalServerErrorAction {
   if (err instanceof NotFoundError) {
     return notFoundError(err.message);
   }
@@ -15,5 +20,5 @@ export function ajaxErrorHandler(
     return internalServerError(err.message);
   }
 
-  return actionCreater(err.message);
+  return actionCreate(err.message);
 }

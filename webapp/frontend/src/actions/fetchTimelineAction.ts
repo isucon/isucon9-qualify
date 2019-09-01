@@ -2,17 +2,16 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
 import {
-  ErrorRes,
   ItemSimple,
   NewCategoryItemRes,
   NewItemReq,
   NewItemRes,
 } from '../types/appApiTypes';
-import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem } from '../dataObjects/item';
-import { NotFoundError } from '../errors/NotFoundError';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { AppState } from '../index';
+import { ErrorActions } from './errorAction';
+import { checkAppResponse } from '../actionHelper/responseChecker';
+import { ajaxErrorHandler } from '../actionHelper/ajaxErrorHandler';
 
 export const FETCH_TIMELINE_START = 'FETCH_TIMELINE_START';
 export const FETCH_TIMELINE_SUCCESS = 'FETCH_TIMELINE_SUCCESS';
@@ -21,7 +20,8 @@ export const FETCH_TIMELINE_FAIL = 'FETCH_TIMELINE_FAIL';
 export type FetchTimelineActions =
   | FetchTimelineStartAction
   | FetchTimelineSuccessAction
-  | FetchTimelineFailAction;
+  | FetchTimelineFailAction
+  | ErrorActions;
 type ThunkResult<R> = ThunkAction<R, AppState, undefined, FetchTimelineActions>;
 
 export function fetchTimelineAction(
@@ -47,14 +47,7 @@ export function fetchTimelineAction(
         return AppClient.get(`/new_items.json`, getParams);
       })
       .then(async (response: Response) => {
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new NotFoundError('Item not found');
-          }
-
-          const errRes: ErrorRes = await response.json();
-          throw new AppResponseError(errRes.error, response);
-        }
+        await checkAppResponse(response);
 
         return await response.json();
       })
@@ -77,9 +70,7 @@ export function fetchTimelineAction(
       })
       .catch((err: Error) => {
         dispatch(
-          fetchTimelineFailAction({
-            error: err.message,
-          }),
+          ajaxErrorHandler<FetchTimelineActions>(err, fetchTimelineFailAction),
         );
       });
   };
@@ -118,14 +109,12 @@ const fetchTimelineSuccessAction = (payload: {
 
 export interface FetchTimelineFailAction
   extends Action<typeof FETCH_TIMELINE_FAIL> {
-  payload: FormErrorState;
+  message: string;
 }
 
-const fetchTimelineFailAction = (
-  newErrors: FormErrorState,
-): FetchTimelineFailAction => {
+const fetchTimelineFailAction = (message: string): FetchTimelineFailAction => {
   return {
     type: FETCH_TIMELINE_FAIL,
-    payload: newErrors,
+    message,
   };
 };
