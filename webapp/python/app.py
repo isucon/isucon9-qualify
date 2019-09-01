@@ -1121,7 +1121,7 @@ def post_bump():
                 conn.rollback()
                 http_json_error(requests.codes['not_found'], "user not found")
             now = datetime.datetime.now()
-            if seller['last_bump'] + datetime.timedelta(seconds=3) < now:
+            if seller['last_bump'] + datetime.timedelta(seconds=3) > now:
                 http_json_error(requests.codes['forbidden'], "Bump not allowed")
 
             sql = "UPDATE `items` SET `created_at`=%s, `updated_at`=%s WHERE id=%s"
