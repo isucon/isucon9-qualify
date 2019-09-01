@@ -944,7 +944,7 @@ def post_ship():
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
     return flask.jsonify(dict(
-        path="/transactions/%d.png".format(transaction_evidence["id"]),
+        path="/transactions/{}.png".format(transaction_evidence["id"]),
         reserve_id=shipping["reserve_id"],
     ))
 
