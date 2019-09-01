@@ -28,6 +28,13 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
   goToCategoryItemList: (categoryId: number) => {
     dispatch(push(routes.categoryTimeline.getPath(categoryId)));
   },
+  onClickTitle: (isLoggedIn: boolean) => {
+    if (isLoggedIn) {
+      dispatch(push(routes.timeline.path));
+      return;
+    }
+    dispatch(push(routes.top.path));
+  },
 });
 
 export default connect(

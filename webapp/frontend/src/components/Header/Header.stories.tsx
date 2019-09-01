@@ -28,6 +28,7 @@ const mockProps = {
   goToUserPage: (userId: number) => {},
   goToSettingPage: () => {},
   goToCategoryItemList: (categoryId: number) => {},
+  onClickTitle: (isLoggedIn: boolean) => {},
 };
 
 stories
