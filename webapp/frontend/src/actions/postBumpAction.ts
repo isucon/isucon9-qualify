@@ -5,6 +5,7 @@ import { Action } from 'redux';
 import { ErrorRes, BumpReq, BumpRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
 import { AppState } from '../index';
+import { SnackBarAction } from './actionTypes';
 
 export const POST_BUMP_START = 'POST_BUMP_START';
 export const POST_BUMP_SUCCESS = 'POST_BUMP_SUCCESS';
@@ -38,11 +39,7 @@ export function postBumpAction(itemId: number): ThunkResult<void> {
         dispatch(postBumpSuccessAction());
       })
       .catch((err: Error) => {
-        dispatch(
-          postBumpFailAction({
-            error: err.message, // TODO
-          }),
-        );
+        dispatch(postBumpFailAction(err.message));
       });
   };
 }
@@ -56,23 +53,21 @@ export function postBumpStartAction(): PostBumpStartAction {
 }
 
 export interface PostBumpSuccessAction
-  extends Action<typeof POST_BUMP_SUCCESS> {}
+  extends SnackBarAction<typeof POST_BUMP_SUCCESS> {}
 
 export function postBumpSuccessAction(): PostBumpSuccessAction {
   return {
     type: POST_BUMP_SUCCESS,
+    snackBarMessage: 'BUMPに成功しました',
   };
 }
 
-export interface PostBumpFailAction extends Action<typeof POST_BUMP_FAIL> {
-  payload: FormErrorState;
-}
+export interface PostBumpFailAction
+  extends SnackBarAction<typeof POST_BUMP_FAIL> {}
 
-export function postBumpFailAction(
-  newErrors: FormErrorState,
-): PostBumpFailAction {
+export function postBumpFailAction(error: string): PostBumpFailAction {
   return {
     type: POST_BUMP_FAIL,
-    payload: newErrors,
+    snackBarMessage: error,
   };
 }

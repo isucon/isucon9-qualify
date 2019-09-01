@@ -3,6 +3,7 @@ import { POST_SHIPPED_FAIL } from '../actions/postShippedAction';
 import { POST_SHIPPED_DONE_FAIL } from '../actions/postShippedDoneAction';
 import { POST_COMPLETE_FAIL } from '../actions/postCompleteAction';
 import { SNACK_BAR_CLOSE } from '../actions/snackBarAction';
+import { POST_BUMP_FAIL, POST_BUMP_SUCCESS } from '../actions/postBumpAction';
 
 export interface SnackBarState {
   reason: string;
@@ -21,6 +22,8 @@ const snackBar = (
   switch (action.type) {
     case POST_SHIPPED_FAIL:
     case POST_SHIPPED_DONE_FAIL:
+    case POST_BUMP_SUCCESS:
+    case POST_BUMP_FAIL:
     case POST_COMPLETE_FAIL:
       return {
         reason: action.snackBarMessage,
