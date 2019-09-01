@@ -1,15 +1,12 @@
 package session
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
-	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/morikuni/failure"
@@ -98,46 +95,6 @@ func urlParse(ref string) (*url.URL, error) {
 		Scheme: u.Scheme,
 		Host:   u.Host,
 	}, nil
-}
-
-func NewSession() (*Session, error) {
-	jar, _ := cookiejar.New(&cookiejar.Options{})
-
-	s := &Session{
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					// HTTPの時は無視されるだけ
-					ServerName: ShareTargetURLs.TargetHost,
-				},
-			},
-			Jar:     jar,
-			Timeout: time.Duration(DefaultAPITimeout) * time.Second,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return fmt.Errorf("redirect attempted")
-			},
-		},
-	}
-
-	return s, nil
-}
-
-func NewSessionForInialize() (*Session, error) {
-	s := &Session{
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					// HTTPの時は無視されるだけ
-					ServerName: ShareTargetURLs.TargetHost,
-				},
-			},
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return fmt.Errorf("redirect attempted")
-			},
-		},
-	}
-
-	return s, nil
 }
 
 func (s *Session) newGetRequest(u url.URL, spath string) (*http.Request, error) {
