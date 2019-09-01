@@ -651,7 +651,7 @@ func verifyGetItem(ctx context.Context, s *session.Session, targetItemID int64) 
 		return failure.New(fails.ErrApplication, failure.Messagef("%sの商品画像が間違っています", item.ImageURL))
 	}
 
-	err = checkItemDetailCategory(*item, aItem)
+	err = checkItemDetailCategory(item, aItem)
 	if err != nil {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの%s", targetItemID, err.Error()))
 	}
@@ -694,7 +694,7 @@ func verifyGetItemTE(ctx context.Context, s *session.Session, targetItemID int64
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
 
-	err = checkItemDetailCategory(*item, aItem)
+	err = checkItemDetailCategory(item, aItem)
 	if err != nil {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの%s", targetItemID, err.Error()))
 	}
