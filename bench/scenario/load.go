@@ -41,7 +41,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var err error
 			var price int
 			var categories []asset.AppCategory
-			var targetItemID int64
+			var targetItem asset.AppItem
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
@@ -60,7 +60,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -75,7 +75,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					}
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -104,7 +104,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var s1, s2 *session.Session
 			var err error
 			var price int
-			var targetItemID int64
+			var targetItem asset.AppItem
 			var item session.ItemDetail
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -124,13 +124,13 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				item, err = s1.Item(ctx, targetItemID)
+				item, err = s1.Item(ctx, targetItem.ID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -161,7 +161,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				}
 
 				// ここは厳密なcheckをしない
-				err = buyComplete(ctx, s1, s2, targetItemID, price)
+				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -189,7 +189,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var s1, s2, s3 *session.Session
 			var err error
 			var price int
-			var targetItemID int64
+			var targetItem asset.AppItem
 			var userIDs []int64
 
 		L:
@@ -216,7 +216,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -248,7 +248,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					}
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -277,7 +277,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var s1, s2 *session.Session
 			var err error
 			var price int
-			var targetItemID int64
+			var targetItem asset.AppItem
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -297,7 +297,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItemID, err = sell(ctx, s1, price)
+				targetItem, err = sell(ctx, s1, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -309,7 +309,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, price)
+				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final

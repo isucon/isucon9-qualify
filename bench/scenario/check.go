@@ -193,7 +193,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		var s1, s2 *session.Session
 		var err error
 		var price int
-		var targetItemID int64
+		var targetItem asset.AppItem
 
 	L:
 		for j := 0; j < ExecutionSeconds/5; j++ {
@@ -213,23 +213,23 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 			price = priceStoreCache.Get()
 
-			targetItemID, err = sell(ctx, s1, price)
+			targetItem, err = sell(ctx, s1, price)
 			if err != nil {
 				critical.Add(err)
 
 				goto Final
 			}
 
-			// 打った商品探す
+			// TODO 打った商品探す
 
-			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItemID, price+10)
+			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItem.ID, price+10)
 			if err != nil {
 				critical.Add(err)
 
 				goto Final
 			}
 
-			err = buyComplete(ctx, s1, s2, targetItemID, price+10)
+			err = buyComplete(ctx, s1, s2, targetItem.ID, price+10)
 			if err != nil {
 				critical.Add(err)
 
@@ -625,10 +625,6 @@ func checkGetItem(ctx context.Context, s *session.Session, targetItemID int64) e
 	err = checkItemDetailCategory(item, aItem)
 	if err != nil {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの%s", targetItemID, err.Error()))
-	}
-
-	if item.BuyerID != 0 && item.Buyer == nil {
-		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonのbuyer_idがあるのに購入者の情報がありません", targetItemID))
 	}
 
 	if item.BuyerID != 0 && item.Buyer.ID != item.BuyerID {
