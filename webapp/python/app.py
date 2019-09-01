@@ -1105,7 +1105,7 @@ def post_complete():
 @app.route("/transactions/<transaction_evidence_id>.png", methods=["GET"])
 def get_qrcode(transaction_evidence_id):
     if transaction_evidence_id:
-        if not transaction_evidence_id.isdecimal() or int(transaction_evidence_id) < 0:
+        if not transaction_evidence_id.isdecimal() or int(transaction_evidence_id) <= 0:
             http_json_error(requests.codes['bad_request'], "incorrect transaction_evidence id")
 
     seller = get_user()
