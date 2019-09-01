@@ -22,6 +22,9 @@ app.config['SECRET_KEY'] = 'isucari'
 
 
 class Constants(object):
+    DEFAULT_PAYMENT_SERVICE_URL = "http://127.0.0.1:5555"
+    DEFAULT_SHIPMENT_SERVICE_URL = "http://127.0.0.1:7000"
+
     ITEM_STATUS_ON_SALE = "on_sale"
     ITEM_STATUS_TRADING = 'trading'
     ITEM_STATUS_SOLD_OUT = 'sold_out'
@@ -174,18 +177,18 @@ def get_config(name):
     return config
 
 
-def get_shipment_service_url():
-    config = get_config("shipment_service_url")
-    if config is None:
-        return "http://localhost:7000"
-    return config['val']
-
-
 def get_payment_service_url():
     config = get_config("payment_service_url")
     if config is None:
-        return "http://localhost:5000"
-    return config['val']
+        config = Constants.DEFAULT_PAYMENT_SERVICE_URL
+    return config
+
+
+def get_shipment_service_url():
+    config = get_config("shipment_service_url")
+    if config is None:
+        config = Constants.DEFAULT_SHIPMENT_SERVICE_URL
+    return config
 
 
 def api_shipment_status(shipment_url, params={}):
@@ -683,45 +686,45 @@ def post_buy():
         with conn.cursor() as c:
             sql = "SELECT * FROM `items` WHERE `id` = %s FOR UPDATE"
             c.execute(sql, (flask.request.json['item_id'],))
-            item = c.fetchone()
-            if item is None:
+            target_item = c.fetchone()
+            if target_item is None:
                 conn.rollback()
                 http_json_error(requests.codes['not_found'], "item not found")
-            if item['status'] is not Constants.ITEM_STATUS_ON_SALE:
+            if target_item['status'] != Constants.ITEM_STATUS_ON_SALE:
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "item is not for sale")
-            if item['seller_id'] == buyer['id']:
+            if target_item['seller_id'] == buyer['id']:
                 conn.rollback()
                 http_json_error(requests.codes['forbidden'], "自分の商品は買えません")
             sql = "SELECT * FROM `users` WHERE `id` = %s FOR UPDATE"
-            c.execute(sql, (item['seller_id'],))
+            c.execute(sql, (target_item['seller_id'],))
             seller = c.fetchone()
             if seller is None:
                 conn.rollback()
                 http_json_error(requests.codes['not_found'], "seller not found")
-            category = get_category_by_id(item['category_id'])
+            category = get_category_by_id(target_item['category_id'])
             # TODO: check category error
             sql = "INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, " \
                   "`item_price`, `item_description`, `item_category_id`, `item_root_category_id`) " \
                   "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
             c.execute(sql, (
-                item['seller_id'],
+                target_item['seller_id'],
                 buyer['id'],
                 Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING,
-                item['id'],
-                item['name'],
-                item['price'],
-                item['description'],
+                target_item['id'],
+                target_item['name'],
+                target_item['price'],
+                target_item['description'],
                 category['id'],
                 category['parent_id'],
             ))
-            transaction_evidence_id = c.lastrowid()
+            transaction_evidence_id = c.lastrowid
             sql = "UPDATE `items` SET `buyer_id` = %s, `status` = %s, `updated_at` = %s WHERE `id` = %s"
             c.execute(sql, (
                 buyer['id'],
                 Constants.ITEM_STATUS_TRADING,
                 datetime.datetime.now(),
-                item['id'],
+                target_item['id'],
             ))
 
             host = get_shipment_service_url()
@@ -732,7 +735,7 @@ def post_buy():
                                         to_address=buyer['address'],
                                         to_name=buyer['account_name'],
                                         from_address=seller['address'],
-                                        from_name=seller['name'],
+                                            from_name=seller['account_name'],
                                     ))
                 res.raise_for_status()
             except (socket.gaierror, requests.HTTPError) as err:
@@ -749,7 +752,7 @@ def post_buy():
                                         shop_id=Constants.PAYMENT_SERVICE_ISUCARI_SHOP_ID,
                                         api_key=Constants.PAYMENT_SERVICE_ISUCARI_API_KEY,
                                         token=flask.request.json['token'],
-                                        price=item['price'],
+                                        price=target_item['price'],
                                     ))
                 res.raise_for_status()
             except (socket.gaierror, requests.HTTPError) as err:
@@ -774,8 +777,8 @@ def post_buy():
             c.execute(sql, (
                 transaction_evidence_id,
                 Constants.SHIPPING_STATUS_INITIAL,
-                item["name"],
-                item["id"],
+                target_item["name"],
+                target_item["id"],
                 shipping_res["reserve_id"],
                 shipping_res["reserve_time"],
                 buyer["address"],
@@ -1153,7 +1156,9 @@ def get_settings():
     return flask.jsonify(dict(
         user=to_user_json(get_user()),
         csrf_token=flask.session.get('csrf_token'),
-        categories=categories))
+        categories=categories,
+        payment_service_url=Constants.DEFAULT_PAYMENT_SERVICE_URL
+    ))
 
 
 @app.route("/login", methods=["POST"])
