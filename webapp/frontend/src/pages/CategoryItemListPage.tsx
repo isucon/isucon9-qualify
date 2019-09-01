@@ -22,6 +22,10 @@ const styles = (theme: Theme): StyleRules =>
       justifyContent: 'space-around',
       overflow: 'hidden',
     },
+    title: {
+      paddingBottom: theme.spacing(2),
+      fontWeight: theme.typography.fontWeightBold,
+    },
   });
 
 interface CategoryItemListPageProps extends WithStyles<typeof styles> {
@@ -114,7 +118,7 @@ class CategoryItemListPage extends React.Component<Props, State> {
 
       return (
         <div className={classes.root}>
-          <Typography variant="h6">
+          <Typography variant="h6" className={classes.title}>
             「{categoryName}」カテゴリの新着商品一覧
           </Typography>
           <ItemList items={items} hasNext={hasNext} loadMore={loadMoreItems} />
