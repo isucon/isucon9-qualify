@@ -1,0 +1,43 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    backports (3.15.0)
+    bcrypt (3.1.13)
+    multi_json (1.13.1)
+    mustermann (1.0.3)
+    mysql2 (0.5.2)
+    mysql2-cs-bind (0.0.7)
+      mysql2
+    nio4r (2.5.1)
+    puma (4.1.0)
+      nio4r (~> 2.0)
+    rack (2.0.7)
+    rack-protection (2.0.7)
+      rack
+    sinatra (2.0.7)
+      mustermann (~> 1.0)
+      rack (~> 2.0)
+      rack-protection (= 2.0.7)
+      tilt (~> 2.0)
+    sinatra-contrib (2.0.7)
+      backports (>= 2.8.2)
+      multi_json
+      mustermann (~> 1.0)
+      rack-protection (= 2.0.7)
+      sinatra (= 2.0.7)
+      tilt (~> 2.0)
+    tilt (2.0.9)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bcrypt
+  mysql2
+  mysql2-cs-bind
+  puma
+  sinatra
+  sinatra-contrib
+
+BUNDLED WITH
+   2.0.1
