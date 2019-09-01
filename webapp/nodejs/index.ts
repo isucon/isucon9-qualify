@@ -233,7 +233,7 @@ fastify.get("/new_items.json", getNewItems);
 fastify.get("/new_items/:root_category_id(^\\d+).json", getNewCategoryItems);
 fastify.get("/users/transactions.json", getTransactions);
 fastify.get("/users/:user_id(^\\d+).json", getUserItems);
-fastify.get("/items/:item_id.json", getItem);
+fastify.get("/items/:item_id(^\\d+).json", getItem);
 fastify.post("/items/edit", postItemEdit);
 fastify.post("/buy", postBuy);
 fastify.post("/sell", postSell);
@@ -621,6 +621,13 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
 }
 
 async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const itemIdStr = req.params.item_id;
+    const itemId = parseInt(itemIdStr, 10);
+    if (itemId === undefined || isNaN(itemId)) {
+        outputErrorMessage(reply, "incorrect item id", 400);
+        return;
+    }
+
 }
 
 async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -678,6 +685,17 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
 }
 
 async function getReports(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const conn = await getConnection();
+    const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `id` > 15007");
+    const transactionEvidences: TransactionEvidence[] = [];
+    for (const row of rows) {
+        transactionEvidences.push(row as TransactionEvidence);
+    }
+
+    reply
+        .code(200)
+        .type("application/json")
+        .send(transactionEvidences);
 }
 
 function getCsrfToken(req: FastifyRequest) {
