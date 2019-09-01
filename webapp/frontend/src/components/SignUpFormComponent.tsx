@@ -14,7 +14,6 @@ import { Link as RouteLink } from 'react-router-dom';
 import { StyleRules } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { RegisterReq } from '../types/appApiTypes';
-import { ErrorMessageComponent } from './ErrorMessageComponent';
 import { routes } from '../routes/Route';
 
 const styles = (theme: Theme): StyleRules =>
@@ -40,7 +39,6 @@ const styles = (theme: Theme): StyleRules =>
 
 interface SignUpFormComponentProps extends WithStyles<typeof styles> {
   register: (params: RegisterReq) => void;
-  error?: string;
 }
 
 interface SignUpFormComponentState {
@@ -143,9 +141,6 @@ class SignUpFormComponent extends React.Component<
             value={password}
             onChange={this._onChangePassword}
           />
-          {this.props.error && (
-            <ErrorMessageComponent id="signUpButton" error={this.props.error} />
-          )}
           <Button
             id="signUpButton"
             type="submit"

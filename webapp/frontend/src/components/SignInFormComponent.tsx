@@ -14,7 +14,6 @@ import { LockOutlined } from '@material-ui/icons';
 import { Link as RouteLink } from 'react-router-dom';
 import { StyleRules } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
-import { ErrorMessageComponent } from './ErrorMessageComponent';
 import { routes } from '../routes/Route';
 
 const styles = (theme: Theme): StyleRules =>
@@ -39,7 +38,6 @@ const styles = (theme: Theme): StyleRules =>
 
 interface SignInFormComponentProps extends WithStyles<typeof styles> {
   onSubmit: (accountName: string, password: string) => void;
-  error?: string;
 }
 
 interface SignInFormComponentState {
@@ -120,9 +118,6 @@ class SignInPageFormComponent extends React.Component<
             value={password}
             onChange={this._onChangePassword}
           />
-          {this.props.error && (
-            <ErrorMessageComponent id="signInButton" error={this.props.error} />
-          )}
           <Button
             id="signInButton"
             type="submit"

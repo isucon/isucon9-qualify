@@ -7,6 +7,7 @@ import { ErrorRes, RegisterReq, RegisterRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
 import { AppResponseError } from '../errors/AppResponseError';
 import { AppState } from '../index';
+import { SnackBarAction } from './actionTypes';
 
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAIL = 'REGISTER_FAIL';
@@ -40,11 +41,7 @@ export function postRegisterAction(payload: RegisterReq): ThunkResult<void> {
         dispatch(push(routes.top.path));
       })
       .catch((err: Error) => {
-        dispatch(
-          registerFailAction({
-            error: err.message,
-          }),
-        );
+        dispatch(registerFailAction(err.message));
       });
   };
 }
@@ -69,15 +66,13 @@ export function registerSuccessAction(newAuthState: {
   };
 }
 
-export interface RegisterFailAction extends Action<typeof REGISTER_FAIL> {
-  payload: FormErrorState;
-}
+export interface RegisterFailAction
+  extends SnackBarAction<typeof REGISTER_FAIL> {}
 
-export function registerFailAction(
-  newErrors: FormErrorState,
-): RegisterFailAction {
+export function registerFailAction(error: string): RegisterFailAction {
   return {
     type: REGISTER_FAIL,
-    payload: newErrors,
+    snackBarMessage: error,
+    variant: 'error',
   };
 }

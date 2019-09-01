@@ -5,6 +5,9 @@ import { POST_COMPLETE_FAIL } from '../actions/postCompleteAction';
 import { SNACK_BAR_CLOSE } from '../actions/snackBarAction';
 import { POST_BUMP_FAIL, POST_BUMP_SUCCESS } from '../actions/postBumpAction';
 import { SnackBarVariant } from '../components/SnackBar';
+import { LOGIN_FAIL } from '../actions/authenticationActions';
+import { REGISTER_FAIL } from '../actions/registerAction';
+import { PATH_NAME_CHANGE } from '../actions/locationChangeAction';
 
 export interface SnackBarState {
   reason: string;
@@ -23,6 +26,8 @@ const snackBar = (
   action: ActionTypes,
 ): SnackBarState => {
   switch (action.type) {
+    case LOGIN_FAIL:
+    case REGISTER_FAIL:
     case POST_SHIPPED_FAIL:
     case POST_SHIPPED_DONE_FAIL:
     case POST_BUMP_SUCCESS:
@@ -34,11 +39,8 @@ const snackBar = (
         variant: action.variant,
       };
     case SNACK_BAR_CLOSE:
-      return {
-        reason: '',
-        available: false,
-        variant: 'success',
-      };
+    case PATH_NAME_CHANGE:
+      return initialState;
     default:
       return { ...state };
   }
