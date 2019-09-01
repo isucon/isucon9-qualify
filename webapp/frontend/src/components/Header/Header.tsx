@@ -29,6 +29,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     fontWeight: theme.typography.fontWeightBold,
     textAlign: 'center',
     width: '100%', // センタリング
+    cursor: 'pointer',
   },
   list: {
     width: '270px',
@@ -46,6 +47,7 @@ interface Props {
   goToUserPage: (userId: number) => void;
   goToSettingPage: () => void;
   goToCategoryItemList: (categoryId: number) => void;
+  onClickTitle: (isLoggedIn: boolean) => void;
 }
 
 const Header: React.FC<Props> = ({
@@ -56,6 +58,7 @@ const Header: React.FC<Props> = ({
   goToUserPage,
   goToSettingPage,
   goToCategoryItemList,
+  onClickTitle,
 }) => {
   const classes = useStyles();
   const [state, setState] = React.useState({
@@ -65,7 +68,7 @@ const Header: React.FC<Props> = ({
 
   const { open, categoryExpanded } = state;
 
-  const onClickTop = (e: React.MouseEvent) => {
+  const onClickNewItems = (e: React.MouseEvent) => {
     e.preventDefault();
     goToTopPage();
   };
@@ -95,13 +98,18 @@ const Header: React.FC<Props> = ({
     setState({ ...state, open });
   };
 
+  const onClickTitleText = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClickTitle(isLoggedIn);
+  };
+
   // MEMO: Wrap component by MuiThemeProvider again to ignore this bug. https://github.com/mui-org/material-ui/issues/14044
   return (
     <MuiThemeProvider theme={themeInstance}>
       {isLoggedIn && (
         <Drawer open={open} onClose={toggleDrawer(false)}>
           <List className={classes.list}>
-            <ListItem button onClick={onClickTop}>
+            <ListItem button onClick={onClickNewItems}>
               <ListItemIcon>
                 <NewReleasesIcon color="primary" />
               </ListItemIcon>
@@ -156,7 +164,7 @@ const Header: React.FC<Props> = ({
               <MenuIcon />
             </IconButton>
           )}
-          <Typography className={classes.text} variant="h5" noWrap>
+          <Typography className={classes.text} variant="h5">
             ISUCARI
           </Typography>
         </Toolbar>
