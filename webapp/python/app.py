@@ -935,7 +935,7 @@ def post_ship():
             sql = "UPDATE `shippings` SET `status` = %s, `img_binary` = %s, `updated_at` = %s WHERE `transaction_evidence_id` = %s"
             c.execute(sql, (
                 Constants.SHIPPING_STATUS_WAIT_PICKUP,
-                io.BytesIO(res.content),
+                res.content,
                 datetime.datetime.now(),
                 transaction_evidence["id"],
             ))
@@ -1142,10 +1142,9 @@ def get_qrcode(transaction_evidence_id):
             app.logger.exception(err)
             http_json_error(requests.codes['internal_server_error'], "db error")
 
-        img_binary = read_image(shipping["img_binary"])
-        res = make_response(img_binary)
-        res.headers.set('Content-Type', 'image/png')
-        res.headers.set('Content-Disposition', 'attachment', filename='{}.png'.format(transaction_evidence_id))
+    img_binary = shipping["img_binary"]
+    res = flask.make_response(img_binary)
+    res.headers.set('Content-Type', 'image/png')
 
     return  res
 
