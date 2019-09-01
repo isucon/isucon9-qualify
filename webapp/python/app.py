@@ -1018,6 +1018,14 @@ def post_ship_done():
                 datetime.datetime.now(),
                 transaction_evidence["id"],
             ))
+
+            sql = "UPDATE `transaction_evidences` SET `status` = %s, `updated_at` = %s WHERE `id` = %s"
+            c.execute(sql, (
+                Constants.TRANSACTION_EVIDENCE_STATUS_WAIT_DONE,
+                datetime.datetime.now(),
+                transaction_evidence["id"],
+            ))
+
         conn.commit()
     except MySQLdb.Error as err:
         app.logger.exception(err)
