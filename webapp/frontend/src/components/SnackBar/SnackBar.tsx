@@ -12,6 +12,7 @@ const useStyles = makeStyles(theme => ({
 
 type Props = {
   open: boolean;
+  variant: 'default' | 'error',
   message?: string;
   handleClose: (event: React.MouseEvent) => void;
 };
