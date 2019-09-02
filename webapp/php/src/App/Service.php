@@ -234,10 +234,12 @@ class Service
         try {
             if ($itemId !== "" && $createdAt > 0) {
                 // paging
-                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
+                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `status` IN (?,?) AND (`created_at` < ? OR (`created_at` <=? AND `id` < ?)) '.
+                    'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
                 $r = $sth->execute([
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_SOLD_OUT,
+                    (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
@@ -331,11 +333,13 @@ class Service
             if (!empty($itemId) && $createdAt > 0) {
                 // paging
                 $in = str_repeat('?,', count($categoryIds) - 1) . '?';
-                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?");
+                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ".
+                    "ORDER BY `created_at` DESC, `id` DESC LIMIT ?");
                 $r = $sth->execute(array_merge(
                     [self::ITEM_STATUS_ON_SALE, self::ITEM_STATUS_SOLD_OUT],
                     $categoryIds,
                     [
+                        (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                         (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                         $itemId,
                         self::ITEM_PER_PAGE + 1,
@@ -418,12 +422,14 @@ class Service
         try {
             if ($itemId !== "" && $createdAt > 0) {
                 // paging
-                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
+                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ' .
+                            'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
                 $r = $sth->execute([
                     $user['id'],
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_TRADING,
                     self::ITEM_STATUS_SOLD_OUT,
+                    (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
@@ -510,7 +516,7 @@ class Service
             if ($itemId !== 0 && $createdAt > 0) {
                 // paging
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE '.
-                    '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? '.
+                    '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND (`created_at` < ? OR (`created_at` <=? AND `id` < ?)) '.
                     'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
                 $r = $sth->execute([
                    $user['id'],
@@ -520,6 +526,7 @@ class Service
                    self::ITEM_STATUS_SOLD_OUT,
                    self::ITEM_STATUS_CANCEL,
                    self::ITEM_STATUS_STOP,
+                    (new \DateTime())->setTimeStamp((int) $createdAt)->format(self::DATETIME_SQL_FORMAT),
                     (new \DateTime())->setTimeStamp((int) $createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::TRANSACTIONS_PER_PAGE +1,
