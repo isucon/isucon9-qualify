@@ -83,18 +83,16 @@ type ItemDetail struct {
 }
 
 type TransactionEvidence struct {
-	ID                 int64     `json:"id" db:"id"`
-	SellerID           int64     `json:"seller_id" db:"seller_id"`
-	BuyerID            int64     `json:"buyer_id" db:"buyer_id"`
-	Status             string    `json:"status" db:"status"`
-	ItemID             int64     `json:"item_id" db:"item_id"`
-	ItemName           string    `json:"item_name" db:"item_name"`
-	ItemPrice          int       `json:"item_price" db:"item_price"`
-	ItemDescription    string    `json:"item_description" db:"item_description"`
-	ItemCategoryID     int       `json:"item_category_id" db:"item_category_id"`
-	ItemRootCategoryID int       `json:"item_root_category_id" db:"item_root_category_id"`
-	CreatedAt          time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt          time.Time `json:"-" db:"updated_at"`
+	ID                 int64  `json:"id" db:"id"`
+	SellerID           int64  `json:"seller_id" db:"seller_id"`
+	BuyerID            int64  `json:"buyer_id" db:"buyer_id"`
+	Status             string `json:"status" db:"status"`
+	ItemID             int64  `json:"item_id" db:"item_id"`
+	ItemName           string `json:"item_name" db:"item_name"`
+	ItemPrice          int    `json:"item_price" db:"item_price"`
+	ItemDescription    string `json:"item_description" db:"item_description"`
+	ItemCategoryID     int    `json:"item_category_id" db:"item_category_id"`
+	ItemRootCategoryID int    `json:"item_root_category_id" db:"item_root_category_id"`
 }
 
 type Shipping struct {
