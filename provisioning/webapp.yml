@@ -21,6 +21,7 @@
     - webapp.golang
     - webapp.perl
     - webapp.php
+    - webapp.ruby
     - webapp.nginx
 
   tasks:
