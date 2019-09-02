@@ -78,6 +78,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// 外部サービスのレイテンシを追加
+	ss.SetDelay(800 * time.Millisecond)
+	sp.SetDelay(800 * time.Millisecond)
+
 	scenario.SetShipment(ss)
 	scenario.SetPayment(sp)
 
