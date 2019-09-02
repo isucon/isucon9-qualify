@@ -452,18 +452,18 @@ func (s *Session) Ship(ctx context.Context, itemID int64) (reserveID, apath stri
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return "", "", failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
+		return "", "", failure.Wrap(err, failure.Messagef("POST /ship: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return "", "", failure.Wrap(err, failure.Message("POST /ship: リクエストに失敗しました"))
+		return "", "", failure.Wrap(err, failure.Messagef("POST /ship: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, http.StatusOK)
+	err = checkStatusCodeWithMsg(res, http.StatusOK, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return "", "", err
 	}
@@ -471,15 +471,15 @@ func (s *Session) Ship(ctx context.Context, itemID int64) (reserveID, apath stri
 	rs := &resShip{}
 	err = json.NewDecoder(res.Body).Decode(rs)
 	if err != nil {
-		return "", "", failure.Wrap(err, failure.Message("POST /ship: JSONデコードに失敗しました"))
+		return "", "", failure.Wrap(err, failure.Messagef("POST /ship: JSONデコードに失敗しました (item_id: %d)", itemID))
 	}
 
 	if len(rs.Path) == 0 {
-		return "", "", failure.New(fails.ErrApplication, failure.Message("POST /ship: pathが空です"))
+		return "", "", failure.New(fails.ErrApplication, failure.Messagef("POST /ship: pathが空です (item_id: %d)", itemID))
 	}
 
 	if len(rs.ReserveID) == 0 {
-		return "", "", failure.New(fails.ErrApplication, failure.Message("POST /ship: reserve_idが空です"))
+		return "", "", failure.New(fails.ErrApplication, failure.Messagef("POST /ship: reserve_idが空です (item_id: %d)", itemID))
 	}
 
 	return rs.ReserveID, rs.Path, nil
@@ -492,25 +492,25 @@ func (s *Session) ShipDone(ctx context.Context, itemID int64) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/ship_done", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /ship_done: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship_done: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /ship_done: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, http.StatusOK)
+	err = checkStatusCodeWithMsg(res, http.StatusOK, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return err
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /ship_done: bodyの読み込みに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /ship_done: bodyの読み込みに失敗しました (item_id: %d)", itemID))
 	}
 
 	return nil
@@ -523,25 +523,25 @@ func (s *Session) Complete(ctx context.Context, itemID int64) error {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/complete", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /complete: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /complete: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /complete: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /complete: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, http.StatusOK)
+	err = checkStatusCodeWithMsg(res, http.StatusOK, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return err
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /complete: bodyの読み込みに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /complete: bodyの読み込みに失敗しました (item_id: %d)", itemID))
 	}
 
 	return nil
@@ -610,18 +610,18 @@ func (s *Session) Bump(ctx context.Context, itemID int64) (int64, error) {
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/bump", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /bump: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /bump: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /bump: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /bump: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, http.StatusOK)
+	err = checkStatusCodeWithMsg(res, http.StatusOK, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return 0, err
 	}
@@ -629,7 +629,7 @@ func (s *Session) Bump(ctx context.Context, itemID int64) (int64, error) {
 	rie := &resItemEdit{}
 	err = json.NewDecoder(res.Body).Decode(rie)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /bump: JSONデコードに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /bump: JSONデコードに失敗しました (item_id: %d)", itemID))
 	}
 
 	return rie.ItemCreatedAt, nil
@@ -643,18 +643,18 @@ func (s *Session) ItemEdit(ctx context.Context, itemID int64, price int) (int, e
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/items/edit", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /items/edit: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /items/edit: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /items/edit: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /items/edit: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, http.StatusOK)
+	err = checkStatusCodeWithMsg(res, http.StatusOK, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return 0, err
 	}
@@ -662,7 +662,7 @@ func (s *Session) ItemEdit(ctx context.Context, itemID int64, price int) (int, e
 	rie := &resItemEdit{}
 	err = json.NewDecoder(res.Body).Decode(rie)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /items/edit: JSONデコードに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /items/edit: JSONデコードに失敗しました (item_id: %d)", itemID))
 	}
 
 	return rie.ItemPrice, nil
