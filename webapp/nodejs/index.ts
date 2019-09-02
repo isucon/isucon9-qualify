@@ -1220,6 +1220,145 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 }
 
 async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const csrfToken = req.body.csrf_token;
+    const itemId = req.body.item_id;
+
+    if (csrfToken !== req.cookies.csrf_token) {
+        outputErrorMessage(reply, "csrf token error", 422);
+        return;
+    }
+
+    const conn = await getConnection();
+
+    const seller = await getLoginUser(req, conn)
+
+    if (seller === null) {
+        outputErrorMessage(reply, "no session", 404);
+        return;
+    }
+
+    let transactionEvidence: TransactionEvidence | null = null;
+    {
+        const [rows] = await conn.query(
+            "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?",
+            [
+                itemId,
+            ]
+        );
+        for (const row of rows) {
+            transactionEvidence = row as TransactionEvidence;
+        }
+    }
+
+    if (transactionEvidence === null) {
+        outputErrorMessage(reply, "transaction_evidence not found", 404);
+        return;
+    }
+
+    if (transactionEvidence.seller_id === seller.id) {
+        outputErrorMessage(reply, "権限がありません", 403);
+        return;
+    }
+
+    await conn.beginTransaction();
+
+    let item: Item | null = null;
+    {
+        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [
+            itemId,
+        ]);
+
+        for (const row of rows) {
+            item = row as Item;
+        }
+
+    }
+
+    if (item === null) {
+        outputErrorMessage(reply, "items not found", 404);
+        await conn.rollback();
+        return;
+    }
+
+    if (item.status !== ItemStatusTrading) {
+        outputErrorMessage(reply, "商品が取引中ではありません", 403);
+        await conn.rollback();
+        return;
+    }
+
+    {
+        const [rows] = await conn.query(
+            "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE",
+            [
+                transactionEvidence.id,
+            ]
+        )
+        for (const row of rows) {
+            transactionEvidence = row as TransactionEvidence;
+        }
+    }
+
+    if (transactionEvidence === null) {
+        outputErrorMessage(reply, "transaction_evidences not found", 404);
+        await conn.rollback();
+        return;
+    }
+
+    if (transactionEvidence.status !== TransactionEvidenceStatusWaitShipping) {
+        outputErrorMessage(reply, "準備ができていません", 403);
+        await conn.rollback();
+        return;
+    }
+
+    let shipping: Shipping | null = null;
+    {
+        const [rows] = await conn.query(
+            "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE",
+            [
+                transactionEvidence.id,
+            ]
+        )
+
+        for (const row of rows) {
+            shipping = row as Shipping;
+        }
+    }
+
+    if (shipping === null) {
+        outputErrorMessage(reply, "shippings not found", 404);
+        await conn.rollback();
+        return;
+    }
+
+    // TODO: ApiShipmentStatus
+
+    await conn.query(
+        "UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
+        [
+            ShippingsStatusWaitPickup, // TODO
+            new Date(),
+            transactionEvidence.id,
+        ]
+    );
+
+    await conn.query(
+        "UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
+        [
+            TransactionEvidenceStatusWaitDone,
+            new Date(),
+            transactionEvidence.id,
+        ]
+    );
+
+    await conn.commit();
+
+    reply
+        .code(200)
+        .type("application/json;charset=utf-8")
+        .send({
+            transaction_evidence_id: transactionEvidence.id,
+        });
+
 }
 
 async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
