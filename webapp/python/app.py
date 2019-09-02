@@ -532,7 +532,7 @@ def get_user_items(user_id=None):
         try:
             if item_id > 0 and created_at > 0:
                 print(item_id, created_at, datetime.datetime.fromtimestamp(created_at))
-                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id`)) < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
