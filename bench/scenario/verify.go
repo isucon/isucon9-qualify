@@ -326,6 +326,18 @@ func verifyBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
 	if itemFromUsers.CreatedAt != newCreatedAt {
 		return failure.New(fails.ErrApplication, failure.Messagef("Bump後の商品が更新されていません (item_id: %d)", targetItemID))
 	}
+
+	targetCategory, ok := asset.GetCategory(targetItem.CategoryID)
+	if !ok || targetCategory.ParentID == 0 {
+		// データ不整合・ベンチマーカのバグの可能性
+		return failure.New(fails.ErrApplication, failure.Messagef("商品のカテゴリを探すことができませんでした (item_id: %d)", targetItem.ID))
+	}
+
+	err = verifyNewCategoryItemsAndItems(ctx, s1, targetCategory.ParentID, 2, 5)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
