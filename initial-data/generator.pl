@@ -377,6 +377,7 @@ sub flush_shippings {
 
     my $te_id = 0;
     my $active_seller_rr = 0;
+    my $images_rr = 0;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
         my $t_sell = $base_time+int(rand(10))-5;
         my $t_buy = $t_sell + int(rand(10)) + 60;
@@ -442,12 +443,12 @@ sub flush_shippings {
             $name,
             $BASE_PRICE,
             $description,
-            $IMAGES[int rand scalar @IMAGES],
+            $IMAGES[$images_rr % scalar @IMAGES],
             $category->[0],
             $t_sell,
             $t_done
         );
-
+        $images_rr++;
         $base_time++;
     }
 }
