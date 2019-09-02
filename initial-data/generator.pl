@@ -153,9 +153,19 @@ sub gen_passwd {
 
 sub encrypt_password {
     my $password = shift;
+    my $hex = Digest::SHA::hmac_sha256_hex($password);
+    if (-f "pwcache/$hex.txt") {
+        open(my $fh, "pwcache/$hex.txt");
+        my $encrypted = do {local $/; <$fh>};
+        chomp $encrypted;
+        return $encrypted;
+    }
     my $salt = shift || Crypt::Eksblowfish::Bcrypt::en_base64(Crypt::OpenSSL::Random::random_bytes(16));
     my $settings = '$2a$10$'.$salt;
-    return Crypt::Eksblowfish::Bcrypt::bcrypt($password, $settings);
+    my $encrypted = Crypt::Eksblowfish::Bcrypt::bcrypt($password, $settings);
+    open(my $fh, ">", "pwcache/$hex.txt") or die $!;
+    print $fh $encrypted;
+    return $encrypted;
 }
 
 # Check if the passwords match
@@ -394,7 +404,7 @@ sub flush_shippings {
         if (rand(100) < $RATE_OF_SOLDOUT) {
             $status = 'sold_out';
             $te_id++;
-            $buyer = $buyers[$buyer_rr % scalar @buyers]; #int(rand($NUM_USER_GENERATE))+1;
+            $buyer = $buyers[$buyer_rr % scalar @buyers];
             $buyer_rr++;
             while ($buyer == $seller) {
                 $buyer = int(rand($NUM_USER_GENERATE))+1;
