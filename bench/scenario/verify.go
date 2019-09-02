@@ -343,8 +343,8 @@ func verifyNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cat
 	}
 	c := itemIDs.Len()
 	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしているので、商品数が最低数あればよい
-	if (maxPage == 0 && c < 3000) || c < checkItem {
+	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
+	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO 98%?
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -406,10 +406,7 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := verifyItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return verifyItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
@@ -504,7 +501,7 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := verifyItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
+		return verifyItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 		if err != nil {
 			return err
 		}
@@ -582,10 +579,7 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 	}
 	loop = loop + 1
 	if hasNext && loop < 100 { // TODO: max pager
-		err := verifyItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
-		if err != nil {
-			return err
-		}
+		return verifyItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil
 }

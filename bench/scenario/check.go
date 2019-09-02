@@ -26,7 +26,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 
 	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
+		for j := 0; j < ExecutionSeconds/8; j++ {
 			ch := time.After(8 * time.Second)
 
 			err := irregularLoginWrongPassword(ctx, user3)
@@ -57,7 +57,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		var userID int64
 
 	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
+		for j := 0; j < ExecutionSeconds/10; j++ {
 			ch := time.After(10 * time.Second)
 
 			s1, err = buyerSession(ctx)
@@ -178,7 +178,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		var targetItem asset.AppItem
 
 	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
+		for j := 0; j < ExecutionSeconds/10; j++ {
 			ch := time.After(10 * time.Second)
 
 			s1, err = activeSellerSession(ctx)
@@ -290,8 +290,8 @@ func checkNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cate
 	}
 	c := itemIDs.Len()
 	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしているので、商品数が最低数あればよい
-	if (maxPage == 0 && c < 3000) || c < checkItem {
+	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
+	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -354,10 +354,7 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
@@ -435,10 +432,7 @@ func checkItemIDsTransactionEvidence(ctx context.Context, s *session.Session, it
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := checkItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return checkItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
@@ -514,10 +508,7 @@ func checkItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDs
 	}
 	loop = loop + 1
 	if hasNext && loop < 100 { // TODO: max pager
-		err := checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
-		if err != nil {
-			return err
-		}
+		return checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil
 }
