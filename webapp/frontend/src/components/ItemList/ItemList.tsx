@@ -5,8 +5,8 @@ import GridList from '@material-ui/core/GridList';
 import { Item } from '../Item';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
-import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
 import { Theme } from '@material-ui/core';
+import { TimelineLoading } from '../TimelineLoading';
 
 const useStyles = makeStyles((theme: Theme) => ({
   gridList: {
@@ -53,7 +53,7 @@ const ItemList: React.FC<Props> = function({
       pageStart={0}
       loadMore={loadMore}
       hasMore={hasNext}
-      loader={<CircularProgress />}
+      loader={<TimelineLoading />}
     >
       <GridList className={classes.gridList} cellHeight="auto" cols={3}>
         {itemComponents}

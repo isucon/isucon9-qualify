@@ -15,11 +15,12 @@ const item: TransactionItem = {
   thumbnailUrl: 'https://i.gyazo.com/8560fce19556b64c95ad091350910184.jpg',
   createdAt: 111111111,
 };
+const onClick = (item: TransactionItem) => {};
 
 stories
   .add('default', () => (
     <MemoryRouter>
-      <TransactionComponent item={item} />
+      <TransactionComponent item={item} onClickCard={onClick} />
     </MemoryRouter>
   ))
   .add('long name', () => (
@@ -29,6 +30,7 @@ stories
           name:
             'looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong name',
         })}
+        onClickCard={onClick}
       />
     </MemoryRouter>
   ));

@@ -4,6 +4,8 @@ import Grid from '@material-ui/core/Grid';
 import * as React from 'react';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
+import Tooltip from '@material-ui/core/Tooltip';
+import { ReactElement } from 'react';
 
 const useStyles = makeStyles((theme: Theme) => ({
   appBar: {
@@ -22,6 +24,7 @@ type Props = {
     onClick: (e: React.MouseEvent) => void;
     buttonText: string;
     disabled: boolean;
+    tooltip?: ReactElement;
   }[];
 };
 
@@ -43,19 +46,30 @@ const ItemFooter: React.FC<Props> = ({ price, buttons }) => {
         <Grid item>
           <Grid container direction="row">
             {buttons.map(button => {
-              return (
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    className={classes.buyButton}
-                    color="secondary"
-                    onClick={button.onClick}
-                    disabled={button.disabled}
-                  >
-                    {button.buttonText}
-                  </Button>
-                </Grid>
+              const ButtonComponent = (
+                <Button
+                  variant="contained"
+                  className={classes.buyButton}
+                  color="secondary"
+                  onClick={button.onClick}
+                  disabled={button.disabled}
+                >
+                  {button.buttonText}
+                </Button>
               );
+
+              // Hack: いいコードじゃないけど時間ないので許して
+              if (button.tooltip) {
+                return (
+                  <Grid item>
+                    <Tooltip title={button.tooltip} placement="top">
+                      {ButtonComponent}
+                    </Tooltip>
+                  </Grid>
+                );
+              }
+
+              return <Grid item>{ButtonComponent}</Grid>;
             })}
           </Grid>
         </Grid>

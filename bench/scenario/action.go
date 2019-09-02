@@ -348,8 +348,7 @@ type priceStore struct {
 var priceStoreCache *priceStore
 
 func init() {
-	priceStoreCache = &priceStore{}
-	priceStoreCache.Set(100)
+	priceStoreCache = &priceStore{price: 100}
 }
 
 func (s *priceStore) Get() int {
@@ -358,10 +357,10 @@ func (s *priceStore) Get() int {
 	return s.price
 }
 
-func (s *priceStore) Set(price int) {
+func (s *priceStore) Add(price int) {
 	s.Lock()
 	defer s.Unlock()
-	s.price = price
+	s.price += price
 }
 
 func SetShipment(ss *server.ServerShipment) {

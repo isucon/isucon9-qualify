@@ -65,7 +65,7 @@ const (
 	defaultInterval        = 3 * time.Second
 	maxStderrLength        = 8 * 1024 * 1024
 	maxNumMessage          = 20
-	maxBenchmarkTime       = 150 * time.Second
+	maxBenchmarkTime       = 240 * time.Second
 	defaultBenchmarkerPath = "/home/isucon/isucari/bin/benchmarker"
 )
 
