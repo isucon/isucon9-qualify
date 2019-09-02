@@ -1889,7 +1889,7 @@ async function getRandomString(length: number): Promise<string> {
     });
 }
 
-function getImageURL(image_name: string) {
-    return "";
+function getImageURL(imageName: string) {
+    return `/upload/${imageName}`;
 }
 
