@@ -68,9 +68,12 @@ export function fetchTimelineAction(
           }),
         );
       })
-      .catch((err: Error) => {
+      .catch(async (err: Error) => {
         dispatch(
-          ajaxErrorHandler<FetchTimelineActions>(err, fetchTimelineFailAction),
+          await ajaxErrorHandler<FetchTimelineActions>(
+            err,
+            fetchTimelineFailAction,
+          ),
         );
       });
   };

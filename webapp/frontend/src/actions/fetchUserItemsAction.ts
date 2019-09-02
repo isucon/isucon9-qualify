@@ -60,9 +60,9 @@ export function fetchUserItemsAction(
           }),
         );
       })
-      .catch((err: Error) => {
+      .catch(async (err: Error) => {
         dispatch(
-          ajaxErrorHandler<FetchUserItemsActions>(
+          await ajaxErrorHandler<FetchUserItemsActions>(
             err,
             fetchUserItemsFailAction,
           ),

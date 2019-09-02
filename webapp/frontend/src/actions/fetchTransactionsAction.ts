@@ -66,9 +66,9 @@ export function fetchTransactionsAction(
           }),
         );
       })
-      .catch((err: Error) => {
+      .catch(async (err: Error) => {
         dispatch(
-          ajaxErrorHandler<FetchTransactionActions>(
+          await ajaxErrorHandler<FetchTransactionActions>(
             err,
             fetchTransactionsFailAction,
           ),

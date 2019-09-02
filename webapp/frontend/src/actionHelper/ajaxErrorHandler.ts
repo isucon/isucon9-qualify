@@ -8,10 +8,10 @@ import {
 import { InternalServerError } from '../errors/InternalServerError';
 import { Action } from 'redux';
 
-export function ajaxErrorHandler<T extends Action<any>>(
+export async function ajaxErrorHandler<T extends Action<any>>(
   err: Error,
   actionCreate: (message: string) => T,
-): T | NotFoundErrorAction | InternalServerErrorAction {
+): Promise<T | NotFoundErrorAction | InternalServerErrorAction> {
   if (err instanceof NotFoundError) {
     return notFoundError(err.message);
   }

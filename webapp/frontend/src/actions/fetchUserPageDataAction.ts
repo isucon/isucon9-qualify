@@ -115,9 +115,9 @@ export function fetchUserPageDataAction(
           fetchUserPageDataSuccessAction({ ...payload, ...transactions }),
         );
       })
-      .catch((err: Error) => {
+      .catch(async (err: Error) => {
         dispatch<FetchUserPageDataActions>(
-          ajaxErrorHandler(err, fetchUserPageDataFailAction),
+          await ajaxErrorHandler(err, fetchUserPageDataFailAction),
         );
       });
   };

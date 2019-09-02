@@ -62,8 +62,10 @@ export function fetchItemAction(itemId: string): ThunkResult<void> {
           }),
         );
       })
-      .catch((err: Error) => {
-        dispatch(ajaxErrorHandler<FetchItemActions>(err, fetchItemFailAction));
+      .catch(async (err: Error) => {
+        return dispatch(
+          await ajaxErrorHandler<FetchItemActions>(err, fetchItemFailAction),
+        );
       });
   };
 }

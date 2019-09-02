@@ -60,9 +60,9 @@ export function fetchSettings(): ThunkResult<void> {
         // MEMO: ここでやるのがいいかわからん
         PaymentClient.setBaseURL(body.payment_service_url);
       })
-      .catch((err: Error) => {
+      .catch(async (err: Error) => {
         dispatch<SettingsActions>(
-          ajaxErrorHandler(err, fetchSettingsFailAction),
+          await ajaxErrorHandler(err, fetchSettingsFailAction),
         );
       });
   };
