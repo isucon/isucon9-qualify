@@ -1,7 +1,6 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { CallHistoryMethodAction, push } from 'connected-react-router';
 import { ErrorRes, RegisterReq, RegisterRes } from '../types/appApiTypes';
 import { routes } from '../routes/Route';
