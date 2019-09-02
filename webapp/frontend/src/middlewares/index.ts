@@ -1,7 +1,6 @@
-import logger from './logger';
 import checkLocationChange from './checkLocationChange';
 import { Middleware } from 'redux';
 
-const middleware: Middleware[] = [logger, checkLocationChange];
+let middleware: Middleware[] = [checkLocationChange];
 
 export default middleware;
