@@ -793,14 +793,14 @@ func (s *Session) NewCategoryItemsWithItemIDAndCreatedAt(ctx context.Context, ro
 func (s *Session) UsersTransactions(ctx context.Context) (hasNext bool, items []ItemDetail, err error) {
 	req, err := s.newGetRequest(ShareTargetURLs.AppURL, "/users/transactions.json")
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json リクエストに失敗しました"))
+		return false, nil, failure.Wrap(err, failure.Messagef("GET /users/transactions.json リクエストに失敗しました (user_id: %d)", s.UserID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json リクエストに失敗しました"))
+		return false, nil, failure.Wrap(err, failure.Messagef("GET /users/transactions.json リクエストに失敗しました (user_id: %d)", s.UserID))
 	}
 	defer res.Body.Close()
 
@@ -812,7 +812,7 @@ func (s *Session) UsersTransactions(ctx context.Context) (hasNext bool, items []
 	rt := resTransactions{}
 	err = json.NewDecoder(res.Body).Decode(&rt)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json JSONデコードに失敗しました"))
+		return false, nil, failure.Wrap(err, failure.Messagef("GET /users/transactions.json JSONデコードに失敗しました (user_id: %d)", s.UserID))
 	}
 
 	return rt.HasNext, rt.Items, nil
@@ -825,14 +825,14 @@ func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(ctx context.Context, i
 
 	req, err := s.newGetRequestWithQuery(ShareTargetURLs.AppURL, "/users/transactions.json", q)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json リクエストに失敗しました"))
+		return false, nil, failure.Wrap(err, failure.Messagef("GET /users/transactions.json リクエストに失敗しました (user_id: %d)", s.UserID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json リクエストに失敗しました"))
+		return false, nil, failure.Wrap(err, failure.Messagef("GET /users/transactions.json リクエストに失敗しました (user_id: %d)", s.UserID))
 	}
 	defer res.Body.Close()
 
@@ -844,7 +844,7 @@ func (s *Session) UsersTransactionsWithItemIDAndCreatedAt(ctx context.Context, i
 	rt := resTransactions{}
 	err = json.NewDecoder(res.Body).Decode(&rt)
 	if err != nil {
-		return false, nil, failure.Wrap(err, failure.Message("GET /users/transactions.json JSONデコードに失敗しました"))
+		return false, nil, failure.Wrap(err, failure.Messagef("GET /users/transactions.json JSONデコードに失敗しました (user_id: %d)", s.UserID))
 	}
 
 	return rt.HasNext, rt.Items, nil

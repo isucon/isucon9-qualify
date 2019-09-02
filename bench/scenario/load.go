@@ -32,7 +32,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 	// load scenario #1
 	// 出品
-	// カテゴリをみて 7カテゴリ x (20ページ + 20item) = 280
+	// カテゴリをみて 7カテゴリ x (10ページ + 20item) = 210
 	// buywithcheck
 	for i := 0; i < NumLoadScenario1; i++ {
 		wg.Add(1)
@@ -70,7 +70,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				categories = asset.GetRootCategories()
 				for _, category := range categories {
-					err = loadNewCategoryItemsAndItems(ctx, s1, category.ID, 20, 20)
+					err = loadNewCategoryItemsAndItems(ctx, s1, category.ID, 10, 20)
 					if err != nil {
 						critical.Add(err)
 						goto Final
@@ -360,8 +360,8 @@ func loadNewItemsAndItems(ctx context.Context, s *session.Session, maxPage int64
 	}
 	c := itemIDs.Len()
 	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしているので、商品数が最低数あればよい
-	if (maxPage == 0 && c < 30000) || c < checkItem {
+	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
+	if (maxPage == 0 && c < 30000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
 	}
 
@@ -405,10 +405,7 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := loadItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return loadItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 
@@ -445,8 +442,8 @@ func loadNewCategoryItemsAndItems(ctx context.Context, s *session.Session, categ
 		7 rows in set (0.04 sec)
 	*/
 	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしているので、商品数が最低数あればよい
-	if (maxPage == 0 && c < 3000) || c < checkItem {
+	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
+	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO 98%?
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -494,10 +491,7 @@ func loadItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *I
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := loadItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return loadItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
@@ -558,10 +552,7 @@ func loadItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsS
 	}
 	loop = loop + 1
 	if hasNext && loop < 100 { // TODO: max pager
-		err := loadItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
-		if err != nil {
-			return err
-		}
+		return loadItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil
 }
@@ -601,7 +592,9 @@ func loadItemIDsTransactionEvidence(ctx context.Context, s *session.Session, ite
 	if err != nil {
 		return err
 	}
-
+	if len(items) == 0 {
+		return nil
+	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
@@ -624,10 +617,7 @@ func loadItemIDsTransactionEvidence(ctx context.Context, s *session.Session, ite
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := loadItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return loadItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
