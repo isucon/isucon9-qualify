@@ -415,3 +415,42 @@ func (s *Session) ShipDoneWithFailed(ctx context.Context, itemID int64, expected
 
 	return nil
 }
+
+func (s *Session) ItemEditWithNotOnSale(ctx context.Context, itemID int64, price int) error {
+	b, _ := json.Marshal(reqItemEdit{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+		ItemPrice: price,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/items/edit", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /items/edit: リクエストに失敗しました"))
+	}
+
+	req = req.WithContext(ctx)
+
+	res, err := s.Do(req)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /items/edit: リクエストに失敗しました"))
+	}
+	defer res.Body.Close()
+
+	err = checkStatusCode(res, http.StatusForbidden)
+	if err != nil {
+		return err
+	}
+
+	re := resErr{}
+	err = json.NewDecoder(res.Body).Decode(&re)
+	if err != nil {
+		return failure.Wrap(err, failure.Message("POST /items/edit: JSONデコードに失敗しました"))
+	}
+
+	expectedMsg := "販売中の商品以外編集できません"
+
+	if re.Error != expectedMsg {
+		return failure.Wrap(err, failure.Messagef("POST /items/edit: exected error message: %s; actual: %s", expectedMsg, re.Error))
+	}
+
+	return nil
+}
