@@ -5,7 +5,7 @@ import {
 } from '../reducers/errorReducer';
 import { branch, renderComponent, withProps, compose } from 'recompose';
 import NotFoundContainer from '../containers/NotFoundContainer';
-import { InternalServerErrorPage } from '../pages/error/InternalServerErrorPage';
+import InternalServerContainer from '../containers/InternalServerContainer';
 
 export interface ErrorProps {
   errorType: ErrorType;
@@ -24,6 +24,6 @@ export const PageComponentWithError = <Props extends ErrorProps>() =>
     ),
     branch<BaseProps>(
       (props: BaseProps) => props.errorType === InternalServerError,
-      renderComponent(InternalServerErrorPage),
+      renderComponent(InternalServerContainer),
     ),
   );
