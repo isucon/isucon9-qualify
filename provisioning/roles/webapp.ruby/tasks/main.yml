@@ -1,0 +1,17 @@
+- name: Install isucari.ruby
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon/isucari/webapp/ruby
+  shell: |
+    bash -lc "bundle install --path=.bundle"
+
+- name: Copy isucari.ruby unit file
+  copy:
+    src: etc/systemd/system/isucari.ruby.service
+    dest: /etc/systemd/system/isucari.ruby.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - daemon-reload
