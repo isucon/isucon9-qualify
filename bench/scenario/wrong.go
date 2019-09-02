@@ -114,6 +114,12 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 		return err
 	}
 
+	// onsaleでない商品は編集できない
+	err = s1.ItemEditWithNotOnSale(ctx, targetItemID, price+10)
+	if err != nil {
+		return err
+	}
+
 	// QRコードはShipしないと見れない
 	err = s1.DecodeQRURLWithFailed(ctx, fmt.Sprintf("/transactions/%d.png", transactionEvidenceID), http.StatusForbidden)
 	if err != nil {
