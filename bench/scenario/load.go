@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
@@ -406,7 +405,6 @@ func Load(ctx context.Context, critical *fails.Critical) {
 func loadIsRecommendNewItems(ctx context.Context, s *session.Session) (bool, error) {
 	aUser := asset.GetUser(s.UserID)
 	targetCategoryID := aUser.BuyParentCategoryID
-	log.Printf("found recommend user_id: %d", s.UserID)
 
 	_, items, err := s.NewItems(ctx)
 	if err != nil {
