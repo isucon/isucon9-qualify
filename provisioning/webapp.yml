@@ -22,6 +22,7 @@
     - webapp.perl
     - webapp.php
     - webapp.ruby
+    - webapp.python
     - webapp.nginx
 
   tasks:
