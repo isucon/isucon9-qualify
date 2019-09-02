@@ -368,18 +368,18 @@ func (s *Session) Buy(ctx context.Context, itemID int64, token string) (int64, e
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, http.StatusOK)
+	err = checkStatusCodeWithMsg(res, http.StatusOK, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return 0, err
 	}
@@ -387,7 +387,7 @@ func (s *Session) Buy(ctx context.Context, itemID int64, token string) (int64, e
 	rb := &resBuy{}
 	err = json.NewDecoder(res.Body).Decode(rb)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /buy: JSONデコードに失敗しました (item_id: %d)", itemID))
 	}
 
 	return rb.TransactionEvidenceID, nil
@@ -403,14 +403,14 @@ func (s *Session) BuyWithMayFail(ctx context.Context, itemID int64, token string
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
@@ -418,20 +418,20 @@ func (s *Session) BuyWithMayFail(ctx context.Context, itemID int64, token string
 		re := resErr{}
 		err = json.NewDecoder(res.Body).Decode(&re)
 		if err != nil {
-			return 0, failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
+			return 0, failure.Wrap(err, failure.Messagef("POST /buy: JSONデコードに失敗しました (item_id: %d)", itemID))
 		}
 
 		expectedMsg := "item is not for sale"
 
 		if re.Error != expectedMsg {
-			return 0, failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error))
+			return 0, failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s (item_id: %d)", expectedMsg, re.Error, itemID))
 		}
 
 		// イレギュラーだが、エラーがないのに0が返っていたら正常に買えなかったという扱いにする
 		return 0, nil
 	}
 
-	err = checkStatusCode(res, http.StatusOK)
+	err = checkStatusCodeWithMsg(res, http.StatusOK, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return 0, err
 	}
@@ -439,7 +439,7 @@ func (s *Session) BuyWithMayFail(ctx context.Context, itemID int64, token string
 	rb := &resBuy{}
 	err = json.NewDecoder(res.Body).Decode(rb)
 	if err != nil {
-		return 0, failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
+		return 0, failure.Wrap(err, failure.Messagef("POST /buy: JSONデコードに失敗しました (item_id: %d)", itemID))
 	}
 
 	return rb.TransactionEvidenceID, nil

@@ -162,6 +162,22 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) error {
 	return nil
 }
 
+func checkStatusCodeWithMsg(res *http.Response, expectedStatusCode int, msg string) error {
+	prefixMsg := fmt.Sprintf("%s %s", res.Request.Method, res.Request.URL.Path)
+
+	if res.StatusCode != expectedStatusCode {
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました "+msg))
+		}
+		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrApplication,
+			failure.Messagef("%s: got response status code %d; expected %d %s", prefixMsg, res.StatusCode, expectedStatusCode, msg),
+		)
+	}
+
+	return nil
+}
+
 func (s *Session) Do(req *http.Request) (*http.Response, error) {
 	res, err := s.httpClient.Do(req)
 	if err != nil {
