@@ -256,10 +256,11 @@ def get_new_items():
         with conn.cursor() as c:
             if item_id > 0 and created_at > 0:
                 # paging
-                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.ITEMS_PER_PAGE + 1,
@@ -343,11 +344,12 @@ def get_new_category_items(root_category_id=None):
                 category_ids.append(category["id"])
 
             if item_id > 0 and created_at > 0:
-                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") AND (`created_at` < %s OR (`created_at` < %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
                     *category_ids,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.ITEMS_PER_PAGE + 1,
@@ -422,7 +424,7 @@ def get_transactions():
         try:
 
             if item_id > 0 and created_at > 0:
-                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s) AND `status` IN (%s,%s,%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s) AND `status` IN (%s,%s,%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
                     user['id'],
@@ -431,6 +433,7 @@ def get_transactions():
                     Constants.ITEM_STATUS_SOLD_OUT,
                     Constants.ITEM_STATUS_CANCEL,
                     Constants.ITEM_STATUS_STOP,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.TRANSACTIONS_PER_PAGE + 1,
@@ -529,12 +532,13 @@ def get_user_items(user_id=None):
         try:
             if item_id > 0 and created_at > 0:
                 print(item_id, created_at, datetime.datetime.fromtimestamp(created_at))
-                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id`)) < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
                     Constants.ITEM_STATUS_SOLD_OUT,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.ITEMS_PER_PAGE + 1,
