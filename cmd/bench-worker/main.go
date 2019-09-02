@@ -41,6 +41,7 @@ type Job struct {
 
 type Result struct {
 	ID       int    `json:"id"`
+	Status   string `json:"status"`
 	Score    int    `json:"score"`
 	IsPassed bool   `json:"is_passed"`
 	Reason   string `json:"reason"`
@@ -111,7 +112,7 @@ func joinN(messages []string, n int) string {
 }
 
 func report(ep string, job *Job, jobResult *JobResult) error {
-
+	status := "done"
 	var jobResultStdout JobResultStdout
 	if err := json.NewDecoder(strings.NewReader(jobResult.Stdout)).Decode(&jobResultStdout); err != nil {
 		jobResultStdout = JobResultStdout{
@@ -119,10 +120,12 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 			Score: 0,
 			Messages: []string{"運営に連絡してください"},
 		}
+		status = "aborted"
 	}
 
 	result := Result{
 		ID:       job.ID,
+		Status:   status,
 		Score:    jobResultStdout.Score,
 		IsPassed: jobResultStdout.Pass,
 		Reason:   joinN(jobResultStdout.Messages, maxNumMessage),
