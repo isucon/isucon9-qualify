@@ -1,3 +1,11 @@
+- name: Install bundler:2.0.1
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon/isucari/webapp/ruby
+  shell: |
+    bash -lc "gem install bundler:2.0.1"
+
 - name: Install isucari.ruby
   become: yes
   become_user: isucon
