@@ -970,6 +970,125 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
 }
 
 async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const csrfToken = req.body.csrf_token;
+
+    if (csrfToken !== req.cookies.csrf_token) {
+        outputErrorMessage(reply, "csrf token error", 422);
+        return;
+    }
+
+    const conn = await getConnection();
+
+    const buyer = await getLoginUser(req, conn);
+
+    if (buyer === null) {
+        outputErrorMessage(reply, "no session", 404);
+        return;
+    }
+
+    await conn.beginTransaction();
+
+    let targetItem: Item | null = null;
+    {
+        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [req.body.item_id]);
+
+        for (const row of rows) {
+            targetItem = row as Item;
+        }
+    }
+
+    if (targetItem === null) {
+        outputErrorMessage(reply, "item not found", 404);
+        await conn.rollback();
+        return;
+    }
+
+    if (targetItem.status !== ItemStatusOnSale) {
+        outputErrorMessage(reply, "item is not for sale", 403);
+        await conn.rollback();
+        return;
+    }
+
+    if (targetItem.seller_id === buyer.id) {
+        outputErrorMessage(reply, "自分の商品は買えません", 403);
+        await conn.rollback();
+        return;
+    }
+
+    let seller: User | null = null;
+    {
+        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", [targetItem.seller_id]);
+        for (const row of rows) {
+            seller = row as User;
+        }
+    }
+
+    if (seller === null) {
+        outputErrorMessage(reply, "seller not found", 404);
+        await conn.rollback();
+        return;
+    }
+
+    const category = await getCategoryByID(conn, targetItem.category_id);
+    if (category === null) {
+        outputErrorMessage(reply, "category id error", 500);
+        await conn.rollback();
+        return;
+    }
+
+    const [result] = await conn.query(
+        "INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            targetItem.seller_id,
+            buyer.id,
+            TransactionEvidenceStatusWaitShipping,
+            targetItem.id,
+            targetItem.name,
+            targetItem.price,
+            targetItem.description,
+            category.id,
+            category.parent_id,
+        ]
+    );
+
+    const transactionEvidenceId = result.insertId;
+
+    await conn.query(
+        "UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?",
+        [
+            buyer.id,
+            ItemStatusTrading,
+            new Date(),
+            targetItem.id,
+        ]
+    )
+
+    // TODO ApiShipment.Create
+
+    await conn.query(
+        "INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        [
+            transactionEvidenceId,
+            ShippingsStatusInitial,
+            targetItem.name,
+            targetItem.id,
+            "", // scr.reserve_id,
+            "", // scr.reserve_time,
+            buyer.address,
+            buyer.account_name,
+            seller.address,
+            seller.account_name,
+        ]
+    );
+
+    await conn.commit();
+
+    reply.code(200)
+        .type("application/json;charset=utf-8")
+        .send({
+            transaction_evidence_id: transactionEvidenceId,
+        });
+
 }
 
 async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
