@@ -512,6 +512,7 @@ module Isucari
       target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
 
       if target_item['status'] != ITEM_STATUS_ON_SALE
+        db.query('ROLLBACK')
         halt_with_error 403, '販売中の商品以外編集できません'
       end
 
