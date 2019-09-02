@@ -13,6 +13,8 @@ import fastifyStatic from "fastify-static";
 import crypt from "crypto";
 import bcrypt from "bcrypt";
 import {create} from "domain";
+import {shipmentStatus} from "./api";
+import {ConnectionOptions} from "tls";
 
 const execFile = util.promisify(childProcess.execFile);
 
@@ -1330,16 +1332,31 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    // TODO: ApiShipmentStatus
+    let params = {
+        reserve_id: shipping.reserve_id,
+    }
+    try {
+        const res = await shipmentStatus(await getShipmentServiceURL(conn), params)
+        if (res.status === ShippingsStatusShipping || res.status === ShippingsStatusDone) {
+            outputErrorMessage(reply, "shipment service側で配送中か配送完了になっていません", 403);
+            await conn.rollback();
+            return;
+        }
 
-    await conn.query(
-        "UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
-        [
-            ShippingsStatusWaitPickup, // TODO
-            new Date(),
-            transactionEvidence.id,
-        ]
-    );
+        await conn.query(
+            "UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
+            [
+                res.status,
+                new Date(),
+                transactionEvidence.id,
+            ]
+        );
+
+    } catch(res) {
+        outputErrorMessage(reply, "failed to request to shipment service");
+        await conn.rollback();
+        return;
+    }
 
     await conn.query(
         "UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
@@ -1663,7 +1680,7 @@ async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerRespon
     };
 
     res.user = user;
-    res.payment_service_url = getPaymentServiceURL();
+    res.payment_service_url = await getPaymentServiceURL(conn);
     res.csrf_token = csrfToken;
 
     const categories: Category[] = [];
@@ -1813,10 +1830,6 @@ async function getLoginUser(req: FastifyRequest, conn: MySQLQueryable): Promise<
     return null;
 }
 
-function getPaymentServiceURL(): string {
-    return "";
-}
-
 function getSession(req: FastifyRequest) {
 }
 
@@ -1887,6 +1900,38 @@ async function getRandomString(length: number): Promise<string> {
         })
 
     });
+}
+
+async function getConfigByName(conn: MySQLQueryable, name: string): Promise<string|null> {
+    let config: Config | null = null;
+    {
+        const [rows] = await conn.query("SELECT * FROM `configs` WHERE `name` = ?", [name]);
+        for (const row of rows) {
+            config = row as Config;
+        }
+    }
+
+    if (config === null) {
+        return null;
+    }
+
+    return config.val;
+}
+
+async function getPaymentServiceURL(conn: MySQLQueryable): Promise<string> {
+    const result = await getConfigByName(conn, "payment_service_url");
+    if (result === null) {
+        return DefaultPaymentServiceURL;
+    }
+    return result;
+}
+
+async function getShipmentServiceURL(conn: MySQLQueryable): Promise<string> {
+    const result = await getConfigByName(conn, "shipment_service_url");
+    if (result === null) {
+        return DefaultShipmentServiceURL;
+    }
+    return result;
 }
 
 function getImageURL(imageName: string) {
