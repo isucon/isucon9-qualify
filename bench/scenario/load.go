@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -89,7 +90,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				if recommended {
 					// recommended なら categoryは見ずにnewを少しみる
-					err = loadNewItemsAndItems(ctx, s2, 2, 20)
+					err = loadNewItemsAndItems(ctx, s2, 2, 10)
 					if err != nil {
 						critical.Add(err)
 						goto Final
@@ -119,13 +120,13 @@ func Load(ctx context.Context, critical *fails.Critical) {
 						goto Final
 					}
 
-					err = loadNewItemsAndItems(ctx, s2, 2, 20)
+					err = loadNewItemsAndItems(ctx, s2, 1, 10)
 					if err != nil {
 						critical.Add(err)
 						goto Final
 					}
 
-					err = buyCompleteWithVerify(ctx, s3, s2, targetItem.ID, price)
+					err = buyComplete(ctx, s3, s2, targetItem.ID, price)
 					if err != nil {
 						critical.Add(err)
 						goto Final
@@ -405,6 +406,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 func loadIsRecommendNewItems(ctx context.Context, s *session.Session) (bool, error) {
 	aUser := asset.GetUser(s.UserID)
 	targetCategoryID := aUser.BuyParentCategoryID
+	log.Printf("found recommend user_id: %d", s.UserID)
 
 	_, items, err := s.NewItems(ctx)
 	if err != nil {
