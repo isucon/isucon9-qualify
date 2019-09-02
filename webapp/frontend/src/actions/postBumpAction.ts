@@ -1,6 +1,5 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { Action } from 'redux';
 import { ErrorRes, BumpReq, BumpRes } from '../types/appApiTypes';
 import { AppResponseError } from '../errors/AppResponseError';
