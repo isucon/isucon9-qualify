@@ -1,14 +1,15 @@
 import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
-import { ErrorRes, SettingsRes } from '../types/appApiTypes';
-import { AppResponseError } from '../errors/AppResponseError';
+import { SettingsRes } from '../types/appApiTypes';
 import { AppState } from '../index';
 import { Settings } from '../dataObjects/settings';
 import { UserData } from '../dataObjects/user';
 import { CategorySimple } from '../dataObjects/category';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import PaymentClient from '../httpClients/paymentClient';
+import { checkAppResponse } from '../actionHelper/responseChecker';
+import { ajaxErrorHandler } from '../actionHelper/ajaxErrorHandler';
+import { ErrorActions } from './errorAction';
 
 export const FETCH_SETTINGS_START = 'FETCH_SETTINGS_START';
 export const FETCH_SETTINGS_SUCCESS = 'FETCH_SETTINGS_SUCCESS';
@@ -17,7 +18,8 @@ export const FETCH_SETTINGS_FAIL = 'FETCH_SETTINGS_FAIL';
 export type SettingsActions =
   | FetchSettingsStartAction
   | FetchSettingsSuccessAction
-  | FetchSettingsFailAction;
+  | FetchSettingsFailAction
+  | ErrorActions;
 type ThunkResult<R> = ThunkAction<R, AppState, undefined, SettingsActions>;
 
 export function fetchSettings(): ThunkResult<void> {
@@ -27,10 +29,7 @@ export function fetchSettings(): ThunkResult<void> {
     })
       .then(() => AppClient.get(`/settings`))
       .then(async (response: Response) => {
-        if (!response.ok) {
-          const errRes: ErrorRes = await response.json();
-          throw new AppResponseError(errRes.error, response);
-        }
+        await checkAppResponse(response);
 
         return await response.json();
       })
@@ -61,11 +60,9 @@ export function fetchSettings(): ThunkResult<void> {
         // MEMO: ここでやるのがいいかわからん
         PaymentClient.setBaseURL(body.payment_service_url);
       })
-      .catch((err: Error) => {
-        dispatch(
-          fetchItemPageFailAction({
-            error: err.message,
-          }),
+      .catch(async (err: Error) => {
+        dispatch<SettingsActions>(
+          await ajaxErrorHandler(err, fetchSettingsFailAction),
         );
       });
   };
@@ -96,12 +93,10 @@ const fetchSettingsSuccessAction = (
 
 export interface FetchSettingsFailAction
   extends Action<typeof FETCH_SETTINGS_FAIL> {
-  payload: FormErrorState;
+  message: string;
 }
 
-const fetchItemPageFailAction = (
-  newError: FormErrorState,
-): FetchSettingsFailAction => ({
+const fetchSettingsFailAction = (message: string): FetchSettingsFailAction => ({
   type: 'FETCH_SETTINGS_FAIL',
-  payload: newError,
+  message,
 });

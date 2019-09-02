@@ -166,7 +166,7 @@ class Service
         if ($r === false) {
             return "";
         }
-        $config = $sth->fetchAll(PDO::FETCH_ASSOC);
+        $config = $sth->fetch(PDO::FETCH_ASSOC);
         if ($config === false) {
             return "";
         }

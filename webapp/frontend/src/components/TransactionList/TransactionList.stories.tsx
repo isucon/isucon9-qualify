@@ -22,6 +22,7 @@ const mockProps = {
   loadMore: (createdAt: number, itemId: number, page: number) => {},
 };
 
+/**
 stories
   .add('default', () => (
     <MemoryRouter>
@@ -35,8 +36,9 @@ stories
         items={Array(30)
           .fill(item)
           .map((item: TransactionItem, index: number) =>
-            Object.assign({}, item, { id: item.id + index }),
+            Object.assign({}, item, { id: item.id + index, onClickTransaction: (item: TransactionItem) => {}}),
           )}
       />
     </MemoryRouter>
   ));
+ */

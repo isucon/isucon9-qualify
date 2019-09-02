@@ -2,21 +2,19 @@ import AppClient from '../httpClients/appClient';
 import { ThunkAction, ThunkDispatch } from 'redux-thunk';
 import { Action } from 'redux';
 import {
-  ErrorRes,
   ItemDetail,
   ItemSimple,
   UserItemsRes,
   UserTransactionsRes,
 } from '../types/appApiTypes';
-import { AppResponseError } from '../errors/AppResponseError';
 import { TimelineItem, TransactionItem } from '../dataObjects/item';
 import { UserData } from '../dataObjects/user';
 import { ShippingStatus } from '../dataObjects/shipping';
 import { TransactionStatus } from '../dataObjects/transaction';
-import { FormErrorState } from '../reducers/formErrorReducer';
 import { AppState } from '../index';
-import { NotFoundError } from '../errors/NotFoundError';
-import { notFoundError, NotFoundErrorAction } from './errorAction';
+import { ErrorActions } from './errorAction';
+import { checkAppResponse } from '../actionHelper/responseChecker';
+import { ajaxErrorHandler } from '../actionHelper/ajaxErrorHandler';
 
 export const FETCH_USER_PAGE_DATA_START = 'FETCH_USER_PAGE_DATA_START';
 export const FETCH_USER_PAGE_DATA_SUCCESS = 'FETCH_USER_PAGE_DATA_SUCCESS';
@@ -26,7 +24,7 @@ export type FetchUserPageDataActions =
   | FetchUserPageDataStartAction
   | FetchUserPageDataSuccessAction
   | FetchUserPageDataFailAction
-  | NotFoundErrorAction;
+  | ErrorActions;
 type ThunkResult<R> = ThunkAction<
   R,
   AppState,
@@ -40,15 +38,7 @@ async function fetchUserPageData(
 ): Promise<[UserItemsRes, UserTransactionsRes | undefined]> {
   const userDataRes: Response = await AppClient.get(`/users/${userId}.json`);
 
-  if (!userDataRes.ok) {
-    const errRes: ErrorRes = await userDataRes.json();
-
-    if (userDataRes.status === 404) {
-      throw new NotFoundError(errRes.error);
-    }
-
-    throw new AppResponseError(errRes.error, userDataRes);
-  }
+  await checkAppResponse(userDataRes);
 
   const userData: UserItemsRes = await userDataRes.json();
 
@@ -59,10 +49,7 @@ async function fetchUserPageData(
       '/users/transactions.json',
     );
 
-    if (!transactionRes.ok) {
-      const errRes: ErrorRes = await userDataRes.json();
-      throw new AppResponseError(errRes.error, transactionRes);
-    }
+    await checkAppResponse(transactionRes);
 
     transactions = await transactionRes.json();
   }
@@ -128,15 +115,9 @@ export function fetchUserPageDataAction(
           fetchUserPageDataSuccessAction({ ...payload, ...transactions }),
         );
       })
-      .catch((err: Error) => {
-        if (err instanceof NotFoundError) {
-          dispatch(notFoundError());
-        }
-
-        dispatch(
-          fetchUserPageDataFailAction({
-            error: err.message,
-          }),
+      .catch(async (err: Error) => {
+        dispatch<FetchUserPageDataActions>(
+          await ajaxErrorHandler(err, fetchUserPageDataFailAction),
         );
       });
   };
@@ -177,14 +158,11 @@ const fetchUserPageDataSuccessAction = (payload: {
 
 export interface FetchUserPageDataFailAction
   extends Action<typeof FETCH_USER_PAGE_DATA_FAIL> {
-  payload: FormErrorState;
+  message: string;
 }
 
 const fetchUserPageDataFailAction = (
-  newError: FormErrorState,
+  message: string,
 ): FetchUserPageDataFailAction => {
-  return {
-    type: FETCH_USER_PAGE_DATA_FAIL,
-    payload: newError,
-  };
+  return { type: FETCH_USER_PAGE_DATA_FAIL, message };
 };

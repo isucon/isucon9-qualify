@@ -78,6 +78,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// 外部サービスのレイテンシを追加
+	ss.SetDelay(800 * time.Millisecond)
+	sp.SetDelay(800 * time.Millisecond)
+
 	scenario.SetShipment(ss)
 	scenario.SetPayment(sp)
 
@@ -141,8 +145,8 @@ func main() {
 	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
 	scenario.Validation(ctx, isCampaign, cerr)
 
-	criticalMsgs = cerr.GetMsgs()
-	if len(criticalMsgs) > 300 { // TODO
+	criticalMsgs, cCnt, aCnt, tCnt := cerr.Get()
+	if cCnt > 0 || aCnt > 10 || tCnt > 300 { // TODO
 		log.Print("cause error!")
 
 		output := Output{

@@ -164,7 +164,11 @@ const Header: React.FC<Props> = ({
               <MenuIcon />
             </IconButton>
           )}
-          <Typography className={classes.text} variant="h5">
+          <Typography
+            className={classes.text}
+            variant="h5"
+            onClick={onClickTitleText}
+          >
             ISUCARI
           </Typography>
         </Toolbar>

@@ -4,6 +4,7 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"regexp"
@@ -205,6 +206,7 @@ func (s *ServerPayment) tokenHandler(w http.ResponseWriter, req *http.Request) {
 
 	if ct.price != 0 {
 		if ct.price != tr.Price {
+			log.Print(ct.itemID, ct.price, tr.Price)
 			result := tokenRes{
 				Status: "wrong price",
 			}

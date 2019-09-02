@@ -48,7 +48,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 		return err
 	}
 
-	targetItemID, fileName, err := sellForFileName(ctx, s1, 100)
+	targetItemID, fileName, err := sellForFileName(ctx, s1, price)
 	if err != nil {
 		return err
 	}
@@ -110,6 +110,12 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 
 	// onsaleでない商品は買えない
 	err = s3.BuyWithFailed(ctx, targetItemID, oToken, http.StatusForbidden, "item is not for sale")
+	if err != nil {
+		return err
+	}
+
+	// onsaleでない商品は編集できない
+	err = s1.ItemEditWithNotOnSale(ctx, targetItemID, price+10)
 	if err != nil {
 		return err
 	}

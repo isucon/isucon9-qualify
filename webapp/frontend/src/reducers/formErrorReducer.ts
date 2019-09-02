@@ -1,5 +1,3 @@
-import { LOGIN_FAIL } from '../actions/authenticationActions';
-import { REGISTER_FAIL } from '../actions/registerAction';
 import { SELLING_ITEM_FAIL } from '../actions/sellingItemAction';
 import { BUY_FAIL, USING_CARD_FAIL } from '../actions/buyAction';
 import { POST_ITEM_EDIT_FAIL } from '../actions/postItemEditAction';

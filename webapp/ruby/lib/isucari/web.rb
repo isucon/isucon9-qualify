@@ -512,6 +512,7 @@ module Isucari
       target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
 
       if target_item['status'] != ITEM_STATUS_ON_SALE
+        db.query('ROLLBACK')
         halt_with_error 403, '販売中の商品以外編集できません'
       end
 
@@ -1190,8 +1191,23 @@ module Isucari
     # getReports
     get '/reports.json' do
       transaction_evidences = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` > 15007')
+      
+      response = transaction_evidences.map do |transaction_evidence|
+        {
+          'id' => transaction_evidence['id'],
+          'seller_id' => transaction_evidence['seller_id'],
+          'buyer_id' => transaction_evidence['buyer_id'],
+          'status' => transaction_evidence['status'],
+          'item_id' => transaction_evidence['item_id'],
+          'item_name' => transaction_evidence['item_name'],
+          'item_price' => transaction_evidence['item_price'],
+          'item_description' => transaction_evidence['item_description'],
+          'item_category_id' => transaction_evidence['item_category_id'],
+          'item_root_category_id' => transaction_evidence['item_root_category_id']
+        }
+      end
 
-      transaction_evidences.to_a.to_json
+      response.to_json
     end
 
     # Frontend
