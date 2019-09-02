@@ -232,6 +232,7 @@ fastify.register(fastifyMysql, {
     user: process.env.MYSQL_USER || "isucari",
     password: process.env.MYSQL_PASS || "isucari",
     database: process.env.MYSQL_DBNAME || "isucari",
+    pool: 100,
 
     promise: true
 });
@@ -1731,7 +1732,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 }
 
 async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
-    const csrfToken = getCsrfToken(req);
+    const csrfToken = req.cookies.csrf_token;
 
     const conn = await getConnection();
     const user = await getLoginUser(req, conn);
@@ -1875,10 +1876,6 @@ async function getReports(req: FastifyRequest, reply: FastifyReply<ServerRespons
         .code(200)
         .type("application/json")
         .send(transactionEvidences);
-}
-
-function getCsrfToken(req: FastifyRequest): string {
-    return ""
 }
 
 async function getLoginUser(req: FastifyRequest, conn: MySQLQueryable): Promise<User | null> {
