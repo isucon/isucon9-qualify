@@ -132,14 +132,10 @@ func RunServer(paymentPort, shipmentPort int, dataDir string, allowedIPs []net.I
 		Handler: pay,
 	}
 
-	pay.SetDelay(200 * time.Millisecond)
-
 	ship := NewShipment(false, dataDir, allowedIPs)
 	serverShipment := &http.Server{
 		Handler: ship,
 	}
-
-	ship.SetDelay(200 * time.Millisecond)
 
 	go func() {
 		log.Print(serverPayment.Serve(liPayment))

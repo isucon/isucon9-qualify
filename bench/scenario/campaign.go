@@ -107,32 +107,6 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-time.After(20 * time.Second)
-
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-
-	L:
-		for i := 1; i < ExecutionSeconds/10-2; i++ {
-			d := time.Duration(i * 400)
-
-			log.Print("increase delay")
-			sPayment.SetDelay(d * time.Millisecond)
-			sShipment.SetDelay(d * time.Millisecond)
-
-			priceStoreCache.Set(100 + i*50)
-
-			select {
-			case <-ticker.C:
-			case <-ctx.Done():
-				break L
-			}
-		}
-	}()
-
 	go func() {
 		wg.Wait()
 		close(closed)

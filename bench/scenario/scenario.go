@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/fails"
-	"github.com/isucon/isucon9-qualify/bench/server"
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
 )
@@ -108,8 +107,3 @@ func FinalCheck(ctx context.Context, critical *fails.Critical) int64 {
 
 	return score
 }
-
-var (
-	sShipment *server.ServerShipment
-	sPayment  *server.ServerPayment
-)

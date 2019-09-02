@@ -356,3 +356,8 @@ func SetShipment(ss *server.ServerShipment) {
 func SetPayment(sp *server.ServerPayment) {
 	sPayment = sp
 }
+
+var (
+	sShipment *server.ServerShipment
+	sPayment  *server.ServerPayment
+)
