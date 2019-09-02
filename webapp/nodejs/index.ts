@@ -662,11 +662,17 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
                 return;
             }
 
-            // TODO APIShipmentStatus
+            try {
+                const res = await shipmentStatus(await getShipmentServiceURL(conn), {reserve_id: shipping.reserve_id});
+                itemDetail.shipping_status = res.status;
+            } catch (error) {
+                outputErrorMessage(reply, "failed to request to shipment service");
+                await conn.rollback();
+                return;
+            }
 
             itemDetail.transaction_evidence_id = transactionEvidence.id;
             itemDetail.transaction_evidence_status = transactionEvidence.status;
-            itemDetail.shipping_status = ShippingsStatusDone; // TODO
         }
 
         itemDetails.push(itemDetail);
