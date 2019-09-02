@@ -1428,6 +1428,107 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
 }
 
 async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const csrfToken = req.body.csrf_token;
+    const itemId = req.body.item_id;
+
+    if (csrfToken !== req.cookies.csrf_token) {
+        outputErrorMessage(reply, "csrf token error", 422);
+        return;
+    }
+
+    const conn = await getConnection();
+
+    const user = await getLoginUser(req, conn);
+    if (user === null) {
+        outputErrorMessage(reply, "no session", 404);
+        return;
+    }
+
+
+    await conn.beginTransaction();
+
+    let targetItem: Item | null = null;
+    {
+        const [rows] = await conn.query(
+            "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE",
+            [
+                itemId,
+            ]
+        )
+        for (const row of rows) {
+            targetItem = row as Item;
+        }
+    }
+
+    if (targetItem === null) {
+        outputErrorMessage(reply, "item not found", 404);
+        await conn.rollback();
+        return;
+    }
+
+    if (targetItem.seller_id !== user.id) {
+        outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
+        await conn.rollback();
+        return;
+    }
+
+    let seller: User | null = null;
+    {
+        const [rows] = await conn.query(
+            "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE",
+            [
+                user.id,
+            ]
+        );
+        for (const row of rows) {
+            seller = row as User;
+        }
+    }
+
+    if (seller === null) {
+        outputErrorMessage(reply, "user not found", 404);
+        await conn.rollback();
+        return;
+    }
+
+    // last bump + 3s > 0
+    const now = new Date();
+    if (seller.last_bump.getTime() + BumpChargeSeconds > now.getTime()) {
+        outputErrorMessage(reply, "Bump not allowed", 403)
+        await conn.rollback();
+        return;
+    }
+
+    await conn.query(
+        "UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?",
+        [
+            now,
+            now,
+            targetItem.id,
+        ]
+    );
+
+    await conn.query("UPDATE `users` SET `last_bump`=? WHERE id=", [now, seller.id])
+
+    {
+        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [itemId]);
+        for (const row of rows) {
+            targetItem = row as Item;
+        }
+    }
+
+    await conn.commit();
+
+    reply
+        .code(200)
+        .type("application/json;charset=utf-8")
+        .send({
+            item_id: targetItem.id,
+            item_price: targetItem.price,
+            item_created_at: targetItem.created_at.getTime(),
+            item_updated_at: targetItem.updated_at.getTime(),
+        });
+
 }
 
 async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
