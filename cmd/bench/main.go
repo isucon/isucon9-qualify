@@ -142,7 +142,7 @@ func main() {
 	scenario.Validation(ctx, isCampaign, cerr)
 
 	criticalMsgs = cerr.GetMsgs()
-	if len(criticalMsgs) > 10 {
+	if len(criticalMsgs) > 300 { // TODO
 		log.Print("cause error!")
 
 		output := Output{

@@ -808,11 +808,6 @@ class Service
             unset($seller['hashed_password'], $seller['address'], $seller['created_at']);
             $item['seller'] = $seller;
 
-            $item['buyer'] = null;
-            $item['transaction_evidence_id'] = null;
-            $item['transaction_evidence_status'] = null;
-            $item['shipping_status'] = null;
-
             if (($user['id'] === $item['seller']['id'] || $user['id'] === $item['buyer_id']) && (int) $item['buyer_id'] !== 0) {
                 $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
                 $r = $sth->execute([$item['buyer_id']]);
@@ -846,6 +841,8 @@ class Service
                     $item['transaction_evidence_status'] = $transactionEvidence["status"];
                     $item['shipping_status'] = $shipping['status'];
                 }
+            } else {
+                unset($item['buyer_id']);
             }
         } catch (\PDOException $e) {
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);

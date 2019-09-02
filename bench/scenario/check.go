@@ -26,7 +26,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		defer wg.Done()
 
 	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
+		for j := 0; j < ExecutionSeconds/8; j++ {
 			ch := time.After(8 * time.Second)
 
 			err := irregularLoginWrongPassword(ctx, user3)
@@ -57,7 +57,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		var userID int64
 
 	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
+		for j := 0; j < ExecutionSeconds/10; j++ {
 			ch := time.After(10 * time.Second)
 
 			s1, err = buyerSession(ctx)
@@ -178,7 +178,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		var targetItem asset.AppItem
 
 	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
+		for j := 0; j < ExecutionSeconds/10; j++ {
 			ch := time.After(10 * time.Second)
 
 			s1, err = activeSellerSession(ctx)
@@ -263,12 +263,28 @@ func checkBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
 
 	targetItem := asset.SetItemCreatedAt(s1.UserID, targetItemID, newCreatedAt)
 
-	_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
+	itemFromNewCategory, err := findItemFromNewCategory(ctx, s1, targetItem, 3)
 	if err != nil {
 		return err
 	}
+	if itemFromNewCategory.CreatedAt != newCreatedAt {
+		return failure.New(fails.ErrApplication, failure.Messagef("Bump後の商品が更新されていません (item_id: %d)", targetItemID))
+	}
+	itemFromUsers, err := findItemFromUsers(ctx, s1, targetItem, 3)
+	if err != nil {
+		return err
+	}
+	if itemFromUsers.CreatedAt != newCreatedAt {
+		return failure.New(fails.ErrApplication, failure.Messagef("Bump後の商品が更新されていません (item_id: %d)", targetItemID))
+	}
 
-	_, err = findItemFromUsers(ctx, s1, targetItem, 3)
+	targetCategory, ok := asset.GetCategory(targetItem.CategoryID)
+	if !ok || targetCategory.ParentID == 0 {
+		// データ不整合・ベンチマーカのバグの可能性
+		return failure.New(fails.ErrApplication, failure.Messagef("商品のカテゴリを探すことができませんでした (item_id: %d)", targetItem.ID))
+	}
+
+	err = checkNewCategoryItemsAndItems(ctx, s1, targetCategory.ParentID, 2, 5)
 	if err != nil {
 		return err
 	}
@@ -290,8 +306,8 @@ func checkNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cate
 	}
 	c := itemIDs.Len()
 	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしているので、商品数が最低数あればよい
-	if (maxPage == 0 && c < 3000) || c < checkItem {
+	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
+	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -354,10 +370,7 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
@@ -435,10 +448,7 @@ func checkItemIDsTransactionEvidence(ctx context.Context, s *session.Session, it
 		return nil
 	}
 	if hasNext && loop < 100 { // TODO: max pager
-		err := checkItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
+		return checkItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
@@ -514,10 +524,7 @@ func checkItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDs
 	}
 	loop = loop + 1
 	if hasNext && loop < 100 { // TODO: max pager
-		err := checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
-		if err != nil {
-			return err
-		}
+		return checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil
 }
@@ -549,6 +556,10 @@ func checkGetItem(ctx context.Context, s *session.Session, targetItemID int64) e
 	err = checkItemDetailCategory(item, aItem)
 	if err != nil {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの%s", targetItemID, err.Error()))
+	}
+
+	if item.BuyerID != 0 && item.Buyer == nil {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonのbuyer_idがあるのに購入者の情報がありません", targetItemID))
 	}
 
 	if item.BuyerID != 0 && item.Buyer.ID != item.BuyerID {
