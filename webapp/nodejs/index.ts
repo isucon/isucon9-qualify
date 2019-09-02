@@ -10,6 +10,7 @@ import createFastify, {FastifyRequest, FastifyReply} from "fastify";
 import fastifyMysql from "fastify-mysql";
 import fastifyCookie from "fastify-cookie";
 import fastifyStatic from "fastify-static";
+import crypt from "crypto";
 import bcrypt from "bcrypt";
 import {create} from "domain";
 
@@ -897,6 +898,11 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const itemID = req.body.item_id;
     const price = req.body.item_price;
 
+    if (csrfToken !== req.cookies.csrf_token) {
+        outputErrorMessage(reply, "csrf token error", 422)
+        return;
+    }
+
     if (price < ItemMinPrice || price > ItemMaxPrice) {
         outputErrorMessage(reply, ItemPriceErrMsg, 400);
         return;
@@ -1107,6 +1113,9 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
     reply.setCookie("user_id", user.id.toString(), {
         path: "/",
     });
+    reply.setCookie("csrf_token", await getRandomString(128), {
+        path: "/",
+    });
 
     reply
         .code(200)
@@ -1160,6 +1169,10 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
     };
 
     reply.setCookie("user_id", user.id.toString(), {
+        path: "/",
+    });
+
+    reply.setCookie("csrf_token", await getRandomString(128), {
         path: "/",
     });
 
@@ -1265,6 +1278,15 @@ async function comparePassword(inputPassword: string, hashedPassword: string): P
         bcrypt.compare(inputPassword, hashedPassword.toString(), (err, isValid) => {
             resolve(isValid);
         });
+    });
+}
+
+async function getRandomString(length: number): Promise<string> {
+    return await new Promise((resolve) => {
+        crypt.randomBytes(length, (err, buffer) => {
+            resolve(buffer.toString('hex'));
+        })
+
     });
 }
 
