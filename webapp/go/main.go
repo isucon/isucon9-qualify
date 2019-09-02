@@ -1169,6 +1169,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 
 	if targetItem.Status != ItemStatusOnSale {
 		outputErrorMsg(w, http.StatusForbidden, "販売中の商品以外編集できません")
+		tx.Rollback()
 		return
 	}
 
