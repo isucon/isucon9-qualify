@@ -244,6 +244,9 @@ sub flush_users {
     }
 }
 
+open(my $md5fh, "<:utf8", "image_files.txt") or die $!;
+my @IMAGES = map { chomp $_; $_ } <$md5fh>;
+
 open(my $fh, "<:utf8", "keywords.tsv") or die $!;
 my @KEYWORDS = map { chomp $_; $_ } <$fh>;
 
@@ -429,7 +432,7 @@ sub flush_shippings {
             $name,
             $BASE_PRICE,
             $description,
-            'sample.jpg', # temporary
+            $IMAGES[int rand scalar @IMAGES],
             $category->[0],
             $t_sell,
             $t_done
