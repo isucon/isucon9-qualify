@@ -35,6 +35,25 @@ $ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isuc
 $ cd initial-data
 $ make
 
+# 初期画像データダウンロード
+
+$ cd webapp/public
+$ find upload -type f -not -name 'sample.jpg' -not -name '.gitignore' | xargs rm -f
+# GitHub releases から initial.zip をダウンロード
+$ unzip initial.zip
+$ find v3_initial_data -type f -name '*.jpg'|xargs -I{} mv {} upload
+$ rm -rf v3_initial_data
+
+# ベンチマーク用画像データダウンロード
+
+$ cd initial-data
+$ find images -type f -not -name 'sample.jpg' -not -name '.gitignore' | xargs rm -f
+# GitHub releases から bench1.zip をダウンロード
+$ unzip bench1.zip
+$ find v3_bench1 -type f -name '*.jpg'|xargs -I{} mv {} images
+$ rm -rf v3_bench1
+
+
 $ make
 $ ./bin/benchmarker
 ```
