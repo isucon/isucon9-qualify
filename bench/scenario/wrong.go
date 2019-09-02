@@ -48,7 +48,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 		return err
 	}
 
-	targetItemID, fileName, err := sellForFileName(ctx, s1, 100)
+	targetItemID, fileName, err := sellForFileName(ctx, s1, price)
 	if err != nil {
 		return err
 	}
