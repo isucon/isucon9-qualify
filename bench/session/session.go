@@ -154,7 +154,7 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) error {
 		if err != nil {
 			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました"))
 		}
-		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrSession,
+		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrApplication,
 			failure.Messagef("%s: got response status code %d; expected %d", prefixMsg, res.StatusCode, expectedStatusCode),
 		)
 	}
