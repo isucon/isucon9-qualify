@@ -567,7 +567,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
                 ItemStatusStop,
                 new Date(createdAt),
                 itemId,
-                TransactionsPerPage+1,
+                TransactionsPerPage + 1,
             ]
         );
 
@@ -586,7 +586,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
                 ItemStatusSoldOut,
                 ItemStatusCancel,
                 ItemStatusStop,
-                TransactionsPerPage+1
+                TransactionsPerPage + 1
             ]
         );
 
@@ -611,7 +611,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
             return;
         }
 
-        const itemDetail : ItemDetail = {
+        const itemDetail: ItemDetail = {
             id: item.id,
             seller_id: item.seller_id,
             seller: seller,
@@ -832,7 +832,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         return;
     }
 
-    const itemDetail : ItemDetail = {
+    const itemDetail: ItemDetail = {
         id: item.id,
         seller_id: item.seller_id,
         seller: seller,
@@ -893,6 +893,74 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 }
 
 async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const csrfToken = req.body.csrf_token;
+    const itemID = req.body.item_id;
+    const price = req.body.item_price;
+
+    if (price < ItemMinPrice || price > ItemMaxPrice) {
+        outputErrorMessage(reply, ItemPriceErrMsg, 400);
+        return;
+    }
+
+    const conn = await getConnection();
+
+    const seller = await getLoginUser(req, conn);
+    if (seller === null) {
+        outputErrorMessage(reply, "no session", 404);
+        return;
+    }
+
+    let targetItem: Item | null = null;
+    ;
+    {
+        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [itemID]);
+        for (const row of rows) {
+            targetItem = row as Item;
+        }
+    }
+
+    if (targetItem === null) {
+        outputErrorMessage(reply, "item not found");
+        return;
+    }
+
+    if (targetItem.seller_id !== seller.id) {
+        outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
+        return;
+    }
+
+    await conn.beginTransaction();
+
+    await conn.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [targetItem.id]);
+
+    if (targetItem.status !== ItemStatusOnSale) {
+        outputErrorMessage(reply, "販売中の商品以外編集できません", 403);
+        await conn.rollback();
+        return;
+    }
+
+    await conn.query("UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?", [price, new Date(), targetItem.id]);
+
+    {
+        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [targetItem.id]);
+        for (const row of rows) {
+            targetItem = row as Item;
+        }
+    }
+
+    await conn.commit();
+
+    reply
+        .code(200)
+        .type("application/json;charset=utf-8")
+        .send({
+            item_id: targetItem.id,
+            item_price: targetItem.price,
+            item_created_at: targetItem.created_at.getTime(),
+            item_updated_at: targetItem.updated_at.getTime(),
+        })
+
+
 }
 
 async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
