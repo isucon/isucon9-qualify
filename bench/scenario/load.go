@@ -592,9 +592,6 @@ func loadItemIDsTransactionEvidence(ctx context.Context, s *session.Session, ite
 	if err != nil {
 		return err
 	}
-	if len(items) == 0 {
-		return nil
-	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))

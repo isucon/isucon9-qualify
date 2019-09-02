@@ -263,12 +263,28 @@ func checkBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
 
 	targetItem := asset.SetItemCreatedAt(s1.UserID, targetItemID, newCreatedAt)
 
-	_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
+	itemFromNewCategory, err := findItemFromNewCategory(ctx, s1, targetItem, 3)
 	if err != nil {
 		return err
 	}
+	if itemFromNewCategory.CreatedAt != newCreatedAt {
+		return failure.New(fails.ErrApplication, failure.Messagef("Bump後の商品が更新されていません (item_id: %d)", targetItemID))
+	}
+	itemFromUsers, err := findItemFromUsers(ctx, s1, targetItem, 3)
+	if err != nil {
+		return err
+	}
+	if itemFromUsers.CreatedAt != newCreatedAt {
+		return failure.New(fails.ErrApplication, failure.Messagef("Bump後の商品が更新されていません (item_id: %d)", targetItemID))
+	}
 
-	_, err = findItemFromUsers(ctx, s1, targetItem, 3)
+	targetCategory, ok := asset.GetCategory(targetItem.CategoryID)
+	if !ok || targetCategory.ParentID == 0 {
+		// データ不整合・ベンチマーカのバグの可能性
+		return failure.New(fails.ErrApplication, failure.Messagef("商品のカテゴリを探すことができませんでした (item_id: %d)", targetItem.ID))
+	}
+
+	err = checkNewCategoryItemsAndItems(ctx, s1, targetCategory.ParentID, 2, 5)
 	if err != nil {
 		return err
 	}
@@ -540,6 +556,10 @@ func checkGetItem(ctx context.Context, s *session.Session, targetItemID int64) e
 	err = checkItemDetailCategory(item, aItem)
 	if err != nil {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの%s", targetItemID, err.Error()))
+	}
+
+	if item.BuyerID != 0 && item.Buyer == nil {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonのbuyer_idがあるのに購入者の情報がありません", targetItemID))
 	}
 
 	if item.BuyerID != 0 && item.Buyer.ID != item.BuyerID {
