@@ -13,7 +13,7 @@ import fastifyStatic from "fastify-static";
 import crypt from "crypto";
 import bcrypt from "bcrypt";
 import {create} from "domain";
-import {paymentToken, shipmentCreate, shipmentStatus} from "./api";
+import {paymentToken, shipmentCreate, shipmentRequest, shipmentStatus} from "./api";
 import {ConnectionOptions} from "tls";
 
 const execFile = util.promisify(childProcess.execFile);
@@ -1245,13 +1245,15 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         return;
     }
 
-    // TODO: APIShipmentRequest
+    const img = await shipmentRequest(await getShipmentServiceURL(conn), {
+        reserve_id: shipping.reserve_id,
+    })
 
     await conn.query(
         "UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
         [
             ShippingsStatusWaitPickup,
-            "",
+            img,
             new Date(),
             transactionalEvidence.id,
         ]
@@ -1516,7 +1518,21 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    // TODO: ApiShipment
+    try {
+        const res = await shipmentStatus(await getShipmentServiceURL(conn), {
+            reserve_id: shipping.reserve_id,
+        })
+        if (res.status === ShippingsStatusDone) {
+            outputErrorMessage(reply, "shipment service側で配送完了になっていません", 400);
+            await conn.rollback();
+            return;
+        }
+    } catch (e)  {
+        outputErrorMessage(reply, "failed to request to shipment service", 500);
+        await conn.rollback();
+        return;
+
+    }
 
     await conn.query("UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?", [
         ShippingsStatusDone,

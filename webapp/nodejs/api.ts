@@ -18,6 +18,10 @@ type ShipmentCreateResponse = {
     reserve_time: number,
 }
 
+type ShipmentRequestRequest = {
+    reserve_id: string,
+}
+
 type ShipmentStatusRequest = {
     reserve_id: string,
 }
@@ -50,6 +54,20 @@ export async function shipmentCreate(url: string, params: ShipmentCreateRequest)
     }
 
     return res.data as ShipmentCreateResponse;
+}
+
+export async function shipmentRequest(url: string, params: ShipmentRequestRequest): Promise<Uint8Array> {
+    const res = await client.post(url + "/request", params, {
+        headers: {
+            'User-Agent': UserAgent,
+            'Authorization': IsucariAPIToken,
+        },
+    });
+    if (res.status !== 200) {
+        throw res;
+    }
+
+    return res.data as Uint8Array;
 }
 
 export async function shipmentStatus(url: string, params: ShipmentStatusRequest): Promise<ShipmentStatusResponse> {
