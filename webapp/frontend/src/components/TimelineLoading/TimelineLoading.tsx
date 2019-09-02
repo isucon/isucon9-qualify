@@ -17,7 +17,7 @@ const TimelineLoading: React.FC<{}> = () => {
 
   return (
     <div className={classes.root}>
-      <CircularProgress className={classes.loader} />
+      <CircularProgress className={classes.loader} color="primary" />
     </div>
   );
 };
