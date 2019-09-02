@@ -13,7 +13,7 @@ import fastifyStatic from "fastify-static";
 import crypt from "crypto";
 import bcrypt from "bcrypt";
 import {create} from "domain";
-import {shipmentStatus} from "./api";
+import {paymentToken, shipmentCreate, shipmentStatus} from "./api";
 import {ConnectionOptions} from "tls";
 
 const execFile = util.promisify(childProcess.execFile);
@@ -71,7 +71,7 @@ const ItemStatusSoldOut = "sold_out";
 const ItemStatusStop = "stop";
 const ItemStatusCancel = "cancel";
 const PaymentServiceIsucariAPIKey = "a15400e46c83635eb181-946abb51ff26a868317c";
-const PaymentServiceIsucariShopID = "11";
+const PaymentServiceIsucariShopID = 11;
 const TransactionEvidenceStatusWaitShipping = "wait_shipping";
 const TransactionEvidenceStatusWaitDone = "wait_done";
 const TransactionEvidenceStatusDone = "done";
@@ -1071,23 +1071,65 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         ]
     )
 
-    // TODO ApiShipment.Create
+    try {
+        const scr = await shipmentCreate(await getShipmentServiceURL(conn), {
+            to_address: buyer.address,
+            to_name: buyer.account_name,
+            from_address: seller.address,
+            from_name: seller.account_name,
+        });
 
-    await conn.query(
-        "INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-        [
-            transactionEvidenceId,
-            ShippingsStatusInitial,
-            targetItem.name,
-            targetItem.id,
-            "", // scr.reserve_id,
-            "", // scr.reserve_time,
-            buyer.address,
-            buyer.account_name,
-            seller.address,
-            seller.account_name,
-        ]
-    );
+        try {
+            const pstr = await paymentToken(await getPaymentServiceURL(conn), {
+                shop_id: PaymentServiceIsucariShopID,
+                token: req.body.token,
+                api_key: PaymentServiceIsucariAPIKey,
+                price: targetItem.price,
+            });
+
+            if (pstr.status === "invalid") {
+                outputErrorMessage(reply, "カード情報に誤りがあります", 400);
+                await conn.rollback();
+                return;
+            }
+            if (pstr.status === "fail") {
+                outputErrorMessage(reply, "カードの残高が足りません", 400);
+                await conn.rollback();
+                return;
+            }
+
+            if (pstr.status !== 'ok') {
+                outputErrorMessage(reply, "想定外のエラー", 400)
+                await conn.rollback()
+                return;
+            }
+
+            await conn.query(
+                "INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                [
+                    transactionEvidenceId,
+                    ShippingsStatusInitial,
+                    targetItem.name,
+                    targetItem.id,
+                    scr.reserve_id,
+                    scr.reserve_time,
+                    buyer.address,
+                    buyer.account_name,
+                    seller.address,
+                    seller.account_name,
+                    "",
+                ]
+            );
+        } catch (e) {
+            outputErrorMessage(reply, "payment service is failed", 500)
+            await conn.rollback();
+            return;
+        }
+    } catch (error) {
+        outputErrorMessage(reply, "failed to request to shipment service", 500);
+        await conn.rollback();
+        return;
+    }
 
     await conn.commit();
 

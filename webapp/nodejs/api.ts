@@ -6,33 +6,53 @@ const client = axios.create({ responseType: 'json'});
 const UserAgent = "isucon9-qualify-webapp";
 const IsucariAPIToken = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0";
 
-export type ShipmentCreateRequest = {
+type ShipmentCreateRequest = {
     to_address: string,
     to_name: string,
     from_address: string,
     from_name: string,
 }
 
-export type ShipmentStatusRequest = {
+type ShipmentCreateResponse = {
+    reserve_id: string,
+    reserve_time: number,
+}
+
+type ShipmentStatusRequest = {
     reserve_id: string,
 }
 
-export type ShipmentResponse = {
+type ShipmentStatusResponse = {
     status: string,
     reserve_time: number,
 }
 
-export async function shipmentCreate(url: string, params: ShipmentCreateRequest): Promise<AxiosResponse> {
+type PaymentTokenRequest = {
+    shop_id: number,
+    token: string,
+    api_key: string,
+    price: number,
+}
+
+type PaymentTokenResponse = {
+    status: string,
+}
+
+export async function shipmentCreate(url: string, params: ShipmentCreateRequest): Promise<ShipmentCreateResponse> {
     const res = await client.post(url + "/create", params, {
         headers: {
             'User-Agent': UserAgent,
             'Authorization': IsucariAPIToken,
         },
     });
-    return res;
+    if (res.status !== 200) {
+        throw res;
+    }
+
+    return res.data as ShipmentCreateResponse;
 }
 
-export async function shipmentStatus(url: string, params: ShipmentStatusRequest): Promise<ShipmentResponse> {
+export async function shipmentStatus(url: string, params: ShipmentStatusRequest): Promise<ShipmentStatusResponse> {
     const res = await client.post(url + "/status", params, {
         headers: {
             'User-Agent': UserAgent,
@@ -43,7 +63,20 @@ export async function shipmentStatus(url: string, params: ShipmentStatusRequest)
         throw res;
     }
 
-    return res.data as ShipmentResponse;
+    return res.data as ShipmentStatusResponse;
+}
+
+export async function paymentToken(url: string, params: PaymentTokenRequest): Promise<PaymentTokenResponse> {
+    const res = await client.post(url + "/token", params, {
+        headers: {
+            'User-Agent': UserAgent,
+        },
+    });
+    if (res.status !== 200) {
+        throw res;
+    }
+
+    return res.data as PaymentTokenResponse;
 }
 
 
