@@ -196,18 +196,18 @@ func (s *Session) BuyWithWrongCSRFToken(ctx context.Context, itemID int64, token
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, http.StatusUnprocessableEntity)
+	err = checkStatusCodeWithMsg(res, http.StatusUnprocessableEntity, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (s *Session) BuyWithWrongCSRFToken(ctx context.Context, itemID int64, token
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /buy: JSONデコードに失敗しました (item_id: %d)", itemID))
 	}
 
 	return nil
@@ -229,18 +229,18 @@ func (s *Session) BuyWithFailed(ctx context.Context, itemID int64, token string,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: リクエストに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
 	}
 	defer res.Body.Close()
 
-	err = checkStatusCode(res, expectedStatus)
+	err = checkStatusCodeWithMsg(res, expectedStatus, fmt.Sprintf("(item_id: %d)", itemID))
 	if err != nil {
 		return err
 	}
@@ -248,11 +248,11 @@ func (s *Session) BuyWithFailed(ctx context.Context, itemID int64, token string,
 	re := resErr{}
 	err = json.NewDecoder(res.Body).Decode(&re)
 	if err != nil {
-		return failure.Wrap(err, failure.Message("POST /buy: JSONデコードに失敗しました"))
+		return failure.Wrap(err, failure.Messagef("POST /buy: JSONデコードに失敗しました (item_id: %d)", itemID))
 	}
 
 	if re.Error != expectedMsg {
-		return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s", expectedMsg, re.Error))
+		return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s (item_id: %d)", expectedMsg, re.Error, itemID))
 	}
 
 	return nil
