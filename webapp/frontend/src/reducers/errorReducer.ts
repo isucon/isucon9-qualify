@@ -18,6 +18,7 @@ export type ErrorType =
 export interface ErrorState {
   errorType: ErrorType;
   errorCode?: number;
+  errorMessage?: string;
 }
 
 const initialState: ErrorState = {
@@ -30,7 +31,11 @@ const error = (
 ): ErrorState => {
   switch (action.type) {
     case NOT_FOUND_ERROR:
-      return { errorType: NotFoundError, errorCode: 404 };
+      return {
+        errorType: NotFoundError,
+        errorCode: 404,
+        errorMessage: action.message,
+      };
     case INTERNAL_SERVER_ERROR:
     case FETCH_ITEM_FAIL:
     case FETCH_TIMELINE_FAIL:
@@ -38,7 +43,11 @@ const error = (
     case FETCH_USER_ITEMS_FAIL:
     case FETCH_USER_PAGE_DATA_FAIL:
     case FETCH_SETTINGS_FAIL:
-      return { errorType: InternalServerError, errorCode: 500 };
+      return {
+        errorType: InternalServerError,
+        errorCode: 500,
+        errorMessage: action.message,
+      };
     default:
       return { errorType: NoError };
   }

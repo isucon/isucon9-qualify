@@ -9,6 +9,7 @@ const mapStateToProps = (state: AppState) => ({
   isLoggedIn: !!state.authStatus.userId,
   loading: !state.authStatus.checked,
   alreadyLoaded: state.authStatus.checked,
+  error: state.error.errorMessage,
 });
 const mapDispatchToProps = (
   dispatch: ThunkDispatch<AppState, undefined, AnyAction>,
