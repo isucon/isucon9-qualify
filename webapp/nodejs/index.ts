@@ -1495,7 +1495,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    if (transactionEvidence.seller_id === seller.id) {
+    if (transactionEvidence.seller_id !== seller.id) {
         outputErrorMessage(reply, "権限がありません", 403);
         await conn.release();
         return;
@@ -1581,7 +1581,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
     try {
         const res = await shipmentStatus(await getShipmentServiceURL(conn), params)
-        if (res.status === ShippingsStatusShipping || res.status === ShippingsStatusDone) {
+        if (!(res.status === ShippingsStatusShipping || res.status === ShippingsStatusDone)) {
             outputErrorMessage(reply, "shipment service側で配送中か配送完了になっていません", 403);
             await conn.rollback();
             await conn.release();
