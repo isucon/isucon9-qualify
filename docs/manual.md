@@ -81,17 +81,11 @@ $ sudo systemctl restart nginx.service
 
 ## リカバリ方法
 
-TODO
-`~isucon/torb/db` ディレクトリに、スキーマを定義した `schema.sql` ファイルと、初期データセットが入った `isucon8q-initial-dataset.sql.gz` ファイルがあります。
-
-DBを初期状態にもどすには、DBサーバーにログインして、次のコマンドを実行します。
+DB(isucari)を初期状態にもどすには、次のコマンドを実行します。
 
 ```sh
-$ ~isucon/torb/db/init.sh
+$ /home/isucon/isucari/webapp/sql/init.sh
 ```
-
-`~isucon/torb/db` ディレクトリと `~isucon/torb/webapp` ディレクトリは競技用の全サーバーに存在するので、間違って重要なファイルを消してしまっても他のサーバーからリカバリすることができます。
-
 
 # ルール詳細
 
