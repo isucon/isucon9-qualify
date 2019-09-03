@@ -308,8 +308,8 @@ async function postInitialize(req: FastifyRequest, reply: FastifyReply<ServerRes
     );
 
     const res = {
-        // キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと
-        campaign: 0,
+        // Campaign 実施時は true にする
+        is_campaign: false
     };
 
     await conn.release();
