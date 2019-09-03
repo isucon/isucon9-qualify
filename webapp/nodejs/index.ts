@@ -216,7 +216,7 @@ type ResUserItems = {
 }
 
 const fastify = createFastify({
-    logger: true
+    logger: { level: 'warn' }
 });
 
 fastify.register(fastifyStatic, {
@@ -655,7 +655,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
             created_at: item.created_at.getTime(),
         };
 
-        if (item.buyer_id !== undefined) {
+        if (item.buyer_id !== undefined && item.buyer_id !== 0) {
             const buyer = await getUserSimpleByID(conn, item.buyer_id);
             if (buyer === null) {
                 outputErrorMessage(reply, "buyer not found", 404);
@@ -663,6 +663,8 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
                 await conn.release();
                 return;
             }
+            itemDetail.buyer_id = item.buyer_id;
+            itemDetail.buyer = buyer;
         }
 
         const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [item.id]);
