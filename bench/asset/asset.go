@@ -32,7 +32,8 @@ const (
 	ShippingsStatusShipping   = "shipping"
 	ShippingsStatusDone       = "done"
 
-	ItemsPerPage = 48
+	ItemsPerPage             = 48
+	ItemsTransactionsPerPage = 10
 
 	ActiveSellerNumSellItems = 100
 )
