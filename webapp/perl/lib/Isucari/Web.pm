@@ -237,7 +237,7 @@ post '/initialize' => [qw/allow_json_request/] => sub {
     my $campaign = 0;
 
     $c->render_json({
-        campaign => number campaign
+        campaign => number $campaign
     });
 };
 
