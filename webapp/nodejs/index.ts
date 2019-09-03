@@ -1257,7 +1257,7 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     const imgName = `${await getRandomString(16)}${ext}`;
 
-    await fs.promises.writeFile(`../public/upload/${imgName}`, req.body.file);
+    await fs.promises.writeFile(`../public/upload/${imgName}`, req.body.image[0].data);
 
     await conn.beginTransaction();
 
