@@ -901,7 +901,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         created_at: item.created_at.getTime(),
     };
 
-    if ((user.id === item.seller_id || user.id === item.buyer_id) && item.buyer_id === undefined) {
+    if ((user.id === item.seller_id || user.id === item.buyer_id) && item.buyer_id !== 0) {
         const buyer = await getUserSimpleByID(conn, item.buyer_id);
         if (buyer === null) {
             outputErrorMessage(reply, "buyer not found", 404);
