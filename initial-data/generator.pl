@@ -254,6 +254,9 @@ sub flush_users {
     }
 }
 
+open(my $md5fh, "<:utf8", "image_files.txt") or die $!;
+my @IMAGES = map { chomp $_; $_ } <$md5fh>;
+
 open(my $fh, "<:utf8", "keywords.tsv") or die $!;
 my @KEYWORDS = map { chomp $_; $_ } <$fh>;
 
@@ -374,6 +377,7 @@ sub flush_shippings {
 
     my $te_id = 0;
     my $active_seller_rr = 0;
+    my $images_rr = 0;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
         my $t_sell = $base_time+int(rand(10))-5;
         my $t_buy = $t_sell + int(rand(10)) + 60;
@@ -391,7 +395,7 @@ sub flush_shippings {
         my $status = 'on_sale';
         my $buyer = 0;
 
-        if (rand(100) < $RATE_OF_SOLDOUT && $te_id < 15007) { # TODO 
+        if (rand(100) < $RATE_OF_SOLDOUT && $te_id < 15007) { # TODO
             $status = 'sold_out';
             $te_id++;
             $buyer = int(rand($NUM_USER_GENERATE))+1;
@@ -439,12 +443,12 @@ sub flush_shippings {
             $name,
             $BASE_PRICE,
             $description,
-            'sample.jpg', # temporary
+            $IMAGES[$images_rr % scalar @IMAGES],
             $category->[0],
             $t_sell,
             $t_done
         );
-
+        $images_rr++;
         $base_time++;
     }
 }
