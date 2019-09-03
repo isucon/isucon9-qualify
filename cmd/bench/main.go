@@ -78,10 +78,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 外部サービスのレイテンシを追加
-	ss.SetDelay(800 * time.Millisecond)
-	sp.SetDelay(800 * time.Millisecond)
-
 	scenario.SetShipment(ss)
 	scenario.SetPayment(sp)
 
@@ -138,6 +134,12 @@ func main() {
 	defer cancel()
 
 	log.Print("=== validation ===")
+
+	// 外部サービスのレイテンシを追加
+	// verify時にもレイテンシを入れていると時間がかかるので、Validationで入れる
+	ss.SetDelay(800 * time.Millisecond)
+	sp.SetDelay(800 * time.Millisecond)
+
 	// 一番大切なメイン処理：checkとloadの大きく2つの処理を行う
 	// checkはアプリケーションが正しく動いているか常にチェックする
 	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる
