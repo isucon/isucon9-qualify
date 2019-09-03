@@ -383,6 +383,9 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 	if err != nil {
 		return err
 	}
+	if loop < 50 && asset.ItemsPerPage != len(items) { // TODO 50件よりはみないだろう
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
+	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
@@ -459,7 +462,9 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 	if err != nil {
 		return err
 	}
-
+	if hasNext && asset.ItemsTransactionsPerPage != len(items) {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
@@ -524,7 +529,7 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 // ユーザページをたどる
 func verifyUserItemsAndItems(ctx context.Context, s *session.Session, sellerID int64, checkItem int) error {
 	itemIDs := newIDsStore()
-	err := checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
+	err := verifyItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
 	if err != nil {
 		return err
 	}
@@ -559,6 +564,7 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 	if err != nil {
 		return err
 	}
+	// 件数チェックはしない。合計でチェックしている
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", sellerID))
