@@ -10,11 +10,10 @@ import createFastify, {FastifyRequest, FastifyReply} from "fastify";
 import fastifyMysql from "fastify-mysql";
 import fastifyCookie from "fastify-cookie";
 import fastifyStatic from "fastify-static";
+import fastifyMultipart from 'fastify-multipart';
 import crypt from "crypto";
 import bcrypt from "bcrypt";
-import {create} from "domain";
 import {paymentToken, shipmentCreate, shipmentRequest, shipmentStatus} from "./api";
-import {ConnectionOptions} from "tls";
 
 const execFile = util.promisify(childProcess.execFile);
 
@@ -225,6 +224,8 @@ fastify.register(fastifyStatic, {
 });
 
 fastify.register(fastifyCookie);
+
+fastify.register(fastifyMultipart);
 
 fastify.register(fastifyMysql, {
     host: process.env.MYSQL_HOST || "127.0.0.1",
