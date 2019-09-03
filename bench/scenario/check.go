@@ -176,6 +176,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		var err error
 		var price int
 		var targetItem asset.AppItem
+		var targetParentCategoryID int
 
 	L:
 		for j := 0; j < ExecutionSeconds/10; j++ {
@@ -195,7 +196,8 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 			price = priceStoreCache.Get()
 
-			targetItem, err = sell(ctx, s1, price)
+			targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+			targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 			if err != nil {
 				critical.Add(err)
 

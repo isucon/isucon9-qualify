@@ -39,11 +39,12 @@ const (
 )
 
 type AppUser struct {
-	ID           int64  `json:"id"`
-	AccountName  string `json:"account_name"`
-	Password     string `json:"plain_passwd"`
-	Address      string `json:"address,omitempty"`
-	NumSellItems int    `json:"num_sell_items"`
+	ID                  int64  `json:"id"`
+	AccountName         string `json:"account_name"`
+	Password            string `json:"plain_passwd"`
+	Address             string `json:"address,omitempty"`
+	NumSellItems        int    `json:"num_sell_items"`
+	BuyParentCategoryID int    `json:"buy_parent_category_id"`
 }
 
 type AppItem struct {
@@ -99,6 +100,7 @@ var (
 	categories           map[int]AppCategory
 	rootCategories       []AppCategory
 	childCategories      []AppCategory
+	rootCategoriesMap    map[int][]AppCategory
 	userItems            map[int64][]int64
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
@@ -123,6 +125,7 @@ func Initialize(dataDir, staticDir string) {
 	categories = make(map[int]AppCategory)
 	rootCategories = make([]AppCategory, 0, 10)
 	childCategories = make([]AppCategory, 0, 50)
+	rootCategoriesMap = make(map[int][]AppCategory)
 	userItems = make(map[int64][]int64)
 	transactionEvidences = make(map[int64]AppTransactionEvidence)
 	imageFiles = make([]string, 0, 10000)
@@ -192,6 +195,7 @@ func Initialize(dataDir, staticDir string) {
 			rootCategories = append(rootCategories, category)
 		} else {
 			childCategories = append(childCategories, category)
+			rootCategoriesMap[category.ParentID] = append(rootCategoriesMap[category.ParentID], category)
 		}
 	}
 	f.Close()
@@ -503,6 +507,11 @@ func GetRootCategories() []AppCategory {
 
 func GetRandomChildCategory() AppCategory {
 	return childCategories[rand.Intn(len(childCategories))]
+}
+
+func GetRandomChildCategoryByParentID(targetCategory int) AppCategory {
+	categories := rootCategoriesMap[targetCategory]
+	return categories[rand.Intn(len(categories))]
 }
 
 func GetCategory(categoryID int) (AppCategory, bool) {

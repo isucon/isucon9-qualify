@@ -48,7 +48,8 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 		return err
 	}
 
-	targetItemID, fileName, err := sellForFileName(ctx, s1, price)
+	targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
+	targetItemID, fileName, err := sellForFileName(ctx, s1, price, targetParentCategoryID)
 	if err != nil {
 		return err
 	}
