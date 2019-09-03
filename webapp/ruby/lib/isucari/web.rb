@@ -154,11 +154,11 @@ module Isucari
         db.xquery('INSERT INTO `configs` (name, val) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)', name, value)
       end
 
-      # Campaign 実施時は true にする
-      is_campaign = false
+      # キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと。
+      campaign = 0
 
       content_type :json
-      { 'is_campaign' => is_campaign }.to_json
+      { 'campaign' => campaign }.to_json
     end
 
     # getNewItems
