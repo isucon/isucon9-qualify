@@ -430,6 +430,9 @@ func verifyItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs 
 	if err != nil {
 		return err
 	}
+	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonはcreated_at順である必要があります"))
