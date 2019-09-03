@@ -309,6 +309,8 @@ async function postInitialize(req: FastifyRequest, reply: FastifyReply<ServerRes
         is_campaign: false
     };
 
+    await conn.release();
+
     reply
         .code(200)
         .type("application/json")
@@ -371,11 +373,13 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
         const seller = await getUserSimpleByID(conn, item.seller_id);
         if (seller === null) {
             outputErrorMessage(reply, "seller not found", 404)
+            await conn.release();
             return;
         }
         const category = await getCategoryByID(conn, item.category_id);
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
+            await conn.release();
             return;
         }
 
@@ -396,12 +400,14 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     let hasNext = false;
     if (itemSimples.length > ItemsPerPage) {
         hasNext = true;
-        itemSimples = itemSimples.splice(0, itemSimples.length - 1)
+        itemSimples = itemSimples.slice(0, itemSimples.length - 1)
     }
     const res: ResNewItems = {
         has_next: hasNext,
         items: itemSimples,
     };
+
+    await conn.release();
 
     reply
         .code(200)
@@ -421,6 +427,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     const rootCategory = await getCategoryByID(conn, rootCategoryId);
     if (rootCategory === null || rootCategory.parent_id !== 0) {
         outputErrorMessage(reply, "category not found");
+        await conn.release();
         return;
     }
 
@@ -436,6 +443,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         itemID = parseInt(itemIDStr, 10);
         if (isNaN(itemID) || itemID <= 0) {
             outputErrorMessage(reply, "item_id param error", 400);
+            await conn.release();
             return;
         }
     }
@@ -445,6 +453,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         createdAt = parseInt(createdAtStr, 10);
         if (isNaN(createdAt) || createdAt <= 0) {
             outputErrorMessage(reply, "created_at param error", 400);
+            await conn.release();
             return;
         }
     }
@@ -486,11 +495,13 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         const seller = await getUserSimpleByID(conn, item.seller_id);
         if (seller === null) {
             outputErrorMessage(reply, "seller not found", 404)
+            await conn.release();
             return;
         }
         const category = await getCategoryByID(conn, item.category_id);
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
+            await conn.release();
             return;
         }
 
@@ -511,7 +522,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     let hasNext = false;
     if (itemSimples.length > ItemsPerPage) {
         hasNext = true;
-        itemSimples = itemSimples.splice(0, itemSimples.length - 1)
+        itemSimples = itemSimples.slice(0, itemSimples.length - 1)
     }
 
     const res = {
@@ -520,6 +531,8 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         items: itemSimples,
         has_next: hasNext,
     }
+
+    await conn.release();
 
     reply
         .code(200)
@@ -534,6 +547,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
 
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -543,6 +557,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         itemId = parseInt(query['item_id'], 10);
         if (isNaN(itemId) || itemId <= 0) {
             outputErrorMessage(reply, "item_id param error", 400);
+            await conn.release();
             return
         }
     }
@@ -552,6 +567,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         createdAt = parseInt(query['created_at'], 10);
         if (isNaN(createdAt) || createdAt <= 0) {
             outputErrorMessage(reply, "created_at param error", 400);
+            await conn.release();
             return
         }
     }
@@ -605,6 +621,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
             await conn.rollback();
+            await conn.release();
             return;
         }
 
@@ -612,6 +629,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         if (seller === null) {
             outputErrorMessage(reply, "seller not found", 404)
             await conn.rollback();
+            await conn.release();
             return;
         }
 
@@ -639,6 +657,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
             if (buyer === null) {
                 outputErrorMessage(reply, "buyer not found", 404);
                 await conn.rollback();
+                await conn.release();
                 return;
             }
         }
@@ -660,6 +679,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
             if (shipping === null) {
                 outputErrorMessage(reply, "shipping not found", 404);
                 await conn.rollback();
+                await conn.release();
                 return;
             }
 
@@ -669,6 +689,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
             } catch (error) {
                 outputErrorMessage(reply, "failed to request to shipment service");
                 await conn.rollback();
+                await conn.release();
                 return;
             }
 
@@ -687,6 +708,8 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         hasNext = true;
         itemDetails = itemDetails.slice(0, TransactionsPerPage);
     }
+
+    await conn.release();
 
     reply
         .code(200)
@@ -707,6 +730,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const userSimple = await getUserSimpleByID(conn, userId);
     if (userSimple === null) {
         outputErrorMessage(reply, "user not found", 404);
+        await conn.release();
         return;
     }
 
@@ -716,6 +740,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         itemID = parseInt(itemIDStr, 10);
         if (isNaN(itemID) || itemID <= 0) {
             outputErrorMessage(reply, "item_id param error", 400);
+            await conn.release();
             return;
         }
     }
@@ -725,6 +750,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         createdAt = parseInt(createdAtStr, 10);
         if (isNaN(createdAt) || createdAt <= 0) {
             outputErrorMessage(reply, "created_at param error", 400);
+            await conn.release();
             return;
         }
     }
@@ -769,6 +795,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         const category = await getCategoryByID(conn, item.category_id);
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
+            await conn.release();
             return;
         }
 
@@ -797,6 +824,8 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         items: itemSimples,
     };
 
+    await conn.release();
+
     reply
         .code(200)
         .type("application/json")
@@ -815,6 +844,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     const user = await getLoginUser(req, conn);
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -827,18 +857,21 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     if (item === null) {
         outputErrorMessage(reply, "item not found", 404);
+        await conn.release();
         return;
     }
 
     const category = await getCategoryByID(conn, item.category_id);
     if (category === null) {
         outputErrorMessage(reply, "category not found", 404)
+        await conn.release();
         return;
     }
 
     const seller = await getUserSimpleByID(conn, item.seller_id);
     if (seller === null) {
         outputErrorMessage(reply, "seller not found", 404)
+        await conn.release();
         return;
     }
 
@@ -865,6 +898,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         const buyer = await getUserSimpleByID(conn, item.buyer_id);
         if (buyer === null) {
             outputErrorMessage(reply, "buyer not found", 404);
+            await conn.release();
             return;
         }
 
@@ -886,6 +920,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
             if (shipping === null) {
                 outputErrorMessage(reply, "shipping not found", 404);
+                await conn.release();
                 return;
             }
 
@@ -895,6 +930,8 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         }
 
     }
+
+    await conn.release();
 
     reply
         .code(200)
@@ -922,6 +959,7 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const seller = await getLoginUser(req, conn);
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -936,11 +974,13 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (targetItem === null) {
         outputErrorMessage(reply, "item not found");
+        await conn.release();
         return;
     }
 
     if (targetItem.seller_id !== seller.id) {
         outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
+        await conn.release();
         return;
     }
 
@@ -964,6 +1004,7 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     await conn.commit();
+    await conn.release();
 
     reply
         .code(200)
@@ -992,6 +1033,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     if (buyer === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -1009,18 +1051,21 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     if (targetItem === null) {
         outputErrorMessage(reply, "item not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (targetItem.status !== ItemStatusOnSale) {
         outputErrorMessage(reply, "item is not for sale", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (targetItem.seller_id === buyer.id) {
         outputErrorMessage(reply, "自分の商品は買えません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1035,6 +1080,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     if (seller === null) {
         outputErrorMessage(reply, "seller not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1042,6 +1088,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     if (category === null) {
         outputErrorMessage(reply, "category id error", 500);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1091,17 +1138,20 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
             if (pstr.status === "invalid") {
                 outputErrorMessage(reply, "カード情報に誤りがあります", 400);
                 await conn.rollback();
+                await conn.release();
                 return;
             }
             if (pstr.status === "fail") {
                 outputErrorMessage(reply, "カードの残高が足りません", 400);
                 await conn.rollback();
+                await conn.release();
                 return;
             }
 
             if (pstr.status !== 'ok') {
                 outputErrorMessage(reply, "想定外のエラー", 400)
                 await conn.rollback()
+                await conn.release();
                 return;
             }
 
@@ -1124,15 +1174,18 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         } catch (e) {
             outputErrorMessage(reply, "payment service is failed", 500)
             await conn.rollback();
+            await conn.release();
             return;
         }
     } catch (error) {
         outputErrorMessage(reply, "failed to request to shipment service", 500);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     await conn.commit();
+    await conn.release();
 
     reply.code(200)
         .type("application/json;charset=utf-8")
@@ -1160,6 +1213,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -1178,6 +1232,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (transactionalEvidence === null) {
         outputErrorMessage(reply, "権限がありません", 403);
+        await conn.release();
         return;
     }
 
@@ -1197,12 +1252,14 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     if (item === null) {
         outputErrorMessage(reply, "item not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
         outputErrorMessage(reply, "アイテムが取引中ではありません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1216,6 +1273,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         if (rows.length === 0) {
             outputErrorMessage(reply, "transaction_evidences not found", 404);
             await conn.rollback();
+            await conn.release();
             return;
         }
     }
@@ -1223,6 +1281,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     if (transactionalEvidence.status !== TransactionEvidenceStatusWaitShipping) {
         outputErrorMessage(reply, "準備ができていません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1243,6 +1302,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     if (shipping === null) {
         outputErrorMessage(reply, "shippings not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1261,6 +1321,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     );
 
     await conn.commit();
+    await conn.release();
 
     reply
         .code(200)
@@ -1287,6 +1348,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -1305,11 +1367,13 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidence not found", 404);
+        await conn.release();
         return;
     }
 
     if (transactionEvidence.seller_id === seller.id) {
         outputErrorMessage(reply, "権限がありません", 403);
+        await conn.release();
         return;
     }
 
@@ -1330,12 +1394,14 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (item === null) {
         outputErrorMessage(reply, "items not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
         outputErrorMessage(reply, "商品が取引中ではありません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1354,12 +1420,14 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidences not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (transactionEvidence.status !== TransactionEvidenceStatusWaitShipping) {
         outputErrorMessage(reply, "準備ができていません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1380,6 +1448,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (shipping === null) {
         outputErrorMessage(reply, "shippings not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1391,6 +1460,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         if (res.status === ShippingsStatusShipping || res.status === ShippingsStatusDone) {
             outputErrorMessage(reply, "shipment service側で配送中か配送完了になっていません", 403);
             await conn.rollback();
+            await conn.release();
             return;
         }
 
@@ -1406,6 +1476,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     } catch(res) {
         outputErrorMessage(reply, "failed to request to shipment service");
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1419,6 +1490,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     );
 
     await conn.commit();
+    await conn.release();
 
     reply
         .code(200)
@@ -1443,6 +1515,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (buyer === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -1456,11 +1529,13 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidence not found", 404);
+        await conn.release();
         return;
     }
 
     if (transactionEvidence.buyer_id !== buyer.id) {
         outputErrorMessage(reply, "権限がありません", 403);
+        await conn.release();
         return;
     }
 
@@ -1477,12 +1552,14 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (item === null) {
         outputErrorMessage(reply, "items not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
         outputErrorMessage(reply, "商品が取引中ではありません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1496,12 +1573,14 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidences not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (transactionEvidence.status !== TransactionEvidenceStatusWaitDone) {
         outputErrorMessage(reply, "準備ができていません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1516,6 +1595,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (shipping === null) {
         outputErrorMessage(reply, "shipping not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1526,11 +1606,13 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
         if (res.status === ShippingsStatusDone) {
             outputErrorMessage(reply, "shipment service側で配送完了になっていません", 400);
             await conn.rollback();
+            await conn.release();
             return;
         }
     } catch (e)  {
         outputErrorMessage(reply, "failed to request to shipment service", 500);
         await conn.rollback();
+        await conn.release();
         return;
 
     }
@@ -1554,6 +1636,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     ]);
 
     await conn.commit();
+    await conn.release();
 
     reply
         .code(200)
@@ -1576,6 +1659,7 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
     const seller = await getLoginUser(req, conn);
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -1589,11 +1673,13 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidence not found", 404);
+        await conn.release();
         return;
     }
 
     if (transactionEvidence.seller_id !== seller.id) {
         outputErrorMessage(reply, "権限がありません", 403);
+        await conn.release();
         return;
     }
 
@@ -1607,18 +1693,23 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
 
     if (shipping === null) {
         outputErrorMessage(reply, "shippings not found", 404);
+        await conn.release();
         return;
     }
 
     if (shipping.status !== ShippingsStatusWaitPickup && shipping.status !== ShippingsStatusShipping) {
         outputErrorMessage(reply, "qrcode not available", 403);
+        await conn.release();
         return;
     }
 
     if (shipping.img_binary.byteLength === 0) {
         outputErrorMessage(reply, "empty qrcode image")
+        await conn.release();
         return;
     }
+
+    await conn.release();
 
     reply
         .code(200)
@@ -1641,6 +1732,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const user = await getLoginUser(req, conn);
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
+        await conn.release();
         return;
     }
 
@@ -1663,12 +1755,14 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     if (targetItem === null) {
         outputErrorMessage(reply, "item not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
     if (targetItem.seller_id !== user.id) {
         outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1688,6 +1782,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     if (seller === null) {
         outputErrorMessage(reply, "user not found", 404);
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1696,6 +1791,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     if (seller.last_bump.getTime() + BumpChargeSeconds > now.getTime()) {
         outputErrorMessage(reply, "Bump not allowed", 403)
         await conn.rollback();
+        await conn.release();
         return;
     }
 
@@ -1718,6 +1814,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     await conn.commit();
+    await conn.release();
 
     reply
         .code(200)
@@ -1755,6 +1852,8 @@ async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerRespon
     }
     res.categories = categories;
 
+    await conn.release();
+
     reply
         .code(200)
         .type("application/json")
@@ -1783,11 +1882,13 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
 
     if (user === null) {
         outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        await conn.release();
         return;
     }
 
     if (!await comparePassword(password, user.hashed_password)) {
         outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        await conn.release();
         return;
     }
 
@@ -1797,6 +1898,8 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
     reply.setCookie("csrf_token", await getRandomString(128), {
         path: "/",
     });
+
+    await conn.release();
 
     reply
         .code(200)
@@ -1829,6 +1932,7 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (rows.length > 0) {
         outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        await conn.release();
         return;
     }
 
@@ -1842,6 +1946,8 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
             address,
         ]
     );
+
+    await conn.release();
 
     const user = {
         id: result.insertId,
@@ -1871,6 +1977,8 @@ async function getReports(req: FastifyRequest, reply: FastifyReply<ServerRespons
     for (const row of rows) {
         transactionEvidences.push(row as TransactionEvidence);
     }
+
+    await conn.release();
 
     reply
         .code(200)
