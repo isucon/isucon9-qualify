@@ -33,7 +33,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	// load scenario #1
 	// 出品
 	// カテゴリをみて 7カテゴリ x (10ページ + 20item) = 210
-	// recommendがあれあば、Newだけみて、購入し、再度出品・購入がある
+	// recommendであれば、Newだけみて、購入し、再度出品・購入がある
 	// buy without check
 	for i := 0; i < NumLoadScenario1; i++ {
 		wg.Add(1)
