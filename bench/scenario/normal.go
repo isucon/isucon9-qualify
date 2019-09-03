@@ -17,8 +17,14 @@ func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL strin
 	if err != nil {
 		return 0, err
 	}
-
-	return s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
+	campaign, err := s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
+	if err != nil {
+		return 0, err
+	}
+	if campaign < asset.MinCampaignRateSetting || campaign > asset.MaxCampaignRateSetting {
+		return 0, failure.New(fails.ErrApplication, failure.Messagef("/initialize の還元率の設定は %d以上 %d以下です", asset.MinCampaignRateSetting, asset.MaxCampaignRateSetting))
+	}
+	return campaign, nil
 }
 
 func checkItemSimpleCategory(item session.ItemSimple, aItem asset.AppItem) error {

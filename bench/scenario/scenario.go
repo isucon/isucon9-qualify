@@ -40,17 +40,45 @@ func Validation(ctx context.Context, campaign int, critical *fails.Critical) {
 		Check(ctx, critical)
 	}()
 
+	/*
+		キャンペーンの還元率(の設定)で負荷が変わる
+		還元率の設定, 負荷, 人気者出品
+		0, 2, なし
+		1, 3, あり
+		2, 4, あり
+		3, 5, あり
+		4, 6, あり
+	*/
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		log.Print("- Start Load worker 1")
+		Load(ctx, critical)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-time.After(100 * time.Millisecond)
+		log.Print("- Start Load worker 2")
 		Load(ctx, critical)
 	}()
 
 	if campaign > 0 {
+		log.Printf("=== enable campaign rate setting => %d ===", campaign)
+		for i := 0; i < campaign; i++ {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				<-time.After(time.Duration((i+2)*100) * time.Millisecond)
+				log.Printf("- Start Load worker %d", i+3)
+				Load(ctx, critical)
+			}(i)
+		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			log.Print("=== enable campaign ===")
 			Campaign(ctx, critical)
 		}()
 	}
