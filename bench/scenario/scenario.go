@@ -15,22 +15,22 @@ const (
 	ExecutionSeconds = 60
 )
 
-func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, *fails.Critical) {
+func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, *fails.Critical) {
 	critical := fails.NewCritical()
 
 	// initializeだけタイムアウトを別に設定
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	isCampaign, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
+	campaign, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
 	if err != nil {
 		critical.Add(err)
 	}
 
-	return isCampaign, critical
+	return campaign, critical
 }
 
-func Validation(ctx context.Context, isCampaign bool, critical *fails.Critical) {
+func Validation(ctx context.Context, campaign int, critical *fails.Critical) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -46,7 +46,7 @@ func Validation(ctx context.Context, isCampaign bool, critical *fails.Critical) 
 		Load(ctx, critical)
 	}()
 
-	if isCampaign {
+	if campaign > 0 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

@@ -124,7 +124,7 @@ type reqInitialize struct {
 }
 
 type resInitialize struct {
-	IsCampaign bool `json:"is_campaign"`
+	Campaign int `json:"campaign"`
 }
 
 type resSetting struct {
@@ -199,36 +199,36 @@ type resUserItems struct {
 	Items   []ItemSimple `json:"items"`
 }
 
-func (s *Session) Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, error) {
+func (s *Session) Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, error) {
 	b, _ := json.Marshal(reqInitialize{
 		PaymentServiceURL:  paymentServiceURL,
 		ShipmentServiceURL: shipmentServiceURL,
 	})
 	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/initialize", "application/json", bytes.NewBuffer(b))
 	if err != nil {
-		return false, failure.Wrap(err, failure.Message("POST /initialize: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Message("POST /initialize: リクエストに失敗しました"))
 	}
 
 	req = req.WithContext(ctx)
 
 	res, err := s.Do(req)
 	if err != nil {
-		return false, failure.Wrap(err, failure.Message("POST /initialize: リクエストに失敗しました"))
+		return 0, failure.Wrap(err, failure.Message("POST /initialize: リクエストに失敗しました"))
 	}
 	defer res.Body.Close()
 
 	err = checkStatusCode(res, http.StatusOK)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
 	ri := resInitialize{}
 	err = json.NewDecoder(res.Body).Decode(&ri)
 	if err != nil {
-		return false, failure.Wrap(err, failure.Message("POST /initialize: JSONデコードに失敗しました"))
+		return 0, failure.Wrap(err, failure.Message("POST /initialize: JSONデコードに失敗しました"))
 	}
 
-	return ri.IsCampaign, nil
+	return ri.Campaign, nil
 }
 
 func (s *Session) Login(ctx context.Context, accountName, password string) (*asset.AppUser, error) {
