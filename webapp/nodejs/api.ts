@@ -32,7 +32,7 @@ type ShipmentStatusResponse = {
 }
 
 type PaymentTokenRequest = {
-    shop_id: number,
+    shop_id: string,
     token: string,
     api_key: string,
     price: number,
@@ -56,8 +56,9 @@ export async function shipmentCreate(url: string, params: ShipmentCreateRequest)
     return res.data as ShipmentCreateResponse;
 }
 
-export async function shipmentRequest(url: string, params: ShipmentRequestRequest): Promise<Uint8Array> {
+export async function shipmentRequest(url: string, params: ShipmentRequestRequest): Promise<ArrayBuffer> {
     const res = await client.post(url + "/request", params, {
+        responseType: 'arraybuffer',
         headers: {
             'User-Agent': UserAgent,
             'Authorization': IsucariAPIToken,
@@ -67,7 +68,7 @@ export async function shipmentRequest(url: string, params: ShipmentRequestReques
         throw res;
     }
 
-    return res.data as Uint8Array;
+    return res.data;
 }
 
 export async function shipmentStatus(url: string, params: ShipmentStatusRequest): Promise<ShipmentStatusResponse> {

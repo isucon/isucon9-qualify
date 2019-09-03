@@ -1136,7 +1136,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
         try {
             const pstr = await paymentToken(await getPaymentServiceURL(conn), {
-                shop_id: PaymentServiceIsucariShopID,
+                shop_id: PaymentServiceIsucariShopID.toString(),
                 token: req.body.token,
                 api_key: PaymentServiceIsucariAPIKey,
                 price: targetItem.price,
@@ -1330,7 +1330,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     {
         const [rows] = await conn.query(
             "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?",
-            []
+            [itemId]
         )
 
         for (const row of rows) {
@@ -1417,7 +1417,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     const img = await shipmentRequest(await getShipmentServiceURL(conn), {
         reserve_id: shipping.reserve_id,
-    })
+    });
 
     await conn.query(
         "UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
