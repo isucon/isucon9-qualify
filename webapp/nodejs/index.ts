@@ -1727,7 +1727,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
         const res = await shipmentStatus(await getShipmentServiceURL(conn), {
             reserve_id: shipping.reserve_id,
         })
-        if (res.status === ShippingsStatusDone) {
+        if (res.status !== ShippingsStatusDone) {
             outputErrorMessage(reply, "shipment service側で配送完了になっていません", 400);
             await conn.rollback();
             await conn.release();
