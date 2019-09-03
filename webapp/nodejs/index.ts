@@ -1805,7 +1805,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         ]
     );
 
-    await conn.query("UPDATE `users` SET `last_bump`=? WHERE id=", [now, seller.id])
+    await conn.query("UPDATE `users` SET `last_bump`=? WHERE id=?", [now, seller.id])
 
     {
         const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [itemId]);
