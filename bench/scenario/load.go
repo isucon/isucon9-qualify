@@ -14,6 +14,7 @@ import (
 const (
 	// シナリオ(1,2,3,4) = 並列数(1,2,2,1)
 	// これを負荷の1単位とする
+	// 1だとLoad内のfor loopが必要ないが、調整のため残す
 	NumLoadScenario1 = 1
 	NumLoadScenario2 = 2
 	NumLoadScenario3 = 2

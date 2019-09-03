@@ -38,7 +38,7 @@ const (
 	ActiveSellerNumSellItems = 100
 
 	MinCampaignRateSetting = 0
-	MaxCampaignRateSetting = 6
+	MaxCampaignRateSetting = 4
 )
 
 type AppUser struct {
