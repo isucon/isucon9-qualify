@@ -190,16 +190,12 @@ def get_config(name):
 
 def get_payment_service_url():
     config = get_config("payment_service_url")
-    if config is None:
-        config = Constants.DEFAULT_PAYMENT_SERVICE_URL
-    return config
+    return Constants.DEFAULT_PAYMENT_SERVICE_URL if config is None else config['val']
 
 
 def get_shipment_service_url():
     config = get_config("shipment_service_url")
-    if config is None:
-        config = Constants.DEFAULT_SHIPMENT_SERVICE_URL
-    return config
+    return Constants.DEFAULT_SHIPMENT_SERVICE_URL if config is None else config['val']
 
 
 def api_shipment_status(shipment_url, params={}):
@@ -216,6 +212,7 @@ def api_shipment_status(shipment_url, params={}):
         http_json_error(requests.codes['internal_server_error'])
 
     return res.json()
+
 
 def get_image_url(image_name):
     return "/upload/{}".format(image_name)
