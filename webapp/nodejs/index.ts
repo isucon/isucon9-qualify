@@ -1327,7 +1327,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     const conn = await getConnection();
 
-    const seller = getLoginUser(req, conn);
+    const seller = await getLoginUser(req, conn);
 
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
@@ -1349,6 +1349,12 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (transactionalEvidence === null) {
+        outputErrorMessage(reply, "transaction_evidences not found", 404);
+        await conn.release();
+        return;
+    }
+
+    if (transactionalEvidence.seller_id !== seller.id) {
         outputErrorMessage(reply, "権限がありません", 403);
         await conn.release();
         return;
