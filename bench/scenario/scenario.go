@@ -19,7 +19,7 @@ func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL strin
 	critical := fails.NewCritical()
 
 	// initializeだけタイムアウトを別に設定
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	campaign, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
