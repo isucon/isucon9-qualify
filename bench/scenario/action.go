@@ -76,9 +76,9 @@ func sell(ctx context.Context, s1 *session.Session, price int) (asset.AppItem, e
 	return aItem, nil
 }
 
-func sellParentCategory(ctx context.Context, s1 *session.Session, price, categoryParentID int) (asset.AppItem, error) {
+func sellParentCategory(ctx context.Context, s1 *session.Session, price, parentCategoryID int) (asset.AppItem, error) {
 	fileName, name, description := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true)
-	category := asset.GetRandomChildCategoryByParentID(categoryParentID)
+	category := asset.GetRandomChildCategoryByParentID(parentCategoryID)
 
 	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, category.ID)
 	if err != nil {
@@ -91,15 +91,16 @@ func sellParentCategory(ctx context.Context, s1 *session.Session, price, categor
 	return aItem, nil
 }
 
-func sellForFileName(ctx context.Context, s1 *session.Session, price int) (int64, string, error) {
-	fileName, name, description, categoryID := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true), asset.GetRandomChildCategory().ID
+func sellForFileName(ctx context.Context, s1 *session.Session, price, parentCategoryID int) (int64, string, error) {
+	fileName, name, description := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true)
+	category := asset.GetRandomChildCategoryByParentID(parentCategoryID)
 
-	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, categoryID)
+	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, category.ID)
 	if err != nil {
 		return 0, "", err
 	}
 
-	asset.SetItem(s1.UserID, targetItemID, name, price, description, categoryID)
+	asset.SetItem(s1.UserID, targetItemID, name, price, description, category.ID)
 
 	return targetItemID, fileName, nil
 }

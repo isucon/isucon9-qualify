@@ -35,7 +35,8 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 		defer BuyerPool.Enqueue(s2)
 
-		targetItemID, fileName, err := sellForFileName(ctx, s1, 100)
+		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
+		targetItemID, fileName, err := sellForFileName(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -161,7 +162,8 @@ func Verify(ctx context.Context) *fails.Critical {
 			return
 		}
 
-		targetItem, err := sell(ctx, s1, 100)
+		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
+		targetItem, err := sellParentCategory(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
 			critical.Add(err)
 			return

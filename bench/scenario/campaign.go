@@ -135,6 +135,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 		return false
 	}
 
+	// 人気者出品だけはだれが買うかわからないので、カテゴリ指定なし出品
 	targetItem, err := sell(ctx, popular, price)
 	if err != nil {
 		critical.Add(err)

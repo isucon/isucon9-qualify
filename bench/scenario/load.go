@@ -33,7 +33,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	// load scenario #1
 	// 出品
 	// カテゴリをみて 7カテゴリ x (10ページ + 20item) = 210
-	// buywithcheck
+	// recommendがあれあば、Newだけみて、購入し、再度出品・購入がある
+	// buy without check
 	for i := 0; i < NumLoadScenario1; i++ {
 		wg.Add(1)
 		go func() {
@@ -74,13 +75,10 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					critical.Add(err)
 					goto Final
 				}
-				targetParentCategoryID = asset.GetRandomRootCategory().ID
-				if recommended {
-					targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
-				}
 
 				price = priceStoreCache.Get()
 
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
 					critical.Add(err)
@@ -88,8 +86,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				}
 
 				if recommended {
-					// recommended なら categoryは見ずにnewを少しみる
-					err = loadNewItemsAndItems(ctx, s2, 2, 10)
+					// recommended なら categoryは見ずにnewをみる
+					err = loadNewItemsAndItems(ctx, s2, 10, 20)
 					if err != nil {
 						critical.Add(err)
 						goto Final
@@ -105,7 +103,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					}
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
+				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -119,6 +117,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 						goto Final
 					}
 
+					// 少しだけNewItemをみて購入
 					err = loadNewItemsAndItems(ctx, s2, 1, 10)
 					if err != nil {
 						critical.Add(err)
@@ -151,7 +150,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	// その商品
 	// そのカテゴリ 30ページ 30商品
 	// getTransactions　(10ページ 20商品) x 2
-	// buy
+	// buyはwithout check
 	for i := 0; i < NumLoadScenario2; i++ {
 		wg.Add(1)
 		go func() {
@@ -162,6 +161,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var price int
 			var targetItem asset.AppItem
 			var item session.ItemDetail
+			var targetParentCategoryID int
+
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
@@ -180,7 +181,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItem, err = sell(ctx, s1, price)
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -216,7 +218,6 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				// ここは厳密なcheckをしない
 				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
@@ -250,6 +251,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var price int
 			var targetItem asset.AppItem
 			var userIDs []int64
+			var targetParentCategoryID int
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -275,7 +277,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItem, err = sell(ctx, s1, price)
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -340,6 +343,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var err error
 			var price int
 			var targetItem asset.AppItem
+			var targetParentCategoryID int
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -359,7 +363,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItem, err = sell(ctx, s1, price)
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
