@@ -114,3 +114,4 @@ go build
 ## 使用データの取得元
 
 - なんちゃって個人情報 http://kazina.com/dummy/
+- 椅子画像提供 941
