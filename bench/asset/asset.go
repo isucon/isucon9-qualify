@@ -92,7 +92,7 @@ var (
 	categories           map[int]AppCategory
 	rootCategories       []AppCategory
 	childCategories      []AppCategory
-	categoriesTree       map[int][]AppCategory
+	rootCategoriesMap    map[int][]AppCategory
 	userItems            map[int64][]int64
 	transactionEvidences map[int64]AppTransactionEvidence
 	keywords             []string
@@ -115,7 +115,7 @@ func Initialize(dataDir string) {
 	categories = make(map[int]AppCategory)
 	rootCategories = make([]AppCategory, 0, 10)
 	childCategories = make([]AppCategory, 0, 50)
-	categoriesTree = make(map[int][]AppCategory)
+	rootCategoriesMap = make(map[int][]AppCategory)
 	userItems = make(map[int64][]int64)
 	transactionEvidences = make(map[int64]AppTransactionEvidence)
 	imageFiles = make([]string, 0, 10000)
@@ -183,7 +183,7 @@ func Initialize(dataDir string) {
 			rootCategories = append(rootCategories, category)
 		} else {
 			childCategories = append(childCategories, category)
-			categoriesTree[category.ParentID] = append(categoriesTree[category.ParentID], category)
+			rootCategoriesMap[category.ParentID] = append(rootCategoriesMap[category.ParentID], category)
 		}
 	}
 	f.Close()
@@ -422,7 +422,7 @@ func GetRandomChildCategory() AppCategory {
 }
 
 func GetRandomChildCategoryByParentID(targetCategory int) AppCategory {
-	categories := categoriesTree[targetCategory]
+	categories := rootCategoriesMap[targetCategory]
 	return categories[rand.Intn(len(categories))]
 }
 
