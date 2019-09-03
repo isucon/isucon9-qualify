@@ -176,7 +176,7 @@ type reqInitialize struct {
 }
 
 type resInitialize struct {
-	IsCampaign bool `json:"is_campaign"`
+	Campaign int `json:"campaign"`
 }
 
 type resNewItems struct {
@@ -491,8 +491,8 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := resInitialize{}
-	// Campaign 実施時は true にする
-	res.IsCampaign = false
+	// キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと。
+	res.Campaign = 0
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(res)
