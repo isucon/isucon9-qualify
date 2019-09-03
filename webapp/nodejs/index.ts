@@ -183,7 +183,7 @@ type Category = {
     id: number,
     parent_id: number,
     category_name: string,
-    parent_category_name: string,
+    parent_category_name?: string,
 };
 
 type ReqInitialize = {
@@ -462,10 +462,11 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     const items: Item[] = [];
     if (itemID > 0 && createdAt > 0) {
         const [rows] = await conn.query(
-            "SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            "SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 ItemStatusOnSale,
                 ItemStatusSoldOut,
+                categoryIDs,
                 new Date(createdAt),
                 itemID,
                 ItemsPerPage + 1,
@@ -477,10 +478,11 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         }
     } else {
         const [rows] = await conn.query(
-            "SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+            "SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 ItemStatusOnSale,
                 ItemStatusSoldOut,
+                categoryIDs,
                 ItemsPerPage + 1,
             ]
         );
