@@ -185,7 +185,7 @@ def get_config(name):
     with conn.cursor() as c:
         c.execute(sql, (name,))
         config = c.fetchone()
-    return config
+    return config['val']
 
 
 def get_payment_service_url():
