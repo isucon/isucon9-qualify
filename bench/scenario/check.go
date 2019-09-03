@@ -334,7 +334,7 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 	if err != nil {
 		return err
 	}
-	if loop < 50 && asset.ItemsPerPage != len(items) { // TODO 50件よりはみないだろう
+	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 	for _, item := range items {

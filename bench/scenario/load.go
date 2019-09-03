@@ -388,8 +388,8 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 	if err != nil {
 		return err
 	}
-	if loop < 50 && asset.ItemsPerPage != len(items) { // TODO 50件よりはみないだろう
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+	if loop < 50 && asset.ItemPerPage != len(items) { // MEMO 50件よりはみないだろう
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
 	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
@@ -473,7 +473,7 @@ func loadItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *I
 	if err != nil {
 		return err
 	}
-	if loop < 50 && len(items) != asset.ItemsPerPage { // TODO 50ページ以上チェックすることはない
+	if loop < 50 && len(items) != asset.ItemsPerPage { // MEMO 50ページ以上チェックすることはない
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 	for _, item := range items {
