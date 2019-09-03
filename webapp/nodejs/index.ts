@@ -326,7 +326,7 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     if (query['item_id'] !== undefined) {
         itemId = parseInt(query['item_id'], 10);
         if (isNaN(itemId) || itemId <= 0) {
-            outputErrorMessage(reply, "item_id param error", 400);
+            replyError(reply, "item_id param error", 400);
             return
         }
     }
@@ -335,7 +335,7 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     if (query['created_at'] !== undefined) {
         createdAt = parseInt(query['created_at'], 10);
         if (isNaN(createdAt) || createdAt <= 0) {
-            outputErrorMessage(reply, "created_at param error", 400);
+            replyError(reply, "created_at param error", 400);
             return
         }
     }
@@ -375,13 +375,13 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     for (const item of items) {
         const seller = await getUserSimpleByID(db, item.seller_id);
         if (seller === null) {
-            outputErrorMessage(reply, "seller not found", 404)
+            replyError(reply, "seller not found", 404)
             await db.release();
             return;
         }
         const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
-            outputErrorMessage(reply, "category not found", 404)
+            replyError(reply, "category not found", 404)
             await db.release();
             return;
         }
@@ -422,14 +422,14 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     const rootCategoryIdStr: string = req.params.root_category_id;
     const rootCategoryId: number = parseInt(rootCategoryIdStr, 10);
     if (rootCategoryId === null || isNaN(rootCategoryId)) {
-        outputErrorMessage(reply, "incorrect category id", 400);
+        replyError(reply, "incorrect category id", 400);
         return;
     }
 
     const db = await getDBConnection();
     const rootCategory = await getCategoryByID(db, rootCategoryId);
     if (rootCategory === null || rootCategory.parent_id !== 0) {
-        outputErrorMessage(reply, "category not found");
+        replyError(reply, "category not found");
         await db.release();
         return;
     }
@@ -445,7 +445,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     if (itemIDStr !== undefined && itemIDStr !== "") {
         itemID = parseInt(itemIDStr, 10);
         if (isNaN(itemID) || itemID <= 0) {
-            outputErrorMessage(reply, "item_id param error", 400);
+            replyError(reply, "item_id param error", 400);
             await db.release();
             return;
         }
@@ -455,7 +455,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     if (createdAtStr !== undefined && createdAtStr !== "") {
         createdAt = parseInt(createdAtStr, 10);
         if (isNaN(createdAt) || createdAt <= 0) {
-            outputErrorMessage(reply, "created_at param error", 400);
+            replyError(reply, "created_at param error", 400);
             await db.release();
             return;
         }
@@ -499,13 +499,13 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     for (const item of items) {
         const seller = await getUserSimpleByID(db, item.seller_id);
         if (seller === null) {
-            outputErrorMessage(reply, "seller not found", 404)
+            replyError(reply, "seller not found", 404)
             await db.release();
             return;
         }
         const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
-            outputErrorMessage(reply, "category not found", 404)
+            replyError(reply, "category not found", 404)
             await db.release();
             return;
         }
@@ -551,7 +551,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
     const user = await getLoginUser(req, db);
 
     if (user === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -561,7 +561,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
     if (query['item_id'] !== undefined) {
         itemId = parseInt(query['item_id'], 10);
         if (isNaN(itemId) || itemId <= 0) {
-            outputErrorMessage(reply, "item_id param error", 400);
+            replyError(reply, "item_id param error", 400);
             await db.release();
             return
         }
@@ -571,7 +571,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
     if (query['created_at'] !== undefined) {
         createdAt = parseInt(query['created_at'], 10);
         if (isNaN(createdAt) || createdAt <= 0) {
-            outputErrorMessage(reply, "created_at param error", 400);
+            replyError(reply, "created_at param error", 400);
             await db.release();
             return
         }
@@ -624,7 +624,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
     for (const item of items) {
         const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
-            outputErrorMessage(reply, "category not found", 404)
+            replyError(reply, "category not found", 404)
             await db.rollback();
             await db.release();
             return;
@@ -632,7 +632,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
 
         const seller = await getUserSimpleByID(db, item.seller_id);
         if (seller === null) {
-            outputErrorMessage(reply, "seller not found", 404)
+            replyError(reply, "seller not found", 404)
             await db.rollback();
             await db.release();
             return;
@@ -660,7 +660,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         if (item.buyer_id !== undefined && item.buyer_id !== 0) {
             const buyer = await getUserSimpleByID(db, item.buyer_id);
             if (buyer === null) {
-                outputErrorMessage(reply, "buyer not found", 404);
+                replyError(reply, "buyer not found", 404);
                 await db.rollback();
                 await db.release();
                 return;
@@ -684,7 +684,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
             }
 
             if (shipping === null) {
-                outputErrorMessage(reply, "shipping not found", 404);
+                replyError(reply, "shipping not found", 404);
                 await db.rollback();
                 await db.release();
                 return;
@@ -694,7 +694,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
                 const res = await shipmentStatus(await getShipmentServiceURL(db), {reserve_id: shipping.reserve_id});
                 itemDetail.shipping_status = res.status;
             } catch (error) {
-                outputErrorMessage(reply, "failed to request to shipment service");
+                replyError(reply, "failed to request to shipment service");
                 await db.rollback();
                 await db.release();
                 return;
@@ -729,14 +729,14 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const userIdStr = req.params.user_id;
     const userId = parseInt(userIdStr, 10);
     if (userId === undefined || isNaN(userId)) {
-        outputErrorMessage(reply, "incorrect user id", 400);
+        replyError(reply, "incorrect user id", 400);
         return;
     }
 
     const db = await getDBConnection();
     const userSimple = await getUserSimpleByID(db, userId);
     if (userSimple === null) {
-        outputErrorMessage(reply, "user not found", 404);
+        replyError(reply, "user not found", 404);
         await db.release();
         return;
     }
@@ -746,7 +746,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (itemIDStr !== undefined && itemIDStr !== "") {
         itemID = parseInt(itemIDStr, 10);
         if (isNaN(itemID) || itemID <= 0) {
-            outputErrorMessage(reply, "item_id param error", 400);
+            replyError(reply, "item_id param error", 400);
             await db.release();
             return;
         }
@@ -756,7 +756,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
     if (createdAtStr !== undefined && createdAtStr !== "") {
         createdAt = parseInt(createdAtStr, 10);
         if (isNaN(createdAt) || createdAt <= 0) {
-            outputErrorMessage(reply, "created_at param error", 400);
+            replyError(reply, "created_at param error", 400);
             await db.release();
             return;
         }
@@ -801,7 +801,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
     for (const item of items) {
         const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
-            outputErrorMessage(reply, "category not found", 404)
+            replyError(reply, "category not found", 404)
             await db.release();
             return;
         }
@@ -843,14 +843,14 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     const itemIdStr = req.params.item_id;
     const itemId = parseInt(itemIdStr, 10);
     if (itemId === undefined || isNaN(itemId)) {
-        outputErrorMessage(reply, "incorrect item id", 400);
+        replyError(reply, "incorrect item id", 400);
         return;
     }
 
     const db = await getDBConnection();
     const user = await getLoginUser(req, db);
     if (user === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -863,21 +863,21 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     }
 
     if (item === null) {
-        outputErrorMessage(reply, "item not found", 404);
+        replyError(reply, "item not found", 404);
         await db.release();
         return;
     }
 
     const category = await getCategoryByID(db, item.category_id);
     if (category === null) {
-        outputErrorMessage(reply, "category not found", 404)
+        replyError(reply, "category not found", 404)
         await db.release();
         return;
     }
 
     const seller = await getUserSimpleByID(db, item.seller_id);
     if (seller === null) {
-        outputErrorMessage(reply, "seller not found", 404)
+        replyError(reply, "seller not found", 404)
         await db.release();
         return;
     }
@@ -904,7 +904,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     if ((user.id === item.seller_id || user.id === item.buyer_id) && item.buyer_id !== 0) {
         const buyer = await getUserSimpleByID(db, item.buyer_id);
         if (buyer === null) {
-            outputErrorMessage(reply, "buyer not found", 404);
+            replyError(reply, "buyer not found", 404);
             await db.release();
             return;
         }
@@ -926,7 +926,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
             }
 
             if (shipping === null) {
-                outputErrorMessage(reply, "shipping not found", 404);
+                replyError(reply, "shipping not found", 404);
                 await db.release();
                 return;
             }
@@ -952,12 +952,12 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const price = req.body.item_price;
 
     if (csrfToken !== req.cookies.csrf_token) {
-        outputErrorMessage(reply, "csrf token error", 422)
+        replyError(reply, "csrf token error", 422)
         return;
     }
 
     if (price < ItemMinPrice || price > ItemMaxPrice) {
-        outputErrorMessage(reply, ItemPriceErrMsg, 400);
+        replyError(reply, ItemPriceErrMsg, 400);
         return;
     }
 
@@ -965,7 +965,7 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     const seller = await getLoginUser(req, db);
     if (seller === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -980,13 +980,13 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (targetItem === null) {
-        outputErrorMessage(reply, "item not found");
+        replyError(reply, "item not found");
         await db.release();
         return;
     }
 
     if (targetItem.seller_id !== seller.id) {
-        outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
+        replyError(reply, "自分の商品以外は編集できません", 403);
         await db.release();
         return;
     }
@@ -996,7 +996,7 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
     await db.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [targetItem.id]);
 
     if (targetItem.status !== ItemStatusOnSale) {
-        outputErrorMessage(reply, "販売中の商品以外編集できません", 403);
+        replyError(reply, "販売中の商品以外編集できません", 403);
         await db.rollback();
         return;
     }
@@ -1030,7 +1030,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     const csrfToken = req.body.csrf_token;
 
     if (csrfToken !== req.cookies.csrf_token) {
-        outputErrorMessage(reply, "csrf token error", 422);
+        replyError(reply, "csrf token error", 422);
         return;
     }
 
@@ -1039,7 +1039,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     const buyer = await getLoginUser(req, db);
 
     if (buyer === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -1056,21 +1056,21 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     }
 
     if (targetItem === null) {
-        outputErrorMessage(reply, "item not found", 404);
+        replyError(reply, "item not found", 404);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (targetItem.status !== ItemStatusOnSale) {
-        outputErrorMessage(reply, "item is not for sale", 403);
+        replyError(reply, "item is not for sale", 403);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (targetItem.seller_id === buyer.id) {
-        outputErrorMessage(reply, "自分の商品は買えません", 403);
+        replyError(reply, "自分の商品は買えません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1085,7 +1085,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     }
 
     if (seller === null) {
-        outputErrorMessage(reply, "seller not found", 404);
+        replyError(reply, "seller not found", 404);
         await db.rollback();
         await db.release();
         return;
@@ -1093,7 +1093,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     const category = await getCategoryByID(db, targetItem.category_id);
     if (category === null) {
-        outputErrorMessage(reply, "category id error", 500);
+        replyError(reply, "category id error", 500);
         await db.rollback();
         await db.release();
         return;
@@ -1143,20 +1143,20 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
             });
 
             if (pstr.status === "invalid") {
-                outputErrorMessage(reply, "カード情報に誤りがあります", 400);
+                replyError(reply, "カード情報に誤りがあります", 400);
                 await db.rollback();
                 await db.release();
                 return;
             }
             if (pstr.status === "fail") {
-                outputErrorMessage(reply, "カードの残高が足りません", 400);
+                replyError(reply, "カードの残高が足りません", 400);
                 await db.rollback();
                 await db.release();
                 return;
             }
 
             if (pstr.status !== 'ok') {
-                outputErrorMessage(reply, "想定外のエラー", 400)
+                replyError(reply, "想定外のエラー", 400)
                 await db.rollback()
                 await db.release();
                 return;
@@ -1179,13 +1179,13 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
                 ]
             );
         } catch (e) {
-            outputErrorMessage(reply, "payment service is failed", 500)
+            replyError(reply, "payment service is failed", 500)
             await db.rollback();
             await db.release();
             return;
         }
     } catch (error) {
-        outputErrorMessage(reply, "failed to request to shipment service", 500);
+        replyError(reply, "failed to request to shipment service", 500);
         await db.rollback();
         await db.release();
         return;
@@ -1210,36 +1210,36 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const categoryIdStr = req.body.category_id;
 
     if (csrfToken !== req.cookies.csrf_token) {
-        outputErrorMessage(reply, "csrf token error", 422);
+        replyError(reply, "csrf token error", 422);
         return;
     }
 
     const categoryId: number = parseInt(categoryIdStr, 10);
     if (isNaN(categoryId) || categoryId < 0) {
-        outputErrorMessage(reply, "category id error", 400);
+        replyError(reply, "category id error", 400);
         return;
     }
 
     const price: number = parseInt(priceStr, 10);
     if (isNaN(price) || price < 0) {
-        outputErrorMessage(reply, "price error", 400);
+        replyError(reply, "price error", 400);
         return;
     }
 
     if (price < ItemMinPrice || price > ItemMaxPrice) {
-        outputErrorMessage(reply, ItemPriceErrMsg, 400);
+        replyError(reply, ItemPriceErrMsg, 400);
         return;
     }
 
     if (name === null || name === "" || description === null || description === "" || price === 0 || categoryId === 0) {
-        outputErrorMessage(reply, "all parameters are required", 400);
+        replyError(reply, "all parameters are required", 400);
     }
 
     const db = await getDBConnection();
 
     const category = await getCategoryByID(db, categoryId);
     if (category === null || category.parent_id === 0) {
-        outputErrorMessage(reply, "Incorrect category ID", 400);
+        replyError(reply, "Incorrect category ID", 400);
         await db.release();
         return;
     }
@@ -1247,14 +1247,14 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const user = await getLoginUser(req, db);
 
     if (user === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
 
     let ext = path.extname(req.body.image[0].filename);
     if (![".jpg", ".jpeg", ".png", ".gif"].includes(ext)) {
-        outputErrorMessage(reply, "unsupported image format error", 400);
+        replyError(reply, "unsupported image format error", 400);
         await db.release();
         return;
     }
@@ -1279,7 +1279,7 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (seller === null) {
-        outputErrorMessage(reply, "user not found", 404);
+        replyError(reply, "user not found", 404);
         await db.rollback();
         await db.release();
         return;
@@ -1321,7 +1321,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const itemId = req.body.item_id;
 
     if (csrfToken !== req.cookies.csrf_token) {
-        outputErrorMessage(reply, "csrf token error", 422);
+        replyError(reply, "csrf token error", 422);
         return;
     }
 
@@ -1330,7 +1330,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const seller = await getLoginUser(req, db);
 
     if (seller === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -1349,13 +1349,13 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (transactionalEvidence === null) {
-        outputErrorMessage(reply, "transaction_evidences not found", 404);
+        replyError(reply, "transaction_evidences not found", 404);
         await db.release();
         return;
     }
 
     if (transactionalEvidence.seller_id !== seller.id) {
-        outputErrorMessage(reply, "権限がありません", 403);
+        replyError(reply, "権限がありません", 403);
         await db.release();
         return;
     }
@@ -1374,14 +1374,14 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (item === null) {
-        outputErrorMessage(reply, "item not found", 404);
+        replyError(reply, "item not found", 404);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
-        outputErrorMessage(reply, "アイテムが取引中ではありません", 403);
+        replyError(reply, "アイテムが取引中ではありません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1395,7 +1395,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
             ]
         )
         if (rows.length === 0) {
-            outputErrorMessage(reply, "transaction_evidences not found", 404);
+            replyError(reply, "transaction_evidences not found", 404);
             await db.rollback();
             await db.release();
             return;
@@ -1403,7 +1403,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (transactionalEvidence.status !== TransactionEvidenceStatusWaitShipping) {
-        outputErrorMessage(reply, "準備ができていません", 403);
+        replyError(reply, "準備ができていません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1424,7 +1424,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (shipping === null) {
-        outputErrorMessage(reply, "shippings not found", 404);
+        replyError(reply, "shippings not found", 404);
         await db.rollback();
         await db.release();
         return;
@@ -1462,7 +1462,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const itemId = req.body.item_id;
 
     if (csrfToken !== req.cookies.csrf_token) {
-        outputErrorMessage(reply, "csrf token error", 422);
+        replyError(reply, "csrf token error", 422);
         return;
     }
 
@@ -1471,7 +1471,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const seller = await getLoginUser(req, db)
 
     if (seller === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -1490,13 +1490,13 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (transactionEvidence === null) {
-        outputErrorMessage(reply, "transaction_evidence not found", 404);
+        replyError(reply, "transaction_evidence not found", 404);
         await db.release();
         return;
     }
 
     if (transactionEvidence.seller_id !== seller.id) {
-        outputErrorMessage(reply, "権限がありません", 403);
+        replyError(reply, "権限がありません", 403);
         await db.release();
         return;
     }
@@ -1516,14 +1516,14 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (item === null) {
-        outputErrorMessage(reply, "items not found", 404);
+        replyError(reply, "items not found", 404);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
-        outputErrorMessage(reply, "商品が取引中ではありません", 403);
+        replyError(reply, "商品が取引中ではありません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1542,14 +1542,14 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (transactionEvidence === null) {
-        outputErrorMessage(reply, "transaction_evidences not found", 404);
+        replyError(reply, "transaction_evidences not found", 404);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (transactionEvidence.status !== TransactionEvidenceStatusWaitShipping) {
-        outputErrorMessage(reply, "準備ができていません", 403);
+        replyError(reply, "準備ができていません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1570,7 +1570,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (shipping === null) {
-        outputErrorMessage(reply, "shippings not found", 404);
+        replyError(reply, "shippings not found", 404);
         await db.rollback();
         await db.release();
         return;
@@ -1582,7 +1582,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
     try {
         const res = await shipmentStatus(await getShipmentServiceURL(db), params)
         if (!(res.status === ShippingsStatusShipping || res.status === ShippingsStatusDone)) {
-            outputErrorMessage(reply, "shipment service側で配送中か配送完了になっていません", 403);
+            replyError(reply, "shipment service側で配送中か配送完了になっていません", 403);
             await db.rollback();
             await db.release();
             return;
@@ -1598,7 +1598,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         );
 
     } catch (res) {
-        outputErrorMessage(reply, "failed to request to shipment service");
+        replyError(reply, "failed to request to shipment service");
         await db.rollback();
         await db.release();
         return;
@@ -1630,7 +1630,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const itemId = req.body.item_id;
 
     if (csrfToken !== req.cookies.csrf_token) {
-        outputErrorMessage(reply, "csrf token error", 422);
+        replyError(reply, "csrf token error", 422);
         return;
     }
 
@@ -1638,7 +1638,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const buyer = await getLoginUser(req, db);
 
     if (buyer === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -1652,13 +1652,13 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (transactionEvidence === null) {
-        outputErrorMessage(reply, "transaction_evidence not found", 404);
+        replyError(reply, "transaction_evidence not found", 404);
         await db.release();
         return;
     }
 
     if (transactionEvidence.buyer_id !== buyer.id) {
-        outputErrorMessage(reply, "権限がありません", 403);
+        replyError(reply, "権限がありません", 403);
         await db.release();
         return;
     }
@@ -1674,14 +1674,14 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (item === null) {
-        outputErrorMessage(reply, "items not found", 404);
+        replyError(reply, "items not found", 404);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
-        outputErrorMessage(reply, "商品が取引中ではありません", 403);
+        replyError(reply, "商品が取引中ではありません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1695,14 +1695,14 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (transactionEvidence === null) {
-        outputErrorMessage(reply, "transaction_evidences not found", 404);
+        replyError(reply, "transaction_evidences not found", 404);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (transactionEvidence.status !== TransactionEvidenceStatusWaitDone) {
-        outputErrorMessage(reply, "準備ができていません", 403);
+        replyError(reply, "準備ができていません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1717,7 +1717,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
     }
 
     if (shipping === null) {
-        outputErrorMessage(reply, "shipping not found", 404);
+        replyError(reply, "shipping not found", 404);
         await db.rollback();
         await db.release();
         return;
@@ -1728,13 +1728,13 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
             reserve_id: shipping.reserve_id,
         })
         if (res.status !== ShippingsStatusDone) {
-            outputErrorMessage(reply, "shipment service側で配送完了になっていません", 400);
+            replyError(reply, "shipment service側で配送完了になっていません", 400);
             await db.rollback();
             await db.release();
             return;
         }
     } catch (e) {
-        outputErrorMessage(reply, "failed to request to shipment service", 500);
+        replyError(reply, "failed to request to shipment service", 500);
         await db.rollback();
         await db.release();
         return;
@@ -1775,14 +1775,14 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
     const transactionEvidenceIdStr: string = req.params.transaction_evidence_id;
     const transactionEvidenceId: number = parseInt(transactionEvidenceIdStr, 10);
     if (transactionEvidenceId === null || isNaN(transactionEvidenceId)) {
-        outputErrorMessage(reply, "incorrect transaction_evidence id", 400);
+        replyError(reply, "incorrect transaction_evidence id", 400);
         return;
     }
 
     const db = await getDBConnection();
     const seller = await getLoginUser(req, db);
     if (seller === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -1796,13 +1796,13 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
     }
 
     if (transactionEvidence === null) {
-        outputErrorMessage(reply, "transaction_evidence not found", 404);
+        replyError(reply, "transaction_evidence not found", 404);
         await db.release();
         return;
     }
 
     if (transactionEvidence.seller_id !== seller.id) {
-        outputErrorMessage(reply, "権限がありません", 403);
+        replyError(reply, "権限がありません", 403);
         await db.release();
         return;
     }
@@ -1816,19 +1816,19 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
     }
 
     if (shipping === null) {
-        outputErrorMessage(reply, "shippings not found", 404);
+        replyError(reply, "shippings not found", 404);
         await db.release();
         return;
     }
 
     if (shipping.status !== ShippingsStatusWaitPickup && shipping.status !== ShippingsStatusShipping) {
-        outputErrorMessage(reply, "qrcode not available", 403);
+        replyError(reply, "qrcode not available", 403);
         await db.release();
         return;
     }
 
     if (shipping.img_binary.byteLength === 0) {
-        outputErrorMessage(reply, "empty qrcode image")
+        replyError(reply, "empty qrcode image")
         await db.release();
         return;
     }
@@ -1847,7 +1847,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const itemId = req.body.item_id;
 
     if (csrfToken !== req.cookies.csrf_token) {
-        outputErrorMessage(reply, "csrf token error", 422);
+        replyError(reply, "csrf token error", 422);
         return;
     }
 
@@ -1855,7 +1855,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     const user = await getLoginUser(req, db);
     if (user === null) {
-        outputErrorMessage(reply, "no session", 404);
+        replyError(reply, "no session", 404);
         await db.release();
         return;
     }
@@ -1877,14 +1877,14 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (targetItem === null) {
-        outputErrorMessage(reply, "item not found", 404);
+        replyError(reply, "item not found", 404);
         await db.rollback();
         await db.release();
         return;
     }
 
     if (targetItem.seller_id !== user.id) {
-        outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
+        replyError(reply, "自分の商品以外は編集できません", 403);
         await db.rollback();
         await db.release();
         return;
@@ -1904,7 +1904,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     }
 
     if (seller === null) {
-        outputErrorMessage(reply, "user not found", 404);
+        replyError(reply, "user not found", 404);
         await db.rollback();
         await db.release();
         return;
@@ -1913,7 +1913,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     // last bump + 3s > 0
     const now = new Date();
     if (seller.last_bump.getTime() + BumpChargeSeconds > now.getTime()) {
-        outputErrorMessage(reply, "Bump not allowed", 403)
+        replyError(reply, "Bump not allowed", 403)
         await db.rollback();
         await db.release();
         return;
@@ -1993,7 +1993,7 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
 
     if (accountName === undefined || accountName === "" || password === undefined || password === "") {
 
-        outputErrorMessage(reply, "all parameters are required", 400);
+        replyError(reply, "all parameters are required", 400);
         return;
     }
 
@@ -2005,13 +2005,13 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
     }
 
     if (user === null) {
-        outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        replyError(reply, "アカウント名かパスワードが間違えています", 401);
         await db.release();
         return;
     }
 
     if (!await comparePassword(password, user.hashed_password)) {
-        outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        replyError(reply, "アカウント名かパスワードが間違えています", 401);
         await db.release();
         return;
     }
@@ -2041,7 +2041,7 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
     const password = rr.password;
 
     if (accountName === undefined || accountName === "" || password === undefined || password === "" || address === undefined || address === "") {
-        outputErrorMessage(reply, "all parameters are required", 400);
+        replyError(reply, "all parameters are required", 400);
         return;
     }
 
@@ -2055,7 +2055,7 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
     );
 
     if (rows.length > 0) {
-        outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
+        replyError(reply, "アカウント名かパスワードが間違えています", 401);
         await db.release();
         return;
     }
@@ -2132,7 +2132,7 @@ fastify.listen(8000, (err, _address) => {
     }
 });
 
-function outputErrorMessage(reply: FastifyReply<ServerResponse>, message: string, status = 500) {
+function replyError(reply: FastifyReply<ServerResponse>, message: string, status = 500) {
     reply.code(status)
         .type("application/json")
         .send({"error": message});
