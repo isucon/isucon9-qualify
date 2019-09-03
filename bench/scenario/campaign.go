@@ -52,10 +52,12 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		<-time.After(10 * time.Second)
+		// ログインユーザーがある程度溜まらないと実施できないので少し待つ
+		// 8s毎に実行されるので60sだと最大で5回実行される
+		<-time.After(13 * time.Second)
 
 	L:
-		for j := 0; j < ExecutionSeconds/10; j++ {
+		for j := 0; j < (ExecutionSeconds-13)/8; j++ {
 			ch := time.After(8 * time.Second)
 
 			isIncrease := popularListing(ctx, critical, 80+j*20, 1000+j*100)
