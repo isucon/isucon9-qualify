@@ -42,7 +42,6 @@ $ cd webapp/public
 $ unzip initial.zip
 $ rm -rf upload
 $ mv v3_initial_data upload
-$ touch upload/.gitkeep
 
 # ベンチマーク用画像データダウンロード
 
