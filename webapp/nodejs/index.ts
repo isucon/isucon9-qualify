@@ -1252,8 +1252,17 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         return;
     }
 
-    // TODO ext
-    const ext = '.jpg';
+    let ext = path.extname(req.body.image[0].filename);
+    if (![".jpg", ".jpeg", ".png", ".gif"].includes(ext)) {
+        outputErrorMessage(reply, "unsupported image format error", 400);
+        await conn.release();
+        return;
+    }
+
+    if (ext === ".jpeg") {
+        ext = ".jpg";
+    }
+
 
     const imgName = `${await getRandomString(16)}${ext}`;
 
