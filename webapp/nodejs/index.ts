@@ -216,7 +216,7 @@ type ResUserItems = {
 }
 
 const fastify = createFastify({
-    logger: { level: 'warn' }
+    logger: {level: 'warn'}
 });
 
 fastify.register(fastifyStatic, {
@@ -225,7 +225,9 @@ fastify.register(fastifyStatic, {
 
 fastify.register(fastifyCookie);
 
-fastify.register(fastifyMultipart);
+fastify.register(fastifyMultipart, {
+    addToBody: true,
+});
 
 fastify.register(fastifyMysql, {
     host: process.env.MYSQL_HOST || "127.0.0.1",
@@ -1201,6 +1203,108 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 }
 
 async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
+    const csrfToken = req.body.csrf_token;
+    const name = req.body.name;
+    const description = req.body.description;
+    const priceStr = req.body.price;
+    const categoryIdStr = req.body.category_id;
+
+    if (csrfToken !== req.cookies.csrf_token) {
+        outputErrorMessage(reply, "csrf token error", 422);
+        return;
+    }
+
+    const categoryId: number = parseInt(categoryIdStr, 10);
+    if (isNaN(categoryId) || categoryId < 0) {
+        outputErrorMessage(reply, "category id error", 400);
+        return;
+    }
+
+    const price: number = parseInt(priceStr, 10);
+    if (isNaN(price) || price < 0) {
+        outputErrorMessage(reply, "price error", 400);
+        return;
+    }
+
+    if (price < ItemMinPrice || price > ItemMaxPrice) {
+        outputErrorMessage(reply, ItemPriceErrMsg, 400);
+        return;
+    }
+
+    if (name === null || name === "" || description === null || description === "" || price === 0 || categoryId === 0) {
+        outputErrorMessage(reply, "all parameters are required", 400);
+    }
+
+    const conn = await getConnection();
+
+    const category = await getCategoryByID(conn, categoryId);
+    if (category === null || category.parent_id === 0) {
+        outputErrorMessage(reply, "Incorrect category ID", 400);
+        await conn.release();
+        return;
+    }
+
+    const user = await getLoginUser(req, conn);
+
+    if (user === null) {
+        outputErrorMessage(reply, "no session", 404);
+        await conn.release();
+        return;
+    }
+
+    // TODO ext
+    const ext = '.jpg';
+
+    const imgName = `${await getRandomString(16)}${ext}`;
+
+    await fs.promises.writeFile(`../public/upload/${imgName}`, req.body.file);
+
+    await conn.beginTransaction();
+
+    let seller: User | null = null;
+    {
+        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", [user.id]);
+        for (const row of rows) {
+            seller = row as User;
+        }
+    }
+
+    if (seller === null) {
+        outputErrorMessage(reply, "user not found", 404);
+        await conn.rollback();
+        await conn.release();
+        return;
+    }
+
+    const [result] = await conn.query("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+        seller.id,
+        ItemStatusOnSale,
+        name,
+        price,
+        description,
+        imgName,
+        category.id,
+    ]);
+
+    const itemId = result.insertId;
+
+    const now = new Date();
+    await conn.query("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?", [
+        seller.num_sell_items + 1,
+        now,
+        seller.id,
+    ]);
+
+    await conn.commit();
+    await conn.release();
+
+    reply
+        .code(200)
+        .type("application/json;charset=utf-8")
+        .send({
+            id: itemId,
+        });
+
 }
 
 async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
@@ -1478,7 +1582,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
             ]
         );
 
-    } catch(res) {
+    } catch (res) {
         outputErrorMessage(reply, "failed to request to shipment service");
         await conn.rollback();
         await conn.release();
@@ -1614,7 +1718,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
             await conn.release();
             return;
         }
-    } catch (e)  {
+    } catch (e) {
         outputErrorMessage(reply, "failed to request to shipment service", 500);
         await conn.rollback();
         await conn.release();
@@ -2076,7 +2180,7 @@ async function getRandomString(length: number): Promise<string> {
     });
 }
 
-async function getConfigByName(conn: MySQLQueryable, name: string): Promise<string|null> {
+async function getConfigByName(conn: MySQLQueryable, name: string): Promise<string | null> {
     let config: Config | null = null;
     {
         const [rows] = await conn.query("SELECT * FROM `configs` WHERE `name` = ?", [name]);
