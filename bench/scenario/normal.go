@@ -12,10 +12,10 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (bool, error) {
+func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, error) {
 	s1, err := session.NewSessionForInialize()
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
 	return s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
