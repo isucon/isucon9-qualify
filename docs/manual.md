@@ -58,26 +58,24 @@ TODO
 
 ## 参照実装の切り替え方法
 
-初期状態では[TODO: Perl]による実装が起動している状態になります。
+初期状態ではGoによる実装が起動している状態になります。
 
 各言語実装は `systemd` で管理されています。
-例えば、参照実装をPerlからGoに切り替えるには次のようにします。
+例えば、参照実装をGoからPerlに切り替えるには次のようにします。
 
 ```sh
-$ sudo systemctl stop    torb.perl
-$ sudo systemctl disable torb.perl
-$ sudo systemctl start   torb.go
-$ sudo systemctl enable  torb.go
+$ sudo systemctl stop    isucari.go.service
+$ sudo systemctl disable isucari.go.service
+$ sudo systemctl start   isucari.perl.service
+$ sudo systemctl enable  isucari.perl.service
 ```
 
-ただし、PHPを使う場合のみ、 `systemd` の設定変更の他に、次のように [TODO: `h2o`] の設定ファイルの変更が必要です。
+ただし、PHPを使う場合のみ、 `systemd` の設定変更の他に、次のように nginx の設定ファイルの変更が必要です。
 
 ```sh
-$ sudo rm /etc/h2o/h2o.conf
-$ sudo ln -s /etc/h2o/php-h2o.conf /etc/h2o/h2o.conf
-$ sudo systemctl restart h2o
-
-# PHP以外の実装用のh2o.confは、 /etc/h2o/default-h2o.conf です。
+$ sudo unlink /etc/nginx/sites-enabled/isucari.conf
+$ sudo ln -s /etc/nginx/sites-available/isucari.php.conf /etc/nginx/sites-enabled/isucari.conf
+$ sudo systemctl restart nginx.service
 ```
 
 
