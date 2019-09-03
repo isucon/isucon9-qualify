@@ -12,10 +12,13 @@ import (
 )
 
 const (
-	NumLoadScenario1 = 3
-	NumLoadScenario2 = 6
-	NumLoadScenario3 = 6
-	NumLoadScenario4 = 3
+	// シナリオ(1,2,3,4) = 並列数(1,2,2,1)
+	// これを負荷の1単位とする
+	// 1だとLoad内のfor loopが必要ないが、調整のため残す
+	NumLoadScenario1 = 1
+	NumLoadScenario2 = 2
+	NumLoadScenario3 = 2
+	NumLoadScenario4 = 1
 )
 
 func Load(ctx context.Context, critical *fails.Critical) {
