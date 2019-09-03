@@ -298,6 +298,50 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 	}()
 
+	// verify scenario #9
+	// 静的ファイルチェック
+	// ベンチマーカーにmd5値を書いておく方針だと、静的ファイル更新時にベンチマーカーの更新も必要になるし、全く同じ静的ファイルを生成するのは数ヶ月後には困難になっている
+	// 今回は指定されたディレクトリにあるファイルと同じかどうかを確認する
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		s1, err := session.NewSession()
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		jsFiles, cssFiles := asset.GetStaticFiles()
+
+		for _, file := range jsFiles {
+			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
+			if err != nil {
+				// 大した数ないのでここは続行してみる
+				critical.Add(err)
+			}
+
+			if md5Str != file.MD5Str {
+				// 大した数ないのでここは続行してみる
+				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+			}
+		}
+
+		for _, file := range cssFiles {
+			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
+			if err != nil {
+				// 大した数ないのでここは続行してみる
+				critical.Add(err)
+			}
+
+			if md5Str != file.MD5Str {
+				// 大した数ないのでここは続行してみる
+				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+			}
+		}
+
+	}()
+
 	wg.Wait()
 
 	return critical

@@ -49,12 +49,14 @@ func main() {
 	conf := Config{}
 	allowedIPStr := ""
 	dataDir := ""
+	staticDir := ""
 
 	flags.StringVar(&conf.TargetURLStr, "target-url", "http://127.0.0.1:8000", "target url")
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
 	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
 	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
 	flags.StringVar(&dataDir, "data-dir", "initial-data", "data directory")
+	flags.StringVar(&staticDir, "static-dir", "webapp/public/static", "static file directory")
 	flags.StringVar(&allowedIPStr, "allowed-ips", "", "allowed ips (comma separated)")
 
 	err := flags.Parse(os.Args[1:])
@@ -92,7 +94,7 @@ func main() {
 	}
 
 	// 初期データの準備
-	asset.Initialize(dataDir)
+	asset.Initialize(dataDir, staticDir)
 	scenario.InitSessionPool()
 
 	log.Print("=== initialize ===")
