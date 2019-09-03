@@ -2,8 +2,10 @@ package asset
 
 import (
 	"bufio"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"os"
@@ -83,6 +85,11 @@ type ImageMD5 struct {
 	MD5  string `json:"md5"`
 }
 
+type StaticMD5 struct {
+	URLPath string
+	MD5Str  string
+}
+
 var (
 	users                map[int64]AppUser
 	activeSellerIDs      []int64
@@ -96,6 +103,8 @@ var (
 	keywords             []string
 	imageFiles           []string
 	imageMD5Lists        map[string]string
+	cssFiles             []StaticMD5
+	jsFiles              []StaticMD5
 	muItem               sync.RWMutex
 	muUser               sync.RWMutex
 	muImageFile          sync.Mutex
@@ -105,7 +114,7 @@ var (
 )
 
 // Initialize is a function to load initial data
-func Initialize(dataDir string) {
+func Initialize(dataDir, staticDir string) {
 	users = make(map[int64]AppUser)
 	activeSellerIDs = make([]int64, 0, 400)
 	buyerIDs = make([]int64, 0, 1000)
@@ -116,6 +125,8 @@ func Initialize(dataDir string) {
 	userItems = make(map[int64][]int64)
 	transactionEvidences = make(map[int64]AppTransactionEvidence)
 	imageFiles = make([]string, 0, 10000)
+	cssFiles = make([]StaticMD5, 0, 10)
+	jsFiles = make([]StaticMD5, 0, 10)
 	imageMD5Lists = make(map[string]string)
 
 	f, err := os.Open(filepath.Join(dataDir, "result/users_json.txt"))
@@ -235,15 +246,93 @@ func Initialize(dataDir string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer d.Close()
 
 	files, err := d.Readdir(-1)
 	if err != nil {
 		log.Fatal(err)
 	}
+	d.Close()
 
 	for _, file := range files {
 		imageFiles = append(imageFiles, filepath.Join(dataDir, "images", file.Name()))
+	}
+
+	d, err = os.Open(filepath.Join(staticDir, "js"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files, err = d.Readdir(-1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	d.Close()
+
+	for _, file := range files {
+		fName := file.Name()
+
+		if !strings.HasSuffix(fName, ".js") {
+			continue
+		}
+
+		log.Print(fName)
+
+		f, err := os.Open(filepath.Join(staticDir, "js", fName))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		md5Str, err := calcMD5(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		jsFiles = append(jsFiles, StaticMD5{
+			URLPath: fmt.Sprintf("/static/js/%s", fName),
+			MD5Str:  md5Str,
+		})
+	}
+
+	if len(jsFiles) == 0 {
+		log.Fatal("jsファイルが見つかりません")
+	}
+
+	d, err = os.Open(filepath.Join(staticDir, "css"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files, err = d.Readdir(-1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	d.Close()
+
+	for _, file := range files {
+		fName := file.Name()
+
+		if !strings.HasSuffix(fName, ".css") {
+			continue
+		}
+
+		f, err := os.Open(filepath.Join(staticDir, "css", fName))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		md5Str, err := calcMD5(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		cssFiles = append(cssFiles, StaticMD5{
+			URLPath: fmt.Sprintf("/static/css/%s", fName),
+			MD5Str:  md5Str,
+		})
+	}
+
+	if len(cssFiles) == 0 {
+		log.Fatal("cssファイルが見つかりません")
 	}
 
 	rand.Shuffle(len(activeSellerIDs), func(i, j int) { activeSellerIDs[i], activeSellerIDs[j] = activeSellerIDs[j], activeSellerIDs[i] })
@@ -428,6 +517,10 @@ func GetTransactionEvidence(id int64) (AppTransactionEvidence, bool) {
 	return te, ok
 }
 
+func GetStaticFiles() ([]StaticMD5, []StaticMD5) {
+	return jsFiles, cssFiles
+}
+
 func GenText(length int, isLine bool) string {
 	texts := make([]string, 0, length)
 
@@ -446,4 +539,14 @@ func GenText(length int, isLine bool) string {
 	}
 
 	return strings.Join(texts, "")
+}
+
+func calcMD5(f io.Reader) (string, error) {
+	h := md5.New()
+	_, err := io.Copy(h, f)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

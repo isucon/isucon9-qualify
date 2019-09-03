@@ -603,6 +603,34 @@ func (s *Session) DownloadItemImageURL(ctx context.Context, apath string) (md5St
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
+func (s *Session) DownloadStaticURL(ctx context.Context, apath string) (md5Str string, err error) {
+	req, err := s.newGetRequest(ShareTargetURLs.AppURL, apath)
+	if err != nil {
+		return "", failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
+	}
+
+	req = req.WithContext(ctx)
+
+	res, err := s.Do(req)
+	if err != nil {
+		return "", failure.Wrap(err, failure.Messagef("GET %s: リクエストに失敗しました", apath))
+	}
+	defer res.Body.Close()
+
+	err = checkStatusCode(res, http.StatusOK)
+	if err != nil {
+		return "", err
+	}
+
+	h := md5.New()
+	_, err = io.Copy(h, res.Body)
+	if err != nil {
+		return "", failure.Wrap(err, failure.Messagef("GET %s: bodyの読み込みに失敗しました", apath))
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
 func (s *Session) Bump(ctx context.Context, itemID int64) (int64, error) {
 	b, _ := json.Marshal(reqBump{
 		CSRFToken: s.csrfToken,
