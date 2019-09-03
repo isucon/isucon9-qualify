@@ -233,11 +233,11 @@ post '/initialize' => [qw/allow_json_request/] => sub {
         );
     }
 
-    # Campaign 実施時は 1 にする
-    my $is_campaign = 0;
+    # キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと。
+    my $campaign = 0;
 
     $c->render_json({
-        is_campaign => bool $is_campaign
+        campaign => number $campaign
     });
 };
 
