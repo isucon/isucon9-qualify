@@ -49,12 +49,14 @@ func main() {
 	conf := Config{}
 	allowedIPStr := ""
 	dataDir := ""
+	staticDir := ""
 
 	flags.StringVar(&conf.TargetURLStr, "target-url", "http://127.0.0.1:8000", "target url")
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
 	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
 	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
 	flags.StringVar(&dataDir, "data-dir", "initial-data", "data directory")
+	flags.StringVar(&staticDir, "static-dir", "webapp/public/static", "static file directory")
 	flags.StringVar(&allowedIPStr, "allowed-ips", "", "allowed ips (comma separated)")
 
 	err := flags.Parse(os.Args[1:])
@@ -78,10 +80,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 外部サービスのレイテンシを追加
-	ss.SetDelay(800 * time.Millisecond)
-	sp.SetDelay(800 * time.Millisecond)
-
 	scenario.SetShipment(ss)
 	scenario.SetPayment(sp)
 
@@ -96,7 +94,7 @@ func main() {
 	}
 
 	// 初期データの準備
-	asset.Initialize(dataDir)
+	asset.Initialize(dataDir, staticDir)
 	scenario.InitSessionPool()
 
 	log.Print("=== initialize ===")
@@ -138,6 +136,12 @@ func main() {
 	defer cancel()
 
 	log.Print("=== validation ===")
+
+	// 外部サービスのレイテンシを追加
+	// verify時にもレイテンシを入れていると時間がかかるので、Validationで入れる
+	ss.SetDelay(800 * time.Millisecond)
+	sp.SetDelay(800 * time.Millisecond)
+
 	// 一番大切なメイン処理：checkとloadの大きく2つの処理を行う
 	// checkはアプリケーションが正しく動いているか常にチェックする
 	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる

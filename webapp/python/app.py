@@ -69,7 +69,7 @@ def dbh():
 
     flask.g.db = MySQLdb.connect(
         host=os.getenv('MYSQL_HOST', '127.0.0.1'),
-        port=os.getenv('MYSQL_PORT', 3306),
+        port=int(os.getenv('MYSQL_PORT', 3306)),
         user=os.getenv('MYSQL_USER', 'isucari'),
         password=os.getenv('MYSQL_PASS', 'isucari'),
         db=os.getenv('MYSQL_DBNAME', 'isucari'),
@@ -223,7 +223,31 @@ def get_image_url(image_name):
 # API
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
+    conn = dbh()
+
     subprocess.call(["../sql/init.sh"])
+
+    payment_service_url = flask.request.json.get('payment_service_url', Constants.DEFAULT_PAYMENT_SERVICE_URL)
+    shipment_service_url = flask.request.json.get('shipment_service_url', Constants.DEFAULT_SHIPMENT_SERVICE_URL)
+
+    conn.begin()
+    with conn.cursor() as c:
+        try:
+            sql = "INSERT INTO `configs` (`name`, `val`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)"
+
+            c.execute(sql, (
+                "payment_service_url",
+                payment_service_url
+            ))
+            c.execute(sql, (
+                "shipment_service_url",
+                shipment_service_url
+            ))
+            conn.commit()
+        except MySQLdb.Error as err:
+            conn.rollback()
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
 
     return flask.jsonify({
         "is_campaign": False,  # TODO: Campaign 実施時は true にする
@@ -1241,7 +1265,7 @@ def get_settings():
         user=to_user_json(get_user()),
         csrf_token=flask.session.get('csrf_token'),
         categories=categories,
-        payment_service_url=Constants.DEFAULT_PAYMENT_SERVICE_URL
+        payment_service_url=get_payment_service_url()
     ))
 
 
@@ -1336,4 +1360,4 @@ def get_index(*args, **kwargs):
 # @app.route("/*")
 
 if __name__ == "__main__":
-    app.run(port=8080, debug=True, threaded=True)
+    app.run(port=8000, debug=True, threaded=True)
