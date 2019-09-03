@@ -388,7 +388,7 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 	if err != nil {
 		return err
 	}
-	if loop < 50 && asset.ItemPerPage != len(items) { // MEMO 50件よりはみないだろう
+	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
 	}
 	for _, item := range items {
