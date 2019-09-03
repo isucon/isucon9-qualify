@@ -39,7 +39,7 @@ interface MySQLClient extends MySQLQueryable {
 declare module "fastify" {
     interface FastifyInstance<HttpServer, HttpRequest, HttpResponse> {
         mysql: MySQLQueryable & {
-            getConnection(): Promise<MySQLClient>;
+            getDBConnection(): Promise<MySQLClient>;
         };
     }
 
@@ -247,8 +247,8 @@ function buildUriFor<T extends IncomingMessage>(request: FastifyRequest<T>) {
     };
 }
 
-async function getConnection() {
-    return fastify.mysql.getConnection();
+async function getDBConnection() {
+    return fastify.mysql.getDBConnection();
 }
 
 // API
@@ -295,7 +295,7 @@ async function postInitialize(req: FastifyRequest, reply: FastifyReply<ServerRes
 
     await execFile("../sql/init.sh");
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     await conn.query(
         "INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
@@ -341,7 +341,7 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     }
 
     const items: Item[] = [];
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     if (itemId > 0 && createdAt > 0) {
         const [rows,] = await conn.query(
             "SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
@@ -426,7 +426,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const rootCategory = await getCategoryByID(conn, rootCategoryId);
     if (rootCategory === null || rootCategory.parent_id !== 0) {
         outputErrorMessage(reply, "category not found");
@@ -547,7 +547,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
 }
 
 async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const user = await getLoginUser(req, conn);
 
     if (user === null) {
@@ -733,7 +733,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const userSimple = await getUserSimpleByID(conn, userId);
     if (userSimple === null) {
         outputErrorMessage(reply, "user not found", 404);
@@ -847,7 +847,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const user = await getLoginUser(req, conn);
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
@@ -961,7 +961,7 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     const seller = await getLoginUser(req, conn);
     if (seller === null) {
@@ -1034,7 +1034,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     const buyer = await getLoginUser(req, conn);
 
@@ -1235,7 +1235,7 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         outputErrorMessage(reply, "all parameters are required", 400);
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     const category = await getCategoryByID(conn, categoryId);
     if (category === null || category.parent_id === 0) {
@@ -1325,7 +1325,7 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     const seller = await getLoginUser(req, conn);
 
@@ -1466,7 +1466,7 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     const seller = await getLoginUser(req, conn)
 
@@ -1634,7 +1634,7 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const buyer = await getLoginUser(req, conn);
 
     if (buyer === null) {
@@ -1779,7 +1779,7 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const seller = await getLoginUser(req, conn);
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
@@ -1851,7 +1851,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     const user = await getLoginUser(req, conn);
     if (user === null) {
@@ -1955,7 +1955,7 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
     const csrfToken = req.cookies.csrf_token;
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const user = await getLoginUser(req, conn);
 
     const res = {
@@ -1997,7 +1997,7 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const [rows] = await conn.query("SELECT * FROM `users` WHERE `account_name` = ?", [accountName])
     let user: User | null = null;
     for (const row of rows) {
@@ -2045,7 +2045,7 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getConnection();
+    const conn = await getDBConnection();
 
     const [rows] = await conn.query(
         "SELECT * FROM `users` WHERE `account_name` = ?",
@@ -2095,7 +2095,7 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
 }
 
 async function getReports(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
-    const conn = await getConnection();
+    const conn = await getDBConnection();
     const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `id` > 15007");
     const transactionEvidences: TransactionEvidence[] = [];
     for (const row of rows) {
