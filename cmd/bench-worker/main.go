@@ -206,7 +206,8 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 		fmt.Sprintf("-shipment-url=https://%s", fmt.Sprintf("shipment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-target-url=https://%s", target.GlobalIP),
 		fmt.Sprintf("-allowed-ips=%s", strings.Join(allowedIPs, ",")),
-		fmt.Sprintf("-data-dir=/home/isucon/isucari/initial-data"))
+		fmt.Sprintf("-data-dir=/home/isucon/isucari/initial-data"),
+		fmt.Sprintf("-static-dir=/home/isucon/isucari/webapp/public/static"))
 
 	var (
 		stdout bytes.Buffer
