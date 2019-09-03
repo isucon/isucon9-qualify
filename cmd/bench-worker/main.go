@@ -52,6 +52,7 @@ type Result struct {
 type JobResult struct {
 	Stdout string
 	Stderr string
+	Status string
 }
 
 type JobResultStdout struct {
@@ -115,10 +116,17 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 	status := "done"
 	var jobResultStdout JobResultStdout
 	if err := json.NewDecoder(strings.NewReader(jobResult.Stdout)).Decode(&jobResultStdout); err != nil {
+		msg := ""
+		if jobResult.Status == "timeout" {
+			msg = "ベンチマーク実行を指定時間内に完了することができませんでした"
+		}
+		if jobResult.Status == "fail" {
+			msg = "運営に連絡してください"
+		}
 		jobResultStdout = JobResultStdout{
 			Pass: false,
 			Score: 0,
-			Messages: []string{"運営に連絡してください"},
+			Messages: []string{msg},
 		}
 		status = "aborted"
 	}
@@ -207,7 +215,22 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err = cmd.Run()
+	status := "success"
+	done := make(chan error, 1)
+	go func () {
+		done <- cmd.Run()
+	}()
+
+	select {
+	case e := <-done:
+		err = e
+		if err != nil {
+			status = "fail"
+		}
+	case <-ctx.Done():
+		status = "timeout"
+		err = fmt.Errorf("benchmarking timeout")
+	}
 
 	// triming too long stderr
 	stderrStr := stderr.String()
@@ -218,6 +241,7 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 	return &JobResult{
 		Stdout: stdout.String(),
 		Stderr: stderrStr,
+		Status: status,
 	}, err
 }
 
@@ -241,8 +265,8 @@ func main() {
 			log.Println(err)
 		}
 
-		log.Println(jobResult.Stdout)
 		log.Println(jobResult.Stderr)
+		log.Println(jobResult.Stdout)
 		if err := report(*apiEndpoint, job, jobResult); err != nil {
 			log.Println(err)
 		}

@@ -401,7 +401,7 @@ sub flush_shippings {
         my $status = 'on_sale';
         my $buyer = 0;
 
-        if (rand(100) < $RATE_OF_SOLDOUT && $te_id < 15007) {
+        if (rand(100) < $RATE_OF_SOLDOUT && $te_id < 15007) { # TODO
             $status = 'sold_out';
             $te_id++;
             $buyer = $buyers[$buyer_rr % scalar @buyers];
