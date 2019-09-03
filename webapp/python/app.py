@@ -115,6 +115,24 @@ def get_user():
     return user
 
 
+def get_user_or_none():
+    user_id = flask.session.get("user_id")
+    if user_id is None:
+        return None
+    try:
+        conn = dbh()
+        with conn.cursor() as c:
+            sql = "SELECT * FROM `users` WHERE `id` = %s"
+            c.execute(sql, [user_id])
+            user = c.fetchone()
+            if user is None:
+                return None
+    except MySQLdb.Error as err:
+        app.logger.exception(err)
+        return None
+    return user
+
+
 def get_user_simple_by_id(user_id):
     try:
         conn = dbh()
@@ -1248,6 +1266,12 @@ def post_bump():
 
 @app.route("/settings", methods=["GET"])
 def get_settings():
+    outputs = dict()
+    user = get_user_or_none()
+    if user is not None:
+        outputs['user'] = to_user_json(user)
+    outputs['csrf_token'] = flask.session.get('csrf_token', '')
+
     try:
         conn = dbh()
         sql = "SELECT * FROM `categories`"
@@ -1257,13 +1281,10 @@ def get_settings():
     except MySQLdb.Error as err:
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
+    outputs['categories'] = categories
+    outputs['payment_service_url'] = get_payment_service_url()
 
-    return flask.jsonify(dict(
-        user=to_user_json(get_user()),
-        csrf_token=flask.session.get('csrf_token'),
-        categories=categories,
-        payment_service_url=get_payment_service_url()
-    ))
+    return flask.jsonify(outputs)
 
 
 @app.route("/login", methods=["POST"])
