@@ -39,7 +39,7 @@ interface MySQLClient extends MySQLQueryable {
 declare module "fastify" {
     interface FastifyInstance<HttpServer, HttpRequest, HttpResponse> {
         mysql: MySQLQueryable & {
-            getDBConnection(): Promise<MySQLClient>;
+            getConnection(): Promise<MySQLClient>;
         };
     }
 
@@ -248,7 +248,7 @@ function buildUriFor<T extends IncomingMessage>(request: FastifyRequest<T>) {
 }
 
 async function getDBConnection() {
-    return fastify.mysql.getDBConnection();
+    return fastify.mysql.getConnection();
 }
 
 // API
@@ -295,14 +295,14 @@ async function postInitialize(req: FastifyRequest, reply: FastifyReply<ServerRes
 
     await execFile("../sql/init.sh");
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    await conn.query(
+    await db.query(
         "INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
         ["payment_service_url", ri.payment_service_url]
     );
 
-    await conn.query(
+    await db.query(
         "INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
         ["shipment_service_url", ri.shipment_service_url]
     );
@@ -312,7 +312,7 @@ async function postInitialize(req: FastifyRequest, reply: FastifyReply<ServerRes
         is_campaign: false
     };
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -341,9 +341,9 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     }
 
     const items: Item[] = [];
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
     if (itemId > 0 && createdAt > 0) {
-        const [rows,] = await conn.query(
+        const [rows,] = await db.query(
             "SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 ItemStatusOnSale,
@@ -357,7 +357,7 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
             items.push(row as Item);
         }
     } else {
-        const [rows,] = await conn.query(
+        const [rows,] = await db.query(
             "SELECT * FROM `items` WHERE `status` IN (?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 ItemStatusOnSale,
@@ -373,16 +373,16 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
     let itemSimples: ItemSimple[] = [];
 
     for (const item of items) {
-        const seller = await getUserSimpleByID(conn, item.seller_id);
+        const seller = await getUserSimpleByID(db, item.seller_id);
         if (seller === null) {
             outputErrorMessage(reply, "seller not found", 404)
-            await conn.release();
+            await db.release();
             return;
         }
-        const category = await getCategoryByID(conn, item.category_id);
+        const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
-            await conn.release();
+            await db.release();
             return;
         }
 
@@ -410,7 +410,7 @@ async function getNewItems(req: FastifyRequest, reply: FastifyReply<ServerRespon
         items: itemSimples,
     };
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -426,16 +426,16 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         return;
     }
 
-    const conn = await getDBConnection();
-    const rootCategory = await getCategoryByID(conn, rootCategoryId);
+    const db = await getDBConnection();
+    const rootCategory = await getCategoryByID(db, rootCategoryId);
     if (rootCategory === null || rootCategory.parent_id !== 0) {
         outputErrorMessage(reply, "category not found");
-        await conn.release();
+        await db.release();
         return;
     }
 
     const categoryIDs: number[] = [];
-    const [rows,] = await conn.query("SELECT id FROM `categories` WHERE parent_id=?", [rootCategory.id]);
+    const [rows,] = await db.query("SELECT id FROM `categories` WHERE parent_id=?", [rootCategory.id]);
     for (const row of rows) {
         categoryIDs.push(row.id);
     }
@@ -446,7 +446,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         itemID = parseInt(itemIDStr, 10);
         if (isNaN(itemID) || itemID <= 0) {
             outputErrorMessage(reply, "item_id param error", 400);
-            await conn.release();
+            await db.release();
             return;
         }
     }
@@ -456,14 +456,14 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         createdAt = parseInt(createdAtStr, 10);
         if (isNaN(createdAt) || createdAt <= 0) {
             outputErrorMessage(reply, "created_at param error", 400);
-            await conn.release();
+            await db.release();
             return;
         }
     }
 
     const items: Item[] = [];
     if (itemID > 0 && createdAt > 0) {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 ItemStatusOnSale,
@@ -479,7 +479,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
             items.push(row as Item);
         }
     } else {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 ItemStatusOnSale,
@@ -497,16 +497,16 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
     let itemSimples: ItemSimple[] = [];
 
     for (const item of items) {
-        const seller = await getUserSimpleByID(conn, item.seller_id);
+        const seller = await getUserSimpleByID(db, item.seller_id);
         if (seller === null) {
             outputErrorMessage(reply, "seller not found", 404)
-            await conn.release();
+            await db.release();
             return;
         }
-        const category = await getCategoryByID(conn, item.category_id);
+        const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
-            await conn.release();
+            await db.release();
             return;
         }
 
@@ -537,7 +537,7 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
         has_next: hasNext,
     }
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -547,12 +547,12 @@ async function getNewCategoryItems(req: FastifyRequest, reply: FastifyReply<Serv
 }
 
 async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
-    const conn = await getDBConnection();
-    const user = await getLoginUser(req, conn);
+    const db = await getDBConnection();
+    const user = await getLoginUser(req, db);
 
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
@@ -562,7 +562,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         itemId = parseInt(query['item_id'], 10);
         if (isNaN(itemId) || itemId <= 0) {
             outputErrorMessage(reply, "item_id param error", 400);
-            await conn.release();
+            await db.release();
             return
         }
     }
@@ -572,15 +572,15 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         createdAt = parseInt(query['created_at'], 10);
         if (isNaN(createdAt) || createdAt <= 0) {
             outputErrorMessage(reply, "created_at param error", 400);
-            await conn.release();
+            await db.release();
             return
         }
     }
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
     const items: Item[] = [];
     if (itemId > 0 && createdAt > 0) {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 user.id,
@@ -601,7 +601,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         }
 
     } else {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 user.id,
@@ -622,19 +622,19 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
 
     let itemDetails: ItemDetail[] = [];
     for (const item of items) {
-        const category = await getCategoryByID(conn, item.category_id);
+        const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
-            await conn.rollback();
-            await conn.release();
+            await db.rollback();
+            await db.release();
             return;
         }
 
-        const seller = await getUserSimpleByID(conn, item.seller_id);
+        const seller = await getUserSimpleByID(db, item.seller_id);
         if (seller === null) {
             outputErrorMessage(reply, "seller not found", 404)
-            await conn.rollback();
-            await conn.release();
+            await db.rollback();
+            await db.release();
             return;
         }
 
@@ -658,25 +658,25 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         };
 
         if (item.buyer_id !== undefined && item.buyer_id !== 0) {
-            const buyer = await getUserSimpleByID(conn, item.buyer_id);
+            const buyer = await getUserSimpleByID(db, item.buyer_id);
             if (buyer === null) {
                 outputErrorMessage(reply, "buyer not found", 404);
-                await conn.rollback();
-                await conn.release();
+                await db.rollback();
+                await db.release();
                 return;
             }
             itemDetail.buyer_id = item.buyer_id;
             itemDetail.buyer = buyer;
         }
 
-        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [item.id]);
+        const [rows] = await db.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [item.id]);
         let transactionEvidence: TransactionEvidence | null = null;
         for (const row of rows) {
             transactionEvidence = row as TransactionEvidence;
         }
 
         if (transactionEvidence !== null) {
-            const [rows] = await conn.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id]);
+            const [rows] = await db.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id]);
 
             let shipping: Shipping | null = null;
             for (const row of rows) {
@@ -685,18 +685,18 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
 
             if (shipping === null) {
                 outputErrorMessage(reply, "shipping not found", 404);
-                await conn.rollback();
-                await conn.release();
+                await db.rollback();
+                await db.release();
                 return;
             }
 
             try {
-                const res = await shipmentStatus(await getShipmentServiceURL(conn), {reserve_id: shipping.reserve_id});
+                const res = await shipmentStatus(await getShipmentServiceURL(db), {reserve_id: shipping.reserve_id});
                 itemDetail.shipping_status = res.status;
             } catch (error) {
                 outputErrorMessage(reply, "failed to request to shipment service");
-                await conn.rollback();
-                await conn.release();
+                await db.rollback();
+                await db.release();
                 return;
             }
 
@@ -708,7 +708,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
 
     }
 
-    await conn.commit();
+    await db.commit();
 
     let hasNext = false;
     if (itemDetails.length > TransactionsPerPage) {
@@ -716,7 +716,7 @@ async function getTransactions(req: FastifyRequest, reply: FastifyReply<ServerRe
         itemDetails = itemDetails.slice(0, TransactionsPerPage);
     }
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -733,11 +733,11 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getDBConnection();
-    const userSimple = await getUserSimpleByID(conn, userId);
+    const db = await getDBConnection();
+    const userSimple = await getUserSimpleByID(db, userId);
     if (userSimple === null) {
         outputErrorMessage(reply, "user not found", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
@@ -747,7 +747,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         itemID = parseInt(itemIDStr, 10);
         if (isNaN(itemID) || itemID <= 0) {
             outputErrorMessage(reply, "item_id param error", 400);
-            await conn.release();
+            await db.release();
             return;
         }
     }
@@ -757,14 +757,14 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         createdAt = parseInt(createdAtStr, 10);
         if (isNaN(createdAt) || createdAt <= 0) {
             outputErrorMessage(reply, "created_at param error", 400);
-            await conn.release();
+            await db.release();
             return;
         }
     }
 
     const items: Item[] = [];
     if (itemID > 0 && createdAt > 0) {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 userSimple.id,
@@ -781,7 +781,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
             items.push(row as Item);
         }
     } else {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
             [
                 userSimple.id,
@@ -799,10 +799,10 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     let itemSimples: ItemSimple[] = [];
     for (const item of items) {
-        const category = await getCategoryByID(conn, item.category_id);
+        const category = await getCategoryByID(db, item.category_id);
         if (category === null) {
             outputErrorMessage(reply, "category not found", 404)
-            await conn.release();
+            await db.release();
             return;
         }
 
@@ -831,7 +831,7 @@ async function getUserItems(req: FastifyRequest, reply: FastifyReply<ServerRespo
         items: itemSimples,
     };
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -847,15 +847,15 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         return;
     }
 
-    const conn = await getDBConnection();
-    const user = await getLoginUser(req, conn);
+    const db = await getDBConnection();
+    const user = await getLoginUser(req, db);
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [itemId]);
+    const [rows] = await db.query("SELECT * FROM `items` WHERE `id` = ?", [itemId]);
     let item: Item | null = null;
 
     for (const row of rows) {
@@ -864,21 +864,21 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     if (item === null) {
         outputErrorMessage(reply, "item not found", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    const category = await getCategoryByID(conn, item.category_id);
+    const category = await getCategoryByID(db, item.category_id);
     if (category === null) {
         outputErrorMessage(reply, "category not found", 404)
-        await conn.release();
+        await db.release();
         return;
     }
 
-    const seller = await getUserSimpleByID(conn, item.seller_id);
+    const seller = await getUserSimpleByID(db, item.seller_id);
     if (seller === null) {
         outputErrorMessage(reply, "seller not found", 404)
-        await conn.release();
+        await db.release();
         return;
     }
 
@@ -902,24 +902,24 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     };
 
     if ((user.id === item.seller_id || user.id === item.buyer_id) && item.buyer_id !== 0) {
-        const buyer = await getUserSimpleByID(conn, item.buyer_id);
+        const buyer = await getUserSimpleByID(db, item.buyer_id);
         if (buyer === null) {
             outputErrorMessage(reply, "buyer not found", 404);
-            await conn.release();
+            await db.release();
             return;
         }
 
         itemDetail.buyer_id = item.buyer_id;
         itemDetail.buyer = buyer;
 
-        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [item.id]);
+        const [rows] = await db.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [item.id]);
         let transactionEvidence: TransactionEvidence | null = null;
         for (const row of rows) {
             transactionEvidence = row as TransactionEvidence;
         }
 
         if (transactionEvidence !== null) {
-            const [rows] = await conn.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id])
+            const [rows] = await db.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id])
             let shipping: Shipping | null = null;
             for (const row of rows) {
                 shipping = row as Shipping;
@@ -927,7 +927,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
             if (shipping === null) {
                 outputErrorMessage(reply, "shipping not found", 404);
-                await conn.release();
+                await db.release();
                 return;
             }
 
@@ -938,7 +938,7 @@ async function getItem(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     }
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -961,19 +961,19 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    const seller = await getLoginUser(req, conn);
+    const seller = await getLoginUser(req, db);
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     let targetItem: Item | null = null;
     ;
     {
-        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [itemID]);
+        const [rows] = await db.query("SELECT * FROM `items` WHERE `id` = ?", [itemID]);
         for (const row of rows) {
             targetItem = row as Item;
         }
@@ -981,37 +981,37 @@ async function postItemEdit(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (targetItem === null) {
         outputErrorMessage(reply, "item not found");
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (targetItem.seller_id !== seller.id) {
         outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
 
-    await conn.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [targetItem.id]);
+    await db.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [targetItem.id]);
 
     if (targetItem.status !== ItemStatusOnSale) {
         outputErrorMessage(reply, "販売中の商品以外編集できません", 403);
-        await conn.rollback();
+        await db.rollback();
         return;
     }
 
-    await conn.query("UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?", [price, new Date(), targetItem.id]);
+    await db.query("UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?", [price, new Date(), targetItem.id]);
 
     {
-        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [targetItem.id]);
+        const [rows] = await db.query("SELECT * FROM `items` WHERE `id` = ?", [targetItem.id]);
         for (const row of rows) {
             targetItem = row as Item;
         }
     }
 
-    await conn.commit();
-    await conn.release();
+    await db.commit();
+    await db.release();
 
     reply
         .code(200)
@@ -1034,21 +1034,21 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         return;
     }
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    const buyer = await getLoginUser(req, conn);
+    const buyer = await getLoginUser(req, db);
 
     if (buyer === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
 
     let targetItem: Item | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [req.body.item_id]);
+        const [rows] = await db.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [req.body.item_id]);
 
         for (const row of rows) {
             targetItem = row as Item;
@@ -1057,28 +1057,28 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     if (targetItem === null) {
         outputErrorMessage(reply, "item not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (targetItem.status !== ItemStatusOnSale) {
         outputErrorMessage(reply, "item is not for sale", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (targetItem.seller_id === buyer.id) {
         outputErrorMessage(reply, "自分の商品は買えません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     let seller: User | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", [targetItem.seller_id]);
+        const [rows] = await db.query("SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", [targetItem.seller_id]);
         for (const row of rows) {
             seller = row as User;
         }
@@ -1086,20 +1086,20 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     if (seller === null) {
         outputErrorMessage(reply, "seller not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
-    const category = await getCategoryByID(conn, targetItem.category_id);
+    const category = await getCategoryByID(db, targetItem.category_id);
     if (category === null) {
         outputErrorMessage(reply, "category id error", 500);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
-    const [result] = await conn.query(
+    const [result] = await db.query(
         "INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             targetItem.seller_id,
@@ -1116,7 +1116,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
     const transactionEvidenceId = result.insertId;
 
-    await conn.query(
+    await db.query(
         "UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?",
         [
             buyer.id,
@@ -1127,7 +1127,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
     )
 
     try {
-        const scr = await shipmentCreate(await getShipmentServiceURL(conn), {
+        const scr = await shipmentCreate(await getShipmentServiceURL(db), {
             to_address: buyer.address,
             to_name: buyer.account_name,
             from_address: seller.address,
@@ -1135,7 +1135,7 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
         });
 
         try {
-            const pstr = await paymentToken(await getPaymentServiceURL(conn), {
+            const pstr = await paymentToken(await getPaymentServiceURL(db), {
                 shop_id: PaymentServiceIsucariShopID.toString(),
                 token: req.body.token,
                 api_key: PaymentServiceIsucariAPIKey,
@@ -1144,25 +1144,25 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
 
             if (pstr.status === "invalid") {
                 outputErrorMessage(reply, "カード情報に誤りがあります", 400);
-                await conn.rollback();
-                await conn.release();
+                await db.rollback();
+                await db.release();
                 return;
             }
             if (pstr.status === "fail") {
                 outputErrorMessage(reply, "カードの残高が足りません", 400);
-                await conn.rollback();
-                await conn.release();
+                await db.rollback();
+                await db.release();
                 return;
             }
 
             if (pstr.status !== 'ok') {
                 outputErrorMessage(reply, "想定外のエラー", 400)
-                await conn.rollback()
-                await conn.release();
+                await db.rollback()
+                await db.release();
                 return;
             }
 
-            await conn.query(
+            await db.query(
                 "INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 [
                     transactionEvidenceId,
@@ -1180,19 +1180,19 @@ async function postBuy(req: FastifyRequest, reply: FastifyReply<ServerResponse>)
             );
         } catch (e) {
             outputErrorMessage(reply, "payment service is failed", 500)
-            await conn.rollback();
-            await conn.release();
+            await db.rollback();
+            await db.release();
             return;
         }
     } catch (error) {
         outputErrorMessage(reply, "failed to request to shipment service", 500);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
-    await conn.commit();
-    await conn.release();
+    await db.commit();
+    await db.release();
 
     reply.code(200)
         .type("application/json;charset=utf-8")
@@ -1235,27 +1235,27 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         outputErrorMessage(reply, "all parameters are required", 400);
     }
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    const category = await getCategoryByID(conn, categoryId);
+    const category = await getCategoryByID(db, categoryId);
     if (category === null || category.parent_id === 0) {
         outputErrorMessage(reply, "Incorrect category ID", 400);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    const user = await getLoginUser(req, conn);
+    const user = await getLoginUser(req, db);
 
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     let ext = path.extname(req.body.image[0].filename);
     if (![".jpg", ".jpeg", ".png", ".gif"].includes(ext)) {
         outputErrorMessage(reply, "unsupported image format error", 400);
-        await conn.release();
+        await db.release();
         return;
     }
 
@@ -1268,11 +1268,11 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     await fs.promises.writeFile(`../public/upload/${imgName}`, req.body.image[0].data);
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
 
     let seller: User | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", [user.id]);
+        const [rows] = await db.query("SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", [user.id]);
         for (const row of rows) {
             seller = row as User;
         }
@@ -1280,12 +1280,12 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (seller === null) {
         outputErrorMessage(reply, "user not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
-    const [result] = await conn.query("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+    const [result] = await db.query("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
         seller.id,
         ItemStatusOnSale,
         name,
@@ -1298,14 +1298,14 @@ async function postSell(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const itemId = result.insertId;
 
     const now = new Date();
-    await conn.query("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?", [
+    await db.query("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?", [
         seller.num_sell_items + 1,
         now,
         seller.id,
     ]);
 
-    await conn.commit();
-    await conn.release();
+    await db.commit();
+    await db.release();
 
     reply
         .code(200)
@@ -1325,19 +1325,19 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         return;
     }
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    const seller = await getLoginUser(req, conn);
+    const seller = await getLoginUser(req, db);
 
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     let transactionalEvidence: TransactionEvidence | null = null;
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?",
             [itemId]
         )
@@ -1350,21 +1350,21 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (transactionalEvidence === null) {
         outputErrorMessage(reply, "transaction_evidences not found", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (transactionalEvidence.seller_id !== seller.id) {
         outputErrorMessage(reply, "権限がありません", 403);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
 
     let item: Item | null = null;
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE",
             [itemId]
         );
@@ -1375,20 +1375,20 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (item === null) {
         outputErrorMessage(reply, "item not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
         outputErrorMessage(reply, "アイテムが取引中ではありません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE",
             [
                 transactionalEvidence.id,
@@ -1396,22 +1396,22 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         )
         if (rows.length === 0) {
             outputErrorMessage(reply, "transaction_evidences not found", 404);
-            await conn.rollback();
-            await conn.release();
+            await db.rollback();
+            await db.release();
             return;
         }
     }
 
     if (transactionalEvidence.status !== TransactionEvidenceStatusWaitShipping) {
         outputErrorMessage(reply, "準備ができていません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     let shipping: Shipping | null = null;
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE",
             [
                 transactionalEvidence.id,
@@ -1425,16 +1425,16 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (shipping === null) {
         outputErrorMessage(reply, "shippings not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
-    const img = await shipmentRequest(await getShipmentServiceURL(conn), {
+    const img = await shipmentRequest(await getShipmentServiceURL(db), {
         reserve_id: shipping.reserve_id,
     });
 
-    await conn.query(
+    await db.query(
         "UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
         [
             ShippingsStatusWaitPickup,
@@ -1444,8 +1444,8 @@ async function postShip(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         ]
     );
 
-    await conn.commit();
-    await conn.release();
+    await db.commit();
+    await db.release();
 
     reply
         .code(200)
@@ -1466,19 +1466,19 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    const seller = await getLoginUser(req, conn)
+    const seller = await getLoginUser(req, db)
 
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     let transactionEvidence: TransactionEvidence | null = null;
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `transaction_evidences` WHERE `item_id` = ?",
             [
                 itemId,
@@ -1491,21 +1491,21 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidence not found", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (transactionEvidence.seller_id !== seller.id) {
         outputErrorMessage(reply, "権限がありません", 403);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
 
     let item: Item | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [
+        const [rows] = await db.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [
             itemId,
         ]);
 
@@ -1517,20 +1517,20 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (item === null) {
         outputErrorMessage(reply, "items not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
         outputErrorMessage(reply, "商品が取引中ではありません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE",
             [
                 transactionEvidence.id,
@@ -1543,21 +1543,21 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidences not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (transactionEvidence.status !== TransactionEvidenceStatusWaitShipping) {
         outputErrorMessage(reply, "準備ができていません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     let shipping: Shipping | null = null;
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE",
             [
                 transactionEvidence.id,
@@ -1571,8 +1571,8 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (shipping === null) {
         outputErrorMessage(reply, "shippings not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
@@ -1580,15 +1580,15 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         reserve_id: shipping.reserve_id,
     }
     try {
-        const res = await shipmentStatus(await getShipmentServiceURL(conn), params)
+        const res = await shipmentStatus(await getShipmentServiceURL(db), params)
         if (!(res.status === ShippingsStatusShipping || res.status === ShippingsStatusDone)) {
             outputErrorMessage(reply, "shipment service側で配送中か配送完了になっていません", 403);
-            await conn.rollback();
-            await conn.release();
+            await db.rollback();
+            await db.release();
             return;
         }
 
-        await conn.query(
+        await db.query(
             "UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?",
             [
                 res.status,
@@ -1599,12 +1599,12 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     } catch (res) {
         outputErrorMessage(reply, "failed to request to shipment service");
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
-    await conn.query(
+    await db.query(
         "UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?",
         [
             TransactionEvidenceStatusWaitDone,
@@ -1613,8 +1613,8 @@ async function postShipDone(req: FastifyRequest, reply: FastifyReply<ServerRespo
         ]
     );
 
-    await conn.commit();
-    await conn.release();
+    await db.commit();
+    await db.release();
 
     reply
         .code(200)
@@ -1634,18 +1634,18 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getDBConnection();
-    const buyer = await getLoginUser(req, conn);
+    const db = await getDBConnection();
+    const buyer = await getLoginUser(req, db);
 
     if (buyer === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     let transactionEvidence: TransactionEvidence | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [itemId])
+        const [rows] = await db.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?", [itemId])
         for (const row of rows) {
             transactionEvidence = row as TransactionEvidence;
         }
@@ -1653,21 +1653,21 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidence not found", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (transactionEvidence.buyer_id !== buyer.id) {
         outputErrorMessage(reply, "権限がありません", 403);
-        await conn.release();
+        await db.release();
         return;
     }
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
 
     let item: Item | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [itemId])
+        const [rows] = await db.query("SELECT * FROM `items` WHERE `id` = ? FOR UPDATE", [itemId])
         for (const row of rows) {
             item = row as Item;
         }
@@ -1675,20 +1675,20 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (item === null) {
         outputErrorMessage(reply, "items not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (item.status !== ItemStatusTrading) {
         outputErrorMessage(reply, "商品が取引中ではありません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     {
-        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", [itemId])
+        const [rows] = await db.query("SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE", [itemId])
         for (const row of rows) {
             transactionEvidence = row as TransactionEvidence;
         }
@@ -1696,21 +1696,21 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidences not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (transactionEvidence.status !== TransactionEvidenceStatusWaitDone) {
         outputErrorMessage(reply, "準備ができていません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     let shipping: Shipping | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", [transactionEvidence.id]);
+        const [rows] = await db.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE", [transactionEvidence.id]);
         for (const row of rows) {
             shipping = row as Shipping;
         }
@@ -1718,49 +1718,49 @@ async function postComplete(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (shipping === null) {
         outputErrorMessage(reply, "shipping not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     try {
-        const res = await shipmentStatus(await getShipmentServiceURL(conn), {
+        const res = await shipmentStatus(await getShipmentServiceURL(db), {
             reserve_id: shipping.reserve_id,
         })
         if (res.status !== ShippingsStatusDone) {
             outputErrorMessage(reply, "shipment service側で配送完了になっていません", 400);
-            await conn.rollback();
-            await conn.release();
+            await db.rollback();
+            await db.release();
             return;
         }
     } catch (e) {
         outputErrorMessage(reply, "failed to request to shipment service", 500);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
 
     }
 
-    await conn.query("UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?", [
+    await db.query("UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?", [
         ShippingsStatusDone,
         new Date(),
         transactionEvidence.id,
     ])
 
-    await conn.query("UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?", [
+    await db.query("UPDATE `transaction_evidences` SET `status` = ?, `updated_at` = ? WHERE `id` = ?", [
         TransactionEvidenceStatusDone,
         new Date(),
         transactionEvidence.id,
     ]);
 
-    await conn.query("UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?", [
+    await db.query("UPDATE `items` SET `status` = ?, `updated_at` = ? WHERE `id` = ?", [
         ItemStatusSoldOut,
         new Date(),
         itemId,
     ]);
 
-    await conn.commit();
-    await conn.release();
+    await db.commit();
+    await db.release();
 
     reply
         .code(200)
@@ -1779,17 +1779,17 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
         return;
     }
 
-    const conn = await getDBConnection();
-    const seller = await getLoginUser(req, conn);
+    const db = await getDBConnection();
+    const seller = await getLoginUser(req, db);
     if (seller === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     let transactionEvidence: TransactionEvidence | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `id` = ?", [transactionEvidenceId]);
+        const [rows] = await db.query("SELECT * FROM `transaction_evidences` WHERE `id` = ?", [transactionEvidenceId]);
         for (const row of rows) {
             transactionEvidence = row as TransactionEvidence;
         }
@@ -1797,19 +1797,19 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
 
     if (transactionEvidence === null) {
         outputErrorMessage(reply, "transaction_evidence not found", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (transactionEvidence.seller_id !== seller.id) {
         outputErrorMessage(reply, "権限がありません", 403);
-        await conn.release();
+        await db.release();
         return;
     }
 
     let shipping: Shipping | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id]);
+        const [rows] = await db.query("SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?", [transactionEvidence.id]);
         for (const row of rows) {
             shipping = row as Shipping;
         }
@@ -1817,23 +1817,23 @@ async function getQRCode(req: FastifyRequest, reply: FastifyReply<ServerResponse
 
     if (shipping === null) {
         outputErrorMessage(reply, "shippings not found", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (shipping.status !== ShippingsStatusWaitPickup && shipping.status !== ShippingsStatusShipping) {
         outputErrorMessage(reply, "qrcode not available", 403);
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (shipping.img_binary.byteLength === 0) {
         outputErrorMessage(reply, "empty qrcode image")
-        await conn.release();
+        await db.release();
         return;
     }
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -1851,21 +1851,21 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         return;
     }
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    const user = await getLoginUser(req, conn);
+    const user = await getLoginUser(req, db);
     if (user === null) {
         outputErrorMessage(reply, "no session", 404);
-        await conn.release();
+        await db.release();
         return;
     }
 
 
-    await conn.beginTransaction();
+    await db.beginTransaction();
 
     let targetItem: Item | null = null;
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `items` WHERE `id` = ? FOR UPDATE",
             [
                 itemId,
@@ -1878,21 +1878,21 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (targetItem === null) {
         outputErrorMessage(reply, "item not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     if (targetItem.seller_id !== user.id) {
         outputErrorMessage(reply, "自分の商品以外は編集できません", 403);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
     let seller: User | null = null;
     {
-        const [rows] = await conn.query(
+        const [rows] = await db.query(
             "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE",
             [
                 user.id,
@@ -1905,8 +1905,8 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 
     if (seller === null) {
         outputErrorMessage(reply, "user not found", 404);
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
@@ -1914,12 +1914,12 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
     const now = new Date();
     if (seller.last_bump.getTime() + BumpChargeSeconds > now.getTime()) {
         outputErrorMessage(reply, "Bump not allowed", 403)
-        await conn.rollback();
-        await conn.release();
+        await db.rollback();
+        await db.release();
         return;
     }
 
-    await conn.query(
+    await db.query(
         "UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?",
         [
             now,
@@ -1928,17 +1928,17 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
         ]
     );
 
-    await conn.query("UPDATE `users` SET `last_bump`=? WHERE id=?", [now, seller.id])
+    await db.query("UPDATE `users` SET `last_bump`=? WHERE id=?", [now, seller.id])
 
     {
-        const [rows] = await conn.query("SELECT * FROM `items` WHERE `id` = ?", [itemId]);
+        const [rows] = await db.query("SELECT * FROM `items` WHERE `id` = ?", [itemId]);
         for (const row of rows) {
             targetItem = row as Item;
         }
     }
 
-    await conn.commit();
-    await conn.release();
+    await db.commit();
+    await db.release();
 
     reply
         .code(200)
@@ -1955,8 +1955,8 @@ async function postBump(req: FastifyRequest, reply: FastifyReply<ServerResponse>
 async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
     const csrfToken = req.cookies.csrf_token;
 
-    const conn = await getDBConnection();
-    const user = await getLoginUser(req, conn);
+    const db = await getDBConnection();
+    const user = await getLoginUser(req, db);
 
     const res = {
         user: null as User | null,
@@ -1966,17 +1966,17 @@ async function getSettings(req: FastifyRequest, reply: FastifyReply<ServerRespon
     };
 
     res.user = user;
-    res.payment_service_url = await getPaymentServiceURL(conn);
+    res.payment_service_url = await getPaymentServiceURL(db);
     res.csrf_token = csrfToken;
 
     const categories: Category[] = [];
-    const [rows] = await conn.query("SELECT * FROM `categories`", []);
+    const [rows] = await db.query("SELECT * FROM `categories`", []);
     for (const row of rows) {
         categories.push(row as Category);
     }
     res.categories = categories;
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -1997,8 +1997,8 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
         return;
     }
 
-    const conn = await getDBConnection();
-    const [rows] = await conn.query("SELECT * FROM `users` WHERE `account_name` = ?", [accountName])
+    const db = await getDBConnection();
+    const [rows] = await db.query("SELECT * FROM `users` WHERE `account_name` = ?", [accountName])
     let user: User | null = null;
     for (const row of rows) {
         user = row as User;
@@ -2006,13 +2006,13 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
 
     if (user === null) {
         outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
-        await conn.release();
+        await db.release();
         return;
     }
 
     if (!await comparePassword(password, user.hashed_password)) {
         outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
-        await conn.release();
+        await db.release();
         return;
     }
 
@@ -2023,7 +2023,7 @@ async function postLogin(req: FastifyRequest, reply: FastifyReply<ServerResponse
         path: "/",
     });
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -2045,9 +2045,9 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
         return;
     }
 
-    const conn = await getDBConnection();
+    const db = await getDBConnection();
 
-    const [rows] = await conn.query(
+    const [rows] = await db.query(
         "SELECT * FROM `users` WHERE `account_name` = ?",
         [
             accountName,
@@ -2056,13 +2056,13 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
 
     if (rows.length > 0) {
         outputErrorMessage(reply, "アカウント名かパスワードが間違えています", 401);
-        await conn.release();
+        await db.release();
         return;
     }
 
     const hashedPassword = await encryptPassword(password);
 
-    const [result,] = await conn.query(
+    const [result,] = await db.query(
         "INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)",
         [
             accountName,
@@ -2071,7 +2071,7 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
         ]
     );
 
-    await conn.release();
+    await db.release();
 
     const user = {
         id: result.insertId,
@@ -2095,14 +2095,14 @@ async function postRegister(req: FastifyRequest, reply: FastifyReply<ServerRespo
 }
 
 async function getReports(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
-    const conn = await getDBConnection();
-    const [rows] = await conn.query("SELECT * FROM `transaction_evidences` WHERE `id` > 15007");
+    const db = await getDBConnection();
+    const [rows] = await db.query("SELECT * FROM `transaction_evidences` WHERE `id` > 15007");
     const transactionEvidences: TransactionEvidence[] = [];
     for (const row of rows) {
         transactionEvidences.push(row as TransactionEvidence);
     }
 
-    await conn.release();
+    await db.release();
 
     reply
         .code(200)
@@ -2110,10 +2110,10 @@ async function getReports(req: FastifyRequest, reply: FastifyReply<ServerRespons
         .send(transactionEvidences);
 }
 
-async function getLoginUser(req: FastifyRequest, conn: MySQLQueryable): Promise<User | null> {
+async function getLoginUser(req: FastifyRequest, db: MySQLQueryable): Promise<User | null> {
     let userId: number;
     if (req.cookies.user_id !== undefined && req.cookies.user_id !== "") {
-        const [rows] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [req.cookies.user_id]);
+        const [rows] = await db.query("SELECT * FROM `users` WHERE `id` = ?", [req.cookies.user_id]);
         for (const row of rows) {
             const user = row as User;
             return user;
@@ -2138,8 +2138,8 @@ function outputErrorMessage(reply: FastifyReply<ServerResponse>, message: string
         .send({"error": message});
 }
 
-async function getUserSimpleByID(conn: MySQLQueryable, userID: number): Promise<UserSimple | null> {
-    const [rows,] = await conn.query("SELECT * FROM `users` WHERE `id` = ?", [userID]);
+async function getUserSimpleByID(db: MySQLQueryable, userID: number): Promise<UserSimple | null> {
+    const [rows,] = await db.query("SELECT * FROM `users` WHERE `id` = ?", [userID]);
     for (const row of rows) {
         const user = row as User;
         const userSimple: UserSimple = {
@@ -2152,12 +2152,12 @@ async function getUserSimpleByID(conn: MySQLQueryable, userID: number): Promise<
     return null;
 }
 
-async function getCategoryByID(conn: MySQLQueryable, categoryId: number): Promise<Category | null> {
-    const [rows,] = await conn.query("SELECT * FROM `categories` WHERE `id` = ?", [categoryId]);
+async function getCategoryByID(db: MySQLQueryable, categoryId: number): Promise<Category | null> {
+    const [rows,] = await db.query("SELECT * FROM `categories` WHERE `id` = ?", [categoryId]);
     for (const row of rows) {
         const category = row as Category;
         if (category.parent_id !== undefined && category.parent_id != 0) {
-            const parentCategory = await getCategoryByID(conn, category.parent_id);
+            const parentCategory = await getCategoryByID(db, category.parent_id);
             if (parentCategory !== null) {
                 category.parent_category_name = parentCategory.category_name
             }
@@ -2195,10 +2195,10 @@ async function getRandomString(length: number): Promise<string> {
     });
 }
 
-async function getConfigByName(conn: MySQLQueryable, name: string): Promise<string | null> {
+async function getConfigByName(db: MySQLQueryable, name: string): Promise<string | null> {
     let config: Config | null = null;
     {
-        const [rows] = await conn.query("SELECT * FROM `configs` WHERE `name` = ?", [name]);
+        const [rows] = await db.query("SELECT * FROM `configs` WHERE `name` = ?", [name]);
         for (const row of rows) {
             config = row as Config;
         }
@@ -2211,16 +2211,16 @@ async function getConfigByName(conn: MySQLQueryable, name: string): Promise<stri
     return config.val;
 }
 
-async function getPaymentServiceURL(conn: MySQLQueryable): Promise<string> {
-    const result = await getConfigByName(conn, "payment_service_url");
+async function getPaymentServiceURL(db: MySQLQueryable): Promise<string> {
+    const result = await getConfigByName(db, "payment_service_url");
     if (result === null) {
         return DefaultPaymentServiceURL;
     }
     return result;
 }
 
-async function getShipmentServiceURL(conn: MySQLQueryable): Promise<string> {
-    const result = await getConfigByName(conn, "shipment_service_url");
+async function getShipmentServiceURL(db: MySQLQueryable): Promise<string> {
+    const result = await getConfigByName(db, "shipment_service_url");
     if (result === null) {
         return DefaultShipmentServiceURL;
     }
