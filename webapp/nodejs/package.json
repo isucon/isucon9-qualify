@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "ts-node --files ./index.ts",
     "dev": "ts-node-dev --files ./index.ts",
     "test": "tsc --noEmit",
     "update-dependencies": "rm -rf node_modules && npm install && npm dedupe"
