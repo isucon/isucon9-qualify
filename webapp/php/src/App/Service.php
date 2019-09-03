@@ -218,7 +218,8 @@ class Service
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
-        return $response->withJson(["is_campaign" => false]);
+        // キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと。
+        return $response->withJson(["campaign" => 0]);
     }
 
     public function index(Request $request, Response $response, array $args)
