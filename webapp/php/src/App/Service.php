@@ -747,15 +747,15 @@ class Service
 
     public function settings(Request $request, Response $response, array $args)
     {
-        $token = $this->session->get('csrf_token');
+        $output = [];
+        $output['csrf_token'] = $this->session->get('csrf_token', '');
 
         try {
             $user = $this->getCurrentUser();
-        } catch (\DomainException $e) {
-            $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
+            $output['user'] = $user;
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            // pass
         }
 
         $sth = $this->dbh->query('SELECT * FROM `categories`', PDO::FETCH_ASSOC);
@@ -764,16 +764,10 @@ class Service
         if ($categories === false) {
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
+        $output['categories'] = $categories;
+        $output['payment_service_url'] = $this->getPaymentServiceURL();
 
-        unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(
-            [
-                'csrf_token' => $token,
-                'user' => $user,
-                'categories' => $categories,
-                'payment_service_url' => $this->getPaymentServiceURL(),
-            ]
-        );
+        return $response->withStatus(StatusCode::HTTP_OK)->withJson($output);
     }
 
     public function item(Request $request, Response $response, array $args)
