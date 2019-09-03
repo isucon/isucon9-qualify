@@ -38,21 +38,19 @@ $ make
 # 初期画像データダウンロード
 
 $ cd webapp/public
-$ find upload -type f -not -name 'sample.jpg' -not -name '.gitignore' | xargs rm -f
 # GitHub releases から initial.zip をダウンロード
 $ unzip initial.zip
-$ find v3_initial_data -type f -name '*.jpg'|xargs -I{} mv {} upload
-$ rm -rf v3_initial_data
+$ rm -rf upload
+$ mv v3_initial_data upload
+$ touch upload/.gitkeep
 
 # ベンチマーク用画像データダウンロード
 
 $ cd initial-data
-$ find images -type f -not -name 'sample.jpg' -not -name '.gitignore' | xargs rm -f
 # GitHub releases から bench1.zip をダウンロード
 $ unzip bench1.zip
-$ find v3_bench1 -type f -name '*.jpg'|xargs -I{} mv {} images
-$ rm -rf v3_bench1
-
+$ rm -rf images
+$ mv v3_bench1 images
 
 $ make
 $ ./bin/benchmarker
@@ -114,4 +112,4 @@ go build
 ## 使用データの取得元
 
 - なんちゃって個人情報 http://kazina.com/dummy/
-- 椅子画像提供 941
+- 椅子画像提供 941-san https://twitter.com/941/status/1157193422127505412
