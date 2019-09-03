@@ -648,9 +648,6 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 	}
 	if hasNext && loop < 100 { // TODO: max pager
 		return verifyItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
