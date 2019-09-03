@@ -276,8 +276,6 @@ func Initialize(dataDir, staticDir string) {
 			continue
 		}
 
-		log.Print(fName)
-
 		f, err := os.Open(filepath.Join(staticDir, "js", fName))
 		if err != nil {
 			log.Fatal(err)
