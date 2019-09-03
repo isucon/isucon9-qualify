@@ -12,6 +12,11 @@ import (
 	"github.com/morikuni/failure"
 )
 
+const (
+	MinCampaignRateSetting = 0
+	MaxCampaignRateSetting = 4
+)
+
 func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, error) {
 	s1, err := session.NewSessionForInialize()
 	if err != nil {
@@ -21,8 +26,8 @@ func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL strin
 	if err != nil {
 		return 0, err
 	}
-	if campaign < asset.MinCampaignRateSetting || campaign > asset.MaxCampaignRateSetting {
-		return 0, failure.New(fails.ErrApplication, failure.Messagef("/initialize の還元率の設定は %d以上 %d以下です", asset.MinCampaignRateSetting, asset.MaxCampaignRateSetting))
+	if campaign < MinCampaignRateSetting || campaign > MaxCampaignRateSetting {
+		return 0, failure.New(fails.ErrApplication, failure.Messagef("/initialize の還元率の設定値は %d以上 %d以下です", MinCampaignRateSetting, MaxCampaignRateSetting))
 	}
 	return campaign, nil
 }
