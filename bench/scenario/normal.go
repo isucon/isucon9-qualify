@@ -18,19 +18,24 @@ const (
 	loadIDsMaxloop         = 100
 )
 
-func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, error) {
+func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, string, error) {
 	s1, err := session.NewSessionForInialize()
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	campaign, err := s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
+	campaign, language, err := s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	if campaign < MinCampaignRateSetting || campaign > MaxCampaignRateSetting {
-		return 0, failure.New(fails.ErrApplication, failure.Messagef("/initialize の還元率の設定値は %d以上 %d以下です", MinCampaignRateSetting, MaxCampaignRateSetting))
+		return 0, "", failure.New(fails.ErrApplication, failure.Messagef("POST /initialize の還元率の設定値は %d以上 %d以下です", MinCampaignRateSetting, MaxCampaignRateSetting))
 	}
-	return campaign, nil
+
+	if language == "" {
+		return 0, "", failure.New(fails.ErrApplication, failure.Message("POST /initialize では実装言語を返す必要があります"))
+	}
+
+	return campaign, language, nil
 }
 
 func checkItemSimpleCategory(item session.ItemSimple, aItem asset.AppItem) error {
