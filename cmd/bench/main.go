@@ -150,8 +150,8 @@ func main() {
 	scenario.Validation(ctx, campaign, cerr)
 
 	criticalMsgs, cCnt, aCnt, tCnt := cerr.Get()
-	// critical errorは2回以上、application errorは10回以上、trivial errorは200回を超すと失格
-	if cCnt >= 2 || aCnt >= 10 || tCnt > 200 {
+	// critical errorは2回以上、application errorは10回以上で失格
+	if cCnt >= 2 || aCnt >= 10 {
 		log.Print("cause error!")
 
 		output := Output{
@@ -164,8 +164,13 @@ func main() {
 		return
 	}
 
-	// critical errorは1回で10000，application errorは1回で500の減点
+	// critical errorは1回で10000点，application errorは1回で500点減点
 	penalty := int64(10000*cCnt + 500*aCnt)
+
+	if tCnt > 200 {
+		// trivial errorは200回を超えたら100回毎に5000点減点
+		penalty -= int64(5000 * (1 + (tCnt-200)/100))
+	}
 
 	<-time.After(1 * time.Second)
 
