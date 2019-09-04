@@ -157,7 +157,6 @@ def get_category_by_id(category_id):
         # TODO: check err
     if category['parent_id'] != 0:
         parent = get_category_by_id(category['parent_id'])
-        print(parent)
         if parent is not None:
             category['parent_category_name'] = parent['category_name']
     return category
@@ -329,7 +328,6 @@ def get_new_items():
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
 
-                print(item)
                 item_simples.append(item)
 
             has_next = False
@@ -418,7 +416,6 @@ def get_new_category_items(root_category_id=None):
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
 
-                print(item)
                 item_simples.append(item)
 
         except MySQLdb.Error as err:
@@ -506,7 +503,6 @@ def get_transactions():
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=False)
 
-                print(item)
                 item_details.append(item)
 
                 with conn.cursor() as c2:
@@ -516,18 +512,13 @@ def get_transactions():
 
 
                     if transaction_evidence:
-                        print("transaction_evidence", transaction_evidence)
-
                         sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
                         c2.execute(sql, [transaction_evidence["id"]])
                         shipping = c2.fetchone()
                         if not shipping:
                             http_json_error(requests.codes['not_found'], "shipping not found")
 
-                        print("shipping", shipping)
-
                         ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
-                        print("ssr", ssr)
                         item["transaction_evidence_id"] = transaction_evidence["id"]
                         item["transaction_evidence_status"] = transaction_evidence["status"]
                         item["shipping_status"] = ssr["status"]
@@ -570,7 +561,6 @@ def get_user_items(user_id=None):
     with conn.cursor() as c:
         try:
             if item_id > 0 and created_at > 0:
-                print(item_id, created_at, datetime.datetime.fromtimestamp(created_at))
                 sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
@@ -607,8 +597,6 @@ def get_user_items(user_id=None):
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
-
-                print(item)
                 item_simples.append(item)
 
         except MySQLdb.Error as err:
@@ -667,10 +655,7 @@ def get_item(item_id=None):
                 if not shipping:
                     http_json_error(requests.codes['not_found'], "shipping not found")
 
-                print("shipping", shipping)
-
                 ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
-                print("ssr", ssr)
                 item["transaction_evidence_id"] = transaction_evidence["id"]
                 item["transaction_evidence_status"] = transaction_evidence["status"]
                 item["shipping_status"] = ssr["status"]
@@ -704,8 +689,6 @@ def post_item_edit():
             if item is None:
                 http_json_error(requests.codes['not_found'], "item not found")
             if item["seller_id"] != user["id"]:
-
-                print("ITEM", flask.session, item, user)
                 http_json_error(requests.codes['forbidden'], "自分の商品以外は編集できません")
         except MySQLdb.Error as err:
             app.logger.exception(err)
@@ -1182,8 +1165,6 @@ def get_qrcode(transaction_evidence_id):
             if transaction_evidence is None:
                 http_json_error(requests.codes['not_found'], "transaction_evidences not found")
 
-            print(transaction_evidence)
-            print(seller)
             if transaction_evidence["seller_id"] != seller["id"]:
                 http_json_error(requests.codes['forbidden'], "権限がありません")
 
