@@ -763,7 +763,8 @@ class Service
 
         try {
             $user = $this->getCurrentUser();
-            $output['user'] = $this->simplifyUser($user);
+            unset($user['hashed_password'], $user['last_bump'], $user['created_at']);
+            $output['user'] = $user;
         } catch (\Exception $e) {
             // pass
         }
