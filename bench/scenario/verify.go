@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"math"
 	"os"
 	"sync"
 
@@ -401,9 +402,9 @@ func verifyNewItemsAndItems(ctx context.Context, s *session.Session, maxPage int
 		return err
 	}
 	c := itemIDs.Len()
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 30000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
 	}
 
@@ -463,7 +464,7 @@ func verifyItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs 
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -483,9 +484,9 @@ func verifyNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cat
 		return err
 	}
 	c := itemIDs.Len()
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO 98%?
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -549,7 +550,7 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -562,10 +563,25 @@ func verifyTransactionEvidence(ctx context.Context, s *session.Session, maxPage 
 		return err
 	}
 	c := itemIDs.Len()
-	// todo assetsからとれるか
+
 	if c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
 	}
+	aUser := asset.GetUser(s.UserID)
+	totalTrxItems := aUser.NumBuyItems + aUser.NumSellItems
+	maxPageItems := maxPage * asset.ItemsTransactionsPerPage
+	if maxPage == 0 {
+		maxPageItems = asset.ItemsTransactionsPerPage
+	}
+	// totalTrxItemsが多い場合 c は maxPageItems になる。1個のずれは許容
+	if int64(totalTrxItems) >= maxPageItems && math.Abs(float64(c)-float64(maxPageItems)) > 1 {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
+	// totalTrxItems が少ない場合、 cはtotalTrxItemsになる。1個のずれは許容
+	if int64(totalTrxItems) < maxPageItems && math.Abs(float64(c)-float64(totalTrxItems)) > 1 {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
+
 	if checkItem == 0 {
 		return nil
 	}
@@ -646,7 +662,7 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -660,7 +676,7 @@ func verifyUserItemsAndItems(ctx context.Context, s *session.Session, sellerID i
 		return err
 	}
 	c := itemIDs.Len()
-	buffer := 10 // TODO
+	buffer := 1 // 多少のずれは許容。verifyは厳しめ
 	aUser := asset.GetUser(sellerID)
 	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer || c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
@@ -722,7 +738,7 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil

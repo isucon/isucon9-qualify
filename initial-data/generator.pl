@@ -195,6 +195,7 @@ sub create_user {
         num_sell_items => number 0,
         buy_category_id => number $category_id,
         buy_parent_category_id => number $parent_category_id,
+        num_buy_items => number 0,
     };
 }
 
@@ -419,6 +420,8 @@ sub flush_shippings {
                 $users{$buyer}->{buy_category_id},
                 $users{$buyer}->{buy_parent_category_id}
             ];
+
+            $users{$buyer}->{num_buy_items}++;
 
             insert_te(
                 $te_id,

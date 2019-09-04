@@ -112,6 +112,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
+	asset.UserBuyItem(s2.UserID)
 
 	itemFromBuyerTrx, err := findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
@@ -293,6 +294,7 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	if err != nil {
 		return err
 	}
+	asset.UserBuyItem(s2.UserID)
 
 	reserveID, apath, err := s1.Ship(ctx, targetItemID)
 	if err != nil {

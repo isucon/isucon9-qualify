@@ -45,6 +45,7 @@ type AppUser struct {
 	Address             string `json:"address,omitempty"`
 	NumSellItems        int    `json:"num_sell_items"`
 	BuyParentCategoryID int    `json:"buy_parent_category_id"`
+	NumBuyItems         int    `json:"num_buy_items"`
 }
 
 type AppItem struct {
@@ -401,6 +402,15 @@ func GetUser(sellerID int64) AppUser {
 	return users[sellerID]
 }
 
+func UserBuyItem(sellerID int64) AppUser {
+	muUser.RLock()
+	defer muUser.RUnlock()
+	user := users[sellerID]
+	user.NumSellItems = user.NumSellItems + 1
+	users[sellerID] = user
+	return user
+}
+
 func GetUserItemsFirst(sellerID int64) int64 {
 	muItem.RLock()
 	defer muItem.RUnlock()
@@ -519,7 +529,8 @@ func GetCategory(categoryID int) (AppCategory, bool) {
 	return c, ok
 }
 
-// TODO: transactionEvidencesをちゃんと管理するようにして存在しないケースをなくす
+// MEMO: transactionEvidencesをちゃんと管理するようにして存在しないケースをなくす
+// => buyCompleteWithVerify でチェックしている分で多分大丈夫
 func GetTransactionEvidence(id int64) (AppTransactionEvidence, bool) {
 	te, ok := transactionEvidences[id]
 	return te, ok

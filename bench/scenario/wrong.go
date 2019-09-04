@@ -106,7 +106,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 	if err != nil {
 		return err
 	}
-
+	asset.UserBuyItem(s2.UserID)
 	oToken := sPayment.ForceSet(CorrectCardNumber, targetItemID, price)
 
 	// onsaleでない商品は買えない

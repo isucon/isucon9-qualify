@@ -234,7 +234,7 @@ post '/initialize' => [qw/allow_json_request/] => sub {
     }
 
     # キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと。
-    my $campaign = 0;
+    my $campaign = 2;
 
     $c->render_json({
         campaign => number $campaign
@@ -550,6 +550,9 @@ get '/users/transactions.json' => sub {
             }
 
             my $ssr = eval {
+                if ($shipping->{status} eq "done") {
+                    return {status => "done"};
+                }
                 $self->api_client->shipment_status(
                     $self->getShipmentServiceURL(),
                     {reserve_id => string $shipping->{reserve_id}}
