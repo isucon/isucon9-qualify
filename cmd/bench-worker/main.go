@@ -290,7 +290,9 @@ func printPrettyResult(result *Result) {
 	log.Println("============Benchmark stdout start====================")
 	log.Println(result.Stdout)
 	log.Println("============Benchmark stdout end======================")
+	log.Println("============Result start==============================")
 	json.NewEncoder(os.Stderr).Encode(tmpResult)
+	log.Println("============Result end================================")
 }
 
 func main() {
@@ -316,7 +318,9 @@ func main() {
 			continue
 		}
 		log.Println("Dequeued benchmark job")
+		log.Println("============Benchmark job start====================")
 		json.NewEncoder(os.Stderr).Encode(job)
+		log.Println("============Benchmark job end======================")
 
 		log.Printf("Run benchmark")
 		benchmarkResult, err := runBenchmarker(benchmarkerPath, job)
