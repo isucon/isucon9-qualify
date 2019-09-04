@@ -406,7 +406,7 @@ func UserBuyItem(sellerID int64) AppUser {
 	muUser.RLock()
 	defer muUser.RUnlock()
 	user := users[sellerID]
-	user.NumSellItems = user.NumSellItems + 1
+	user.NumBuyItems = user.NumBuyItems + 1
 	users[sellerID] = user
 	return user
 }
