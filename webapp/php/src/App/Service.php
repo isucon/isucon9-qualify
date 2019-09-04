@@ -229,8 +229,13 @@ class Service
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
-        // キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-        return $response->withJson(["campaign" => 0]);
+
+        return $response->withJson([
+            // キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+            "campaign" => 0,
+            // 実装言語を返す
+            "language" => "php"
+        ]);
     }
 
     public function index(Request $request, Response $response, array $args)
