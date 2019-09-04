@@ -257,27 +257,33 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 
 func main() {
 
-	apiEndpoint := flag.String("ep", apiEndpointDev, "API Endpoint")
-	interval := flag.Duration("interval", defaultInterval, "Dequeuing interval second")
-	benchmarkerPath := flag.String("benchmarker", defaultBenchmarkerPath, "Benchmarker path")
+	var (
+		apiEndpoint     string
+		interval        time.Duration
+		benchmarkerPath string
+	)
+
+	flag.StringVar(&apiEndpoint, "ep", apiEndpointDev, "API Endpoint")
+	flag.DurationVar(&interval, "interval", defaultInterval, "Dequeuing interval second")
+	flag.StringVar(&benchmarkerPath, "benchmarker", defaultBenchmarkerPath, "Benchmarker path")
 	flag.Parse()
 
-	ticker := time.NewTicker(*interval)
+	ticker := time.NewTicker(interval)
 	for range ticker.C {
-		job, err := dequeue(*apiEndpoint)
+		job, err := dequeue(apiEndpoint)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
-		jobResult, err := runBenchmarker(*benchmarkerPath, job)
+		jobResult, err := runBenchmarker(benchmarkerPath, job)
 		if err != nil {
 			log.Println(err)
 		}
 
 		log.Println(jobResult.Stderr)
 		log.Println(jobResult.Stdout)
-		if err := report(*apiEndpoint, job, jobResult); err != nil {
+		if err := report(apiEndpoint, job, jobResult); err != nil {
 			log.Println(err)
 		}
 		log.Printf("job:%d reported", job.ID)
