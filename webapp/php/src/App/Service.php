@@ -133,6 +133,17 @@ class Service
         ];
     }
 
+    private function simplifyUser($user)
+    {
+        unset(
+            $user['hashed_password'],
+            $user['address'],
+            $user['last_bump'],
+            $user['created_at']
+        );
+        return $user;
+    }
+
     private function getCategoryByID($id)
     {
         $sth = $this->dbh->prepare('SELECT * FROM `categories` WHERE `id` = ?');
@@ -752,8 +763,7 @@ class Service
 
         try {
             $user = $this->getCurrentUser();
-            unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
-            $output['user'] = $user;
+            $output['user'] = $this->simplifyUser($user);
         } catch (\Exception $e) {
             // pass
         }
@@ -807,8 +817,7 @@ class Service
                 return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
             }
 
-            unset($seller['hashed_password'], $seller['address'], $seller['created_at']);
-            $item['seller'] = $seller;
+            $item['seller'] = $this->simplifyUser($seller);
 
             if (($user['id'] === $item['seller']['id'] || $user['id'] === $item['buyer_id']) && (int) $item['buyer_id'] !== 0) {
                 $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
@@ -820,8 +829,7 @@ class Service
                 if ($buyer === false) {
                     return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'buyer not found']);
                 }
-                unset($buyer['hashed_password'], $buyer['address'], $buyer['created_at']);
-                $item['buyer'] = $buyer;
+                $item['buyer'] = $this->simplifyUser($buyer);
 
                 $sth = $this->dbh->prepare("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?");
                 $r = $sth->execute([$item['id']]);
