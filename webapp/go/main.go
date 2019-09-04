@@ -63,7 +63,7 @@ var (
 	templates *template.Template
 	dbx       *sqlx.DB
 	store     sessions.Store
-	buyCh     chan int
+	buyChs    map[int64](chan int)
 )
 
 type Config struct {
@@ -326,8 +326,7 @@ func init() {
 }
 
 func main() {
-	buyCh = make(chan int, 10)
-
+	buyChs = make(map[int64](chan int))
 	host := os.Getenv("MYSQL_HOST")
 	if host == "" {
 		host = "127.0.0.1"
@@ -366,8 +365,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to DB: %s.", err.Error())
 	}
-	dbx.SetMaxIdleConns(20)
-	dbx.SetMaxOpenConns(20)
+	dbx.SetMaxIdleConns(60)
+	dbx.SetMaxOpenConns(80)
 	defer dbx.Close()
 
 	mux := goji.NewMux()
@@ -583,7 +582,7 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 
 	res := resInitialize{}
 	// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-	res.Campaign = 2
+	res.Campaign = 4
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(res)
@@ -1389,8 +1388,13 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		defer dbx.Exec("SELECT RELEASE_LOCK(?)", rb.ItemID)
 	*/
 
-	buyCh <- 1
-	defer func() { <-buyCh }()
+	ch, ok := buyChs[rb.ItemID]
+	if !ok {
+		ch = make((chan int), 2)
+		buyChs[rb.ItemID] = ch
+	}
+	ch <- 1
+	defer func() { <-ch }()
 
 	chkItem := Item{}
 	err = dbx.Get(&chkItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)
