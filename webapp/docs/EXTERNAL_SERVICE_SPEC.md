@@ -189,11 +189,11 @@ Authorization: Bearer <APP_ID>
 
 ステータスは以下
 
-* `initial`: 集荷予約作成
+1. `initial`: 集荷予約作成
   * `/create` を呼ばれた後はこの状態
-* `wait_pickup`: 集荷待ち
+2. `wait_pickup`: 集荷待ち
   * `/request` を呼ばれた後はこの状態
-* `shipping`: 配送中
+3. `shipping`: 配送中
   * `/accept` を呼ばれた後はこの状態
-* `done`: 配送完了
+4. `done`: 配送完了
   * 配送が終了するとこのステータスになる
