@@ -754,19 +754,24 @@ func verifyGetItem(ctx context.Context, s *session.Session, targetItemID int64) 
 	if !(item.Description == aItem.Description) {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
-	// 新規出品分はここで画像のチェックができない
-	if aItem.ImageName != "" && item.ImageURL != getImageURL(aItem.ImageName) {
+	if item.ImageURL == "" {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品画像URLが間違っています", targetItemID))
 	}
+	// 新規出品分はここで画像のチェックができない
+	if aItem.ImageName != "" {
+		if item.ImageURL != getImageURL(aItem.ImageName) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品画像URLが間違っています", targetItemID))
+		}
 
-	md5Str, err := s.DownloadItemImageURL(ctx, item.ImageURL)
-	if err != nil {
-		return err
-	}
+		md5Str, err := s.DownloadItemImageURL(ctx, item.ImageURL)
+		if err != nil {
+			return err
+		}
 
-	expectedMD5 := asset.GetImageMD5(aItem.ImageName)
-	if expectedMD5 != md5Str {
-		return failure.New(fails.ErrApplication, failure.Messagef("%sの商品画像が間違っています", item.ImageURL))
+		expectedMD5 := asset.GetImageMD5(aItem.ImageName)
+		if expectedMD5 != md5Str {
+			return failure.New(fails.ErrApplication, failure.Messagef("%sの商品画像が間違っています", item.ImageURL))
+		}
 	}
 
 	err = checkItemDetailCategory(item, aItem)
