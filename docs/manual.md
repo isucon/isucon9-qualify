@@ -96,8 +96,12 @@ http://isucon.net/archives/53665373.html
 | isudemo2 | isudemo2 |
 | isudemo3 | isudemo3 |
 
-TODO: /etc/hosts に global ipを書くようにする
+また、WebサーバーのグローバルIPアドレスにアクセスするとTLS証明書に関するエラーが表示されます。
+このエラーを回避するにはMacやLinuxであれば/etc/hostsに以下の行を追加する必要があります。（「グローバルIPアドレス」の部分は実際のWebサーバーのグローバルIPアドレスに差し替えてください）
 
+```
+グローバルIPアドレス isucon9.catatsuy.org
+```
 ## 4. 負荷走行
 
 ベンチマーク走行を行う際はポータルサイト上からリクエストします。
