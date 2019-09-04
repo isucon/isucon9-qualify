@@ -22,6 +22,7 @@ import (
 type Output struct {
 	Pass     bool     `json:"pass"`
 	Score    int64    `json:"score"`
+	Campaign int      `json:"campaign"`
 	Messages []string `json:"messages"`
 }
 
@@ -107,6 +108,7 @@ func main() {
 		output := Output{
 			Pass:     false,
 			Score:    0,
+			Campaign: campaign,
 			Messages: criticalMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -125,6 +127,7 @@ func main() {
 		output := Output{
 			Pass:     false,
 			Score:    0,
+			Campaign: campaign,
 			Messages: criticalMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -157,6 +160,7 @@ func main() {
 		output := Output{
 			Pass:     false,
 			Score:    0,
+			Campaign: campaign,
 			Messages: uniqMsgs(criticalMsgs),
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -186,6 +190,7 @@ func main() {
 		output := Output{
 			Pass:     false,
 			Score:    score,
+			Campaign: campaign,
 			Messages: msgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -196,6 +201,7 @@ func main() {
 	output := Output{
 		Pass:     true,
 		Score:    score,
+		Campaign: campaign,
 		Messages: msgs,
 	}
 	json.NewEncoder(os.Stdout).Encode(output)
