@@ -181,11 +181,15 @@ func checkStatusCodeWithMsg(res *http.Response, expectedStatusCode int, msg stri
 func (s *Session) Do(req *http.Request) (*http.Response, error) {
 	res, err := s.httpClient.Do(req)
 	if err != nil {
-		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
-			return nil, failure.Translate(err, fails.ErrTimeout)
+		if nerr, ok := err.(net.Error); ok {
+			if nerr.Timeout() {
+				return nil, failure.Translate(err, fails.ErrTimeout)
+			} else if nerr.Temporary() {
+				return nil, failure.Translate(err, fails.ErrTemporary)
+			}
 		}
 
-		return nil, failure.Wrap(err)
+		return nil, err
 	}
 
 	return res, nil

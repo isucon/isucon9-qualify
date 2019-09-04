@@ -8,12 +8,14 @@ import (
 )
 
 const (
-	// ErrCritical はクリティカルなエラーで少しでも大幅減点・失格になるエラー
+	// ErrCritical はクリティカルなエラー。少しでも大幅減点・失格になるエラー
 	ErrCritical failure.StringCode = "error critical"
-	// ErrApplication はアプリケーションの挙動でおかしいやつ。Verify時は1つでも失格。Validation時は一定数以上で失格
+	// ErrApplication はアプリケーションの挙動でおかしいエラー。Verify時は1つでも失格。Validation時は一定数以上で失格
 	ErrApplication failure.StringCode = "error application"
 	// ErrTimeout はタイムアウトエラー。基本は大目に見る。
 	ErrTimeout failure.StringCode = "error timeout"
+	// ErrTemporary は一時的なエラー。基本は大目に見る。
+	ErrTemporary failure.StringCode = "error temporary"
 )
 
 type Critical struct {
@@ -21,7 +23,7 @@ type Critical struct {
 
 	critical    int
 	application int
-	timeout     int
+	trivial     int
 
 	mu sync.Mutex
 }
@@ -40,11 +42,11 @@ func (c *Critical) GetMsgs() (msgs []string) {
 	return c.Msgs[:]
 }
 
-func (c *Critical) Get() (msgs []string, critical, application, timeout int) {
+func (c *Critical) Get() (msgs []string, critical, application, trivial int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	return c.Msgs[:], c.critical, c.application, c.timeout
+	return c.Msgs[:], c.critical, c.application, c.trivial
 }
 
 func (c *Critical) Add(err error) {
@@ -66,7 +68,10 @@ func (c *Critical) Add(err error) {
 			c.application++
 		case ErrTimeout:
 			msg += "（タイムアウトしました）"
-			c.timeout++
+			c.trivial++
+		case ErrTemporary:
+			msg += "（一時的なエラー）"
+			c.trivial++
 		}
 
 		c.Msgs = append(c.Msgs, msg)
