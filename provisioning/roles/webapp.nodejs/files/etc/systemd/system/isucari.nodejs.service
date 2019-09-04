@@ -1,0 +1,16 @@
+[Unit]
+Description = isucon9 qualifier main application in nodejs
+
+[Service]
+WorkingDirectory=/home/isucon/isucari/webapp/nodejs
+EnvironmentFile=/home/isucon/env.sh
+
+ExecStart = /home/isucon/local/node/bin/node /home/isucon/isucari/webapp/nodejs/node_modules/.bin/ts-node index.ts
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target

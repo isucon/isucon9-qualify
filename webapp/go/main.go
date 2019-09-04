@@ -63,6 +63,7 @@ var (
 	templates *template.Template
 	dbx       *sqlx.DB
 	store     sessions.Store
+	buyCh     chan int
 )
 
 type Config struct {
@@ -177,7 +178,7 @@ type reqInitialize struct {
 }
 
 type resInitialize struct {
-	IsCampaign bool `json:"is_campaign"`
+	Campaign int `json:"campaign"`
 }
 
 type resNewItems struct {
@@ -325,6 +326,8 @@ func init() {
 }
 
 func main() {
+	buyCh = make(chan int, 10)
+
 	host := os.Getenv("MYSQL_HOST")
 	if host == "" {
 		host = "127.0.0.1"
@@ -363,6 +366,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to DB: %s.", err.Error())
 	}
+	dbx.SetMaxIdleConns(20)
+	dbx.SetMaxOpenConns(20)
 	defer dbx.Close()
 
 	mux := goji.NewMux()
@@ -577,8 +582,8 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := resInitialize{}
-	// Campaign 実施時は true にする
-	res.IsCampaign = false
+	// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+	res.Campaign = 2
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(res)
@@ -1266,6 +1271,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 
 	if targetItem.Status != ItemStatusOnSale {
 		outputErrorMsg(w, http.StatusForbidden, "販売中の商品以外編集できません")
+		tx.Rollback()
 		return
 	}
 
@@ -1372,14 +1378,19 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var locked int
-	err = dbx.Get(&locked, "SELECT GET_LOCK(?,?)", rb.ItemID, 5)
-	if err != nil {
-		log.Print(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		return
-	}
-	defer dbx.Exec("SELECT RELEASE_LOCK(?)", rb.ItemID)
+	/*
+		var locked int
+		err = dbx.Get(&locked, "SELECT GET_LOCK(?,?)", rb.ItemID, 5)
+		if err != nil {
+			log.Print(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+		defer dbx.Exec("SELECT RELEASE_LOCK(?)", rb.ItemID)
+	*/
+
+	buyCh <- 1
+	defer func() { <-buyCh }()
 
 	chkItem := Item{}
 	err = dbx.Get(&chkItem, "SELECT * FROM `items` WHERE `id` = ?", rb.ItemID)

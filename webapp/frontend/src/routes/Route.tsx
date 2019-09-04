@@ -10,12 +10,12 @@ import UserPageContainer from '../containers/UserPageContainer';
 import UserSettingPageContainer from '../containers/UserSettingPageContainer';
 import AuthRoute from '../containers/AuthContainer';
 import NonAuthRoute from '../containers/NonAuthContainer';
-import { NotFoundPage } from '../pages/error/NotFoundPage';
 import TopPage from '../pages/TopPage';
 import CategoryItemListPageContainer from '../containers/CategoryItemListPageContainer';
 import BuyCompleteContainer from '../containers/BuyCompleteContainer';
 import ItemEditPageContainer from '../containers/ItemEditPageContainer';
 import ItemBuyPageContainer from '../containers/ItemBuyPageContainer';
+import NotFoundContainer from '../containers/NotFoundContainer';
 
 interface route {
   [name: string]: {
@@ -123,7 +123,7 @@ export const AppRoute: React.FC = () => {
         component={UserSettingPageContainer}
       />
       <AuthRoute exact path={routes.user.path} component={UserPageContainer} />
-      <Route component={NotFoundPage} />
+      <Route component={NotFoundContainer} />
     </Switch>
   );
 };

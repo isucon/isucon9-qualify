@@ -16,11 +16,14 @@
     - php
     - ruby
     - python
-    - node
+    - nodejs
     - webapp.mysql
     - webapp.golang
     - webapp.perl
     - webapp.php
+    - webapp.ruby
+    - webapp.python
+    - webapp.nodejs
     - webapp.nginx
 
   tasks:

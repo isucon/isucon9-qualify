@@ -69,7 +69,7 @@ def dbh():
 
     flask.g.db = MySQLdb.connect(
         host=os.getenv('MYSQL_HOST', '127.0.0.1'),
-        port=os.getenv('MYSQL_PORT', 3306),
+        port=int(os.getenv('MYSQL_PORT', 3306)),
         user=os.getenv('MYSQL_USER', 'isucari'),
         password=os.getenv('MYSQL_PASS', 'isucari'),
         db=os.getenv('MYSQL_DBNAME', 'isucari'),
@@ -115,6 +115,24 @@ def get_user():
     return user
 
 
+def get_user_or_none():
+    user_id = flask.session.get("user_id")
+    if user_id is None:
+        return None
+    try:
+        conn = dbh()
+        with conn.cursor() as c:
+            sql = "SELECT * FROM `users` WHERE `id` = %s"
+            c.execute(sql, [user_id])
+            user = c.fetchone()
+            if user is None:
+                return None
+    except MySQLdb.Error as err:
+        app.logger.exception(err)
+        return None
+    return user
+
+
 def get_user_simple_by_id(user_id):
     try:
         conn = dbh()
@@ -139,7 +157,6 @@ def get_category_by_id(category_id):
         # TODO: check err
     if category['parent_id'] != 0:
         parent = get_category_by_id(category['parent_id'])
-        print(parent)
         if parent is not None:
             category['parent_category_name'] = parent['category_name']
     return category
@@ -190,16 +207,12 @@ def get_config(name):
 
 def get_payment_service_url():
     config = get_config("payment_service_url")
-    if config is None:
-        config = Constants.DEFAULT_PAYMENT_SERVICE_URL
-    return config
+    return Constants.DEFAULT_PAYMENT_SERVICE_URL if config is None else config['val']
 
 
 def get_shipment_service_url():
     config = get_config("shipment_service_url")
-    if config is None:
-        config = Constants.DEFAULT_SHIPMENT_SERVICE_URL
-    return config
+    return Constants.DEFAULT_SHIPMENT_SERVICE_URL if config is None else config['val']
 
 
 def api_shipment_status(shipment_url, params={}):
@@ -217,16 +230,41 @@ def api_shipment_status(shipment_url, params={}):
 
     return res.json()
 
+
 def get_image_url(image_name):
     return "/upload/{}".format(image_name)
 
 # API
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
+    conn = dbh()
+
     subprocess.call(["../sql/init.sh"])
 
+    payment_service_url = flask.request.json.get('payment_service_url', Constants.DEFAULT_PAYMENT_SERVICE_URL)
+    shipment_service_url = flask.request.json.get('shipment_service_url', Constants.DEFAULT_SHIPMENT_SERVICE_URL)
+
+    conn.begin()
+    with conn.cursor() as c:
+        try:
+            sql = "INSERT INTO `configs` (`name`, `val`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)"
+
+            c.execute(sql, (
+                "payment_service_url",
+                payment_service_url
+            ))
+            c.execute(sql, (
+                "shipment_service_url",
+                shipment_service_url
+            ))
+            conn.commit()
+        except MySQLdb.Error as err:
+            conn.rollback()
+            app.logger.exception(err)
+            http_json_error(requests.codes['internal_server_error'], "db error")
+
     return flask.jsonify({
-        "is_campaign": False,  # TODO: Campaign 実施時は true にする
+        "campaign": 0,  # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
     })
 
 
@@ -256,10 +294,11 @@ def get_new_items():
         with conn.cursor() as c:
             if item_id > 0 and created_at > 0:
                 # paging
-                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.ITEMS_PER_PAGE + 1,
@@ -289,7 +328,6 @@ def get_new_items():
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
 
-                print(item)
                 item_simples.append(item)
 
             has_next = False
@@ -343,11 +381,12 @@ def get_new_category_items(root_category_id=None):
                 category_ids.append(category["id"])
 
             if item_id > 0 and created_at > 0:
-                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND category_id IN ("+ ",".join(["%s"]*len(category_ids))+ ") AND (`created_at` < %s OR (`created_at` < %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
                     *category_ids,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.ITEMS_PER_PAGE + 1,
@@ -377,7 +416,6 @@ def get_new_category_items(root_category_id=None):
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
 
-                print(item)
                 item_simples.append(item)
 
         except MySQLdb.Error as err:
@@ -422,7 +460,7 @@ def get_transactions():
         try:
 
             if item_id > 0 and created_at > 0:
-                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s) AND `status` IN (%s,%s,%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s) AND `status` IN (%s,%s,%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
                     user['id'],
@@ -431,6 +469,7 @@ def get_transactions():
                     Constants.ITEM_STATUS_SOLD_OUT,
                     Constants.ITEM_STATUS_CANCEL,
                     Constants.ITEM_STATUS_STOP,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.TRANSACTIONS_PER_PAGE + 1,
@@ -464,7 +503,6 @@ def get_transactions():
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=False)
 
-                print(item)
                 item_details.append(item)
 
                 with conn.cursor() as c2:
@@ -474,18 +512,13 @@ def get_transactions():
 
 
                     if transaction_evidence:
-                        print("transaction_evidence", transaction_evidence)
-
                         sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
                         c2.execute(sql, [transaction_evidence["id"]])
                         shipping = c2.fetchone()
                         if not shipping:
                             http_json_error(requests.codes['not_found'], "shipping not found")
 
-                        print("shipping", shipping)
-
                         ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
-                        print("ssr", ssr)
                         item["transaction_evidence_id"] = transaction_evidence["id"]
                         item["transaction_evidence_status"] = transaction_evidence["status"]
                         item["shipping_status"] = ssr["status"]
@@ -528,13 +561,13 @@ def get_user_items(user_id=None):
     with conn.cursor() as c:
         try:
             if item_id > 0 and created_at > 0:
-                print(item_id, created_at, datetime.datetime.fromtimestamp(created_at))
-                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND `created_at` <= %s AND `id` < %s ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
                 c.execute(sql, (
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
                     Constants.ITEM_STATUS_SOLD_OUT,
+                    datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
                     Constants.ITEMS_PER_PAGE + 1,
@@ -564,8 +597,6 @@ def get_user_items(user_id=None):
                 item["seller"] = to_user_json(seller)
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
-
-                print(item)
                 item_simples.append(item)
 
         except MySQLdb.Error as err:
@@ -624,10 +655,7 @@ def get_item(item_id=None):
                 if not shipping:
                     http_json_error(requests.codes['not_found'], "shipping not found")
 
-                print("shipping", shipping)
-
                 ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
-                print("ssr", ssr)
                 item["transaction_evidence_id"] = transaction_evidence["id"]
                 item["transaction_evidence_status"] = transaction_evidence["status"]
                 item["shipping_status"] = ssr["status"]
@@ -661,8 +689,6 @@ def post_item_edit():
             if item is None:
                 http_json_error(requests.codes['not_found'], "item not found")
             if item["seller_id"] != user["id"]:
-
-                print("ITEM", flask.session, item, user)
                 http_json_error(requests.codes['forbidden'], "自分の商品以外は編集できません")
         except MySQLdb.Error as err:
             app.logger.exception(err)
@@ -1139,8 +1165,6 @@ def get_qrcode(transaction_evidence_id):
             if transaction_evidence is None:
                 http_json_error(requests.codes['not_found'], "transaction_evidences not found")
 
-            print(transaction_evidence)
-            print(seller)
             if transaction_evidence["seller_id"] != seller["id"]:
                 http_json_error(requests.codes['forbidden'], "権限がありません")
 
@@ -1223,6 +1247,12 @@ def post_bump():
 
 @app.route("/settings", methods=["GET"])
 def get_settings():
+    outputs = dict()
+    user = get_user_or_none()
+    if user is not None:
+        outputs['user'] = to_user_json(user)
+    outputs['csrf_token'] = flask.session.get('csrf_token', '')
+
     try:
         conn = dbh()
         sql = "SELECT * FROM `categories`"
@@ -1232,13 +1262,10 @@ def get_settings():
     except MySQLdb.Error as err:
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], "db error")
+    outputs['categories'] = categories
+    outputs['payment_service_url'] = get_payment_service_url()
 
-    return flask.jsonify(dict(
-        user=to_user_json(get_user()),
-        csrf_token=flask.session.get('csrf_token'),
-        categories=categories,
-        payment_service_url=Constants.DEFAULT_PAYMENT_SERVICE_URL
-    ))
+    return flask.jsonify(outputs)
 
 
 @app.route("/login", methods=["POST"])
@@ -1332,4 +1359,4 @@ def get_index(*args, **kwargs):
 # @app.route("/*")
 
 if __name__ == "__main__":
-    app.run(port=8080, debug=True, threaded=True)
+    app.run(port=8000, debug=True, threaded=True)

@@ -12,10 +12,13 @@ import (
 )
 
 const (
-	NumLoadScenario1 = 3
-	NumLoadScenario2 = 6
-	NumLoadScenario3 = 6
-	NumLoadScenario4 = 3
+	// シナリオ(1,2,3,4) = 並列数(1,2,2,1)
+	// これを負荷の1単位とする
+	// 1だとLoad内のfor loopが必要ないが、調整のため残す
+	NumLoadScenario1 = 1
+	NumLoadScenario2 = 2
+	NumLoadScenario3 = 2
+	NumLoadScenario4 = 1
 )
 
 func Load(ctx context.Context, critical *fails.Critical) {
@@ -33,17 +36,21 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	// load scenario #1
 	// 出品
 	// カテゴリをみて 7カテゴリ x (10ページ + 20item) = 210
-	// buywithcheck
+	// recommendであれば、Newだけみて、購入し、再度出品・購入がある
+	// buy without check
 	for i := 0; i < NumLoadScenario1; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			var s1, s2 *session.Session
+			var s1, s2, s3 *session.Session
 			var err error
 			var price int
 			var categories []asset.AppCategory
 			var targetItem asset.AppItem
+			var recommended bool
+			var targetParentCategoryID int
+
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
@@ -60,31 +67,76 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				price = priceStoreCache.Get()
-
-				targetItem, err = sell(ctx, s1, price)
+				s3, err = activeSellerSession(ctx)
 				if err != nil {
 					critical.Add(err)
 					goto Final
 				}
 
-				categories = asset.GetRootCategories()
-				for _, category := range categories {
-					err = loadNewCategoryItemsAndItems(ctx, s1, category.ID, 10, 20)
+				recommended, err = loadIsRecommendNewItems(ctx, s2)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				price = priceStoreCache.Get()
+
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				if recommended {
+					// recommended なら categoryは見ずにnewをみる
+					err = loadNewItemsAndItems(ctx, s2, 10, 20)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+				} else {
+					categories = asset.GetRootCategories()
+					for _, category := range categories {
+						err = loadNewCategoryItemsAndItems(ctx, s2, category.ID, 10, 20)
+						if err != nil {
+							critical.Add(err)
+							goto Final
+						}
+					}
+				}
+
+				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
+				if err != nil {
+					critical.Add(err)
+					goto Final
+				}
+
+				// recommended なら購入2倍
+				if recommended {
+					targetItem, err = sellParentCategory(ctx, s3, price, targetParentCategoryID)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+
+					// 少しだけNewItemをみて購入
+					err = loadNewItemsAndItems(ctx, s2, 1, 10)
+					if err != nil {
+						critical.Add(err)
+						goto Final
+					}
+
+					err = buyComplete(ctx, s3, s2, targetItem.ID, price)
 					if err != nil {
 						critical.Add(err)
 						goto Final
 					}
 				}
 
-				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
-				if err != nil {
-					critical.Add(err)
-					goto Final
-				}
-
 				ActiveSellerPool.Enqueue(s1)
 				BuyerPool.Enqueue(s2)
+				ActiveSellerPool.Enqueue(s3)
 
 			Final:
 				select {
@@ -101,7 +153,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	// その商品
 	// そのカテゴリ 30ページ 30商品
 	// getTransactions　(10ページ 20商品) x 2
-	// buy
+	// buyはwithout check
 	for i := 0; i < NumLoadScenario2; i++ {
 		wg.Add(1)
 		go func() {
@@ -112,6 +164,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var price int
 			var targetItem asset.AppItem
 			var item session.ItemDetail
+			var targetParentCategoryID int
+
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
 				ch := time.After(3 * time.Second)
@@ -130,7 +184,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItem, err = sell(ctx, s1, price)
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -166,7 +221,6 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					goto Final
 				}
 
-				// ここは厳密なcheckをしない
 				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
 					critical.Add(err)
@@ -200,6 +254,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var price int
 			var targetItem asset.AppItem
 			var userIDs []int64
+			var targetParentCategoryID int
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -225,7 +280,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItem, err = sell(ctx, s1, price)
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -290,6 +346,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 			var err error
 			var price int
 			var targetItem asset.AppItem
+			var targetParentCategoryID int
 
 		L:
 			for j := 0; j < ExecutionSeconds/3; j++ {
@@ -309,7 +366,8 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				price = priceStoreCache.Get()
 
-				targetItem, err = sell(ctx, s1, price)
+				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
 					critical.Add(err)
 					goto Final
@@ -351,6 +409,30 @@ func Load(ctx context.Context, critical *fails.Critical) {
 	}
 }
 
+// Timeline が recommend になっているか
+func loadIsRecommendNewItems(ctx context.Context, s *session.Session) (bool, error) {
+	aUser := asset.GetUser(s.UserID)
+	targetCategoryID := aUser.BuyParentCategoryID
+
+	_, items, err := s.NewItems(ctx)
+	if err != nil {
+		return false, err
+	}
+	if len(items) != asset.ItemsPerPage {
+		return false, failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+	}
+	isTarget := 0
+	for _, item := range items {
+		if item.Category.ParentID == targetCategoryID {
+			isTarget++
+		}
+	}
+	if float64(isTarget)/float64(len(items)) > 0.8 {
+		return true, nil
+	}
+	return false, nil
+}
+
 // Timelineの商品をたどる
 func loadNewItemsAndItems(ctx context.Context, s *session.Session, maxPage int64, checkItem int) error {
 	itemIDs := newIDsStore()
@@ -387,6 +469,9 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 	}
 	if err != nil {
 		return err
+	}
+	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
 	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
@@ -470,6 +555,9 @@ func loadItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *I
 	if err != nil {
 		return err
 	}
+	if loop < 50 && len(items) != asset.ItemsPerPage { // MEMO 50ページ以上チェックすることはない
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
+	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
@@ -534,6 +622,7 @@ func loadItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsS
 	if err != nil {
 		return err
 	}
+	// 件数のチェックはない。userは全部みて件数確認する
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", sellerID))
@@ -591,6 +680,9 @@ func loadItemIDsTransactionEvidence(ctx context.Context, s *session.Session, ite
 	}
 	if err != nil {
 		return err
+	}
+	if hasNext && asset.ItemsTransactionsPerPage != len(items) {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
 	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {

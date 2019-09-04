@@ -1,0 +1,16 @@
+[Unit]
+Description = isucon9 qualifier main application in python
+
+[Service]
+WorkingDirectory=/home/isucon/isucari/webapp/python
+EnvironmentFile=/home/isucon/env.sh
+
+ExecStart = /home/isucon/isucari/webapp/python/venv/bin/gunicorn app:app -w 10 -b '127.0.0.1:8000'
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target

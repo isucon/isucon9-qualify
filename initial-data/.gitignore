@@ -1,4 +1,6 @@
 result/*.sql
 result/*.txt
 !result/category_json.txt
+pwcache/*.txt
 images/
+bench1.zip

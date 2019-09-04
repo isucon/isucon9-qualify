@@ -1,0 +1,40 @@
+---
+- name: Check Installed Node.js
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon
+  command: /home/isucon/local/node/bin/node --version
+  register: nodejs_version_output
+  changed_when: nodejs_version_output is failed
+  ignore_errors: true
+
+- name: Debug nodejs_version_output
+  debug:
+    var: nodejs_version_output
+
+- name: Install Node.js 12.9.1
+  become: yes
+  become_user: isucon
+  when: nodejs_version_output is failed or nodejs_version_output.stdout != "v12.9.1"
+  args:
+    chdir: /home/isucon
+  command: |
+    /home/isucon/xbuild/node-install v12.9.1 /home/isucon/local/node
+
+- name: Add PATH for Node.js
+  become: yes
+  become_user: isucon
+  blockinfile:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK nodejs"
+    dest: /home/isucon/.bash_profile
+    content: |
+      export PATH=/home/isucon/local/node/bin:$PATH
+
+- name: Install npm
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon
+  shell: |
+    bash -lc "/home/isucon/local/node/bin/npm install -g npm@6.11.2"

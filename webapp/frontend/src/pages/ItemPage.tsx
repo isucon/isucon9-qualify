@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactElement } from 'react';
 import { ItemData } from '../dataObjects/item';
 import { createStyles, Theme, Typography, WithStyles } from '@material-ui/core';
 import Grid from '@material-ui/core/Grid';
@@ -97,6 +97,7 @@ class ItemPage extends React.Component<Props> {
       onClick: (e: React.MouseEvent) => void;
       buttonText: string;
       disabled: boolean;
+      tooltip?: ReactElement;
     }[] = [
       {
         onClick: this._onClickBuyButton,
@@ -112,6 +113,14 @@ class ItemPage extends React.Component<Props> {
           onClick: this._onClickBumpButton,
           buttonText: 'Bump',
           disabled: false,
+          tooltip: (
+            <React.Fragment>
+              <Typography variant="subtitle1">新機能！</Typography>
+              <Typography variant="subtitle2">
+                BUMPで椅子をタイムラインの一番上に押し上げよう！'
+              </Typography>
+            </React.Fragment>
+          ),
         },
         {
           onClick: this._onClickItemEditButton,

@@ -8,6 +8,7 @@ use Crypt::OpenSSL::Random;
 use Digest::SHA;
 use JSON;
 use JSON::Types;
+use List::Util;
 
 open(my $sql_fh, ">:utf8", "result/initial.sql") or die $!;
 open(my $users_fh, ">", "result/users_json.txt") or die $!;
@@ -19,7 +20,7 @@ open(my $shippings_fh, ">", "result/shippings_json.txt") or die $!;
 my $BASE_PRICE = 100;
 my $NUM_USER_GENERATE = 4000;
 my $NUM_ITEM_GENERATE = 50000;
-my $RATE_OF_SOLDOUT = 30; # sold out商品の割合
+my $RATE_OF_SOLDOUT = 31; # sold out商品の割合
 my $RATE_OF_ACTIVE_SELLER = 10; # 出品が多いユーザの割合
 my $RATE_OF_ACTIVE_SELLER_RATE = 90; # 出品が多いユーザに割り振る割合。90%の商品が10%のユーザから出品されている
 my $CLAUSE_IN_DESCRIPTION = 100; # description中の文節の数
@@ -152,9 +153,19 @@ sub gen_passwd {
 
 sub encrypt_password {
     my $password = shift;
+    my $hex = Digest::SHA::hmac_sha256_hex($password);
+    if (-f "pwcache/$hex.txt") {
+        open(my $fh, "pwcache/$hex.txt");
+        my $encrypted = do {local $/; <$fh>};
+        chomp $encrypted;
+        return $encrypted;
+    }
     my $salt = shift || Crypt::Eksblowfish::Bcrypt::en_base64(Crypt::OpenSSL::Random::random_bytes(16));
     my $settings = '$2a$10$'.$salt;
-    return Crypt::Eksblowfish::Bcrypt::bcrypt($password, $settings);
+    my $encrypted = Crypt::Eksblowfish::Bcrypt::bcrypt($password, $settings);
+    open(my $fh, ">", "pwcache/$hex.txt") or die $!;
+    print $fh $encrypted;
+    return $encrypted;
 }
 
 # Check if the passwords match
@@ -170,7 +181,7 @@ sub check_password {
 my %users = ();
 my @active_seller = ();
 sub create_user {
-    my ($id, $name, $passwd, $address, $created_at) = @_;
+    my ($id, $name, $passwd, $address, $created_at, $category_id, $parent_category_id) = @_;
     # 出品が多いユーザ
     if (rand(100) < $RATE_OF_ACTIVE_SELLER) {
         push @active_seller, $id;
@@ -182,12 +193,15 @@ sub create_user {
         address      => string $address,
         created_at   => number $created_at,
         num_sell_items => number 0,
+        buy_category_id => number $category_id,
+        buy_parent_category_id => number $parent_category_id,
     };
 }
 
 sub flush_users {
     my @insert_users = ();
     for my $user (values %users) {
+        delete $user->{buy_category_id};
         print $users_fh JSON::encode_json($user)."\n";
         push @insert_users,
             sprintf(q!(%d,'%s','%s','%s', %d,'%s')!,
@@ -220,9 +234,9 @@ sub flush_users {
     my @dummy_users = map { chomp $_; [ split /\t/, $_, 3] } <$fh>;
 
     # For demo
-    create_user(1, 'isudemo1', 'isudemo1', '東京都港区6-11-1', 1565398800);
-    create_user(2, 'isudemo2', 'isudemo2', '東京都新宿区4-1-6', 1565398801);
-    create_user(3, 'isudemo3', 'isudemo3', '東京都伊洲根9-4000', 1565398802);
+    create_user(1, 'isudemo1', 'isudemo1', '東京都港区6-11-1', 1565398800, 2,1);
+    create_user(2, 'isudemo2', 'isudemo2', '東京都新宿区4-1-6', 1565398801, 11,10);
+    create_user(3, 'isudemo3', 'isudemo3', '東京都伊洲根9-4000', 1565398802, 21,20);
 
     my $base_time = 1565398803; #2019-08-10 10:00:03
     srand(1565458009);
@@ -234,15 +248,21 @@ sub flush_users {
         my $ad2 = int(rand(50))+1;
         my $address = $dummy_user->[2] . $ADDTIONAL_ADDREDSS[$i % (scalar @ADDTIONAL_ADDREDSS)] . $ad1 . "-" . $ad2;
         $users{$i} = [$id,$address];
+        my $category = $CATEGOREIS[int(rand(scalar @CATEGOREIS))];
         create_user(
             $i,
             $id,
             gen_passwd($id),
             $address,
-            $base_time+$i
+            $base_time+$i,
+            $category->[0],
+            $category->[1]
         );
     }
 }
+
+open(my $md5fh, "<:utf8", "image_files.txt") or die $!;
+my @IMAGES = map { chomp $_; $_ } <$md5fh>;
 
 open(my $fh, "<:utf8", "keywords.tsv") or die $!;
 my @KEYWORDS = map { chomp $_; $_ } <$fh>;
@@ -364,6 +384,10 @@ sub flush_shippings {
 
     my $te_id = 0;
     my $active_seller_rr = 0;
+    my $images_rr = 0;
+    my $buyer_rr = 0;
+    my @buyers = (1..$NUM_USER_GENERATE);
+    @buyers = List::Util::shuffle @buyers;
     for (my $i=1;$i<=$NUM_ITEM_GENERATE;$i++) {
         my $t_sell = $base_time+int(rand(10))-5;
         my $t_buy = $t_sell + int(rand(10)) + 60;
@@ -381,13 +405,20 @@ sub flush_shippings {
         my $status = 'on_sale';
         my $buyer = 0;
 
-        if (rand(100) < $RATE_OF_SOLDOUT) {
+        if (rand(100) < $RATE_OF_SOLDOUT && $te_id < 15007) { # TODO
             $status = 'sold_out';
             $te_id++;
-            $buyer = int(rand($NUM_USER_GENERATE))+1;
+            $buyer = $buyers[$buyer_rr % scalar @buyers];
+            $buyer_rr++;
             while ($buyer == $seller) {
                 $buyer = int(rand($NUM_USER_GENERATE))+1;
             }
+
+            #buyerが決まっている場合、buyerのcategoryを使う
+            $category = [
+                $users{$buyer}->{buy_category_id},
+                $users{$buyer}->{buy_parent_category_id}
+            ];
 
             insert_te(
                 $te_id,
@@ -415,7 +446,7 @@ sub flush_shippings {
                 $users{$buyer}->{account_name},
                 $users{$seller}->{address},
                 $users{$seller}->{account_name},
-                "", # XXX img_binary
+                "", # img_binary null ok
                 $t_buy,
                 $t_done
             );
@@ -429,12 +460,12 @@ sub flush_shippings {
             $name,
             $BASE_PRICE,
             $description,
-            'sample.jpg', # temporary
+            $IMAGES[$images_rr % scalar @IMAGES],
             $category->[0],
             $t_sell,
             $t_done
         );
-
+        $images_rr++;
         $base_time++;
     }
 }

@@ -133,6 +133,17 @@ class Service
         ];
     }
 
+    private function simplifyUser($user)
+    {
+        unset(
+            $user['hashed_password'],
+            $user['address'],
+            $user['last_bump'],
+            $user['created_at']
+        );
+        return $user;
+    }
+
     private function getCategoryByID($id)
     {
         $sth = $this->dbh->prepare('SELECT * FROM `categories` WHERE `id` = ?');
@@ -166,7 +177,7 @@ class Service
         if ($r === false) {
             return "";
         }
-        $config = $sth->fetchAll(PDO::FETCH_ASSOC);
+        $config = $sth->fetch(PDO::FETCH_ASSOC);
         if ($config === false) {
             return "";
         }
@@ -218,7 +229,8 @@ class Service
             $this->logger->error($e->getMessage());
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
-        return $response->withJson(["is_campaign" => false]);
+        // キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+        return $response->withJson(["campaign" => 0]);
     }
 
     public function index(Request $request, Response $response, array $args)
@@ -234,10 +246,12 @@ class Service
         try {
             if ($itemId !== "" && $createdAt > 0) {
                 // paging
-                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
+                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `status` IN (?,?) AND (`created_at` < ? OR (`created_at` <=? AND `id` < ?)) '.
+                    'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
                 $r = $sth->execute([
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_SOLD_OUT,
+                    (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
@@ -331,11 +345,13 @@ class Service
             if (!empty($itemId) && $createdAt > 0) {
                 // paging
                 $in = str_repeat('?,', count($categoryIds) - 1) . '?';
-                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?");
+                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ".
+                    "ORDER BY `created_at` DESC, `id` DESC LIMIT ?");
                 $r = $sth->execute(array_merge(
                     [self::ITEM_STATUS_ON_SALE, self::ITEM_STATUS_SOLD_OUT],
                     $categoryIds,
                     [
+                        (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                         (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                         $itemId,
                         self::ITEM_PER_PAGE + 1,
@@ -418,12 +434,14 @@ class Service
         try {
             if ($itemId !== "" && $createdAt > 0) {
                 // paging
-                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
+                $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?,?,?) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ' .
+                            'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
                 $r = $sth->execute([
                     $user['id'],
                     self::ITEM_STATUS_ON_SALE,
                     self::ITEM_STATUS_TRADING,
                     self::ITEM_STATUS_SOLD_OUT,
+                    (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     (new \DateTime())->setTimestamp($createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::ITEM_PER_PAGE + 1,
@@ -510,7 +528,7 @@ class Service
             if ($itemId !== 0 && $createdAt > 0) {
                 // paging
                 $sth = $this->dbh->prepare('SELECT * FROM `items` WHERE '.
-                    '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? '.
+                    '(`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND (`created_at` < ? OR (`created_at` <=? AND `id` < ?)) '.
                     'ORDER BY `created_at` DESC, `id` DESC LIMIT ?');
                 $r = $sth->execute([
                    $user['id'],
@@ -520,6 +538,7 @@ class Service
                    self::ITEM_STATUS_SOLD_OUT,
                    self::ITEM_STATUS_CANCEL,
                    self::ITEM_STATUS_STOP,
+                    (new \DateTime())->setTimeStamp((int) $createdAt)->format(self::DATETIME_SQL_FORMAT),
                     (new \DateTime())->setTimeStamp((int) $createdAt)->format(self::DATETIME_SQL_FORMAT),
                     $itemId,
                     self::TRANSACTIONS_PER_PAGE +1,
@@ -739,15 +758,15 @@ class Service
 
     public function settings(Request $request, Response $response, array $args)
     {
-        $token = $this->session->get('csrf_token');
+        $output = [];
+        $output['csrf_token'] = $this->session->get('csrf_token', '');
 
         try {
             $user = $this->getCurrentUser();
-        } catch (\DomainException $e) {
-            $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            unset($user['hashed_password'], $user['last_bump'], $user['created_at']);
+            $output['user'] = $user;
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            // pass
         }
 
         $sth = $this->dbh->query('SELECT * FROM `categories`', PDO::FETCH_ASSOC);
@@ -756,16 +775,10 @@ class Service
         if ($categories === false) {
             return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
         }
+        $output['categories'] = $categories;
+        $output['payment_service_url'] = $this->getPaymentServiceURL();
 
-        unset($user['hashed_password'], $user['last_bump'], $user['created_at'], $user['last_bump']);
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(
-            [
-                'csrf_token' => $token,
-                'user' => $user,
-                'categories' => $categories,
-                'payment_service_url' => $this->getPaymentServiceURL(),
-            ]
-        );
+        return $response->withStatus(StatusCode::HTTP_OK)->withJson($output);
     }
 
     public function item(Request $request, Response $response, array $args)
@@ -805,8 +818,7 @@ class Service
                 return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
             }
 
-            unset($seller['hashed_password'], $seller['address'], $seller['created_at']);
-            $item['seller'] = $seller;
+            $item['seller'] = $this->simplifyUser($seller);
 
             if (($user['id'] === $item['seller']['id'] || $user['id'] === $item['buyer_id']) && (int) $item['buyer_id'] !== 0) {
                 $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ?');
@@ -818,8 +830,7 @@ class Service
                 if ($buyer === false) {
                     return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'buyer not found']);
                 }
-                unset($buyer['hashed_password'], $buyer['address'], $buyer['created_at']);
-                $item['buyer'] = $buyer;
+                $item['buyer'] = $this->simplifyUser($buyer);
 
                 $sth = $this->dbh->prepare("SELECT * FROM `transaction_evidences` WHERE `item_id` = ?");
                 $r = $sth->execute([$item['id']]);

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
@@ -51,24 +52,23 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		<-time.After(10 * time.Second)
+		// ログインユーザーがある程度溜まらないと実施できないので少し待つ
+		// 8s毎に実行されるので60sだと最大で5回実行される
+		<-time.After(13 * time.Second)
 
 	L:
-		for j := 0; j < ExecutionSeconds/10; j++ {
-			ch := time.After(10 * time.Second)
+		for j := 0; j < (ExecutionSeconds-13)/8; j++ {
+			ch := time.After(8 * time.Second)
 
 			isIncrease := popularListing(ctx, critical, 80+j*20, 1000+j*100)
 
 			if isIncrease {
-				// goroutineを増やす
-				log.Print("increase load")
+				// 商品単価を上げる
+				log.Print("=== succeed to popular listing ===")
 
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					Load(ctx, critical)
-				}()
+				priceStoreCache.Add(20)
 
+				// 次の人気者出品に備えてログインユーザーのpoolを増やしておく
 				for i := 0; i < 10; i++ {
 					wg.Add(1)
 					go func() {
@@ -107,32 +107,6 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 		}
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-time.After(20 * time.Second)
-
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-
-	L:
-		for i := 1; i < ExecutionSeconds/10-2; i++ {
-			d := time.Duration(i * 400)
-
-			log.Print("increase delay")
-			sPayment.SetDelay(d * time.Millisecond)
-			sShipment.SetDelay(d * time.Millisecond)
-
-			priceStoreCache.Set(100 + i*50)
-
-			select {
-			case <-ticker.C:
-			case <-ctx.Done():
-				break L
-			}
-		}
-	}()
-
 	go func() {
 		wg.Wait()
 		close(closed)
@@ -163,6 +137,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 		return false
 	}
 
+	// 人気者出品だけはだれが買うかわからないので、カテゴリ指定なし出品
 	targetItem, err := sell(ctx, popular, price)
 	if err != nil {
 		critical.Add(err)
@@ -170,6 +145,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 	}
 
 	var wg sync.WaitGroup
+	var errCnt int32
 
 	for i := 0; i < num; i++ {
 		wg.Add(1)
@@ -181,12 +157,14 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 			s2, err := buyerSession(ctx)
 			if err != nil {
 				critical.Add(err)
+				atomic.AddInt32(&errCnt, 1)
 				return
 			}
 
 			transactionEvidenceID, err := s2.BuyWithMayFail(ctx, targetItem.ID, token)
 			if err != nil {
 				critical.Add(err)
+				atomic.AddInt32(&errCnt, 1)
 				return
 			}
 
@@ -267,6 +245,11 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 	err = buyer.Complete(ctx, targetItem.ID)
 	if err != nil {
 		critical.Add(err)
+		return false
+	}
+
+	if atomic.LoadInt32(&errCnt) > 2 {
+		// エラーが一定数を超えていたら単価は上がらない
 		return false
 	}
 

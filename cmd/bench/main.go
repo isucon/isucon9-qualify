@@ -49,12 +49,14 @@ func main() {
 	conf := Config{}
 	allowedIPStr := ""
 	dataDir := ""
+	staticDir := ""
 
 	flags.StringVar(&conf.TargetURLStr, "target-url", "http://127.0.0.1:8000", "target url")
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
 	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
 	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
 	flags.StringVar(&dataDir, "data-dir", "initial-data", "data directory")
+	flags.StringVar(&staticDir, "static-dir", "webapp/public/static", "static file directory")
 	flags.StringVar(&allowedIPStr, "allowed-ips", "", "allowed ips (comma separated)")
 
 	err := flags.Parse(os.Args[1:])
@@ -92,12 +94,12 @@ func main() {
 	}
 
 	// 初期データの準備
-	asset.Initialize(dataDir)
+	asset.Initialize(dataDir, staticDir)
 	scenario.InitSessionPool()
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
-	isCampaign, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	campaign, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
 		log.Print("cause error!")
@@ -134,15 +136,22 @@ func main() {
 	defer cancel()
 
 	log.Print("=== validation ===")
+
+	// 外部サービスのレイテンシを追加
+	// verify時にもレイテンシを入れていると時間がかかるので、Validationで入れる
+	ss.SetDelay(800 * time.Millisecond)
+	sp.SetDelay(800 * time.Millisecond)
+
 	// 一番大切なメイン処理：checkとloadの大きく2つの処理を行う
 	// checkはアプリケーションが正しく動いているか常にチェックする
 	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる
 	// checkとloadは区別がつかないようにしないといけない。loadのリクエストはログアウト状態しかなかったので、ログアウト時のキャッシュを強くするだけでスコアがはねる問題が過去にあった
 	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
-	scenario.Validation(ctx, isCampaign, cerr)
+	scenario.Validation(ctx, campaign, cerr)
 
-	criticalMsgs = cerr.GetMsgs()
-	if len(criticalMsgs) > 300 { // TODO
+	criticalMsgs, cCnt, aCnt, tCnt := cerr.Get()
+	// critical errorは2回以上、application errorは10回以上、trivial errorは200回を超すと失格
+	if cCnt >= 2 || aCnt >= 10 || tCnt > 200 {
 		log.Print("cause error!")
 
 		output := Output{
@@ -155,18 +164,18 @@ func main() {
 		return
 	}
 
+	// critical errorは1回で10000，application errorは1回で500の減点
+	penalty := int64(10000*cCnt + 500*aCnt)
+
 	<-time.After(1 * time.Second)
 
 	cerr = fails.NewCritical()
 	log.Print("=== final check ===")
 	// 最終チェック：ベンチマーカーの記録とアプリケーションの記録を突き合わせて、最終的なスコアを算出する
-	score := scenario.FinalCheck(context.Background(), cerr)
+	score := scenario.FinalCheck(context.Background(), cerr) - penalty
 	cMsgs := cerr.GetMsgs()
 
 	msgs := append(uniqMsgs(criticalMsgs), cMsgs...)
-
-	// TODO: criticalMsgsの数によってscoreを減点する
-	// TODO: criticalなエラーが発生していたら大幅減点・失格にする
 
 	if len(cMsgs) > 0 {
 		output := Output{

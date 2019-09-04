@@ -1,0 +1,17 @@
+- name: Install isucari.nodejs
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon/isucari/webapp/nodejs
+  shell: |
+    bash -lc "/home/isucon/local/node/bin/npm install"
+
+- name: Copy isucari.nodejs unit file
+  copy:
+    src: etc/systemd/system/isucari.nodejs.service
+    dest: /etc/systemd/system/isucari.nodejs.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - daemon-reload

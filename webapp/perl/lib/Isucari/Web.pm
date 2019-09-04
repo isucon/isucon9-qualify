@@ -233,11 +233,11 @@ post '/initialize' => [qw/allow_json_request/] => sub {
         );
     }
 
-    # Campaign 実施時は 1 にする
-    my $is_campaign = 0;
+    # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+    my $campaign = 0;
 
     $c->render_json({
-        is_campaign => bool $is_campaign
+        campaign => number $campaign
     });
 };
 
@@ -251,9 +251,10 @@ get '/new_items.json' => sub {
     if ($item_id && $created_at) {
         # paging
         $items = $self->dbh->select_all(
-            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
             $ITEM_STATUS_ON_SALE,
             $ITEM_STATUS_SOLD_OUT,
+            mysql_datetime_from_unix($created_at),
             mysql_datetime_from_unix($created_at),
             $item_id,
         );
@@ -322,10 +323,11 @@ get '/new_items/{root_category_id:\d+}.json' => sub {
     if ($item_id && $created_at) {
         # paging
         $items = $self->dbh->select_all(
-            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
             $ITEM_STATUS_ON_SALE,
             $ITEM_STATUS_SOLD_OUT,
             \@category_ids,
+            mysql_datetime_from_unix($created_at),
             mysql_datetime_from_unix($created_at),
             $item_id,
         );
@@ -394,10 +396,11 @@ get '/users/{user_id:\d+}.json' => sub {
     if ($item_id && $created_at) {
         # paging
         $items = $self->dbh->select_all(
-            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND seller_id = ? AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND seller_id = ? AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
             $ITEM_STATUS_ON_SALE,
             $ITEM_STATUS_SOLD_OUT,
             $user_simple->{id},
+            mysql_datetime_from_unix($created_at),
             mysql_datetime_from_unix($created_at),
             $item_id,
         );
@@ -466,7 +469,7 @@ get '/users/transactions.json' => sub {
     if ($item_id && $created_at) {
         # paging
         $items = $dbh->select_all(
-            sprintf('SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $TRANSACTIONS_PER_PAGE+1),
+            sprintf('SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?,?,?,?,?) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $TRANSACTIONS_PER_PAGE+1),
             $user->{id},
             $user->{id},
             $ITEM_STATUS_ON_SALE,
@@ -474,6 +477,7 @@ get '/users/transactions.json' => sub {
             $ITEM_STATUS_SOLD_OUT,
             $ITEM_STATUS_CANCEL,
             $ITEM_STATUS_STOP,
+            mysql_datetime_from_unix($created_at),
             mysql_datetime_from_unix($created_at),
             $item_id,
         );

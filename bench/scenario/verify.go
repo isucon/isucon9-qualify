@@ -35,7 +35,8 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 		defer BuyerPool.Enqueue(s2)
 
-		targetItemID, fileName, err := sellForFileName(ctx, s1, 100)
+		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
+		targetItemID, fileName, err := sellForFileName(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -95,6 +96,12 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 		defer BuyerPool.Enqueue(s2)
 
+		err = verifyNewItemsAndItems(ctx, s2, 2, 10)
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
 		err = verifyBumpAndNewItems(ctx, s1, s2)
 		if err != nil {
 			critical.Add(err)
@@ -120,7 +127,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer BuyerPool.Enqueue(s2)
 
 		category := asset.GetRandomRootCategory()
-		err = verifyNewCategoryItemsAndItems(ctx, s2, category.ID, 2, 20)
+		err = verifyNewCategoryItemsAndItems(ctx, s2, category.ID, 2, 10)
 		if err != nil {
 			critical.Add(err)
 		}
@@ -155,7 +162,8 @@ func Verify(ctx context.Context) *fails.Critical {
 			return
 		}
 
-		targetItem, err := sell(ctx, s1, 100)
+		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
+		targetItem, err := sellParentCategory(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
 			critical.Add(err)
 			return
@@ -298,6 +306,50 @@ func Verify(ctx context.Context) *fails.Critical {
 		}
 	}()
 
+	// verify scenario #9
+	// 静的ファイルチェック
+	// ベンチマーカーにmd5値を書いておく方針だと、静的ファイル更新時にベンチマーカーの更新も必要になるし、全く同じ静的ファイルを生成するのは数ヶ月後には困難になっている
+	// 今回は指定されたディレクトリにあるファイルと同じかどうかを確認する
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		s1, err := session.NewSession()
+		if err != nil {
+			critical.Add(err)
+			return
+		}
+
+		jsFiles, cssFiles := asset.GetStaticFiles()
+
+		for _, file := range jsFiles {
+			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
+			if err != nil {
+				// 大した数ないのでここは続行してみる
+				critical.Add(err)
+			}
+
+			if md5Str != file.MD5Str {
+				// 大した数ないのでここは続行してみる
+				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+			}
+		}
+
+		for _, file := range cssFiles {
+			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
+			if err != nil {
+				// 大した数ないのでここは続行してみる
+				critical.Add(err)
+			}
+
+			if md5Str != file.MD5Str {
+				// 大した数ないのでここは続行してみる
+				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+			}
+		}
+
+	}()
+
 	wg.Wait()
 
 	return critical
@@ -341,6 +393,83 @@ func verifyBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
 	return nil
 }
 
+// Timelineの商品をたどる
+func verifyNewItemsAndItems(ctx context.Context, s *session.Session, maxPage int64, checkItem int) error {
+	itemIDs := newIDsStore()
+	err := verifyItemIDsFromNewItems(ctx, s, itemIDs, 0, 0, 0, maxPage)
+	if err != nil {
+		return err
+	}
+	c := itemIDs.Len()
+	// 全件チェックの時だけチェック
+	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
+	if (maxPage == 0 && c < 30000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+	}
+
+	chkItemIDs := itemIDs.RandomIDs(checkItem)
+	for _, itemID := range chkItemIDs {
+		err := verifyGetItem(ctx, s, itemID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func verifyItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *IDsStore, nextItemID, nextCreatedAt, loop, maxPage int64) error {
+	var hasNext bool
+	var items []session.ItemSimple
+	var err error
+	if nextItemID > 0 && nextCreatedAt > 0 {
+		hasNext, items, err = s.NewItemsWithItemIDAndCreatedAt(ctx, nextItemID, nextCreatedAt)
+	} else {
+		hasNext, items, err = s.NewItems(ctx)
+	}
+	if err != nil {
+		return err
+	}
+	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+	}
+	for _, item := range items {
+		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonはcreated_at順である必要があります"))
+		}
+
+		aItem, ok := asset.GetItem(item.SellerID, item.ID)
+		if !ok {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに不明な商品があります (item_id: %d)", item.ID))
+		}
+
+		if !(item.Name == aItem.Name) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの商品の名前が間違えています (item_id: %d)", item.ID))
+		}
+
+		err := checkItemSimpleCategory(item, aItem)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの%s", err.Error()))
+		}
+
+		err = itemIDs.Add(item.ID)
+		if err != nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに同じ商品がありました (item_id: %d)", item.ID))
+		}
+		nextItemID = item.ID
+		nextCreatedAt = item.CreatedAt
+	}
+	loop = loop + 1
+	if maxPage > 0 && loop >= maxPage {
+		return nil
+	}
+	if hasNext && loop < 100 { // TODO: max pager
+		return verifyItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
+	}
+	return nil
+
+}
+
 // カテゴリページの商品をたどる
 func verifyNewCategoryItemsAndItems(ctx context.Context, s *session.Session, categoryID int, maxPage int64, checkItem int) error {
 	category, ok := asset.GetCategory(categoryID)
@@ -382,6 +511,9 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 	}
 	if err != nil {
 		return err
+	}
+	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
@@ -459,7 +591,9 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 	if err != nil {
 		return err
 	}
-
+	if hasNext && asset.ItemsTransactionsPerPage != len(items) {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
@@ -514,9 +648,6 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 	}
 	if hasNext && loop < 100 { // TODO: max pager
 		return verifyItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -524,7 +655,7 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 // ユーザページをたどる
 func verifyUserItemsAndItems(ctx context.Context, s *session.Session, sellerID int64, checkItem int) error {
 	itemIDs := newIDsStore()
-	err := checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
+	err := verifyItemIDsFromUsers(ctx, s, itemIDs, sellerID, 0, 0, 0)
 	if err != nil {
 		return err
 	}
@@ -559,6 +690,7 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 	if err != nil {
 		return err
 	}
+	// 件数チェックはしない。合計でチェックしている
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", sellerID))
@@ -622,7 +754,8 @@ func verifyGetItem(ctx context.Context, s *session.Session, targetItemID int64) 
 	if !(item.Description == aItem.Description) {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
-	if !(item.ImageURL == getImageURL(aItem.ImageName)) {
+	// 新規出品分はここで画像のチェックができない
+	if aItem.ImageName != "" && item.ImageURL != getImageURL(aItem.ImageName) {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品画像URLが間違っています", targetItemID))
 	}
 

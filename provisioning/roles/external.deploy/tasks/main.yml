@@ -16,6 +16,7 @@
       - "--exclude=.git"
       - "--exclude=.gitignore"
       - "--exclude=provisioning"
+      - "--exclude=webapp/public/upload"
 
 - name: Chown isucon
   become: yes

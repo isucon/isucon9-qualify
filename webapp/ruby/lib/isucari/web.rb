@@ -154,11 +154,11 @@ module Isucari
         db.xquery('INSERT INTO `configs` (name, val) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)', name, value)
       end
 
-      # Campaign 実施時は true にする
-      is_campaign = false
+      # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+      campaign = 0
 
       content_type :json
-      { 'is_campaign' => is_campaign }.to_json
+      { 'campaign' => campaign }.to_json
     end
 
     # getNewItems
@@ -168,7 +168,7 @@ module Isucari
 
       items = if item_id > 0 && created_at > 0
         # paging
-        db.xquery("SELECT * FROM `items` WHERE `status` IN (?, ?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, Time.at(created_at), item_id)
+        db.xquery("SELECT * FROM `items` WHERE `status` IN (?, ?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, Time.at(created_at), Time.at(created_at), item_id)
       else
         # 1st page
         db.xquery("SELECT * FROM `items` WHERE `status` IN (?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT)
@@ -223,7 +223,7 @@ module Isucari
       created_at = params['created_at'].to_i
 
       items = if item_id > 0 && created_at > 0
-        db.xquery("SELECT * FROM `items` WHERE `status` IN (?, ?) AND category_id IN (?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids, Time.at(created_at), item_id)
+        db.xquery("SELECT * FROM `items` WHERE `status` IN (?, ?) AND category_id IN (?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids, Time.at(created_at), Time.at(created_at), item_id)
       else
         db.xquery("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids)
       end
@@ -276,7 +276,7 @@ module Isucari
       items = if item_id > 0 && created_at > 0
         # paging
         begin
-          db.xquery("SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), item_id)
+          db.xquery("SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
         rescue
           db.query('ROLLBACK')
           halt_with_error 500, 'db error'
@@ -512,6 +512,7 @@ module Isucari
       target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
 
       if target_item['status'] != ITEM_STATUS_ON_SALE
+        db.query('ROLLBACK')
         halt_with_error 403, '販売中の商品以外編集できません'
       end
 
@@ -708,7 +709,6 @@ module Isucari
 
       item_id = db.last_id
 
-      puts 'update users'
       now = Time.now
       begin
         db.xquery('UPDATE `users` SET `num_sell_items` = ?, `last_bump` = ? WHERE `id` = ?', seller['num_sell_items'] + 1, now, seller['id'])
@@ -1190,8 +1190,23 @@ module Isucari
     # getReports
     get '/reports.json' do
       transaction_evidences = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` > 15007')
+      
+      response = transaction_evidences.map do |transaction_evidence|
+        {
+          'id' => transaction_evidence['id'],
+          'seller_id' => transaction_evidence['seller_id'],
+          'buyer_id' => transaction_evidence['buyer_id'],
+          'status' => transaction_evidence['status'],
+          'item_id' => transaction_evidence['item_id'],
+          'item_name' => transaction_evidence['item_name'],
+          'item_price' => transaction_evidence['item_price'],
+          'item_description' => transaction_evidence['item_description'],
+          'item_category_id' => transaction_evidence['item_category_id'],
+          'item_root_category_id' => transaction_evidence['item_root_category_id']
+        }
+      end
 
-      transaction_evidences.to_a.to_json
+      response.to_json
     end
 
     # Frontend

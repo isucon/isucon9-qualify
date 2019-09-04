@@ -41,6 +41,7 @@ type Job struct {
 
 type Result struct {
 	ID       int    `json:"id"`
+	Status   string `json:"status"`
 	Score    int    `json:"score"`
 	IsPassed bool   `json:"is_passed"`
 	Reason   string `json:"reason"`
@@ -51,6 +52,7 @@ type Result struct {
 type JobResult struct {
 	Stdout string
 	Stderr string
+	Status string
 }
 
 type JobResultStdout struct {
@@ -64,7 +66,7 @@ const (
 	defaultInterval        = 3 * time.Second
 	maxStderrLength        = 8 * 1024 * 1024
 	maxNumMessage          = 20
-	maxBenchmarkTime       = 150 * time.Second
+	maxBenchmarkTime       = 240 * time.Second
 	defaultBenchmarkerPath = "/home/isucon/isucari/bin/benchmarker"
 )
 
@@ -111,18 +113,27 @@ func joinN(messages []string, n int) string {
 }
 
 func report(ep string, job *Job, jobResult *JobResult) error {
-
+	status := "done"
 	var jobResultStdout JobResultStdout
 	if err := json.NewDecoder(strings.NewReader(jobResult.Stdout)).Decode(&jobResultStdout); err != nil {
+		msg := ""
+		if jobResult.Status == "timeout" {
+			msg = "ベンチマーク実行を指定時間内に完了することができませんでした"
+		}
+		if jobResult.Status == "fail" {
+			msg = "運営に連絡してください"
+		}
 		jobResultStdout = JobResultStdout{
 			Pass: false,
 			Score: 0,
-			Messages: []string{"運営に連絡してください"},
+			Messages: []string{msg},
 		}
+		status = "aborted"
 	}
 
 	result := Result{
 		ID:       job.ID,
+		Status:   status,
 		Score:    jobResultStdout.Score,
 		IsPassed: jobResultStdout.Pass,
 		Reason:   joinN(jobResultStdout.Messages, maxNumMessage),
@@ -195,7 +206,8 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 		fmt.Sprintf("-shipment-url=https://%s", fmt.Sprintf("shipment%s.isucon9q.catatsuy.org", suffix)),
 		fmt.Sprintf("-target-url=https://%s", target.GlobalIP),
 		fmt.Sprintf("-allowed-ips=%s", strings.Join(allowedIPs, ",")),
-		fmt.Sprintf("-data-dir=/home/isucon/isucari/initial-data"))
+		fmt.Sprintf("-data-dir=/home/isucon/isucari/initial-data"),
+		fmt.Sprintf("-static-dir=/home/isucon/isucari/webapp/public/static"))
 
 	var (
 		stdout bytes.Buffer
@@ -204,7 +216,22 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err = cmd.Run()
+	status := "success"
+	done := make(chan error, 1)
+	go func () {
+		done <- cmd.Run()
+	}()
+
+	select {
+	case e := <-done:
+		err = e
+		if err != nil {
+			status = "fail"
+		}
+	case <-ctx.Done():
+		status = "timeout"
+		err = fmt.Errorf("benchmarking timeout")
+	}
 
 	// triming too long stderr
 	stderrStr := stderr.String()
@@ -215,6 +242,7 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 	return &JobResult{
 		Stdout: stdout.String(),
 		Stderr: stderrStr,
+		Status: status,
 	}, err
 }
 
@@ -238,8 +266,8 @@ func main() {
 			log.Println(err)
 		}
 
-		log.Println(jobResult.Stdout)
 		log.Println(jobResult.Stderr)
+		log.Println(jobResult.Stdout)
 		if err := report(*apiEndpoint, job, jobResult); err != nil {
 			log.Println(err)
 		}

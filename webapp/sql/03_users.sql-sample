@@ -1,6 +1,0 @@
-use `isucari`;
--- For TEST
-
-INSERT INTO `users` VALUES (1,'aaa',_binary '$2a$10$PiNdeAp1e5sfb7CCc772U.2EFlCNtFeVMgm9tS3z5sh6Ma.jkfGUS','aaa',0,'2019-08-06 23:29:13','2019-08-06 23:27:12');
-INSERT INTO `users` VALUES (2,'bbb',_binary '$2a$10$EANgZism95ohm.E05GeUpu/Jy/hkvdSu8e4GbRRYoPk5ca4h4xlji','bbb',0,'2019-08-06 23:27:21','2019-08-06 23:27:20');
-INSERT INTO `users` VALUES (3,'ccc',_binary '$2a$10$paOLqkXvgfMUGH.ahTOPb.ZdTgYdbValLuIrHHCpRiGHO6met0lYe','ccc',0,'2019-08-06 23:36:47','2019-08-06 23:34:02');

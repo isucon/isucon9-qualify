@@ -154,8 +154,24 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) error {
 		if err != nil {
 			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました"))
 		}
-		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrSession,
+		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrApplication,
 			failure.Messagef("%s: got response status code %d; expected %d", prefixMsg, res.StatusCode, expectedStatusCode),
+		)
+	}
+
+	return nil
+}
+
+func checkStatusCodeWithMsg(res *http.Response, expectedStatusCode int, msg string) error {
+	prefixMsg := fmt.Sprintf("%s %s", res.Request.Method, res.Request.URL.Path)
+
+	if res.StatusCode != expectedStatusCode {
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました "+msg))
+		}
+		return failure.Translate(fmt.Errorf("status code: %d; body: %s", res.StatusCode, b), fails.ErrApplication,
+			failure.Messagef("%s: got response status code %d; expected %d %s", prefixMsg, res.StatusCode, expectedStatusCode, msg),
 		)
 	}
 
@@ -165,11 +181,15 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) error {
 func (s *Session) Do(req *http.Request) (*http.Response, error) {
 	res, err := s.httpClient.Do(req)
 	if err != nil {
-		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
-			return nil, failure.Translate(err, fails.ErrTimeout)
+		if nerr, ok := err.(net.Error); ok {
+			if nerr.Timeout() {
+				return nil, failure.Translate(err, fails.ErrTimeout)
+			} else if nerr.Temporary() {
+				return nil, failure.Translate(err, fails.ErrTemporary)
+			}
 		}
 
-		return nil, failure.Wrap(err)
+		return nil, err
 	}
 
 	return res, nil

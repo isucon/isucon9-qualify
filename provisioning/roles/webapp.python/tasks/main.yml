@@ -1,0 +1,21 @@
+- name: Install for isucari.python
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon/isucari/webapp/python
+  shell: |
+    bash -lc "
+    set -eu
+    python3 -m venv venv
+    ./venv/bin/pip install -r requirements.txt
+    "
+
+- name: Copy isucari.python unit file
+  copy:
+    src: etc/systemd/system/isucari.python.service
+    dest: /etc/systemd/system/isucari.python.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - daemon-reload

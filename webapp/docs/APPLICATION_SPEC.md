@@ -1,4 +1,4 @@
-# ISUCARI アプリケーション仕様
+# ISUCARI アプリケーション仕様書
 
 <img src="../frontend/public/logo.png" alt="ロゴ" height="300px" />
 
@@ -29,7 +29,7 @@ ISUCARIは椅子を売りたい人/買いたい人をつなげるフリマアプ
     - 集荷予約をして椅子を送る準備をしよう😤
     - 集荷予約は取引画面からできるぞ！
     - ![2-1](images/2-1.png)
-1. 配達員に椅子をわたそう！ 
+1. 配達員に椅子をわたそう！
     - 配達員が来たらQRコードを見せよう📱
     - 椅子を渡したら発送完了ボタンを押そう♪
     - ![2-2](images/2-2.png)
@@ -51,58 +51,10 @@ ISUCARIは椅子を売りたい人/買いたい人をつなげるフリマアプ
     - 出品者が発送するのを待とう！
     - 発送されたかどうかは取引画面で確認できるぞ！
 
-## Campaign 機能について
+## キャンペーン機能について
 
-TODO
+マニュアルを参照
 
 ##  外部サービスの仕様
 
 [外部サービス仕様書](EXTERNAL_SERVICE_SPEC.md) を参照
-
-## ステータス遷移表
-
-|                       | WHO    | items    | transaction_evidences | shippings            |
-|-----------------------|--------|----------|-----------------------|----------------------|
-| postSell              | 出品者  | on_sale  | -                    | -                    |
-| postBuy  (購入)      | 購入者  | trading  | wait_shipping         | initial              |
-| postShip (集荷予約)   | 出品者 | ↓        | ↓                     | wait_pickup          |
-| postShipDone (発送完了)|  出品者 | ↓        | wait_done             | shipping または done |
-| postComplete (取引完了)| 購入者  | sold_out | done                  | done                 |
-
-
-## 各テーブルごとのURLとステータス遷移
-
-#### items テーブル
-
-```
-↓ /sell （出品者による出品）
-on_sale
-↓ /buy （購入者による購入）
-trading
-↓ /complete （購入者による取引完了）
-sold_out
-```
-
-#### transaction_evidences テーブル
-
-```
-↓ /buy （購入者による購入）
-wait_shipping
-↓ /ship_done （出品者による発送完了）
-wait_done
-↓ /complete （購入者による受け取り完了）
-done
-```
-
-### shippings テーブル
-
-```
-↓ /buy （購入者による購入）
-initial
-↓ /ship （出品者による配送）
-wait_pickup
-↓ /ship_done（shipment serviceへ問い合わせた結果のstatusから）
-shipping
-↓ /ship_done（shipment serviceへ問い合わせた結果のstatusから）
-done
-```

@@ -76,15 +76,31 @@ func sell(ctx context.Context, s1 *session.Session, price int) (asset.AppItem, e
 	return aItem, nil
 }
 
-func sellForFileName(ctx context.Context, s1 *session.Session, price int) (int64, string, error) {
-	fileName, name, description, categoryID := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true), asset.GetRandomChildCategory().ID
+func sellParentCategory(ctx context.Context, s1 *session.Session, price, parentCategoryID int) (asset.AppItem, error) {
+	fileName, name, description := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true)
+	category := asset.GetRandomChildCategoryByParentID(parentCategoryID)
 
-	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, categoryID)
+	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, category.ID)
+	if err != nil {
+		return asset.AppItem{}, err
+	}
+
+	asset.SetItem(s1.UserID, targetItemID, name, price, description, category.ID)
+	aItem, _ := asset.GetItem(s1.UserID, targetItemID)
+
+	return aItem, nil
+}
+
+func sellForFileName(ctx context.Context, s1 *session.Session, price, parentCategoryID int) (int64, string, error) {
+	fileName, name, description := asset.GetRandomImageFileName(), asset.GenText(8, false), asset.GenText(200, true)
+	category := asset.GetRandomChildCategoryByParentID(parentCategoryID)
+
+	targetItemID, err := s1.Sell(ctx, fileName, name, price, description, category.ID)
 	if err != nil {
 		return 0, "", err
 	}
 
-	asset.SetItem(s1.UserID, targetItemID, name, price, description, categoryID)
+	asset.SetItem(s1.UserID, targetItemID, name, price, description, category.ID)
 
 	return targetItemID, fileName, nil
 }
@@ -333,8 +349,7 @@ type priceStore struct {
 var priceStoreCache *priceStore
 
 func init() {
-	priceStoreCache = &priceStore{}
-	priceStoreCache.Set(100)
+	priceStoreCache = &priceStore{price: 100}
 }
 
 func (s *priceStore) Get() int {
@@ -343,10 +358,10 @@ func (s *priceStore) Get() int {
 	return s.price
 }
 
-func (s *priceStore) Set(price int) {
+func (s *priceStore) Add(price int) {
 	s.Lock()
 	defer s.Unlock()
-	s.price = price
+	s.price += price
 }
 
 func SetShipment(ss *server.ServerShipment) {
@@ -356,3 +371,8 @@ func SetShipment(ss *server.ServerShipment) {
 func SetPayment(sp *server.ServerPayment) {
 	sPayment = sp
 }
+
+var (
+	sShipment *server.ServerShipment
+	sPayment  *server.ServerPayment
+)

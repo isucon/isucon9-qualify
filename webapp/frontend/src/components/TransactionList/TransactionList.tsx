@@ -4,9 +4,9 @@ import makeStyles from '@material-ui/core/styles/makeStyles';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 import InfiniteScroll from 'react-infinite-scroller';
-import CircularProgress from '@material-ui/core/CircularProgress/CircularProgress';
-import { TransactionComponent } from '../TransactionComponent';
+import TransactionContainer from '../../containers/TransactionContainer';
 import { Theme } from '@material-ui/core';
+import { TimelineLoading } from '../TimelineLoading';
 
 const useStyles = makeStyles((theme: Theme) => ({
   grid: {
@@ -40,7 +40,7 @@ const TransactionList: React.FC<Props> = function({
         classes={{ tile: classes.tile }}
         key={item.id}
       >
-        <TransactionComponent item={item} />
+        <TransactionContainer item={item} />
       </GridListTile>,
     );
   }
@@ -52,7 +52,7 @@ const TransactionList: React.FC<Props> = function({
       pageStart={0}
       loadMore={loadMore.bind(null, lastItem.createdAt, lastItem.id)}
       hasMore={hasNext}
-      loader={<CircularProgress />}
+      loader={<TimelineLoading />}
     >
       <GridList cols={1} cellHeight="auto" spacing={6}>
         {transactionsComponents}

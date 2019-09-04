@@ -176,6 +176,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 		var err error
 		var price int
 		var targetItem asset.AppItem
+		var targetParentCategoryID int
 
 	L:
 		for j := 0; j < ExecutionSeconds/10; j++ {
@@ -195,7 +196,8 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 			price = priceStoreCache.Get()
 
-			targetItem, err = sell(ctx, s1, price)
+			targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
+			targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 			if err != nil {
 				critical.Add(err)
 
@@ -334,6 +336,9 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 	if err != nil {
 		return err
 	}
+	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
+	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
@@ -371,84 +376,6 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 	}
 	if hasNext && loop < 100 { // TODO: max pager
 		return checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
-	}
-	return nil
-}
-
-func checkTransactionEvidence(ctx context.Context, s *session.Session, maxPage int64, checkItem int) error {
-	itemIDs := newIDsStore()
-	err := checkItemIDsTransactionEvidence(ctx, s, itemIDs, 0, 0, 0, maxPage)
-	if err != nil {
-		return err
-	}
-	c := itemIDs.Len()
-	if c < checkItem {
-		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
-	}
-	if checkItem == 0 {
-		return nil
-	}
-	chkItemIDs := itemIDs.RandomIDs(checkItem)
-	for _, itemID := range chkItemIDs {
-		err := checkGetItem(ctx, s, itemID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func checkItemIDsTransactionEvidence(ctx context.Context, s *session.Session, itemIDs *IDsStore, nextItemID, nextCreatedAt, loop, maxPage int64) error {
-	var hasNext bool
-	var items []session.ItemDetail
-	var err error
-	if nextItemID > 0 && nextCreatedAt > 0 {
-		hasNext, items, err = s.UsersTransactionsWithItemIDAndCreatedAt(ctx, nextItemID, nextCreatedAt)
-	} else {
-		hasNext, items, err = s.UsersTransactions(ctx)
-	}
-	if err != nil {
-		return err
-	}
-
-	for _, item := range items {
-		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
-		}
-
-		if item.BuyerID != s.UserID && item.Seller.ID != s.UserID {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに購入・出品していない商品が含まれます (item_id: %d, user_id: %d)", item.ID, s.UserID))
-		}
-
-		aItem, ok := asset.GetItem(item.SellerID, item.ID)
-		if !ok {
-			// 見つからない
-			continue
-		}
-
-		if !(item.Name == aItem.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの商品の名前が間違えています (item_id: %d)", item.ID))
-		}
-
-		err := checkItemDetailCategory(item, aItem)
-		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの%s", err.Error()))
-		}
-
-		err = itemIDs.Add(item.ID)
-		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに同じ商品がありました (item_id: %d, user_id: %d)", item.ID, s.UserID))
-		}
-
-		nextItemID = item.ID
-		nextCreatedAt = item.CreatedAt
-	}
-	loop = loop + 1
-	if maxPage > 0 && loop >= maxPage {
-		return nil
-	}
-	if hasNext && loop < 100 { // TODO: max pager
-		return checkItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
 }
@@ -491,7 +418,7 @@ func checkItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDs
 	if err != nil {
 		return err
 	}
-
+	// 件数チェックはしない。合計でみている
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.jsonはcreated_at順である必要があります", sellerID))
