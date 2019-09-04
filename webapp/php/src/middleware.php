@@ -13,12 +13,12 @@ return function (App $app) {
     );
 
     // logging
-    $app->add(function (Request $request, Response $response, callable $next) {
-        $route = $request->getAttribute('route');
-        $this->logger->info($request->getMethod() . ' ' . $route->getPattern(), [$route->getArguments()]);
-        $response = $next($request, $response);
-        $this->logger->info($response->getStatusCode() . ' ' . $response->getReasonPhrase(), [(string)$response->getBody()]);
+//  $app->add(function (Request $request, Response $response, callable $next) {
+//      $route = $request->getAttribute('route');
+//      $this->logger->info($request->getMethod() . ' ' . $route->getPattern(), [$route->getArguments()]);
+//      $response = $next($request, $response);
+//      $this->logger->info($response->getStatusCode() . ' ' . $response->getReasonPhrase(), [(string)$response->getBody()]);
 
-        return $response;
-    });
+//      return $response;
+//  });
 };
