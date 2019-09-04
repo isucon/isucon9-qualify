@@ -550,9 +550,6 @@ get '/users/transactions.json' => sub {
             }
 
             my $ssr = eval {
-                if ($shipping->{status} eq "done") {
-                    return {status => "done"};
-                }
                 $self->api_client->shipment_status(
                     $self->getShipmentServiceURL(),
                     {reserve_id => string $shipping->{reserve_id}}
