@@ -131,6 +131,14 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return err
 	}
 
+	if itemFromBuyer.TransactionEvidenceStatus == "" {
+		return failure.New(fails.ErrApplication, failure.Messagef("購入後の商品を購入者が見ているのにtransaction_evidence_statusが返っていません (item_id: %d)", targetItemID))
+	}
+
+	if itemFromBuyer.ShippingStatus == "" {
+		return failure.New(fails.ErrApplication, failure.Messagef("購入後の商品を購入者が見ているのに商品のshipping_statusが返っていません (item_id: %d)", targetItemID))
+	}
+
 	// status 確認
 	if itemFromBuyer.Status != asset.ItemStatusTrading || itemFromSeller.Status != asset.ItemStatusTrading ||
 		itemFromBuyerTrx.Status != asset.ItemStatusTrading || itemFromSellerTrx.Status != asset.ItemStatusTrading {
