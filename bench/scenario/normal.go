@@ -15,6 +15,7 @@ import (
 const (
 	MinCampaignRateSetting = 0
 	MaxCampaignRateSetting = 4
+	loadIDsMaxloop         = 100
 )
 
 func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, error) {
@@ -106,7 +107,7 @@ func findItemFromUsersAll(ctx context.Context, s *session.Session, sellerID, tar
 	if maxPage > 0 && loop >= maxPage {
 		return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json から商品を探すことができませんでした　(item_id: %d)", sellerID, targetItemID))
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return findItemFromUsersAll(ctx, s, sellerID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json から商品を探すことができませんでした　(item_id: %d)", sellerID, targetItemID))
@@ -152,7 +153,7 @@ func findItemFromNewCategoryAll(ctx context.Context, s *session.Session, categor
 	if maxPage > 0 && loop >= maxPage {
 		return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json から商品を探すことができませんでした　(item_id: %d)", categoryID, targetItemID))
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return findItemFromNewCategoryAll(ctx, s, categoryID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json から商品を探すことができませんでした　(item_id: %d)", categoryID, targetItemID))
@@ -194,7 +195,7 @@ func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, t
 	if maxPage > 0 && loop >= maxPage {
 		return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return findItemFromUsersTransactionsAll(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
@@ -216,7 +217,6 @@ func itemEditNewItemWithLoginedSession(ctx context.Context, s1 *session.Session,
 	if err != nil {
 		return err
 	}
-	// TODO any check?
 	return nil
 }
 

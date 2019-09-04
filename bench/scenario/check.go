@@ -307,9 +307,9 @@ func checkNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cate
 		return err
 	}
 	c := itemIDs.Len()
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -374,7 +374,7 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -388,7 +388,7 @@ func checkUserItemsAndItems(ctx context.Context, s *session.Session, sellerID in
 		return err
 	}
 	c := itemIDs.Len()
-	buffer := 10 // TODO
+	buffer := 10 // 多少のずれは許容
 	aUser := asset.GetUser(sellerID)
 	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer || c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
@@ -450,7 +450,7 @@ func checkItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDs
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil
