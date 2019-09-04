@@ -1,0 +1,9 @@
+- name: Clean up .ssh in provision
+  tags: bokko
+  become: yes
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items:
+    - { "path": "/root/.ssh/authorized_keys" }
+    - { "path": "/root/.ssh/known_hosts" }
