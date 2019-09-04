@@ -348,6 +348,10 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
+		}
+
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if !ok {
 			// 見つからない
@@ -426,6 +430,10 @@ func checkItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDs
 
 		if item.SellerID != sellerID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
+		}
+
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut && item.Status != asset.ItemStatusTrading {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", sellerID, item.ID))
 		}
 
 		aItem, ok := asset.GetItem(sellerID, item.ID)

@@ -448,6 +448,10 @@ func verifyItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs 
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの商品の名前が間違えています (item_id: %d)", item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品のステータスが正しくありません (item_id: %d)", item.ID))
+		}
+
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの%s", err.Error()))
@@ -532,6 +536,10 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 
 		if !(item.Name == aItem.Name) {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの商品の名前が間違えています (item_id: %d)", categoryID, item.ID))
+		}
+
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
 		}
 
 		err := checkItemSimpleCategory(item, aItem)
@@ -714,6 +722,10 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 
 		if item.SellerID != sellerID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
+		}
+
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut && item.Status != asset.ItemStatusTrading {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", sellerID, item.ID))
 		}
 
 		aItem, ok := asset.GetItem(sellerID, item.ID)
