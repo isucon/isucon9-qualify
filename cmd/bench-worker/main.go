@@ -49,13 +49,13 @@ type Result struct {
 	Stderr   string `json:"stderr"`
 }
 
-type JobResult struct {
+type BenchmarkResult struct {
 	Stdout string
 	Stderr string
 	Status string
 }
 
-type JobResultStdout struct {
+type BenchmarkResultStdout struct {
 	Pass     bool     `json:"pass"`
 	Score    int      `json:"score"`
 	Messages []string `json:"messages"`
@@ -76,8 +76,9 @@ var (
 
 // errors
 var (
-	errorJobNotFound    = fmt.Errorf("Job not found")
-	errorJobDequeueFail = fmt.Errorf("Job dequeuing failure")
+	errorJobNotFound          = fmt.Errorf("Job not found")
+	errorJobDequeueFail       = fmt.Errorf("Job dequeue failure")
+	errorPortalAPIUnavailable = fmt.Errorf("Portal API is unavailable")
 )
 
 func init() {
@@ -98,7 +99,23 @@ func dequeue(ep string) (*Job, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNoContent {
+	// 5XX
+	switch res.StatusCode {
+	case http.StatusInternalServerError:
+		fallthrough
+	case http.StatusBadGateway:
+		fallthrough
+	case http.StatusServiceUnavailable:
+		fallthrough
+	case http.StatusGatewayTimeout:
+		return nil, errorPortalAPIUnavailable
+	}
+
+	// 204 or 404
+	switch res.StatusCode {
+	case http.StatusNotFound:
+		fallthrough
+	case http.StatusNoContent:
 		return nil, errorJobNotFound
 	}
 
@@ -121,18 +138,18 @@ func joinN(messages []string, n int) string {
 	return strings.Join(messages, ",\n")
 }
 
-func report(ep string, job *Job, jobResult *JobResult) error {
+func createResult(job *Job, benchmarkResult *BenchmarkResult) *Result {
 	status := "done"
-	var jobResultStdout JobResultStdout
-	if err := json.NewDecoder(strings.NewReader(jobResult.Stdout)).Decode(&jobResultStdout); err != nil {
+	var benchmarkResultStdout BenchmarkResultStdout
+	if err := json.NewDecoder(strings.NewReader(benchmarkResult.Stdout)).Decode(&benchmarkResultStdout); err != nil {
 		msg := ""
-		if jobResult.Status == "timeout" {
+		if benchmarkResult.Status == "timeout" {
 			msg = "ベンチマーク実行を指定時間内に完了することができませんでした"
 		}
-		if jobResult.Status == "fail" {
+		if benchmarkResult.Status == "fail" {
 			msg = "運営に連絡してください"
 		}
-		jobResultStdout = JobResultStdout{
+		benchmarkResultStdout = BenchmarkResultStdout{
 			Pass:     false,
 			Score:    0,
 			Messages: []string{msg},
@@ -140,16 +157,18 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 		status = "aborted"
 	}
 
-	result := Result{
+	return &Result{
 		ID:       job.ID,
 		Status:   status,
-		Score:    jobResultStdout.Score,
-		IsPassed: jobResultStdout.Pass,
-		Reason:   joinN(jobResultStdout.Messages, maxNumMessage),
-		Stdout:   jobResult.Stdout,
-		Stderr:   jobResult.Stderr,
+		Score:    benchmarkResultStdout.Score,
+		IsPassed: benchmarkResultStdout.Pass,
+		Reason:   joinN(benchmarkResultStdout.Messages, maxNumMessage),
+		Stdout:   benchmarkResult.Stdout,
+		Stderr:   benchmarkResult.Stderr,
 	}
+}
 
+func report(ep string, job *Job, result *Result) error {
 	buf := &bytes.Buffer{}
 	if err := json.NewEncoder(buf).Encode(result); err != nil {
 		return err
@@ -191,10 +210,10 @@ func getExternalServiceSuffix() (string, error) {
 	return strings.TrimPrefix(hostname, "bench"), nil
 }
 
-func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
+func runBenchmarker(benchmarkerPath string, job *Job) (*BenchmarkResult, error) {
 	target, err := findBenchmarkTargetServer(job)
 	if err != nil {
-		return &JobResult{}, err
+		return &BenchmarkResult{}, err
 	}
 	allowedIPs := []string{}
 	for _, server := range job.Team.Servers {
@@ -203,7 +222,7 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 
 	suffix, err := getExternalServiceSuffix()
 	if err != nil {
-		return &JobResult{}, err
+		return &BenchmarkResult{}, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), maxBenchmarkTime)
@@ -248,11 +267,30 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 		stderrStr = stderrStr[:maxStderrLength]
 	}
 
-	return &JobResult{
+	return &BenchmarkResult{
 		Stdout: stdout.String(),
 		Stderr: stderrStr,
 		Status: status,
 	}, err
+}
+
+func printPrettyResult(result *Result) {
+	tmpResult := &Result{
+		ID:       result.ID,
+		Status:   result.Status,
+		Score:    result.Score,
+		IsPassed: result.IsPassed,
+		Reason:   result.Reason,
+		Stdout:   "see above",
+		Stderr:   "see above",
+	}
+	log.Println("============Benchmark stderr start====================")
+	log.Println(result.Stderr)
+	log.Println("============Benchmark stderr end======================")
+	log.Println("============Benchmark stdout start====================")
+	log.Println(result.Stdout)
+	log.Println("============Benchmark stdout end======================")
+	json.NewEncoder(os.Stderr).Encode(tmpResult)
 }
 
 func main() {
@@ -272,20 +310,27 @@ func main() {
 	for range ticker.C {
 		job, err := dequeue(apiEndpoint)
 		if err != nil {
-			log.Println(err)
+			if err != errorJobNotFound {
+				log.Println(err)
+			}
 			continue
 		}
+		log.Println("Dequeued benchmark job")
+		json.NewEncoder(os.Stderr).Encode(job)
 
-		jobResult, err := runBenchmarker(benchmarkerPath, job)
+		log.Printf("Run benchmark")
+		benchmarkResult, err := runBenchmarker(benchmarkerPath, job)
 		if err != nil {
-			log.Println(err)
+			log.Println("Run benchmark fail: ", err)
 		}
 
-		log.Println(jobResult.Stderr)
-		log.Println(jobResult.Stdout)
-		if err := report(apiEndpoint, job, jobResult); err != nil {
-			log.Println(err)
+		log.Printf("Report benchmark result start")
+		result := createResult(job, benchmarkResult)
+		printPrettyResult(result)
+		if err := report(apiEndpoint, job, result); err != nil {
+			log.Println("Report benchmark result fail: ", err)
+		} else {
+			log.Printf("Report benchmark result done")
 		}
-		log.Printf("job:%d reported", job.ID)
 	}
 }
