@@ -82,6 +82,10 @@ func findItemFromUsers(ctx context.Context, s *session.Session, targetItem asset
 	return findItemFromUsersAll(ctx, s, targetItem.SellerID, targetItem.ID, 0, 0, 0, maxPage)
 }
 
+func findItemFromUsersByID(ctx context.Context, s *session.Session, sellerID, targetItemID, maxPage int64) (session.ItemSimple, error) {
+	return findItemFromUsersAll(ctx, s, sellerID, targetItemID, 0, 0, 0, maxPage)
+}
+
 func findItemFromUsersAll(ctx context.Context, s *session.Session, sellerID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage int64) (session.ItemSimple, error) {
 	var hasNext bool
 	var items []session.ItemSimple

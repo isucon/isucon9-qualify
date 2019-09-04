@@ -304,6 +304,14 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	}
 	asset.UserBuyItem(s2.UserID)
 
+	findItem, err := findItemFromUsersByID(ctx, s1, s1.UserID, targetItemID, 1)
+	if err != nil {
+		return err
+	}
+	if findItem.Status != asset.ItemStatusTrading {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", s1.UserID, targetItemID))
+	}
+
 	reserveID, apath, err := s1.Ship(ctx, targetItemID)
 	if err != nil {
 		return err
@@ -332,6 +340,14 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	err = complete(ctx, s2, targetItemID)
 	if err != nil {
 		return err
+	}
+
+	findItem, err = findItemFromUsersByID(ctx, s1, s1.UserID, targetItemID, 1)
+	if err != nil {
+		return err
+	}
+	if findItem.Status != asset.ItemStatusSoldOut {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", s1.UserID, targetItemID))
 	}
 
 	return nil
