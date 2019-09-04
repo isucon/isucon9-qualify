@@ -198,7 +198,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
-	err = s1.ShipDone(ctx, targetItemID)
+	err = shipDone(ctx, s1, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
-	err = s2.Complete(ctx, targetItemID)
+	err = complete(ctx, s2, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 		return failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
-	err = s1.ShipDone(ctx, targetItemID)
+	err = shipDone(ctx, s1, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -319,11 +319,31 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
-	err = s2.Complete(ctx, targetItemID)
+	err = complete(ctx, s2, targetItemID)
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func shipDone(ctx context.Context, s1 *session.Session, targetItemID int64) error {
+	err := s1.ShipDone(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	sPayment.ForceReportsSetStatus(targetItemID, asset.TransactionEvidenceStatusWaitDone)
+	return nil
+}
+
+func complete(ctx context.Context, s1 *session.Session, targetItemID int64) error {
+	err := s1.Complete(ctx, targetItemID)
+	if err != nil {
+		return err
+	}
+
+	sPayment.ForceReportsSetStatus(targetItemID, asset.TransactionEvidenceStatusDone)
 	return nil
 }
 

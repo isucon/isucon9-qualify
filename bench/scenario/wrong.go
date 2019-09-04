@@ -176,7 +176,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 		return err
 	}
 
-	err = s1.ShipDone(ctx, targetItemID)
+	err = shipDone(ctx, s1, targetItemID)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
 	}
 
-	err = s2.Complete(ctx, targetItemID)
+	err = complete(ctx, s2, targetItemID)
 	if err != nil {
 		return err
 	}
