@@ -479,6 +479,10 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonはcreated_at順である必要があります"))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品のステータスが正しくありません (item_id: %d)", item.ID))
+		}
+
 		err = itemIDs.Add(item.ID)
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに同じ商品がありました (item_id: %d)", item.ID))
@@ -566,6 +570,10 @@ func loadItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *I
 
 		if item.Category.ParentID != categoryID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
+		}
+
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
 		}
 
 		err = itemIDs.Add(item.ID)
