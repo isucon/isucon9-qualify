@@ -709,7 +709,6 @@ module Isucari
 
       item_id = db.last_id
 
-      puts 'update users'
       now = Time.now
       begin
         db.xquery('UPDATE `users` SET `num_sell_items` = ?, `last_bump` = ? WHERE `id` = ?', seller['num_sell_items'] + 1, now, seller['id'])
