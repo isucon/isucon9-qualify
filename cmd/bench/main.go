@@ -150,7 +150,8 @@ func main() {
 	scenario.Validation(ctx, campaign, cerr)
 
 	criticalMsgs, cCnt, aCnt, tCnt := cerr.Get()
-	if cCnt > 0 || aCnt > 10 || tCnt > 300 { // TODO
+	// critical errorは2回以上、application errorは10回以上、trivial errorは200回を超すと失格
+	if cCnt >= 2 || aCnt >= 10 || tCnt > 200 {
 		log.Print("cause error!")
 
 		output := Output{
@@ -163,18 +164,18 @@ func main() {
 		return
 	}
 
+	// critical errorは1回で10000，application errorは1回で500の減点
+	penalty := int64(10000*cCnt + 500*aCnt)
+
 	<-time.After(1 * time.Second)
 
 	cerr = fails.NewCritical()
 	log.Print("=== final check ===")
 	// 最終チェック：ベンチマーカーの記録とアプリケーションの記録を突き合わせて、最終的なスコアを算出する
-	score := scenario.FinalCheck(context.Background(), cerr)
+	score := scenario.FinalCheck(context.Background(), cerr) - penalty
 	cMsgs := cerr.GetMsgs()
 
 	msgs := append(uniqMsgs(criticalMsgs), cMsgs...)
-
-	// TODO: criticalMsgsの数によってscoreを減点する
-	// TODO: criticalなエラーが発生していたら大幅減点・失格にする
 
 	if len(cMsgs) > 0 {
 		output := Output{
