@@ -112,14 +112,25 @@ type reportStore struct {
 }
 
 type report struct {
-	Price int
+	Price  int
+	Status string
 }
 
 func (c *reportStore) Set(itemID int64, price int) {
 	c.Lock()
 	c.items[itemID] = report{
 		Price: price,
+		// statusがdoneになったかどうかだけを確認しているので、初期化時は特に必要ない
+		// Status: asset.TransactionEvidenceStatusWaitShipping,
 	}
+	c.Unlock()
+}
+
+func (c *reportStore) SetStatus(itemID int64, status string) {
+	c.Lock()
+	item := c.items[itemID]
+	item.Status = status
+	c.items[itemID] = item
 	c.Unlock()
 }
 
@@ -299,6 +310,11 @@ func (s *ServerPayment) ForceSet(card string, itemID int64, price int) string {
 	s.cardTokens.Unlock()
 
 	return token
+}
+
+// ForceReportsSetStatus is the function for benchmarker
+func (s *ServerPayment) ForceReportsSetStatus(itemID int64, status string) {
+	s.reports.SetStatus(itemID, status)
 }
 
 // GetReports is the function for benchmarker

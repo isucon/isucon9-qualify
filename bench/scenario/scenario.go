@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/isucon/isucon9-qualify/bench/asset"
 	"github.com/isucon/isucon9-qualify/bench/fails"
 	"github.com/isucon/isucon9-qualify/bench/session"
 	"github.com/morikuni/failure"
@@ -125,7 +126,14 @@ func FinalCheck(ctx context.Context, critical *fails.Critical) int64 {
 			continue
 		}
 
-		score += int64(report.Price)
+		// statusのチェックはこちらからコネクションを切断したケースでずれる可能性がある
+		// とりあえずチェックせず、こちらがdoneだと認めたケースだけで加点する
+
+		if report.Status == asset.TransactionEvidenceStatusDone {
+			// doneの時だけが売り上げとして認められる
+			score += int64(report.Price)
+		}
+
 		delete(reports, te.ItemID)
 	}
 

@@ -230,7 +230,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 		return false
 	}
 
-	err = popular.ShipDone(ctx, targetItem.ID)
+	err = shipDone(ctx, popular, targetItem.ID)
 	if err != nil {
 		critical.Add(err)
 		return false
@@ -242,7 +242,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 		return false
 	}
 
-	err = buyer.Complete(ctx, targetItem.ID)
+	err = complete(ctx, buyer, targetItem.ID)
 	if err != nil {
 		critical.Add(err)
 		return false
