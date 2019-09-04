@@ -444,6 +444,7 @@ func SetItem(sellerID int64, itemID int64, name string, price int, description s
 
 	userItems[sellerID] = append(userItems[sellerID], itemID)
 
+	// imageName は更新できない
 	key := fmt.Sprintf("%d_%d", sellerID, itemID)
 	items[key] = AppItem{
 		ID:          itemID,

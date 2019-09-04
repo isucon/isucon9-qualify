@@ -754,7 +754,8 @@ func verifyGetItem(ctx context.Context, s *session.Session, targetItemID int64) 
 	if !(item.Description == aItem.Description) {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
-	if !(item.ImageURL == getImageURL(aItem.ImageName)) {
+	// 新規出品分はここで画像のチェックができない
+	if aItem.ImageName != "" && item.ImageURL != getImageURL(aItem.ImageName) {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品画像URLが間違っています", targetItemID))
 	}
 
