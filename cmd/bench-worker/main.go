@@ -71,7 +71,11 @@ const (
 )
 
 var (
-	apiClient           *http.Client
+	apiClient *http.Client
+)
+
+// errors
+var (
 	errorJobNotFound    = fmt.Errorf("Job not found")
 	errorJobDequeueFail = fmt.Errorf("Job dequeuing failure")
 )
