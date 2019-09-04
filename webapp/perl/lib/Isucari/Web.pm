@@ -233,7 +233,7 @@ post '/initialize' => [qw/allow_json_request/] => sub {
         );
     }
 
-    # キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと。
+    # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
     my $campaign = 0;
 
     $c->render_json({

@@ -308,8 +308,8 @@ async function postInitialize(req: FastifyRequest, reply: FastifyReply<ServerRes
     );
 
     const res = {
-        // Campaign 実施時は true にする
-        is_campaign: false
+        // キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+        campaign: 0
     };
 
     await db.release();
@@ -2230,4 +2230,3 @@ async function getShipmentServiceURL(db: MySQLQueryable): Promise<string> {
 function getImageURL(imageName: string) {
     return `/upload/${imageName}`;
 }
-
