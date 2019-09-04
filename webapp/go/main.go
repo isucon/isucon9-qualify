@@ -491,7 +491,7 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := resInitialize{}
-	// キャンペーン実施時には還元率の設定を返す。詳しくはレギュレーションを参照のこと。
+	// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
 	res.Campaign = 0
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
