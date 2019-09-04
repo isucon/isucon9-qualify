@@ -16,19 +16,19 @@ const (
 	ExecutionSeconds = 60
 )
 
-func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, *fails.Critical) {
+func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, string, *fails.Critical) {
 	critical := fails.NewCritical()
 
 	// initializeだけタイムアウトを別に設定
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	campaign, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
+	campaign, language, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
 	if err != nil {
 		critical.Add(err)
 	}
 
-	return campaign, critical
+	return campaign, language, critical
 }
 
 func Validation(ctx context.Context, campaign int, critical *fails.Critical) {

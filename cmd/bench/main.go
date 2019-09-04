@@ -23,6 +23,7 @@ type Output struct {
 	Pass     bool     `json:"pass"`
 	Score    int64    `json:"score"`
 	Campaign int      `json:"campaign"`
+	Language string   `json:"language"`
 	Messages []string `json:"messages"`
 }
 
@@ -100,7 +101,7 @@ func main() {
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
-	campaign, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	campaign, language, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
 	criticalMsgs := cerr.GetMsgs()
 	if len(criticalMsgs) > 0 {
 		log.Print("cause error!")
@@ -109,6 +110,7 @@ func main() {
 			Pass:     false,
 			Score:    0,
 			Campaign: campaign,
+			Language: language,
 			Messages: criticalMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -128,6 +130,7 @@ func main() {
 			Pass:     false,
 			Score:    0,
 			Campaign: campaign,
+			Language: language,
 			Messages: criticalMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -161,6 +164,7 @@ func main() {
 			Pass:     false,
 			Score:    0,
 			Campaign: campaign,
+			Language: language,
 			Messages: uniqMsgs(criticalMsgs),
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -191,6 +195,7 @@ func main() {
 			Pass:     false,
 			Score:    score,
 			Campaign: campaign,
+			Language: language,
 			Messages: msgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -202,6 +207,7 @@ func main() {
 		Pass:     true,
 		Score:    score,
 		Campaign: campaign,
+		Language: language,
 		Messages: msgs,
 	}
 	json.NewEncoder(os.Stdout).Encode(output)
