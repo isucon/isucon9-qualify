@@ -71,8 +71,9 @@ const (
 )
 
 var (
-	apiClient        *http.Client
-	errorJobNotFound = fmt.Errorf("Job not found")
+	apiClient           *http.Client
+	errorJobNotFound    = fmt.Errorf("Job not found")
+	errorJobDequeueFail = fmt.Errorf("Job dequeuing failure")
 )
 
 func init() {
@@ -93,8 +94,12 @@ func dequeue(ep string) (*Job, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode == http.StatusNoContent {
 		return nil, errorJobNotFound
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, errorJobDequeueFail
 	}
 
 	job := Job{}
@@ -124,8 +129,8 @@ func report(ep string, job *Job, jobResult *JobResult) error {
 			msg = "運営に連絡してください"
 		}
 		jobResultStdout = JobResultStdout{
-			Pass: false,
-			Score: 0,
+			Pass:     false,
+			Score:    0,
 			Messages: []string{msg},
 		}
 		status = "aborted"
@@ -218,7 +223,7 @@ func runBenchmarker(benchmarkerPath string, job *Job) (*JobResult, error) {
 
 	status := "success"
 	done := make(chan error, 1)
-	go func () {
+	go func() {
 		done <- cmd.Run()
 	}()
 
