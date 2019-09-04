@@ -1,4 +1,4 @@
-- name: Clean up .ssh in provision
+- name: Clean up after provision
   tags: bokko
   become: yes
   file:
@@ -7,3 +7,5 @@
   with_items:
     - { "path": "/root/.ssh/authorized_keys" }
     - { "path": "/root/.ssh/known_hosts" }
+    - { "path": "/root/.bash_history" }
+    - { "path": "/home/isucon/.bash_history" }
