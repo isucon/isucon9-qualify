@@ -148,6 +148,26 @@ DB(isucari)を初期状態にもどすには、次のコマンドを実行しま
 $ /home/isucon/isucari/webapp/sql/init.sh
 ```
 
+## [開発用] shipmentおよびpayment serviceのモックアプリケーションの利用について
+
+アプリケーションをローカルで開発する際に、利用可能なモックアプリケーションを用意しておりますので、必要に応じてご利用いただくことができます。
+
+### 利用方法
+
+モックアプリケーションを利用する際はアプリケーションを起動した後、
+以下のように手動で`POST /initialize` を叩いて設定を反映してください。
+
+```
+$ cat initialize.json
+{
+  "payment_service_url":"https://payment.isucon9q.catatsuy.org",
+  "shipment_service_url":"https://shipment.isucon9q.catatsuy.org"
+}
+$ curl -XPOST http://127.0.0.1:8000/initialize \
+-H 'Content-Type: application/json' \
+-d @initialize.json
+```
+
 # ISUCARIについて
 
 ## ストーリー
