@@ -154,11 +154,16 @@ module Isucari
         db.xquery('INSERT INTO `configs` (name, val) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)', name, value)
       end
 
-      # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-      campaign = 0
-
       content_type :json
-      { 'campaign' => campaign }.to_json
+
+      response = {
+        # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+        'campaign' => 0,
+        # 実装言語を返す
+        'language' => 'ruby',
+      }
+
+      response.to_json
     end
 
     # getNewItems
