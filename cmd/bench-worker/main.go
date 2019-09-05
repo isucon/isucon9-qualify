@@ -111,11 +111,8 @@ func dequeue(ep string) (*Job, error) {
 		return nil, errorPortalAPIUnavailable
 	}
 
-	// 204 or 404
-	switch res.StatusCode {
-	case http.StatusNotFound:
-		fallthrough
-	case http.StatusNoContent:
+	// Job not found
+	if res.StatusCode == http.StatusNoContent {
 		return nil, errorJobNotFound
 	}
 
