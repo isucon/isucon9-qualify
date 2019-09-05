@@ -80,18 +80,6 @@ mysql -u root < 00_create_database.sql
 ./init.sh
 ```
 
-
-### 起動方法 (go)
-
-```shell-session
-cd webapp/go
-go run api.go main.go
-
-# or
-go build
-./go
-```
-
 ## 参考実装移植について
 
   * 実装は`webapp`ディレクトリ以下に各言語名でディレクトリを作って、その中で実装
