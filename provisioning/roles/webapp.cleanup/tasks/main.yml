@@ -1,5 +1,4 @@
 - name: Clean up after provision
-  tags: bokko
   become: yes
   file:
     path: "{{ item.path }}"
