@@ -64,3 +64,13 @@ ISUCARIは椅子を売りたい人/買いたい人をつなげるフリマアプ
 ##  外部サービスの仕様
 
 [外部サービス仕様書](EXTERNAL_SERVICE_SPEC.md) を参照
+
+## ISUCARI ステータス遷移表
+
+|                        | WHO    | items    | transaction_evidences | shippings           |
+|------------------------|--------|----------|-----------------------|---------------------|
+| /sell （出品）         | 出品者 | on_sale  | -                     | -                   |
+| /buy  （購入）         | 購入者 | trading  | wait_shipping         | initial             |
+| /ship （集荷予約）     | 出品者 |   ↓      |   ↓                   | wait_pickup         |
+| /ship_done （発送完了）| 出品者 |   ↓      | wait_done             | shipping or done    |
+| /complete （取引完了） | 購入者 | sold_out | done                  | done                |
