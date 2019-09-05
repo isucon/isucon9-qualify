@@ -32,7 +32,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     cursor: 'pointer',
   },
   list: {
-    width: '270px',
+    width: '300px',
   },
   nested: {
     paddingLeft: theme.spacing(4),
@@ -119,7 +119,7 @@ const Header: React.FC<Props> = ({
               <ListItemIcon>
                 <WeekendIcon color="primary" />
               </ListItemIcon>
-              <ListItemText primary="カテゴリ新着商品" />
+              <ListItemText primary="カテゴリタイムライン" />
               {categoryExpanded ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
             <Collapse in={categoryExpanded} timeout="auto" unmountOnExit>
