@@ -249,7 +249,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
+		return failure.New(fails.ErrApplication, failure.Messagef("集荷予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = complete(ctx, s2, targetItemID)
@@ -334,7 +334,7 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
+		return failure.New(fails.ErrApplication, failure.Messagef("集荷予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = complete(ctx, s2, targetItemID)

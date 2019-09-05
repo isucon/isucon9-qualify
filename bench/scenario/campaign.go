@@ -205,7 +205,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 			select {
 			case s := <-buyerCh:
 				// buyerが複数人いるとここのコードが動く
-				critical.Add(failure.New(fails.ErrCritical, failure.Messagef("購入済み商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItem.ID, s.UserID)))
+				critical.Add(failure.New(fails.ErrCritical, failure.Messagef("売り切れ商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItem.ID, s.UserID)))
 			case <-closed:
 				break L
 			}
@@ -238,7 +238,7 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
+		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("集荷予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
 		return false
 	}
 

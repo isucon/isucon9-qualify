@@ -183,7 +183,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Message("集荷予約IDに誤りがあります"))
 	}
 
 	err = complete(ctx, s2, targetItemID)
