@@ -148,13 +148,15 @@ DB(isucari)を初期状態にもどすには、次のコマンドを実行しま
 $ /home/isucon/isucari/webapp/sql/init.sh
 ```
 
-## ［開発用］shipmentおよびpayment serviceのモックアプリケーションの利用について
+## ［開発用］shipmentおよびpayment serviceの利用について
 
-アプリケーションを開発・確認する際に、利用可能なモックアプリケーションを用意しておりますので、必要に応じてご利用いただくことができます。
+アプリケーションを開発・確認する際に、利用可能なshipmentおよびpayment serviceを用意しています。以下の手順で利用することができます。
+
+またAPIの詳細は「外部サービスAPIの仕様」 `webapp/docs` 以下の **EXTERNAL_SERVICE_SPEC.md** を参照してください。
 
 ### 利用方法
 
-モックアプリケーションを利用する際はアプリケーションを起動した後、以下のように手動で `POST /initialize` を叩いて設定を反映してください。
+アプリケーションを利用する際はアプリケーションを起動した後、以下のように手動で `POST /initialize` を叩いて設定を反映してください。
 
 ```
 $ cat initialize.json
@@ -201,7 +203,7 @@ ISUCARIは椅子を売りたい人／買いたい人をつなげるフリマア�
 
 ## アプリケーションの仕様について
 
-ISUCARIの使い方、紹介は「ISUCARI アプリケーション仕様書」 `webapp/docs` 以下の **APPLICATION_SPEC.md** を参照してください
+ISUCARIの使い方、紹介は「ISUCARI アプリケーション仕様書」 `webapp/docs` 以下の **APPLICATION_SPEC.md** を参照してください。
 
 # ルール詳細
 
