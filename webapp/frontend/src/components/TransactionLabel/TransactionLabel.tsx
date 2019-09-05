@@ -48,11 +48,11 @@ const getLabelByStatus = (
 ): [string, 'normalLabel' | 'soldOutLabel' | 'tradingLabel'] => {
   switch (status) {
     case 'on_sale':
-      return ['出品中', 'normalLabel'];
+      return ['販売中', 'normalLabel'];
     case 'trading':
       return ['取引中', 'tradingLabel'];
     case 'sold_out':
-      return ['売却済', 'soldOutLabel'];
+      return ['売り切れ', 'soldOutLabel'];
     case 'stop':
       return ['出品停止中', 'normalLabel'];
     case 'cancel':
