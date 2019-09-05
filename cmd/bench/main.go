@@ -156,8 +156,8 @@ func main() {
 	scenario.Validation(ctx, campaign, cerr)
 
 	criticalMsgs, cCnt, aCnt, tCnt := cerr.Get()
-	// critical errorは2回以上、application errorは10回以上で失格
-	if cCnt >= 2 || aCnt >= 10 {
+	// critical errorは1つでもあれば、application errorは10回以上で失格
+	if cCnt > 0 || aCnt >= 10 {
 		log.Print("cause error!")
 
 		output := Output{
@@ -172,28 +172,48 @@ func main() {
 		return
 	}
 
-	// critical errorは1回で10000点，application errorは1回で500点減点
-	penalty := int64(10000*cCnt + 500*aCnt)
-
-	if tCnt > 200 {
-		// trivial errorは200回を超えたら100回毎に5000点減点
-		penalty -= int64(5000 * (1 + (tCnt-200)/100))
-	}
-
 	<-time.After(1 * time.Second)
 
 	cerr = fails.NewCritical()
 	log.Print("=== final check ===")
 	// 最終チェック：ベンチマーカーの記録とアプリケーションの記録を突き合わせて、最終的なスコアを算出する
-	score := scenario.FinalCheck(context.Background(), cerr) - penalty
-	cMsgs := cerr.GetMsgs()
+	score := scenario.FinalCheck(context.Background(), cerr)
 
+	// application errorだけが発生する
+	cMsgs, _, faCnt, _ := cerr.Get()
 	msgs := append(uniqMsgs(criticalMsgs), cMsgs...)
 
-	if len(cMsgs) > 0 {
+	aCnt += faCnt
+
+	// application errorは10回以上で失格
+	if aCnt >= 10 {
 		output := Output{
 			Pass:     false,
-			Score:    score,
+			Score:    0,
+			Campaign: campaign,
+			Language: language,
+			Messages: msgs,
+		}
+		json.NewEncoder(os.Stdout).Encode(output)
+
+		return
+	}
+
+	// application errorは1回で500点減点
+	penalty := int64(500 * aCnt)
+
+	if tCnt > 200 {
+		// trivial errorは200回を超えたら100回毎に5000点減点
+		penalty += int64(5000 * (1 + (tCnt-200)/100))
+	}
+
+	score -= penalty
+
+	// 0点以下なら失格
+	if score <= 0 {
+		output := Output{
+			Pass:     false,
+			Score:    0,
 			Campaign: campaign,
 			Language: language,
 			Messages: msgs,
