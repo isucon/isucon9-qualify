@@ -101,9 +101,9 @@ func main() {
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
-	campaign, language, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
-	criticalMsgs := cerr.GetMsgs()
-	if len(criticalMsgs) > 0 {
+	campaign, language := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	eMsgs := fails.ErrorsForCheck.GetMsgs()
+	if len(eMsgs) > 0 {
 		log.Print("cause error!")
 
 		output := Output{
@@ -111,7 +111,7 @@ func main() {
 			Score:    0,
 			Campaign: campaign,
 			Language: language,
-			Messages: criticalMsgs,
+			Messages: eMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 
@@ -121,9 +121,9 @@ func main() {
 	log.Print("=== verify ===")
 	// 初期チェック：正しく動いているかどうかを確認する
 	// 明らかにおかしいレスポンスを返しているアプリケーションはさっさと停止させることで、運営側のリソースを使い果たさない・他サービスへの攻撃に利用されるを防ぐ
-	cerr = scenario.Verify(context.Background())
-	criticalMsgs = cerr.GetMsgs()
-	if len(criticalMsgs) > 0 {
+	scenario.Verify(context.Background())
+	eMsgs = fails.ErrorsForCheck.GetMsgs()
+	if len(eMsgs) > 0 {
 		log.Print("cause error!")
 
 		output := Output{
@@ -131,7 +131,7 @@ func main() {
 			Score:    0,
 			Campaign: campaign,
 			Language: language,
-			Messages: criticalMsgs,
+			Messages: eMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 
@@ -153,9 +153,9 @@ func main() {
 	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる
 	// checkとloadは区別がつかないようにしないといけない。loadのリクエストはログアウト状態しかなかったので、ログアウト時のキャッシュを強くするだけでスコアがはねる問題が過去にあった
 	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
-	scenario.Validation(ctx, campaign, cerr)
+	scenario.Validation(ctx, campaign)
 
-	criticalMsgs, cCnt, aCnt, tCnt := cerr.Get()
+	eMsgs, cCnt, aCnt, tCnt := fails.ErrorsForCheck.Get()
 	// critical errorは1つでもあれば、application errorは10回以上で失格
 	if cCnt > 0 || aCnt >= 10 {
 		log.Print("cause error!")
@@ -165,7 +165,7 @@ func main() {
 			Score:    0,
 			Campaign: campaign,
 			Language: language,
-			Messages: uniqMsgs(criticalMsgs),
+			Messages: uniqMsgs(eMsgs),
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 
@@ -174,14 +174,13 @@ func main() {
 
 	<-time.After(1 * time.Second)
 
-	cerr = fails.NewErrors()
 	log.Print("=== final check ===")
 	// 最終チェック：ベンチマーカーの記録とアプリケーションの記録を突き合わせて、最終的なスコアを算出する
-	score := scenario.FinalCheck(context.Background(), cerr)
+	score := scenario.FinalCheck(context.Background())
 
 	// application errorだけが発生する
-	cMsgs, _, faCnt, _ := cerr.Get()
-	msgs := append(uniqMsgs(criticalMsgs), cMsgs...)
+	fMsgs, _, faCnt, _ := fails.ErrorsForFinal.Get()
+	msgs := append(uniqMsgs(eMsgs), fMsgs...)
 
 	aCnt += faCnt
 

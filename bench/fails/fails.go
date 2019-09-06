@@ -18,6 +18,16 @@ const (
 	ErrTemporary failure.StringCode = "error temporary"
 )
 
+var (
+	ErrorsForCheck *Errors
+	ErrorsForFinal *Errors
+)
+
+func init() {
+	ErrorsForCheck = NewErrors()
+	ErrorsForFinal = NewErrors()
+}
+
 type Errors struct {
 	Msgs []string
 

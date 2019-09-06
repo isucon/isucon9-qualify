@@ -15,7 +15,7 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Campaign(ctx context.Context, critical *fails.Errors) {
+func Campaign(ctx context.Context) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -35,7 +35,7 @@ func Campaign(ctx context.Context, critical *fails.Errors) {
 				if err != nil {
 					// ログインに失敗しまくるとプールに溜まらないので一気に購入できなくなる
 					// その場合は失敗件数が多いという理由で失格にする
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 				BuyerPool.Enqueue(s)
@@ -61,7 +61,7 @@ func Campaign(ctx context.Context, critical *fails.Errors) {
 		for j := 0; j < (ExecutionSeconds-13)/8; j++ {
 			ch := time.After(8 * time.Second)
 
-			isIncrease := popularListing(ctx, critical, 80+j*20, 1000+j*100)
+			isIncrease := popularListing(ctx, 80+j*20, 1000+j*100)
 
 			if isIncrease {
 				// 商品単価を上げる
@@ -84,7 +84,7 @@ func Campaign(ctx context.Context, critical *fails.Errors) {
 							if err != nil {
 								// ログインに失敗しまくるとプールに溜まらないので一気に購入できなくなる
 								// その場合は失敗件数が多いという理由で失格にする
-								critical.Add(err)
+								fails.ErrorsForCheck.Add(err)
 								goto Final
 							}
 							BuyerPool.Enqueue(s)
@@ -121,7 +121,7 @@ func Campaign(ctx context.Context, critical *fails.Errors) {
 
 // popularListing is 人気者出品
 // 人気者が高額の出品を行う。高額だが出品した瞬間に大量の人が購入しようとしてくる。もちろん購入できるのは一人だけ。
-func popularListing(ctx context.Context, critical *fails.Errors, num int, price int) (isIncrease bool) {
+func popularListing(ctx context.Context, num int, price int) (isIncrease bool) {
 	// buyerが足りない場合はログインを意図的に遅くしている可能性があるのでペナルティとして実行しない
 	l := BuyerPool.Len()
 	if l < num+10 {
@@ -134,14 +134,14 @@ func popularListing(ctx context.Context, critical *fails.Errors, num int, price 
 
 	popular, err := buyerSession(ctx)
 	if err != nil {
-		critical.Add(err)
+		fails.ErrorsForCheck.Add(err)
 		return false
 	}
 
 	// 人気者出品だけはだれが買うかわからないので、カテゴリ指定なし出品
 	targetItem, err := sell(ctx, popular, price)
 	if err != nil {
-		critical.Add(err)
+		fails.ErrorsForCheck.Add(err)
 		return false
 	}
 
@@ -167,14 +167,14 @@ func popularListing(ctx context.Context, critical *fails.Errors, num int, price 
 
 			s2, err := buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				atomic.AddInt32(&errCnt, 1)
 				return
 			}
 
 			transactionEvidenceID, err := s2.BuyWithMayFail(ctx, targetItem.ID, token)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				atomic.AddInt32(&errCnt, 1)
 				return
 			}
@@ -201,7 +201,7 @@ func popularListing(ctx context.Context, critical *fails.Errors, num int, price 
 	case buyer = <-buyerCh:
 	case <-closed:
 		// 全goroutineが終了したのにbuyerがいない場合は全員が購入に失敗している
-		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("商品 (item_id: %d) に対して全ユーザーが購入に失敗しました", targetItem.ID)))
+		fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("商品 (item_id: %d) に対して全ユーザーが購入に失敗しました", targetItem.ID)))
 		return false
 	}
 
@@ -216,7 +216,7 @@ func popularListing(ctx context.Context, critical *fails.Errors, num int, price 
 			select {
 			case s := <-buyerCh:
 				// buyerが複数人いるとここのコードが動く
-				critical.Add(failure.New(fails.ErrCritical, failure.Messagef("売り切れ商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItem.ID, s.UserID)))
+				fails.ErrorsForCheck.Add(failure.New(fails.ErrCritical, failure.Messagef("売り切れ商品 (item_id: %d) に対して他のユーザー (user_id: %d) が購入できています", targetItem.ID, s.UserID)))
 			case <-closed:
 				break L
 			}
@@ -225,37 +225,37 @@ func popularListing(ctx context.Context, critical *fails.Errors, num int, price 
 
 	reserveID, apath, err := popular.Ship(ctx, targetItem.ID)
 	if err != nil {
-		critical.Add(err)
+		fails.ErrorsForCheck.Add(err)
 		return false
 	}
 
 	md5Str, err := popular.DownloadQRURL(ctx, apath)
 	if err != nil {
-		critical.Add(err)
+		fails.ErrorsForCheck.Add(err)
 		return false
 	}
 
 	sShipment.ForceSetStatus(reserveID, server.StatusShipping)
 	if !sShipment.CheckQRMD5(reserveID, md5Str) {
-		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
+		fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("QRコードの画像に誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
 		return false
 	}
 
 	err = shipDone(ctx, popular, targetItem.ID)
 	if err != nil {
-		critical.Add(err)
+		fails.ErrorsForCheck.Add(err)
 		return false
 	}
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		critical.Add(failure.New(fails.ErrApplication, failure.Messagef("集荷予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
+		fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("集荷予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItem.ID, reserveID)))
 		return false
 	}
 
 	err = complete(ctx, buyer, targetItem.ID)
 	if err != nil {
-		critical.Add(err)
+		fails.ErrorsForCheck.Add(err)
 		return false
 	}
 
