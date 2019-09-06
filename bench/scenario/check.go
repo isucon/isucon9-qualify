@@ -11,7 +11,7 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Check(ctx context.Context, critical *fails.Errors) {
+func Check(ctx context.Context) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -31,7 +31,7 @@ func Check(ctx context.Context, critical *fails.Errors) {
 
 			err := irregularLoginWrongPassword(ctx, user3)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			select {
@@ -62,20 +62,20 @@ func Check(ctx context.Context, critical *fails.Errors) {
 
 			s1, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			s2, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			category = asset.GetRandomRootCategory()
 			err = checkNewCategoryItemsAndItems(ctx, s1, category.ID, 10, 15)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
@@ -84,7 +84,7 @@ func Check(ctx context.Context, critical *fails.Errors) {
 			for _, userID = range userIDs {
 				err = checkUserItemsAndItems(ctx, s1, userID, 5)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					return
 				}
 			}
@@ -92,18 +92,18 @@ func Check(ctx context.Context, critical *fails.Errors) {
 			// no active seller ユーザページ確認
 			err = checkUserItemsAndItems(ctx, s1, s2.UserID, 0)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 			err = checkUserItemsAndItems(ctx, s2, s1.UserID, 0)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = irregularSellAndBuy(ctx, s1, s2, user3)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			BuyerPool.Enqueue(s1)
@@ -135,19 +135,19 @@ func Check(ctx context.Context, critical *fails.Errors) {
 			user1 := asset.GetRandomActiveSeller()
 			s1, err = loginedSession(ctx, user1)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			s2, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = checkBumpAndNewItems(ctx, s1, s2)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 
 				goto Final
 			}
@@ -184,13 +184,13 @@ func Check(ctx context.Context, critical *fails.Errors) {
 
 			s1, err = activeSellerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			s2, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
@@ -199,7 +199,7 @@ func Check(ctx context.Context, critical *fails.Errors) {
 			targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 			targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 
 				goto Final
 			}
@@ -207,29 +207,29 @@ func Check(ctx context.Context, critical *fails.Errors) {
 			// 売った商品探す
 			_, err = findItemFromUsers(ctx, s1, targetItem, 2)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 			_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 			_, err = findItemFromUsersTransactions(ctx, s1, targetItem.ID, 5)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItem.ID, price+10)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price+10)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 

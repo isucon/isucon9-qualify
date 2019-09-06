@@ -12,10 +12,8 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Verify(ctx context.Context) *fails.Errors {
+func Verify(ctx context.Context) {
 	var wg sync.WaitGroup
-
-	critical := fails.NewErrors()
 
 	// verify scenario #1
 	wg.Add(1)
@@ -24,14 +22,14 @@ func Verify(ctx context.Context) *fails.Errors {
 
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
@@ -39,42 +37,42 @@ func Verify(ctx context.Context) *fails.Errors {
 		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
 		targetItemID, fileName, err := sellForFileName(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		f, err := os.Open(fileName)
 		if err != nil {
-			critical.Add(failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルを開くことに失敗しました")))
+			fails.ErrorsForCheck.Add(failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルを開くことに失敗しました")))
 			return
 		}
 
 		expectedMD5Str, err := calcMD5(f)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		item, err := s1.Item(ctx, targetItemID)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		md5Str, err := s1.DownloadItemImageURL(ctx, item.ImageURL)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		if expectedMD5Str != md5Str {
-			critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの画像のmd5値が間違っています expected: %s; actual: %s", item.ImageURL, expectedMD5Str, md5Str)))
+			fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの画像のmd5値が間違っています expected: %s; actual: %s", item.ImageURL, expectedMD5Str, md5Str)))
 			return
 		}
 
 		err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, 100)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 	}()
@@ -85,27 +83,27 @@ func Verify(ctx context.Context) *fails.Errors {
 		defer wg.Done()
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
 
 		err = verifyNewItemsAndItems(ctx, s2, 2, 10)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		err = verifyBumpAndNewItems(ctx, s1, s2)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -115,14 +113,14 @@ func Verify(ctx context.Context) *fails.Errors {
 		defer wg.Done()
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
@@ -130,13 +128,13 @@ func Verify(ctx context.Context) *fails.Errors {
 		category := asset.GetRandomRootCategory()
 		err = verifyNewCategoryItemsAndItems(ctx, s2, category.ID, 2, 10)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 
 		targetItemID := asset.GetUserItemsFirst(s1.UserID)
 		err = itemEditWithLoginedSession(ctx, s1, targetItemID, 110)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -146,64 +144,64 @@ func Verify(ctx context.Context) *fails.Errors {
 		defer wg.Done()
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
 
 		err = verifyTransactionEvidence(ctx, s1, 3, 27)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
 		targetItem, err := sellParentCategory(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromUsers(ctx, s1, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromNewCategory(ctx, s1, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromUsers(ctx, s2, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromNewCategory(ctx, s2, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromUsersTransactions(ctx, s1, targetItem.ID, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		err = verifyTransactionEvidence(ctx, s1, 2, 5)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, 100)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -213,14 +211,14 @@ func Verify(ctx context.Context) *fails.Errors {
 		defer wg.Done()
 		s1, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s1)
 
 		s2, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s2)
@@ -228,14 +226,14 @@ func Verify(ctx context.Context) *fails.Errors {
 		// buyer の全件確認 (self)
 		err = verifyUserItemsAndItems(ctx, s1, s1.UserID, 0)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		// active sellerの全件確認(self)
 		err = verifyUserItemsAndItems(ctx, s2, s2.UserID, 10)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
@@ -244,7 +242,7 @@ func Verify(ctx context.Context) *fails.Errors {
 		for _, userID := range userIDs {
 			err = verifyUserItemsAndItems(ctx, s1, userID, 0)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 		}
 	}()
@@ -255,7 +253,7 @@ func Verify(ctx context.Context) *fails.Errors {
 		defer wg.Done()
 		s1, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s1)
@@ -265,7 +263,7 @@ func Verify(ctx context.Context) *fails.Errors {
 		for _, userID := range userIDs {
 			err = verifyUserItemsAndItems(ctx, s1, userID, 5)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 		}
 
@@ -279,7 +277,7 @@ func Verify(ctx context.Context) *fails.Errors {
 		defer wg.Done()
 		err := irregularLoginWrongPassword(ctx, user3)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -289,21 +287,21 @@ func Verify(ctx context.Context) *fails.Errors {
 		defer wg.Done()
 		s1, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
 
 		err = irregularSellAndBuy(ctx, s1, s2, user3)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -317,7 +315,7 @@ func Verify(ctx context.Context) *fails.Errors {
 
 		s1, err := session.NewSession()
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
@@ -327,12 +325,12 @@ func Verify(ctx context.Context) *fails.Errors {
 			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
 			if err != nil {
 				// 大した数ないのでここは続行してみる
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			if md5Str != file.MD5Str {
 				// 大した数ないのでここは続行してみる
-				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+				fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
 			}
 		}
 
@@ -340,20 +338,18 @@ func Verify(ctx context.Context) *fails.Errors {
 			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
 			if err != nil {
 				// 大した数ないのでここは続行してみる
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			if md5Str != file.MD5Str {
 				// 大した数ないのでここは続行してみる
-				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+				fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
 			}
 		}
 
 	}()
 
 	wg.Wait()
-
-	return critical
 }
 
 func verifyBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {

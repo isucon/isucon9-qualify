@@ -22,7 +22,7 @@ const (
 	NumLoadScenario4 = 1
 )
 
-func Load(ctx context.Context, critical *fails.Errors) {
+func Load(ctx context.Context) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -58,25 +58,25 @@ func Load(ctx context.Context, critical *fails.Errors) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s3, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				recommended, err = loadIsRecommendNewItems(ctx, s2)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -85,7 +85,7 @@ func Load(ctx context.Context, critical *fails.Errors) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -93,7 +93,7 @@ func Load(ctx context.Context, critical *fails.Errors) {
 					// recommended なら categoryは見ずにnewをみる
 					err = loadNewItemsAndItems(ctx, s2, 10, 20)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				} else {
@@ -101,7 +101,7 @@ func Load(ctx context.Context, critical *fails.Errors) {
 					for _, category := range categories {
 						err = loadNewCategoryItemsAndItems(ctx, s2, category.ID, 10, 20)
 						if err != nil {
-							critical.Add(err)
+							fails.ErrorsForCheck.Add(err)
 							goto Final
 						}
 					}
@@ -109,7 +109,7 @@ func Load(ctx context.Context, critical *fails.Errors) {
 
 				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -117,20 +117,20 @@ func Load(ctx context.Context, critical *fails.Errors) {
 				if recommended {
 					targetItem, err = sellParentCategory(ctx, s3, price, targetParentCategoryID)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 
 					// 少しだけNewItemをみて購入
 					err = loadNewItemsAndItems(ctx, s2, 1, 10)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 
 					err = buyComplete(ctx, s3, s2, targetItem.ID, price)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				}
@@ -173,13 +173,13 @@ func Load(ctx context.Context, critical *fails.Errors) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -188,43 +188,43 @@ func Load(ctx context.Context, critical *fails.Errors) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				item, err = s1.Item(ctx, targetItem.ID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadNewCategoryItemsAndItems(ctx, s1, item.Category.ParentID, 30, 20)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadTransactionEvidence(ctx, s1, 10, 20)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadTransactionEvidence(ctx, s2, 0, 0)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadTransactionEvidence(ctx, s1, 10, 20)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -263,19 +263,19 @@ func Load(ctx context.Context, critical *fails.Errors) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s3, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -284,7 +284,7 @@ func Load(ctx context.Context, critical *fails.Errors) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -294,7 +294,7 @@ func Load(ctx context.Context, critical *fails.Errors) {
 				for _, userID := range userIDs {
 					err = loadUserItemsAndItems(ctx, s2, userID, 20)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				}
@@ -304,19 +304,19 @@ func Load(ctx context.Context, critical *fails.Errors) {
 				for l := 0; l < 4; l++ {
 					err = loadUserItemsAndItems(ctx, s1, s3.UserID, 0)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 					err = loadUserItemsAndItems(ctx, s3, s2.UserID, 0)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				}
 
 				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -355,13 +355,13 @@ func Load(ctx context.Context, critical *fails.Errors) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -370,19 +370,19 @@ func Load(ctx context.Context, critical *fails.Errors) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadNewItemsAndItems(ctx, s2, 30, 50)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
