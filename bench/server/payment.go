@@ -4,13 +4,15 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/isucon/isucon9-qualify/bench/fails"
+	"github.com/morikuni/failure"
 )
 
 const (
@@ -118,12 +120,19 @@ type report struct {
 
 func (c *reportStore) Set(itemID int64, price int) {
 	c.Lock()
+	defer c.Unlock()
+
+	_, ok := c.items[itemID]
+	if ok {
+		fails.ErrorsForCheck.Add(failure.New(fails.ErrCritical, failure.Messagef("多重決済を検知しました (item_id: %d)", itemID)))
+		return
+	}
+
 	c.items[itemID] = report{
 		Price: price,
 		// statusがdoneになったかどうかだけを確認しているので、初期化時は特に必要ない
 		// Status: asset.TransactionEvidenceStatusWaitShipping,
 	}
-	c.Unlock()
 }
 
 func (c *reportStore) SetStatus(itemID int64, status string) {
@@ -215,12 +224,14 @@ func (s *ServerPayment) tokenHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	result := tokenRes{
+		Status: "ok",
+	}
+
 	if ct.price != 0 {
 		if ct.price != tr.Price {
-			log.Print(ct.itemID, ct.price, tr.Price)
-			result := tokenRes{
-				Status: "wrong price",
-			}
+			// エラーにはするが処理を継続する
+			fails.ErrorsForCheck.Add(failure.New(fails.ErrCritical, failure.Messagef("決済額に誤りがあります expected: %d; actual: %d", ct.price, tr.Price)))
 
 			b, _ := json.Marshal(result)
 
@@ -230,10 +241,6 @@ func (s *ServerPayment) tokenHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		s.reports.Set(ct.itemID, ct.price)
-	}
-
-	result := tokenRes{
-		Status: "ok",
 	}
 
 	json.NewEncoder(w).Encode(result)
