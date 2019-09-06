@@ -155,6 +155,7 @@ func main() {
 	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
 	scenario.Validation(ctx, campaign)
 
+	// context.Canceledのエラーは直後に取れば基本的には入ってこない
 	eMsgs, cCnt, aCnt, tCnt := fails.ErrorsForCheck.Get()
 	// critical errorは1つでもあれば、application errorは10回以上で失格
 	if cCnt > 0 || aCnt >= 10 {
