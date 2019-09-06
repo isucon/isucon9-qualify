@@ -71,19 +71,24 @@ func (e *Errors) Add(err error) {
 
 	log.Printf("%+v", err)
 
-	if msg, ok := failure.MessageOf(err); ok {
-		switch code, _ := failure.CodeOf(err); code {
+	msg, ok := failure.MessageOf(err)
+	code, _ := failure.CodeOf(err)
+
+	if ok {
+		switch code {
 		case ErrCritical:
 			msg += " (critical error)"
 			e.critical++
-		case ErrApplication:
-			e.application++
 		case ErrTimeout:
 			msg += "（タイムアウトしました）"
 			e.trivial++
 		case ErrTemporary:
 			msg += "（一時的なエラー）"
 			e.trivial++
+		case ErrApplication:
+			e.application++
+		default:
+			e.application++
 		}
 
 		e.Msgs = append(e.Msgs, msg)
