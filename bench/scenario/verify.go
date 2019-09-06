@@ -50,7 +50,7 @@ func Verify(ctx context.Context) {
 		}
 
 		if !(findItem.Seller.NumSellItems > numSellBefore) {
-			fails.ErrorsForCheck.Add(failure.Wrap(err, failure.Messagef("ユーザの出品数が更新されていません (user_id:%d)", s1.UserID)))
+			fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("ユーザの出品数が更新されていません (user_id:%d)", s1.UserID)))
 			return
 		}
 

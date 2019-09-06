@@ -213,8 +213,8 @@ func Check(ctx context.Context) {
 				goto Final
 			}
 			if !(findItem.Seller.NumSellItems > numSellBefore) {
-				fails.ErrorsForCheck.Add(failure.Wrap(err, failure.Messagef("ユーザの出品数が更新されていません (user_id:%d)", s1.UserID)))
-				return
+				fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("ユーザの出品数が更新されていません (user_id:%d)", s1.UserID)))
+				goto Final
 			}
 			_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
 			if err != nil {
