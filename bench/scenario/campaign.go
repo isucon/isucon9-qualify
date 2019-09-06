@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"log"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -152,7 +153,17 @@ func popularListing(ctx context.Context, critical *fails.Critical, num int, pric
 		go func() {
 			defer wg.Done()
 
-			token := sPayment.ForceSet(CorrectCardNumber, targetItem.ID, price)
+			// 10%のユーザーは決済に失敗する
+			// 全員が成功するなら適当に1ユーザーでロックを取って、他のユーザーはエラーを返すだけで良い
+			// 成功するかどうか分からなくしておけば、何人かはロックを取っておく必要が出る
+			cardNumber := ""
+			if rand.Intn(10) == 0 {
+				cardNumber = FailedCardNumber
+			} else {
+				cardNumber = CorrectCardNumber
+			}
+
+			token := sPayment.ForceSet(cardNumber, targetItem.ID, price)
 
 			s2, err := buyerSession(ctx)
 			if err != nil {
