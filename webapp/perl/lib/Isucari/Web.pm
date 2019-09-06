@@ -233,11 +233,11 @@ post '/initialize' => [qw/allow_json_request/] => sub {
         );
     }
 
-    # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-    my $campaign = 0;
-
     $c->render_json({
-        campaign => number $campaign
+        # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+        campaign => 0,
+        # 実装言語を返す
+        language => "perl"
     });
 };
 
@@ -396,8 +396,9 @@ get '/users/{user_id:\d+}.json' => sub {
     if ($item_id && $created_at) {
         # paging
         $items = $self->dbh->select_all(
-            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND seller_id = ? AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?,?) AND seller_id = ? AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT %d', $ITEMS_PER_PAGE+1),
             $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_TRADING,
             $ITEM_STATUS_SOLD_OUT,
             $user_simple->{id},
             mysql_datetime_from_unix($created_at),
@@ -408,8 +409,9 @@ get '/users/{user_id:\d+}.json' => sub {
     else {
         # 1st page
         $items = $self->dbh->select_all(
-            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?) AND seller_id = ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d',$ITEMS_PER_PAGE+1),
+            sprintf('SELECT * FROM `items` WHERE `status` IN (?,?,?) AND seller_id = ? ORDER BY `created_at` DESC, `id` DESC LIMIT %d',$ITEMS_PER_PAGE+1),
             $ITEM_STATUS_ON_SALE,
+            $ITEM_STATUS_TRADING,
             $ITEM_STATUS_SOLD_OUT,
             $user_simple->{id},
         );

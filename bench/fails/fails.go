@@ -18,7 +18,19 @@ const (
 	ErrTemporary failure.StringCode = "error temporary"
 )
 
-type Critical struct {
+var (
+	// ErrorsForCheck is 基本的にはこっちを使う
+	ErrorsForCheck *Errors
+	// ErrorsForFinal is 最後のFinal Checkで使う。これをしないとcontext.Canceldのエラーが混ざる
+	ErrorsForFinal *Errors
+)
+
+func init() {
+	ErrorsForCheck = NewErrors()
+	ErrorsForFinal = NewErrors()
+}
+
+type Errors struct {
 	Msgs []string
 
 	critical    int
@@ -28,34 +40,34 @@ type Critical struct {
 	mu sync.Mutex
 }
 
-func NewCritical() *Critical {
+func NewErrors() *Errors {
 	msgs := make([]string, 0, 100)
-	return &Critical{
+	return &Errors{
 		Msgs: msgs,
 	}
 }
 
-func (c *Critical) GetMsgs() (msgs []string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (e *Errors) GetMsgs() (msgs []string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
-	return c.Msgs[:]
+	return e.Msgs[:]
 }
 
-func (c *Critical) Get() (msgs []string, critical, application, trivial int) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (e *Errors) Get() (msgs []string, critical, application, trivial int) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
-	return c.Msgs[:], c.critical, c.application, c.trivial
+	return e.Msgs[:], e.critical, e.application, e.trivial
 }
 
-func (c *Critical) Add(err error) {
+func (e *Errors) Add(err error) {
 	if err == nil {
 		return
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	log.Printf("%+v", err)
 
@@ -63,21 +75,21 @@ func (c *Critical) Add(err error) {
 		switch code, _ := failure.CodeOf(err); code {
 		case ErrCritical:
 			msg += " (critical error)"
-			c.critical++
+			e.critical++
 		case ErrApplication:
-			c.application++
+			e.application++
 		case ErrTimeout:
 			msg += "（タイムアウトしました）"
-			c.trivial++
+			e.trivial++
 		case ErrTemporary:
 			msg += "（一時的なエラー）"
-			c.trivial++
+			e.trivial++
 		}
 
-		c.Msgs = append(c.Msgs, msg)
+		e.Msgs = append(e.Msgs, msg)
 	} else {
 		// 想定外のエラーなのでcritical扱いにしておく
-		c.critical++
-		c.Msgs = append(c.Msgs, "運営に連絡してください")
+		e.critical++
+		e.Msgs = append(e.Msgs, "運営に連絡してください")
 	}
 }

@@ -22,16 +22,18 @@ import (
 type Output struct {
 	Pass     bool     `json:"pass"`
 	Score    int64    `json:"score"`
+	Campaign int      `json:"campaign"`
+	Language string   `json:"language"`
 	Messages []string `json:"messages"`
 }
 
 type Config struct {
-	// PaymentPort    int
-	// ShipmentPort   int
 	TargetURLStr string
 	TargetHost   string
 	ShipmentURL  string
 	PaymentURL   string
+	PaymentPort  int
+	ShipmentPort int
 
 	AllowedIPs []net.IP
 }
@@ -55,6 +57,8 @@ func main() {
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
 	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
 	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
+	flags.IntVar(&conf.PaymentPort, "payment-port", 5555, "payment service port")
+	flags.IntVar(&conf.ShipmentPort, "shipment-port", 7000, "shipment service port")
 	flags.StringVar(&dataDir, "data-dir", "initial-data", "data directory")
 	flags.StringVar(&staticDir, "static-dir", "webapp/public/static", "static file directory")
 	flags.StringVar(&allowedIPStr, "allowed-ips", "", "allowed ips (comma separated)")
@@ -75,7 +79,7 @@ func main() {
 	}
 
 	// 外部サービスの起動
-	sp, ss, err := server.RunServer(5555, 7000, dataDir, conf.AllowedIPs)
+	sp, ss, err := server.RunServer(conf.PaymentPort, conf.ShipmentPort, dataDir, conf.AllowedIPs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,15 +103,17 @@ func main() {
 
 	log.Print("=== initialize ===")
 	// 初期化：/initialize にリクエストを送ることで、外部リソースのURLを指定する・DBのデータを初期データのみにする
-	campaign, cerr := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
-	criticalMsgs := cerr.GetMsgs()
-	if len(criticalMsgs) > 0 {
+	campaign, language := scenario.Initialize(context.Background(), session.ShareTargetURLs.PaymentURL.String(), session.ShareTargetURLs.ShipmentURL.String())
+	eMsgs := fails.ErrorsForCheck.GetMsgs()
+	if len(eMsgs) > 0 {
 		log.Print("cause error!")
 
 		output := Output{
 			Pass:     false,
 			Score:    0,
-			Messages: criticalMsgs,
+			Campaign: campaign,
+			Language: language,
+			Messages: eMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 
@@ -117,15 +123,17 @@ func main() {
 	log.Print("=== verify ===")
 	// 初期チェック：正しく動いているかどうかを確認する
 	// 明らかにおかしいレスポンスを返しているアプリケーションはさっさと停止させることで、運営側のリソースを使い果たさない・他サービスへの攻撃に利用されるを防ぐ
-	cerr = scenario.Verify(context.Background())
-	criticalMsgs = cerr.GetMsgs()
-	if len(criticalMsgs) > 0 {
+	scenario.Verify(context.Background())
+	eMsgs = fails.ErrorsForCheck.GetMsgs()
+	if len(eMsgs) > 0 {
 		log.Print("cause error!")
 
 		output := Output{
 			Pass:     false,
 			Score:    0,
-			Messages: criticalMsgs,
+			Campaign: campaign,
+			Language: language,
+			Messages: eMsgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 
@@ -147,40 +155,69 @@ func main() {
 	// 理想的には全リクエストはcheckされるべきだが、それをやるとパフォーマンスが出し切れず、最適化されたアプリケーションよりも遅くなる
 	// checkとloadは区別がつかないようにしないといけない。loadのリクエストはログアウト状態しかなかったので、ログアウト時のキャッシュを強くするだけでスコアがはねる問題が過去にあった
 	// 今回はほぼ全リクエストがログイン前提になっているので、checkとloadの区別はできないはず
-	scenario.Validation(ctx, campaign, cerr)
+	scenario.Validation(ctx, campaign)
 
-	criticalMsgs, cCnt, aCnt, tCnt := cerr.Get()
-	// critical errorは2回以上、application errorは10回以上、trivial errorは200回を超すと失格
-	if cCnt >= 2 || aCnt >= 10 || tCnt > 200 {
+	// context.Canceledのエラーは直後に取れば基本的には入ってこない
+	eMsgs, cCnt, aCnt, tCnt := fails.ErrorsForCheck.Get()
+	// critical errorは1つでもあれば、application errorは10回以上で失格
+	if cCnt > 0 || aCnt >= 10 {
 		log.Print("cause error!")
 
 		output := Output{
 			Pass:     false,
 			Score:    0,
-			Messages: uniqMsgs(criticalMsgs),
+			Campaign: campaign,
+			Language: language,
+			Messages: uniqMsgs(eMsgs),
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 
 		return
 	}
 
-	// critical errorは1回で10000，application errorは1回で500の減点
-	penalty := int64(10000*cCnt + 500*aCnt)
-
 	<-time.After(1 * time.Second)
 
-	cerr = fails.NewCritical()
 	log.Print("=== final check ===")
 	// 最終チェック：ベンチマーカーの記録とアプリケーションの記録を突き合わせて、最終的なスコアを算出する
-	score := scenario.FinalCheck(context.Background(), cerr) - penalty
-	cMsgs := cerr.GetMsgs()
+	score := scenario.FinalCheck(context.Background())
 
-	msgs := append(uniqMsgs(criticalMsgs), cMsgs...)
+	// application errorだけが発生する
+	fMsgs, _, faCnt, _ := fails.ErrorsForFinal.Get()
+	msgs := append(uniqMsgs(eMsgs), fMsgs...)
 
-	if len(cMsgs) > 0 {
+	aCnt += faCnt
+
+	// application errorは10回以上で失格
+	if aCnt >= 10 {
 		output := Output{
 			Pass:     false,
-			Score:    score,
+			Score:    0,
+			Campaign: campaign,
+			Language: language,
+			Messages: msgs,
+		}
+		json.NewEncoder(os.Stdout).Encode(output)
+
+		return
+	}
+
+	// application errorは1回で500点減点
+	penalty := int64(500 * aCnt)
+
+	if tCnt > 200 {
+		// trivial errorは200回を超えたら100回毎に5000点減点
+		penalty += int64(5000 * (1 + (tCnt-200)/100))
+	}
+
+	score -= penalty
+
+	// 0点以下なら失格
+	if score <= 0 {
+		output := Output{
+			Pass:     false,
+			Score:    0,
+			Campaign: campaign,
+			Language: language,
 			Messages: msgs,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
@@ -191,6 +228,8 @@ func main() {
 	output := Output{
 		Pass:     true,
 		Score:    score,
+		Campaign: campaign,
+		Language: language,
 		Messages: msgs,
 	}
 	json.NewEncoder(os.Stdout).Encode(output)

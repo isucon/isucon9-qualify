@@ -106,7 +106,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 	if err != nil {
 		return err
 	}
-
+	asset.UserBuyItem(s2.UserID)
 	oToken := sPayment.ForceSet(CorrectCardNumber, targetItemID, price)
 
 	// onsaleでない商品は買えない
@@ -183,7 +183,7 @@ func irregularSellAndBuy(ctx context.Context, s1, s2 *session.Session, user3 ass
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Message("配送予約IDに誤りがあります"))
+		return failure.New(fails.ErrApplication, failure.Message("集荷予約IDに誤りがあります"))
 	}
 
 	err = complete(ctx, s2, targetItemID)

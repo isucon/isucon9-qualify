@@ -24,3 +24,12 @@
     src: "/root/aliyun-cli-linux-3.0.24-amd64.tgz"
     dest: /usr/local/bin
     remote_src: yes
+
+- name: Install check script
+  become: yes
+  copy:
+    src: isucon-instance-checker.pl
+    dest: /usr/local/bin/isucon-instance-checker
+    owner: root
+    group: root
+    mode: 0755

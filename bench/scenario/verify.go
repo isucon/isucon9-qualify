@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"math"
 	"os"
 	"sync"
 
@@ -11,10 +12,8 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Verify(ctx context.Context) *fails.Critical {
+func Verify(ctx context.Context) {
 	var wg sync.WaitGroup
-
-	critical := fails.NewCritical()
 
 	// verify scenario #1
 	wg.Add(1)
@@ -23,14 +22,14 @@ func Verify(ctx context.Context) *fails.Critical {
 
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
@@ -38,42 +37,42 @@ func Verify(ctx context.Context) *fails.Critical {
 		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
 		targetItemID, fileName, err := sellForFileName(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		f, err := os.Open(fileName)
 		if err != nil {
-			critical.Add(failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルを開くことに失敗しました")))
+			fails.ErrorsForCheck.Add(failure.Wrap(err, failure.Message("ベンチマーカー内部のファイルを開くことに失敗しました")))
 			return
 		}
 
 		expectedMD5Str, err := calcMD5(f)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		item, err := s1.Item(ctx, targetItemID)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		md5Str, err := s1.DownloadItemImageURL(ctx, item.ImageURL)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		if expectedMD5Str != md5Str {
-			critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの画像のmd5値が間違っています expected: %s; actual: %s", item.ImageURL, expectedMD5Str, md5Str)))
+			fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの画像のmd5値が間違っています expected: %s; actual: %s", item.ImageURL, expectedMD5Str, md5Str)))
 			return
 		}
 
 		err = buyCompleteWithVerify(ctx, s1, s2, targetItemID, 100)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 	}()
@@ -84,27 +83,27 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer wg.Done()
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
 
 		err = verifyNewItemsAndItems(ctx, s2, 2, 10)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		err = verifyBumpAndNewItems(ctx, s1, s2)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -114,14 +113,14 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer wg.Done()
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
@@ -129,13 +128,13 @@ func Verify(ctx context.Context) *fails.Critical {
 		category := asset.GetRandomRootCategory()
 		err = verifyNewCategoryItemsAndItems(ctx, s2, category.ID, 2, 10)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 
 		targetItemID := asset.GetUserItemsFirst(s1.UserID)
 		err = itemEditWithLoginedSession(ctx, s1, targetItemID, 110)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -145,64 +144,64 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer wg.Done()
 		s1, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s1)
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
 
 		err = verifyTransactionEvidence(ctx, s1, 3, 27)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
 		targetItem, err := sellParentCategory(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromUsers(ctx, s1, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromNewCategory(ctx, s1, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromUsers(ctx, s2, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromNewCategory(ctx, s2, targetItem, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		_, err = findItemFromUsersTransactions(ctx, s1, targetItem.ID, 1)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		err = verifyTransactionEvidence(ctx, s1, 2, 5)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, 100)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -212,14 +211,14 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer wg.Done()
 		s1, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s1)
 
 		s2, err := activeSellerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer ActiveSellerPool.Enqueue(s2)
@@ -227,14 +226,14 @@ func Verify(ctx context.Context) *fails.Critical {
 		// buyer の全件確認 (self)
 		err = verifyUserItemsAndItems(ctx, s1, s1.UserID, 0)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
 		// active sellerの全件確認(self)
 		err = verifyUserItemsAndItems(ctx, s2, s2.UserID, 10)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
@@ -243,7 +242,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		for _, userID := range userIDs {
 			err = verifyUserItemsAndItems(ctx, s1, userID, 0)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 		}
 	}()
@@ -254,7 +253,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer wg.Done()
 		s1, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s1)
@@ -264,7 +263,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		for _, userID := range userIDs {
 			err = verifyUserItemsAndItems(ctx, s1, userID, 5)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 		}
 
@@ -278,7 +277,7 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer wg.Done()
 		err := irregularLoginWrongPassword(ctx, user3)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -288,21 +287,21 @@ func Verify(ctx context.Context) *fails.Critical {
 		defer wg.Done()
 		s1, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s1)
 
 		s2, err := buyerSession(ctx)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 		defer BuyerPool.Enqueue(s2)
 
 		err = irregularSellAndBuy(ctx, s1, s2, user3)
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 		}
 	}()
 
@@ -316,7 +315,7 @@ func Verify(ctx context.Context) *fails.Critical {
 
 		s1, err := session.NewSession()
 		if err != nil {
-			critical.Add(err)
+			fails.ErrorsForCheck.Add(err)
 			return
 		}
 
@@ -326,12 +325,12 @@ func Verify(ctx context.Context) *fails.Critical {
 			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
 			if err != nil {
 				// 大した数ないのでここは続行してみる
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			if md5Str != file.MD5Str {
 				// 大した数ないのでここは続行してみる
-				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+				fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
 			}
 		}
 
@@ -339,20 +338,18 @@ func Verify(ctx context.Context) *fails.Critical {
 			md5Str, err := s1.DownloadStaticURL(ctx, file.URLPath)
 			if err != nil {
 				// 大した数ないのでここは続行してみる
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			if md5Str != file.MD5Str {
 				// 大した数ないのでここは続行してみる
-				critical.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
+				fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("%sの内容が正しくありません", file.URLPath)))
 			}
 		}
 
 	}()
 
 	wg.Wait()
-
-	return critical
 }
 
 func verifyBumpAndNewItems(ctx context.Context, s1, s2 *session.Session) error {
@@ -401,9 +398,9 @@ func verifyNewItemsAndItems(ctx context.Context, s *session.Session, maxPage int
 		return err
 	}
 	c := itemIDs.Len()
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 30000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
 	}
 
@@ -447,6 +444,10 @@ func verifyItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs 
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの商品の名前が間違えています (item_id: %d)", item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品のステータスが正しくありません (item_id: %d)", item.ID))
+		}
+
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonの%s", err.Error()))
@@ -463,7 +464,7 @@ func verifyItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs 
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -483,9 +484,9 @@ func verifyNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cat
 		return err
 	}
 	c := itemIDs.Len()
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO 98%?
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -533,6 +534,10 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの商品の名前が間違えています (item_id: %d)", categoryID, item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
+		}
+
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの%s", categoryID, err.Error()))
@@ -549,7 +554,7 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -562,10 +567,25 @@ func verifyTransactionEvidence(ctx context.Context, s *session.Session, maxPage 
 		return err
 	}
 	c := itemIDs.Len()
-	// todo assetsからとれるか
+
 	if c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
 	}
+	aUser := asset.GetUser(s.UserID)
+	totalTrxItems := aUser.NumBuyItems + aUser.NumSellItems
+	maxPageItems := maxPage * asset.ItemsTransactionsPerPage
+	if maxPage == 0 {
+		maxPageItems = asset.ItemsTransactionsPerPage
+	}
+	// totalTrxItemsが多い場合 c は maxPageItems になる。1個のずれは許容
+	if int64(totalTrxItems) >= maxPageItems && math.Abs(float64(c)-float64(maxPageItems)) > 1 {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
+	// totalTrxItems が少ない場合、 cはtotalTrxItemsになる。1個のずれは許容
+	if int64(totalTrxItems) < maxPageItems && math.Abs(float64(c)-float64(totalTrxItems)) > 1 {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
+
 	if checkItem == 0 {
 		return nil
 	}
@@ -646,7 +666,7 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -660,7 +680,7 @@ func verifyUserItemsAndItems(ctx context.Context, s *session.Session, sellerID i
 		return err
 	}
 	c := itemIDs.Len()
-	buffer := 10 // TODO
+	buffer := 1 // 多少のずれは許容。verifyは厳しめ
 	aUser := asset.GetUser(sellerID)
 	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer || c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
@@ -700,6 +720,10 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut && item.Status != asset.ItemStatusTrading {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", sellerID, item.ID))
+		}
+
 		aItem, ok := asset.GetItem(sellerID, item.ID)
 		if !ok {
 			continue
@@ -722,7 +746,7 @@ func verifyItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *ID
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return verifyItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil
@@ -754,19 +778,24 @@ func verifyGetItem(ctx context.Context, s *session.Session, targetItemID int64) 
 	if !(item.Description == aItem.Description) {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
-	// 新規出品分はここで画像のチェックができない
-	if aItem.ImageName != "" && item.ImageURL != getImageURL(aItem.ImageName) {
+	if item.ImageURL == "" {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品画像URLが間違っています", targetItemID))
 	}
+	// 新規出品分はここで画像のチェックができない
+	if aItem.ImageName != "" {
+		if item.ImageURL != getImageURL(aItem.ImageName) {
+			return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品画像URLが間違っています", targetItemID))
+		}
 
-	md5Str, err := s.DownloadItemImageURL(ctx, item.ImageURL)
-	if err != nil {
-		return err
-	}
+		md5Str, err := s.DownloadItemImageURL(ctx, item.ImageURL)
+		if err != nil {
+			return err
+		}
 
-	expectedMD5 := asset.GetImageMD5(aItem.ImageName)
-	if expectedMD5 != md5Str {
-		return failure.New(fails.ErrApplication, failure.Messagef("%sの商品画像が間違っています", item.ImageURL))
+		expectedMD5 := asset.GetImageMD5(aItem.ImageName)
+		if expectedMD5 != md5Str {
+			return failure.New(fails.ErrApplication, failure.Messagef("%sの商品画像が間違っています", item.ImageURL))
+		}
 	}
 
 	err = checkItemDetailCategory(item, aItem)

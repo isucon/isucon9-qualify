@@ -15,21 +15,27 @@ import (
 const (
 	MinCampaignRateSetting = 0
 	MaxCampaignRateSetting = 4
+	loadIDsMaxloop         = 100
 )
 
-func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, error) {
+func initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, string, error) {
 	s1, err := session.NewSessionForInialize()
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	campaign, err := s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
+	campaign, language, err := s1.Initialize(ctx, paymentServiceURL, shipmentServiceURL)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	if campaign < MinCampaignRateSetting || campaign > MaxCampaignRateSetting {
-		return 0, failure.New(fails.ErrApplication, failure.Messagef("/initialize の還元率の設定値は %d以上 %d以下です", MinCampaignRateSetting, MaxCampaignRateSetting))
+		return 0, "", failure.New(fails.ErrApplication, failure.Messagef("POST /initialize の還元率の設定値は %d以上 %d以下です", MinCampaignRateSetting, MaxCampaignRateSetting))
 	}
-	return campaign, nil
+
+	if language == "" {
+		return 0, "", failure.New(fails.ErrApplication, failure.Message("POST /initialize では実装言語を返す必要があります"))
+	}
+
+	return campaign, language, nil
 }
 
 func checkItemSimpleCategory(item session.ItemSimple, aItem asset.AppItem) error {
@@ -76,6 +82,10 @@ func findItemFromUsers(ctx context.Context, s *session.Session, targetItem asset
 	return findItemFromUsersAll(ctx, s, targetItem.SellerID, targetItem.ID, 0, 0, 0, maxPage)
 }
 
+func findItemFromUsersByID(ctx context.Context, s *session.Session, sellerID, targetItemID, maxPage int64) (session.ItemSimple, error) {
+	return findItemFromUsersAll(ctx, s, sellerID, targetItemID, 0, 0, 0, maxPage)
+}
+
 func findItemFromUsersAll(ctx context.Context, s *session.Session, sellerID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage int64) (session.ItemSimple, error) {
 	var hasNext bool
 	var items []session.ItemSimple
@@ -106,7 +116,7 @@ func findItemFromUsersAll(ctx context.Context, s *session.Session, sellerID, tar
 	if maxPage > 0 && loop >= maxPage {
 		return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json から商品を探すことができませんでした　(item_id: %d)", sellerID, targetItemID))
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return findItemFromUsersAll(ctx, s, sellerID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json から商品を探すことができませんでした　(item_id: %d)", sellerID, targetItemID))
@@ -152,7 +162,7 @@ func findItemFromNewCategoryAll(ctx context.Context, s *session.Session, categor
 	if maxPage > 0 && loop >= maxPage {
 		return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json から商品を探すことができませんでした　(item_id: %d)", categoryID, targetItemID))
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return findItemFromNewCategoryAll(ctx, s, categoryID, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json から商品を探すことができませんでした　(item_id: %d)", categoryID, targetItemID))
@@ -194,7 +204,7 @@ func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, t
 	if maxPage > 0 && loop >= maxPage {
 		return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return findItemFromUsersTransactionsAll(ctx, s, targetItemID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json から商品を探すことができませんでした　(item_id: %d)", targetItemID))
@@ -216,7 +226,6 @@ func itemEditNewItemWithLoginedSession(ctx context.Context, s1 *session.Session,
 	if err != nil {
 		return err
 	}
-	// TODO any check?
 	return nil
 }
 

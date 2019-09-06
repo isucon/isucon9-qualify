@@ -17,9 +17,9 @@
   notify:
     - daemon-reload
 
-- name: Enable and start benchmark-worker
+- name: Stop and disable benchmark-worker
   systemd:
     name: benchmark-worker
-    state: started
+    state: stopped
     daemon_reload: yes
-    enabled: yes
+    enabled: no

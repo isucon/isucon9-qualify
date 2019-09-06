@@ -178,7 +178,8 @@ type reqInitialize struct {
 }
 
 type resInitialize struct {
-	Campaign int `json:"campaign"`
+	Campaign int    `json:"campaign"`
+	Language string `json:"language"`
 }
 
 type resNewItems struct {
@@ -580,9 +581,12 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := resInitialize{}
-	// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-	res.Campaign = 4
+	res := resInitialize{
+		// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+		Campaign: 4,
+		// 実装言語を返す
+		Language: "Go",
+	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(res)

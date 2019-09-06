@@ -30,4 +30,3 @@
         enabled: yes
       with_items:
         - nginx.service
-        - benchmark-worker.service

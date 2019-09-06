@@ -11,7 +11,7 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Check(ctx context.Context, critical *fails.Critical) {
+func Check(ctx context.Context) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -31,7 +31,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 			err := irregularLoginWrongPassword(ctx, user3)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			select {
@@ -62,20 +62,20 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 			s1, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			s2, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			category = asset.GetRandomRootCategory()
 			err = checkNewCategoryItemsAndItems(ctx, s1, category.ID, 10, 15)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
@@ -84,7 +84,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 			for _, userID = range userIDs {
 				err = checkUserItemsAndItems(ctx, s1, userID, 5)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					return
 				}
 			}
@@ -92,18 +92,18 @@ func Check(ctx context.Context, critical *fails.Critical) {
 			// no active seller ユーザページ確認
 			err = checkUserItemsAndItems(ctx, s1, s2.UserID, 0)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 			err = checkUserItemsAndItems(ctx, s2, s1.UserID, 0)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = irregularSellAndBuy(ctx, s1, s2, user3)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 			}
 
 			BuyerPool.Enqueue(s1)
@@ -135,19 +135,19 @@ func Check(ctx context.Context, critical *fails.Critical) {
 			user1 := asset.GetRandomActiveSeller()
 			s1, err = loginedSession(ctx, user1)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			s2, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = checkBumpAndNewItems(ctx, s1, s2)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 
 				goto Final
 			}
@@ -184,13 +184,13 @@ func Check(ctx context.Context, critical *fails.Critical) {
 
 			s1, err = activeSellerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			s2, err = buyerSession(ctx)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
@@ -199,7 +199,7 @@ func Check(ctx context.Context, critical *fails.Critical) {
 			targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 			targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 
 				goto Final
 			}
@@ -207,29 +207,29 @@ func Check(ctx context.Context, critical *fails.Critical) {
 			// 売った商品探す
 			_, err = findItemFromUsers(ctx, s1, targetItem, 2)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 			_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 			_, err = findItemFromUsersTransactions(ctx, s1, targetItem.ID, 5)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = itemEditNewItemWithLoginedSession(ctx, s1, targetItem.ID, price+10)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
 			err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price+10)
 			if err != nil {
-				critical.Add(err)
+				fails.ErrorsForCheck.Add(err)
 				goto Final
 			}
 
@@ -307,9 +307,9 @@ func checkNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cate
 		return err
 	}
 	c := itemIDs.Len()
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -348,6 +348,10 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
+		}
+
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
 		if !ok {
 			// 見つからない
@@ -374,7 +378,7 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -388,7 +392,7 @@ func checkUserItemsAndItems(ctx context.Context, s *session.Session, sellerID in
 		return err
 	}
 	c := itemIDs.Len()
-	buffer := 10 // TODO
+	buffer := 10 // 多少のずれは許容
 	aUser := asset.GetUser(sellerID)
 	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer || c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
@@ -428,6 +432,10 @@ func checkItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDs
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の出品者が正しくありません　(item_id: %d)", sellerID, item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut && item.Status != asset.ItemStatusTrading {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", sellerID, item.ID))
+		}
+
 		aItem, ok := asset.GetItem(sellerID, item.ID)
 		if !ok {
 			continue
@@ -450,7 +458,7 @@ func checkItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDs
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return checkItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil

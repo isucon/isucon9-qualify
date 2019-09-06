@@ -112,6 +112,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	if err != nil {
 		return err
 	}
+	asset.UserBuyItem(s2.UserID)
 
 	itemFromBuyerTrx, err := findItemFromUsersTransactions(ctx, s2, targetItemID, 0)
 	if err != nil {
@@ -128,6 +129,14 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 	itemFromSeller, err := s1.Item(ctx, targetItemID)
 	if err != nil {
 		return err
+	}
+
+	if itemFromBuyer.TransactionEvidenceStatus == "" {
+		return failure.New(fails.ErrApplication, failure.Messagef("購入後の商品を購入者が見ているのにtransaction_evidence_statusが返っていません (item_id: %d)", targetItemID))
+	}
+
+	if itemFromBuyer.ShippingStatus == "" {
+		return failure.New(fails.ErrApplication, failure.Messagef("購入後の商品を購入者が見ているのに商品のshipping_statusが返っていません (item_id: %d)", targetItemID))
 	}
 
 	// status 確認
@@ -240,7 +249,7 @@ func buyCompleteWithVerify(ctx context.Context, s1, s2 *session.Session, targetI
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
+		return failure.New(fails.ErrApplication, failure.Messagef("集荷予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = complete(ctx, s2, targetItemID)
@@ -293,6 +302,15 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 	if err != nil {
 		return err
 	}
+	asset.UserBuyItem(s2.UserID)
+
+	findItem, err := findItemFromUsersByID(ctx, s1, s1.UserID, targetItemID, 1)
+	if err != nil {
+		return err
+	}
+	if findItem.Status != asset.ItemStatusTrading {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", s1.UserID, targetItemID))
+	}
 
 	reserveID, apath, err := s1.Ship(ctx, targetItemID)
 	if err != nil {
@@ -316,12 +334,20 @@ func buyComplete(ctx context.Context, s1, s2 *session.Session, targetItemID int6
 
 	ok := sShipment.ForceSetStatus(reserveID, server.StatusDone)
 	if !ok {
-		return failure.New(fails.ErrApplication, failure.Messagef("配送予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
+		return failure.New(fails.ErrApplication, failure.Messagef("集荷予約IDに誤りがあります (item_id: %d, reserve_id: %s)", targetItemID, reserveID))
 	}
 
 	err = complete(ctx, s2, targetItemID)
 	if err != nil {
 		return err
+	}
+
+	findItem, err = findItemFromUsersByID(ctx, s1, s1.UserID, targetItemID, 1)
+	if err != nil {
+		return err
+	}
+	if findItem.Status != asset.ItemStatusSoldOut {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品のステータスが正しくありません (item_id: %d)", s1.UserID, targetItemID))
 	}
 
 	return nil

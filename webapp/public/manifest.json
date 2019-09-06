@@ -1,6 +1,6 @@
 {
   "short_name": "ISUCARI",
-  "name": "椅子を売買できる安心安全のC2Cプラットフォーム",
+  "name": "椅子を売買できる安心安全のフリマアプリ♪",
   "icons": [
     {
       "src": "favicon.png",
@@ -10,6 +10,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#f44436",
   "background_color": "#ffffff"
 }

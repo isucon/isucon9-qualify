@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -21,7 +22,7 @@ const (
 	NumLoadScenario4 = 1
 )
 
-func Load(ctx context.Context, critical *fails.Critical) {
+func Load(ctx context.Context) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -57,25 +58,25 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s3, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				recommended, err = loadIsRecommendNewItems(ctx, s2)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -84,7 +85,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -92,7 +93,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					// recommended なら categoryは見ずにnewをみる
 					err = loadNewItemsAndItems(ctx, s2, 10, 20)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				} else {
@@ -100,7 +101,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 					for _, category := range categories {
 						err = loadNewCategoryItemsAndItems(ctx, s2, category.ID, 10, 20)
 						if err != nil {
-							critical.Add(err)
+							fails.ErrorsForCheck.Add(err)
 							goto Final
 						}
 					}
@@ -108,7 +109,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -116,20 +117,20 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				if recommended {
 					targetItem, err = sellParentCategory(ctx, s3, price, targetParentCategoryID)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 
 					// 少しだけNewItemをみて購入
 					err = loadNewItemsAndItems(ctx, s2, 1, 10)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 
 					err = buyComplete(ctx, s3, s2, targetItem.ID, price)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				}
@@ -172,13 +173,13 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -187,43 +188,43 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				item, err = s1.Item(ctx, targetItem.ID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadNewCategoryItemsAndItems(ctx, s1, item.Category.ParentID, 30, 20)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadTransactionEvidence(ctx, s1, 10, 20)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadTransactionEvidence(ctx, s2, 0, 0)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadTransactionEvidence(ctx, s1, 10, 20)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = buyComplete(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -262,19 +263,19 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s3, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -283,7 +284,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -293,7 +294,7 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				for _, userID := range userIDs {
 					err = loadUserItemsAndItems(ctx, s2, userID, 20)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				}
@@ -303,19 +304,19 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				for l := 0; l < 4; l++ {
 					err = loadUserItemsAndItems(ctx, s1, s3.UserID, 0)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 					err = loadUserItemsAndItems(ctx, s3, s2.UserID, 0)
 					if err != nil {
-						critical.Add(err)
+						fails.ErrorsForCheck.Add(err)
 						goto Final
 					}
 				}
 
 				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -354,13 +355,13 @@ func Load(ctx context.Context, critical *fails.Critical) {
 
 				s1, err = activeSellerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				s2, err = buyerSession(ctx)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -369,19 +370,19 @@ func Load(ctx context.Context, critical *fails.Critical) {
 				targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 				targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = loadNewItemsAndItems(ctx, s2, 30, 50)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
 				err = buyCompleteWithVerify(ctx, s1, s2, targetItem.ID, price)
 				if err != nil {
-					critical.Add(err)
+					fails.ErrorsForCheck.Add(err)
 					goto Final
 				}
 
@@ -441,9 +442,9 @@ func loadNewItemsAndItems(ctx context.Context, s *session.Session, maxPage int64
 		return err
 	}
 	c := itemIDs.Len()
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 30000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
 	}
 
@@ -478,6 +479,10 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonはcreated_at順である必要があります"))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品のステータスが正しくありません (item_id: %d)", item.ID))
+		}
+
 		err = itemIDs.Add(item.ID)
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに同じ商品がありました (item_id: %d)", item.ID))
@@ -489,7 +494,7 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return loadItemIDsFromNewItems(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -526,9 +531,9 @@ func loadNewCategoryItemsAndItems(ctx context.Context, s *session.Session, categ
 		+------------------+----------+
 		7 rows in set (0.04 sec)
 	*/
-	// 全件チェックの時だけチェック
-	// countUserItemsでもチェックしている。商品数perpage*maxpageの98%あればよい
-	if (maxPage == 0 && c < 3000) || float64(c) < float64(maxPage)*float64(asset.ItemsPerPage)*0.98 { // TODO 98%?
+	// 全件はカウントできない。countUserItemsを何回か動かして確認している
+	// ここでは商品数はperpage*maxpage
+	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
 		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
 	}
 
@@ -567,6 +572,10 @@ func loadItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *I
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
 
+		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
+		}
+
 		err = itemIDs.Add(item.ID)
 		if err != nil {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonに同じ商品がありました (item_id: %d)", categoryID, item.ID))
@@ -578,7 +587,7 @@ func loadItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *I
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return loadItemIDsFromCategory(ctx, s, itemIDs, categoryID, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil
@@ -592,7 +601,7 @@ func loadUserItemsAndItems(ctx context.Context, s *session.Session, sellerID int
 		return err
 	}
 	c := itemIDs.Len()
-	buffer := 10 // TODO
+	buffer := 10 // 多少のずれは許容
 	aUser := asset.GetUser(sellerID)
 	if aUser.NumSellItems > c+buffer || aUser.NumSellItems < c-buffer || c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/%d.json の商品数が正しくありません", sellerID))
@@ -640,7 +649,7 @@ func loadItemIDsFromUsers(ctx context.Context, s *session.Session, itemIDs *IDsS
 		nextCreatedAt = item.CreatedAt
 	}
 	loop = loop + 1
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return loadItemIDsFromUsers(ctx, s, itemIDs, sellerID, nextItemID, nextCreatedAt, loop)
 	}
 	return nil
@@ -656,6 +665,21 @@ func loadTransactionEvidence(ctx context.Context, s *session.Session, maxPage in
 	if c < checkItem {
 		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
 	}
+	aUser := asset.GetUser(s.UserID)
+	totalTrxItems := aUser.NumBuyItems + aUser.NumSellItems
+	maxPageItems := maxPage * asset.ItemsTransactionsPerPage
+	if maxPage == 0 {
+		maxPageItems = asset.ItemsTransactionsPerPage
+	}
+	// totalTrxItemsが多い場合 c は maxPageItems になる。5個のずれは許容
+	if int64(totalTrxItems) >= maxPageItems && math.Abs(float64(c)-float64(maxPageItems)) > 5 {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
+	// totalTrxItems が少ない場合、 cはtotalTrxItemsになる。5個のずれは許容
+	if int64(totalTrxItems) < maxPageItems && math.Abs(float64(c)-float64(totalTrxItems)) > 5 {
+		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+	}
+
 	if checkItem == 0 {
 		return nil
 	}
@@ -705,7 +729,7 @@ func loadItemIDsTransactionEvidence(ctx context.Context, s *session.Session, ite
 	if maxPage > 0 && loop >= maxPage {
 		return nil
 	}
-	if hasNext && loop < 100 { // TODO: max pager
+	if hasNext && loop < loadIDsMaxloop {
 		return loadItemIDsTransactionEvidence(ctx, s, itemIDs, nextItemID, nextCreatedAt, loop, maxPage)
 	}
 	return nil

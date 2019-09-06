@@ -16,9 +16,9 @@ return [
         // Monolog settings
         'logger' => [
             'name' => 'isucari',
-//            'path' => isset($_ENV['docker']) ? 'php://stdout' : __DIR__ . '/../logs/app.log',
+//            'path' => __DIR__ . '/../logs/app.log',
             'path' => 'php://stdout',
-            'level' => \Monolog\Logger::DEBUG,
+            'level' => \Monolog\Logger::INFO,
         ],
 
         // Database settings
