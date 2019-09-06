@@ -403,8 +403,8 @@ func GetUser(sellerID int64) AppUser {
 }
 
 func UserBuyItem(sellerID int64) AppUser {
-	muUser.RLock()
-	defer muUser.RUnlock()
+	muUser.Lock()
+	defer muUser.Unlock()
 	user := users[sellerID]
 	user.NumBuyItems = user.NumBuyItems + 1
 	users[sellerID] = user

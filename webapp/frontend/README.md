@@ -19,3 +19,10 @@ npm i
 ### `npm run storybook`
 
 Storybookを起動します
+
+# Other
+
+- ロゴ作成にはHatchfulを利用しました
+    - https://hatchful.shopify.com/
+- UIライブラリにMaterial-UIを利用しました
+    - https://material-ui.com/
