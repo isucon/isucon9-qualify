@@ -157,9 +157,12 @@ func popularListing(ctx context.Context, num int, price int) (isIncrease bool) {
 			// 全員が成功するなら適当に1ユーザーでロックを取って、他のユーザーはエラーを返すだけで良い
 			// 成功するかどうか分からなくしておけば、何人かはロックを取っておく必要が出る
 			cardNumber := ""
+			failed := false
 			if rand.Intn(10) == 0 {
+				failed = true
 				cardNumber = FailedCardNumber
 			} else {
+				failed = false
 				cardNumber = CorrectCardNumber
 			}
 
@@ -169,6 +172,16 @@ func popularListing(ctx context.Context, num int, price int) (isIncrease bool) {
 			if err != nil {
 				fails.ErrorsForCheck.Add(err)
 				atomic.AddInt32(&errCnt, 1)
+				return
+			}
+
+			if failed {
+				err := s2.BuyWithFailedOnCampaign(ctx, targetItem.ID, token)
+				if err != nil {
+					fails.ErrorsForCheck.Add(err)
+					atomic.AddInt32(&errCnt, 1)
+					return
+				}
 				return
 			}
 
