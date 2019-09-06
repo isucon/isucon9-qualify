@@ -119,6 +119,8 @@ func FinalCheck(ctx context.Context) int64 {
 			continue
 		}
 
+		delete(reports, te.ItemID)
+
 		if report.Price != te.ItemPrice {
 			fails.ErrorsForFinal.Add(failure.New(fails.ErrApplication, failure.Messagef("購入実績の価格が異なります transaction_evidence_id: %d; item_id: %d; expected price: %d; reported price: %d", te.ID, te.ItemID, report.Price, te.ItemPrice)))
 			continue
@@ -131,8 +133,6 @@ func FinalCheck(ctx context.Context) int64 {
 			// doneの時だけが売り上げとして認められる
 			score += int64(report.Price)
 		}
-
-		delete(reports, te.ItemID)
 	}
 
 	for itemID, report := range reports {
