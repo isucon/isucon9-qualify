@@ -174,7 +174,7 @@ func main() {
 
 	<-time.After(1 * time.Second)
 
-	cerr = fails.NewCritical()
+	cerr = fails.NewErrors()
 	log.Print("=== final check ===")
 	// 最終チェック：ベンチマーカーの記録とアプリケーションの記録を突き合わせて、最終的なスコアを算出する
 	score := scenario.FinalCheck(context.Background(), cerr)

@@ -16,8 +16,8 @@ const (
 	ExecutionSeconds = 60
 )
 
-func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, string, *fails.Critical) {
-	critical := fails.NewCritical()
+func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, string, *fails.Errors) {
+	critical := fails.NewErrors()
 
 	// initializeだけタイムアウトを別に設定
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
@@ -31,7 +31,7 @@ func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL strin
 	return campaign, language, critical
 }
 
-func Validation(ctx context.Context, campaign int, critical *fails.Critical) {
+func Validation(ctx context.Context, campaign int, critical *fails.Errors) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -95,7 +95,7 @@ func Validation(ctx context.Context, campaign int, critical *fails.Critical) {
 	}
 }
 
-func FinalCheck(ctx context.Context, critical *fails.Critical) int64 {
+func FinalCheck(ctx context.Context, critical *fails.Errors) int64 {
 	reports := sPayment.GetReports()
 
 	s1, err := session.NewSession()

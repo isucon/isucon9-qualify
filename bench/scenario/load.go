@@ -22,7 +22,7 @@ const (
 	NumLoadScenario4 = 1
 )
 
-func Load(ctx context.Context, critical *fails.Critical) {
+func Load(ctx context.Context, critical *fails.Errors) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
