@@ -19,7 +19,9 @@ const (
 )
 
 var (
+	// ErrorsForCheck is 基本的にはこっちを使う
 	ErrorsForCheck *Errors
+	// ErrorsForFinal is 最後のFinal Checkで使う。これをしないとcontext.Canceldのエラーが混ざる
 	ErrorsForFinal *Errors
 )
 
