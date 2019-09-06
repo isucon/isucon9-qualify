@@ -76,9 +76,9 @@ var (
 
 // errors
 var (
-	errorJobNotFound          = fmt.Errorf("Job not found")
-	errorJobDequeueFail       = fmt.Errorf("Job dequeue failure")
-	errorPortalAPIUnavailable = fmt.Errorf("Portal API is unavailable")
+	errorJobNotFound          = fmt.Errorf("job not found")
+	errorJobDequeueFail       = fmt.Errorf("job dequeue failure")
+	errorPortalAPIUnavailable = fmt.Errorf("portal api is unavailable")
 )
 
 func init() {
