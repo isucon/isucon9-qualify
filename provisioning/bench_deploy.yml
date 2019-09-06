@@ -3,6 +3,11 @@
   gather_facts: yes
 
   roles:
+    - external.deploy
+
+    - kernel-tune
+    - nginx.log-format
+    - external.nginx
     - external.benchmarker
     - external.benchmark-worker
 

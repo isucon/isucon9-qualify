@@ -6,7 +6,6 @@ WorkingDirectory=/home/isucon/isucari
 LimitNOFILE=655360
 
 ExecStart = /home/isucon/isucari/bin/benchmark-worker -ep https://portal.isucon.net
-KillMode=none
 
 Restart   = always
 Type      = simple

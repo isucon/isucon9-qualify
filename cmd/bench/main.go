@@ -209,6 +209,8 @@ func main() {
 		penalty += int64(5000 * (1 + (tCnt-200)/100))
 	}
 
+	log.Print(score, penalty)
+
 	score -= penalty
 
 	// 0点以下なら失格

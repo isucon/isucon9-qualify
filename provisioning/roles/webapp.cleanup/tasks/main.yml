@@ -8,3 +8,6 @@
     - { "path": "/root/.ssh/known_hosts" }
     - { "path": "/root/.bash_history" }
     - { "path": "/home/isucon/.bash_history" }
+    - { "path": "/var/log/syslog" }
+    - { "path": "/var/log/lastlog" }
+    - { "path": "/var/log/auth.log" }
