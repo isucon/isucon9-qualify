@@ -258,6 +258,57 @@ func (s *Session) BuyWithFailed(ctx context.Context, itemID int64, token string,
 	return nil
 }
 
+func (s *Session) BuyWithFailedOnCampaign(ctx context.Context, itemID int64, token string) error {
+	b, _ := json.Marshal(reqBuy{
+		CSRFToken: s.csrfToken,
+		ItemID:    itemID,
+		Token:     token,
+	})
+	req, err := s.newPostRequest(ShareTargetURLs.AppURL, "/buy", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
+	}
+
+	req = req.WithContext(ctx)
+
+	res, err := s.Do(req)
+	if err != nil {
+		return failure.Wrap(err, failure.Messagef("POST /buy: リクエストに失敗しました (item_id: %d)", itemID))
+	}
+	defer res.Body.Close()
+
+	// 以下の2つのどちらかのエラーになる
+	if res.StatusCode == http.StatusForbidden {
+		re := resErr{}
+		err = json.NewDecoder(res.Body).Decode(&re)
+		if err != nil {
+			return failure.Wrap(err, failure.Messagef("POST /buy: JSONデコードに失敗しました (item_id: %d)", itemID))
+		}
+
+		expectedMsg := "item is not for sale"
+
+		if re.Error != expectedMsg {
+			return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s (item_id: %d)", expectedMsg, re.Error, itemID))
+		}
+	}
+
+	if res.StatusCode == http.StatusBadRequest {
+		re := resErr{}
+		err = json.NewDecoder(res.Body).Decode(&re)
+		if err != nil {
+			return failure.Wrap(err, failure.Messagef("POST /buy: JSONデコードに失敗しました (item_id: %d)", itemID))
+		}
+
+		expectedMsg := "カードの残高が足りません"
+
+		if re.Error != expectedMsg {
+			return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s (item_id: %d)", expectedMsg, re.Error, itemID))
+		}
+	}
+
+	return nil
+}
+
 func (s *Session) ShipWithWrongCSRFToken(ctx context.Context, itemID int64) error {
 	b, _ := json.Marshal(reqShip{
 		CSRFToken: secureRandomStr(20),
