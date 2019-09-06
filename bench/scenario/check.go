@@ -11,7 +11,7 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Check(ctx context.Context, critical *fails.Critical) {
+func Check(ctx context.Context, critical *fails.Errors) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 

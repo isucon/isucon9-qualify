@@ -12,10 +12,10 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Verify(ctx context.Context) *fails.Critical {
+func Verify(ctx context.Context) *fails.Errors {
 	var wg sync.WaitGroup
 
-	critical := fails.NewCritical()
+	critical := fails.NewErrors()
 
 	// verify scenario #1
 	wg.Add(1)

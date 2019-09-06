@@ -15,7 +15,7 @@ import (
 	"github.com/morikuni/failure"
 )
 
-func Campaign(ctx context.Context, critical *fails.Critical) {
+func Campaign(ctx context.Context, critical *fails.Errors) {
 	var wg sync.WaitGroup
 	closed := make(chan struct{})
 
@@ -121,7 +121,7 @@ func Campaign(ctx context.Context, critical *fails.Critical) {
 
 // popularListing is 人気者出品
 // 人気者が高額の出品を行う。高額だが出品した瞬間に大量の人が購入しようとしてくる。もちろん購入できるのは一人だけ。
-func popularListing(ctx context.Context, critical *fails.Critical, num int, price int) (isIncrease bool) {
+func popularListing(ctx context.Context, critical *fails.Errors, num int, price int) (isIncrease bool) {
 	// buyerが足りない場合はログインを意図的に遅くしている可能性があるのでペナルティとして実行しない
 	l := BuyerPool.Len()
 	if l < num+10 {
