@@ -126,8 +126,8 @@ http://isucon.net/archives/53665373.html
 例えば、参照実装をGoからPerlに切り替えるには次のようにします。
 
 ```sh
-$ sudo systemctl stop    isucari.go.service
-$ sudo systemctl disable isucari.go.service
+$ sudo systemctl stop    isucari.golang.service
+$ sudo systemctl disable isucari.golang.service
 $ sudo systemctl start   isucari.perl.service
 $ sudo systemctl enable  isucari.perl.service
 ```
