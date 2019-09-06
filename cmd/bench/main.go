@@ -28,12 +28,12 @@ type Output struct {
 }
 
 type Config struct {
-	// PaymentPort    int
-	// ShipmentPort   int
 	TargetURLStr string
 	TargetHost   string
 	ShipmentURL  string
 	PaymentURL   string
+	PaymentPort  int
+	ShipmentPort int
 
 	AllowedIPs []net.IP
 }
@@ -57,6 +57,8 @@ func main() {
 	flags.StringVar(&conf.TargetHost, "target-host", "isucon9.catatsuy.org", "target host")
 	flags.StringVar(&conf.PaymentURL, "payment-url", "http://localhost:5555", "payment url")
 	flags.StringVar(&conf.ShipmentURL, "shipment-url", "http://localhost:7000", "shipment url")
+	flags.IntVar(&conf.PaymentPort, "payment-port", 5555, "payment service port")
+	flags.IntVar(&conf.ShipmentPort, "shipment-port", 7000, "shipment service port")
 	flags.StringVar(&dataDir, "data-dir", "initial-data", "data directory")
 	flags.StringVar(&staticDir, "static-dir", "webapp/public/static", "static file directory")
 	flags.StringVar(&allowedIPStr, "allowed-ips", "", "allowed ips (comma separated)")
@@ -77,7 +79,7 @@ func main() {
 	}
 
 	// 外部サービスの起動
-	sp, ss, err := server.RunServer(5555, 7000, dataDir, conf.AllowedIPs)
+	sp, ss, err := server.RunServer(conf.PaymentPort, conf.ShipmentPort, dataDir, conf.AllowedIPs)
 	if err != nil {
 		log.Fatal(err)
 	}
