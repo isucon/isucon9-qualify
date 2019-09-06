@@ -650,7 +650,9 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	userCache := map[int64]UserSimple{}
 	preloadUsers := []int64{}
 	for _, item := range items {
-		preloadUsers = append(preloadUsers, item.BuyerID)
+		if item.BuyerID != 0 {
+			preloadUsers = append(preloadUsers, item.BuyerID)
+		}
 		preloadUsers = append(preloadUsers, item.SellerID)
 	}
 	preloadUserSimple(dbx, preloadUsers, userCache)
@@ -735,7 +737,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	if itemID > 0 && createdAt > 0 {
 		// paging
 		inQuery, inArgs, err = sqlx.In(
-			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `status` IN (?,?) AND `root_category_id` = ? AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
+			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` FORCE INDEX(`idx_root_category`) WHERE `status` IN (?,?) AND `root_category_id` = ? AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			rootCategoryID,
@@ -752,7 +754,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// 1st page
 		inQuery, inArgs, err = sqlx.In(
-			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` WHERE `status` IN (?,?) AND `root_category_id` = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+			"SELECT `id`,`seller_id`,`buyer_id`,`status`,`name`,`price`,`image_name`,`category_id`,`created_at` FROM `items` FORCE INDEX(`idx_root_category`) WHERE `status` IN (?,?) AND `root_category_id` = ? ORDER BY created_at DESC, id DESC LIMIT ?",
 			ItemStatusOnSale,
 			ItemStatusSoldOut,
 			rootCategoryID,
@@ -777,7 +779,9 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	userCache := map[int64]UserSimple{}
 	preloadUsers := []int64{}
 	for _, item := range items {
-		preloadUsers = append(preloadUsers, item.BuyerID)
+		if item.BuyerID != 0 {
+			preloadUsers = append(preloadUsers, item.BuyerID)
+		}
 		preloadUsers = append(preloadUsers, item.SellerID)
 	}
 	preloadUserSimple(dbx, preloadUsers, userCache)
@@ -1006,7 +1010,9 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	userCache := map[int64]UserSimple{}
 	preloadUsers := []int64{}
 	for _, item := range items {
-		preloadUsers = append(preloadUsers, item.BuyerID)
+		if item.BuyerID != 0 {
+			preloadUsers = append(preloadUsers, item.BuyerID)
+		}
 		preloadUsers = append(preloadUsers, item.SellerID)
 	}
 	preloadUserSimple(dbx, preloadUsers, userCache)
@@ -1146,7 +1152,9 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 
 	userCache := map[int64]UserSimple{}
 	preloadUsers := []int64{}
-	preloadUsers = append(preloadUsers, item.BuyerID)
+	if item.BuyerID != 0 {
+		preloadUsers = append(preloadUsers, item.BuyerID)
+	}
 	preloadUsers = append(preloadUsers, item.SellerID)
 	preloadUserSimple(dbx, preloadUsers, userCache)
 	seller, err := getUserSimpleByID(dbx, item.SellerID, userCache)
