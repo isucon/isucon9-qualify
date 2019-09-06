@@ -34,10 +34,23 @@ func Verify(ctx context.Context) {
 		}
 		defer BuyerPool.Enqueue(s2)
 
+		numSellBefore := asset.GetUser(s1.UserID).NumSellItems
+
 		targetParentCategoryID := asset.GetUser(s2.UserID).BuyParentCategoryID
 		targetItemID, fileName, err := sellForFileName(ctx, s1, 100, targetParentCategoryID)
 		if err != nil {
 			fails.ErrorsForCheck.Add(err)
+			return
+		}
+
+		findItem, err := findItemFromUsersByID(ctx, s1, s1.UserID, targetItemID, 1)
+		if err != nil {
+			fails.ErrorsForCheck.Add(err)
+			return
+		}
+
+		if !(findItem.Seller.NumSellItems > numSellBefore) {
+			fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("ユーザの出品数が更新されていません (user_id:%d)", s1.UserID)))
 			return
 		}
 

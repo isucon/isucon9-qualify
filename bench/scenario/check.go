@@ -174,8 +174,9 @@ func Check(ctx context.Context) {
 
 		var s1, s2 *session.Session
 		var err error
-		var price int
+		var price, numSellBefore int
 		var targetItem asset.AppItem
+		var findItem session.ItemSimple
 		var targetParentCategoryID int
 
 	L:
@@ -196,6 +197,7 @@ func Check(ctx context.Context) {
 
 			price = priceStoreCache.Get()
 
+			numSellBefore = asset.GetUser(s1.UserID).NumSellItems
 			targetParentCategoryID = asset.GetUser(s2.UserID).BuyParentCategoryID
 			targetItem, err = sellParentCategory(ctx, s1, price, targetParentCategoryID)
 			if err != nil {
@@ -205,9 +207,13 @@ func Check(ctx context.Context) {
 			}
 
 			// 売った商品探す
-			_, err = findItemFromUsers(ctx, s1, targetItem, 2)
+			findItem, err = findItemFromUsers(ctx, s1, targetItem, 2)
 			if err != nil {
 				fails.ErrorsForCheck.Add(err)
+				goto Final
+			}
+			if !(findItem.Seller.NumSellItems > numSellBefore) {
+				fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("ユーザの出品数が更新されていません (user_id:%d)", s1.UserID)))
 				goto Final
 			}
 			_, err = findItemFromNewCategory(ctx, s1, targetItem, 3)
