@@ -290,6 +290,8 @@ func (s *Session) BuyWithFailedOnCampaign(ctx context.Context, itemID int64, tok
 		if re.Error != expectedMsg {
 			return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s (item_id: %d)", expectedMsg, re.Error, itemID))
 		}
+
+		return nil
 	}
 
 	if res.StatusCode == http.StatusBadRequest {
@@ -304,6 +306,8 @@ func (s *Session) BuyWithFailedOnCampaign(ctx context.Context, itemID int64, tok
 		if re.Error != expectedMsg {
 			return failure.Wrap(err, failure.Messagef("POST /buy: exected error message: %s; actual: %s (item_id: %d)", expectedMsg, re.Error, itemID))
 		}
+
+		return nil
 	}
 
 	return nil
