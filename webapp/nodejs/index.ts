@@ -279,9 +279,13 @@ fastify.get("/register", getIndex);
 fastify.get("/timeline", getIndex);
 fastify.get("/categories/:category_id/items", getIndex);
 fastify.get("/sell", getIndex);
+fastify.get("/items/:item_id", getIndex);
 fastify.get("/items/:item_id/edit", getIndex);
 fastify.get("/items/:item_id/buy", getIndex);
 fastify.get("/buy/complete", getIndex);
+fastify.get("/transactions/:transaction_id", getIndex);
+fastify.get("/users/:user_id", getIndex);
+fastify.get("/users/setting", getIndex);
 
 async function getIndex(_req: any, reply: FastifyReply<ServerResponse>) {
     const html = await fs.promises.readFile(
