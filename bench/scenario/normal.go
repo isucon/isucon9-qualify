@@ -42,6 +42,9 @@ func checkItemSimpleCategory(item session.ItemSimple, aItem asset.AppItem) error
 	aCategory, _ := asset.GetCategory(aItem.CategoryID)
 	aRootCategory, _ := asset.GetCategory(aCategory.ParentID)
 
+	if item.Category == nil {
+		return fmt.Errorf("商品のカテゴリーがありません")
+	}
 	if item.Category.ID == 0 {
 		return fmt.Errorf("商品のカテゴリーIDがありません")
 	}
@@ -62,6 +65,9 @@ func checkItemDetailCategory(item session.ItemDetail, aItem asset.AppItem) error
 	aCategory, _ := asset.GetCategory(aItem.CategoryID)
 	aRootCategory, _ := asset.GetCategory(aCategory.ParentID)
 
+	if item.Category == nil {
+		return fmt.Errorf("商品のカテゴリーがありません")
+	}
 	if item.Category.ID == 0 {
 		return fmt.Errorf("商品のカテゴリーIDがありません")
 	}

@@ -198,6 +198,11 @@ func Load(ctx context.Context) {
 					goto Final
 				}
 
+				if item.Category == nil {
+					fails.ErrorsForCheck.Add(failure.New(fails.ErrApplication, failure.Messagef("/item/%d.json のカテゴリが正しくありません", item.ID)))
+					goto Final
+				}
+
 				err = loadNewCategoryItemsAndItems(ctx, s1, item.Category.ParentID, 30, 20)
 				if err != nil {
 					fails.ErrorsForCheck.Add(err)
@@ -424,6 +429,9 @@ func loadIsRecommendNewItems(ctx context.Context, s *session.Session) (bool, err
 	}
 	isTarget := 0
 	for _, item := range items {
+		if item.Category == nil {
+			return false, failure.New(fails.ErrApplication, failure.Messagef("/new_item.json のカテゴリが正しくありません　(item_id: %d)", item.ID))
+		}
 		if item.Category.ParentID == targetCategoryID {
 			isTarget++
 		}
@@ -566,6 +574,10 @@ func loadItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *I
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
+		}
+
+		if item.Category == nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
 
 		if item.Category.ParentID != categoryID {
