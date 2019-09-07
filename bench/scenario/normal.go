@@ -148,6 +148,10 @@ func findItemFromNewCategoryAll(ctx context.Context, s *session.Session, categor
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
 		}
+		if item.Category == nil {
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが返っていません (item_id: %d)", categoryID, item.ID))
+		}
+
 		if item.Category.ParentID != categoryID {
 			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
