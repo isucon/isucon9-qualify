@@ -336,4 +336,4 @@ http://isucon.net/ における予選の結果発表をもって、この保存�
 また、以下のURLにこれまで返答された質問などがまとめられています。
 何かある時には一度ご覧ください。
 
-[ISUCON9faq.md](https://gist.github.com/) [TODO: リンク貼る]
+[ISUCON9faq.md](https://gist.github.com/catatsuy/8112c54ad9895d6ed7bb63057ef5f4dd)
