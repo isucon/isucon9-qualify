@@ -7,7 +7,7 @@ use Test::More;
 
 sub cmd_json {
     my @cmd_args = @_;
-    my @cmd = qw!/usr/local/bin/aliyun --mode EcsRamRole --region=ap-northeast1!;
+    my @cmd = qw!./aliyun --mode EcsRamRole --region=ap-northeast1!;
     push @cmd, @cmd_args;
     open(my $pipe, "-|", @cmd) or die $!;
     my $buffer="";
