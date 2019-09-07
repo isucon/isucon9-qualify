@@ -1,0 +1,9 @@
+- hosts: bench
+  user: root
+  gather_facts: yes
+  vars:
+    golang_version: 1.13
+
+  roles:
+    - external.deploy
+    - external.benchmarker
