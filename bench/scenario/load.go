@@ -713,6 +713,10 @@ func loadItemIDsTransactionEvidence(ctx context.Context, s *session.Session, ite
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
 		}
 
+		if item.Seller == nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品の出品者情報が返っていません (item_id: %d, user_id: %d)", item.ID, s.UserID))
+		}
+
 		if item.BuyerID != s.UserID && item.Seller.ID != s.UserID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに購入・出品していない商品が含まれます (item_id: %d, user_id: %d)", item.ID, s.UserID))
 		}

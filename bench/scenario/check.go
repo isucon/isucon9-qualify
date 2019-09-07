@@ -480,6 +480,10 @@ func checkGetItem(ctx context.Context, s *session.Session, targetItemID int64) e
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
 
+	if item.Seller == nil {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.json の商品の出品者情報が返っていません", targetItemID))
+	}
+
 	if item.Seller.ID != item.SellerID {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの出品者情報が正しくありません", targetItemID))
 	}
