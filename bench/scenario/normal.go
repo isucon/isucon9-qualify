@@ -194,6 +194,10 @@ func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, t
 			return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
 		}
 
+		if item.Seller == nil {
+			return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの購入者情報が返っていません (item_id: %d, user_id: %d)", item.ID, s.UserID))
+		}
+
 		if item.BuyerID != s.UserID && item.Seller.ID != s.UserID {
 			return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonに購入・出品していない商品が含まれます (item_id: %d, user_id: %d)", item.ID, s.UserID))
 		}
