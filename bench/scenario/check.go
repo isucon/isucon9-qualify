@@ -350,6 +350,9 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
 		}
 
+		if item.Category == nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
+		}
 		if item.Category.ParentID != categoryID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
