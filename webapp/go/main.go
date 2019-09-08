@@ -433,6 +433,16 @@ func getCSRFToken(r *http.Request) string {
 	return csrfToken.(string)
 }
 
+func getUserID(r *http.Request) (int64, int, string) {
+	session := getSession(r)
+	id, ok := session.Values["user_id"]
+	if !ok {
+		return 0, http.StatusNotFound, "no session"
+	}
+	return id.(int64), http.StatusOK, ""
+
+}
+
 func getUser(r *http.Request, userCache map[int64]UserSimple) (user User, errCode int, errMsg string) {
 	session := getSession(r)
 	userID, ok := session.Values["user_id"]
@@ -634,10 +644,10 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userCache := map[int64]UserSimple{}
-	user, _, _ := getUser(r, userCache)
+	userID, _, _ := getUserID(r)
 	rootCategoryID := 0
-	if user.ID != 0 {
-		rootCategoryID = getUserInterest(user.ID)
+	if userID != 0 {
+		rootCategoryID = getUserInterest(userID)
 	}
 
 	items := []Item{}
@@ -1000,7 +1010,7 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 
 func getTransactions(w http.ResponseWriter, r *http.Request) {
 	userCache := map[int64]UserSimple{}
-	user, errCode, errMsg := getUser(r, userCache)
+	userID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -1035,11 +1045,11 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			"(SELECT * FROM `items` WHERE `seller_id` = ? AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?)) "+
 				"UNION (SELECT * FROM `items` WHERE `buyer_id` = ? AND (`created_at` < ? OR `created_at` <= ? AND `id` < ?)) "+
 				"ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
-			user.ID,
+			userID,
 			time.Unix(createdAt, 0),
 			time.Unix(createdAt, 0),
 			itemID,
-			user.ID,
+			userID,
 			time.Unix(createdAt, 0),
 			time.Unix(createdAt, 0),
 			itemID,
@@ -1056,8 +1066,8 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 			"SELECT * FROM `items` WHERE `seller_id` = ? "+
 				"UNION (SELECT * FROM `items` WHERE `buyer_id` = ?) "+
 				" ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
-			user.ID,
-			user.ID,
+			userID,
+			userID,
 			TransactionsPerPage+1,
 		)
 		if err != nil {
@@ -1186,7 +1196,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userCache := map[int64]UserSimple{}
-	user, errCode, errMsg := getUser(r, userCache)
+	userID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -1241,7 +1251,7 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: item.CreatedAt.Unix(),
 	}
 
-	if (user.ID == item.SellerID || user.ID == item.BuyerID) && item.BuyerID != 0 {
+	if (userID == item.SellerID || userID == item.BuyerID) && item.BuyerID != 0 {
 		buyer, err := getUserSimpleByID(dbx, item.BuyerID, userCache)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "buyer not found")
@@ -1305,8 +1315,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCache := map[int64]UserSimple{}
-	seller, errCode, errMsg := getUser(r, userCache)
+	sellerID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -1325,7 +1334,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if targetItem.SellerID != seller.ID {
+	if targetItem.SellerID != sellerID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
 		return
 	}
@@ -1386,8 +1395,7 @@ func getQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCache := map[int64]UserSimple{}
-	seller, errCode, errMsg := getUser(r, userCache)
+	sellerID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -1405,7 +1413,7 @@ func getQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.SellerID != seller.ID {
+	if transactionEvidence.SellerID != sellerID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
@@ -1450,17 +1458,6 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		var locked int
-		err = dbx.Get(&locked, "SELECT GET_LOCK(?,?)", rb.ItemID, 5)
-		if err != nil {
-			log.Print(err)
-			outputErrorMsg(w, http.StatusInternalServerError, "db error")
-			return
-		}
-		defer dbx.Exec("SELECT RELEASE_LOCK(?)", rb.ItemID)
-	*/
-
 	buyLock.Lock()
 	ch, ok := buyChs[rb.ItemID]
 	if !ok {
@@ -1473,7 +1470,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	defer func() { <-ch }()
 
 	chkItem := Item{}
-	err = dbx.Get(&chkItem, "SELECT items.*,seller.id as `seller.id`,seller.account_name as `seller.account_name`,seller.num_sell_items as `seller.num_sell_items` FROM `items` JOIN users seller ON seller.id = items.seller_id WHERE `items`.id = ?", rb.ItemID)
+	err = dbx.Get(&chkItem, "SELECT `id`,`status`,`seller_id`,`category_id` FROM `items` WHERE id = ?", rb.ItemID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "item not found")
 		return
@@ -1501,6 +1498,7 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userCache := map[int64]UserSimple{}
+	// use getUser
 	buyer, errCode, errMsg := getUser(r, userCache)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
@@ -1681,8 +1679,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCache := map[int64]UserSimple{}
-	seller, errCode, errMsg := getUser(r, userCache)
+	sellerID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -1701,7 +1698,7 @@ func postShip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.SellerID != seller.ID {
+	if transactionEvidence.SellerID != sellerID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
@@ -1813,8 +1810,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCache := map[int64]UserSimple{}
-	seller, errCode, errMsg := getUser(r, userCache)
+	sellerID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -1833,7 +1829,7 @@ func postShipDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.SellerID != seller.ID {
+	if transactionEvidence.SellerID != sellerID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
@@ -1960,8 +1956,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCache := map[int64]UserSimple{}
-	buyer, errCode, errMsg := getUser(r, userCache)
+	buyerID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -1980,7 +1975,7 @@ func postComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transactionEvidence.BuyerID != buyer.ID {
+	if transactionEvidence.BuyerID != buyerID {
 		outputErrorMsg(w, http.StatusForbidden, "権限がありません")
 		return
 	}
@@ -2147,8 +2142,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCache := map[int64]UserSimple{}
-	user, errCode, errMsg := getUser(r, userCache)
+	sellerID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -2183,7 +2177,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	tx := dbx.MustBegin()
 
 	seller := User{}
-	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", sellerID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "user not found")
 		tx.Rollback()
@@ -2197,7 +2191,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`,`root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		seller.ID,
+		sellerID,
 		ItemStatusOnSale,
 		name,
 		price,
@@ -2222,10 +2216,9 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
-	_, err = tx.Exec("UPDATE `users` SET `num_sell_items`=?, `last_bump`=? WHERE `id`=?",
-		seller.NumSellItems+1,
+	_, err = tx.Exec("UPDATE `users` SET `num_sell_items`=`num_sell_items`+1, `last_bump`=? WHERE `id`=?",
 		now,
-		seller.ID,
+		sellerID,
 	)
 	if err != nil {
 		log.Print(err)
@@ -2263,8 +2256,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCache := map[int64]UserSimple{}
-	user, errCode, errMsg := getUser(r, userCache)
+	userID, errCode, errMsg := getUserID(r)
 	if errMsg != "" {
 		outputErrorMsg(w, errCode, errMsg)
 		return
@@ -2286,14 +2278,14 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if targetItem.SellerID != user.ID {
+	if targetItem.SellerID != userID {
 		outputErrorMsg(w, http.StatusForbidden, "自分の商品以外は編集できません")
 		tx.Rollback()
 		return
 	}
 
 	seller := User{}
-	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
+	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", userID)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusNotFound, "user not found")
 		tx.Rollback()
@@ -2358,6 +2350,7 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	csrfToken := getCSRFToken(r)
 
 	userCache := map[int64]UserSimple{}
+	// getUser使う
 	user, _, errMsg := getUser(r, userCache)
 
 	ress := resSetting{}
