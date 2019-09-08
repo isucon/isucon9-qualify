@@ -21,7 +21,9 @@ $ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isuc
 ## ディレクトリ構成
 
 ```
-├── bench        # ベンチマーカーのソースコード
+├── bench        # ベンチマーカーなどが依存するパッケージのソースコード
+├── cmd          # ベンチマーカーなどのソースコード
+├── docs         # 運営が用意した各種ドキュメント
 ├── initial-data # 初期データ作成
 ├── provisioning # セットアップ用ansible
 └── webapp       # 各言語の参考実装
