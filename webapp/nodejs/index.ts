@@ -54,10 +54,6 @@ declare module "fastify" {
 
 // =============================================
 
-function TODO() {
-    throw new Error("Not yet implemented!");
-}
-
 const DefaultPaymentServiceURL = "http://localhost:5555";
 const DefaultShipmentServiceURL = "http://localhost:7000";
 const ItemMinPrice = 100;
