@@ -25,7 +25,6 @@
     - webapp.python
     - webapp.nodejs
     - webapp.nginx
-    - webapp.cleanup
 
   tasks:
     - name: Start default daemons
