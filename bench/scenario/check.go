@@ -305,7 +305,7 @@ func checkNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cate
 	category, ok := asset.GetCategory(categoryID)
 	if !ok || category.ParentID != 0 {
 		// benchmarkerのバグになるかと
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json カテゴリIDが正しくありません", categoryID))
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json カテゴリIDが正しくありません", categoryID))
 	}
 	itemIDs := newIDsStore()
 	err := checkItemIDsFromCategory(ctx, s, itemIDs, categoryID, 0, 0, 0, maxPage)
@@ -316,7 +316,7 @@ func checkNewCategoryItemsAndItems(ctx context.Context, s *session.Session, cate
 	// 全件はカウントできない。countUserItemsを何回か動かして確認している
 	// ここでは商品数はperpage*maxpage
 	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json の商品数が正しくありません", categoryID))
 	}
 
 	chkItemIDs := itemIDs.RandomIDs(checkItem)
@@ -343,19 +343,22 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 		return err
 	}
 	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品数が正しくありません", categoryID))
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json の商品数が正しくありません", categoryID))
 	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonはcreated_at順である必要があります", categoryID))
 		}
 
+		if item.Category == nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
+		}
 		if item.Category.ParentID != categoryID {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json の商品のステータスが正しくありません (item_id: %d)", categoryID, item.ID))
 		}
 
 		aItem, ok := asset.GetItem(item.SellerID, item.ID)
@@ -365,17 +368,17 @@ func checkItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs *
 		}
 
 		if !(item.Name == aItem.Name) {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの商品の名前が間違えています (item_id: %d)", categoryID, item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonの商品の名前が間違えています (item_id: %d)", categoryID, item.ID))
 		}
 
 		err := checkItemSimpleCategory(item, aItem)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonの%s", categoryID, err.Error()))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonの%s", categoryID, err.Error()))
 		}
 
 		err = itemIDs.Add(item.ID)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonに同じ商品がありました (item_id: %d)", categoryID, item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonに同じ商品がありました (item_id: %d)", categoryID, item.ID))
 		}
 		nextItemID = item.ID
 		nextCreatedAt = item.CreatedAt

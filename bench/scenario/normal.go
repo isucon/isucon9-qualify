@@ -42,6 +42,9 @@ func checkItemSimpleCategory(item session.ItemSimple, aItem asset.AppItem) error
 	aCategory, _ := asset.GetCategory(aItem.CategoryID)
 	aRootCategory, _ := asset.GetCategory(aCategory.ParentID)
 
+	if item.Category == nil {
+		return fmt.Errorf("商品のカテゴリーがありません")
+	}
 	if item.Category.ID == 0 {
 		return fmt.Errorf("商品のカテゴリーIDがありません")
 	}
@@ -62,6 +65,9 @@ func checkItemDetailCategory(item session.ItemDetail, aItem asset.AppItem) error
 	aCategory, _ := asset.GetCategory(aItem.CategoryID)
 	aRootCategory, _ := asset.GetCategory(aCategory.ParentID)
 
+	if item.Category == nil {
+		return fmt.Errorf("商品のカテゴリーがありません")
+	}
 	if item.Category.ID == 0 {
 		return fmt.Errorf("商品のカテゴリーIDがありません")
 	}
@@ -146,14 +152,14 @@ func findItemFromNewCategoryAll(ctx context.Context, s *session.Session, categor
 	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
-			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.jsonはcreated_at順である必要があります", categoryID))
 		}
 		if item.Category == nil {
-			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが返っていません (item_id: %d)", categoryID, item.ID))
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json のカテゴリが返っていません (item_id: %d)", categoryID, item.ID))
 		}
 
 		if item.Category.ParentID != categoryID {
-			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_items/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
 
 		if item.ID == targetItemID {
