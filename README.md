@@ -40,6 +40,8 @@ $ ./bin/benchmarker
 
 ## ベンチマーカー
 
+Version: Go 1.13 or later
+
 ### 実行オプション
 
 ```
@@ -100,8 +102,6 @@ nginxでいい感じにするなら以下の設定が必須
 
 ## webapp 起動方法
 
-### DB初期化
-
 ```shell-session
 cd webapp/sql
 
@@ -110,6 +110,10 @@ mysql -u root < 00_create_database.sql
 
 # データを流し込む
 ./init.sh
+
+cd webapp/go
+make
+./isucari
 ```
 
 ## 使用データの取得元
