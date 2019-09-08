@@ -1,11 +1,8 @@
 package main
 
 import (
-	"crypto/hmac"
 	crand "crypto/rand"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -64,15 +61,17 @@ const (
 )
 
 var (
-	templates      *template.Template
-	dbx            *sqlx.DB
-	store          sessions.Store
-	buyChs         map[int64](chan int)
-	buyLock        sync.Mutex
-	userAllCache   map[int64]UserSimple
-	userLock       sync.RWMutex
-	boughtItem     map[int64]bool
-	boughtItemLock sync.RWMutex
+	templates        *template.Template
+	dbx              *sqlx.DB
+	store            sessions.Store
+	buyChs           map[int64](chan int)
+	buyLock          sync.Mutex
+	userAllCache     map[int64]UserSimple
+	userLock         sync.RWMutex
+	boughtItem       map[int64]bool
+	boughtItemLock   sync.RWMutex
+	accountCache     map[string]User
+	accountCacheLock sync.RWMutex
 )
 
 type Config struct {
@@ -479,14 +478,16 @@ func uniqueIDs(ids []int64) []int64 {
 
 func preloadAllUserSimple() error {
 	userAllCache = make(map[int64]UserSimple)
+	accountCache = make(map[string]User)
 	users := []User{}
-	err := dbx.Select(&users, "SELECT `id`,`account_name`,`num_sell_items` FROM `users`")
+	err := dbx.Select(&users, "SELECT * FROM `users`")
 	if err != nil {
 		return err
 	}
 	for _, user := range users {
 		userSimple := UserSimple{user.ID, user.AccountName, user.NumSellItems}
 		userAllCache[user.ID] = userSimple
+		accountCache[user.AccountName] = user
 	}
 	return nil
 }
@@ -2383,42 +2384,48 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := User{}
-	err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
-		return
-	}
-	if err != nil {
-		log.Print(err)
+	accountCacheLock.RLock()
+	u, ok := accountCache[accountName]
+	accountCacheLock.RUnlock()
 
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		return
-	}
-
-	// XXX sha1(password) => hashedPassword の cacheをつくる
-	hash := hmac.New(sha256.New, []byte("Oi87WbXmCRnFZATUm4fXUJUE8VLdiI4tGk17M1K3SmS"))
-	hash.Write([]byte(u.AccountName))
-	truePassword := base64.RawStdEncoding.EncodeToString(hash.Sum(nil))
-	if u.AccountName == "isudemo1" || u.AccountName == "isudemo2" || u.AccountName == "isudemo3" {
-		truePassword = u.AccountName
-	}
-	if password != truePassword {
-		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
-		return
-	}
-	/*
-		err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
-		if err == bcrypt.ErrMismatchedHashAndPassword {
+	if !ok {
+		err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
+		if err == sql.ErrNoRows {
 			outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
 			return
 		}
 		if err != nil {
 			log.Print(err)
-			outputErrorMsg(w, http.StatusInternalServerError, "crypt error")
+
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+	}
+
+	/*
+		// XXX sha1(password) => hashedPassword の cacheをつくる
+		hash := hmac.New(sha256.New, []byte("Oi87WbXmCRnFZATUm4fXUJUE8VLdiI4tGk17M1K3SmS"))
+		hash.Write([]byte(u.AccountName))
+		truePassword := base64.RawStdEncoding.EncodeToString(hash.Sum(nil))
+		if u.AccountName == "isudemo1" || u.AccountName == "isudemo2" || u.AccountName == "isudemo3" {
+			truePassword = u.AccountName
+		}
+		if password != truePassword {
+			outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
 			return
 		}
 	*/
+
+	err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
+		return
+	}
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "crypt error")
+		return
+	}
 
 	session := getSession(r)
 
@@ -2482,11 +2489,12 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := User{
-		ID:          userID,
-		AccountName: accountName,
-		Address:     address,
-	}
+	u := User{}
+	dbx.Get(&u, "SELECT * FROM `users` WHERE `id` = ?", userID)
+
+	accountCacheLock.Lock()
+	accountCache[accountName] = u
+	accountCacheLock.Unlock()
 
 	session := getSession(r)
 	session.Values["user_id"] = u.ID
