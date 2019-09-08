@@ -9,7 +9,7 @@ ansible 2.8.3のみで動作確認しています。
 - bench.yml
   - ベンチマーカー用
 - dev.yml
-  - 競技者向け開発用
+  - 競技者向け開発用の外部サービス
 
 ## 競技用サーバのセットアップ
 
@@ -27,7 +27,7 @@ inventory/hostsのbenchセクションに対象のホストを追加してansibl
 ansible-playbook bench.yml -i inventory/hosts
 ```
 
-## 開発用サーバのセットアップ
+## 開発用の外部サービスのセットアップ
 
 inventory/hostsのdevセクションに対象のホストを追加してansible-playbookコマンドを実行してください。
 
