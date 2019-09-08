@@ -534,6 +534,10 @@ func verifyItemIDsFromCategory(ctx context.Context, s *session.Session, itemIDs 
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
 		}
 
+		if item.Category == nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが返っていません (item_id: %d)", categoryID, item.ID))
+		}
+
 		if item.Category.ParentID != categoryID {
 			return failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
@@ -630,6 +634,10 @@ func verifyItemIDsTransactionEvidence(ctx context.Context, s *session.Session, i
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
+		}
+
+		if item.Seller == nil {
+			return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品の出品者情報が返っていません (user_id: %d)", s.UserID))
 		}
 
 		if item.BuyerID != s.UserID && item.Seller.ID != s.UserID {
@@ -775,6 +783,10 @@ func verifyGetItem(ctx context.Context, s *session.Session, targetItemID int64) 
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
 	}
 
+	if item.Seller == nil {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.json の商品の出品者情報が返っていません", targetItemID))
+	}
+
 	if item.Seller.ID != item.SellerID {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの出品者情報が正しくありません", targetItemID))
 	}
@@ -835,6 +847,10 @@ func verifyGetItemTE(ctx context.Context, s *session.Session, targetItemID int64
 
 	if !(item.Description != "") {
 		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.jsonの商品説明が間違っています", targetItemID))
+	}
+
+	if item.Seller == nil {
+		return failure.New(fails.ErrApplication, failure.Messagef("/items/%d.json の商品の出品者情報が返っていません", targetItemID))
 	}
 
 	if item.Seller.ID != item.SellerID {

@@ -10,7 +10,7 @@
   synchronize:
     src: ../../../../
     dest: /home/isucon/isucari
-    delete: yes
+    delete: no
     recursive: yes
     rsync_opts:
       - "--exclude=.git"

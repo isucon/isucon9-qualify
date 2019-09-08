@@ -148,6 +148,10 @@ func findItemFromNewCategoryAll(ctx context.Context, s *session.Session, categor
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.jsonはcreated_at順である必要があります", categoryID))
 		}
+		if item.Category == nil {
+			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが返っていません (item_id: %d)", categoryID, item.ID))
+		}
+
 		if item.Category.ParentID != categoryID {
 			return session.ItemSimple{}, failure.New(fails.ErrApplication, failure.Messagef("/new_item/%d.json のカテゴリが異なります (item_id: %d)", categoryID, item.ID))
 		}
@@ -188,6 +192,10 @@ func findItemFromUsersTransactionsAll(ctx context.Context, s *session.Session, t
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
 			return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonはcreated_at順である必要があります"))
+		}
+
+		if item.Seller == nil {
+			return session.ItemDetail{}, failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.jsonの購入者情報が返っていません (item_id: %d, user_id: %d)", item.ID, s.UserID))
 		}
 
 		if item.BuyerID != s.UserID && item.Seller.ID != s.UserID {
