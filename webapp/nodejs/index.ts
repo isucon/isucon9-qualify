@@ -54,10 +54,6 @@ declare module "fastify" {
 
 // =============================================
 
-function TODO() {
-    throw new Error("Not yet implemented!");
-}
-
 const DefaultPaymentServiceURL = "http://localhost:5555";
 const DefaultShipmentServiceURL = "http://localhost:7000";
 const ItemMinPrice = 100;
@@ -279,9 +275,13 @@ fastify.get("/register", getIndex);
 fastify.get("/timeline", getIndex);
 fastify.get("/categories/:category_id/items", getIndex);
 fastify.get("/sell", getIndex);
+fastify.get("/items/:item_id", getIndex);
 fastify.get("/items/:item_id/edit", getIndex);
 fastify.get("/items/:item_id/buy", getIndex);
 fastify.get("/buy/complete", getIndex);
+fastify.get("/transactions/:transaction_id", getIndex);
+fastify.get("/users/:user_id", getIndex);
+fastify.get("/users/setting", getIndex);
 
 async function getIndex(_req: any, reply: FastifyReply<ServerResponse>) {
     const html = await fs.promises.readFile(

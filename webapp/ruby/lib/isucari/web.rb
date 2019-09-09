@@ -336,7 +336,7 @@ module Isucari
           end
 
           item_detail['buyer_id'] = item['buyer_id']
-          item_detail['buyey'] = buyer
+          item_detail['buyer'] = buyer
         end
 
         transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first

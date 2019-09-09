@@ -1,34 +1,17 @@
 # isucon9-qualify
 
-**このリポジトリはtransfer repositoryの機能により、そのまま公開されます。オープンソースソフトウェア開発と同様のルールで開発してください。**
-
-## インストール方法
-
-```bash
-$ git clone git@github.com:catatsuy/isucon9-qualify.git ~/go/src/github.com/isucon/isucon9-qualify
-```
-
-`GOPATH`を上書きしているなら、各自でいい感じにしてください。
-
-## マージ方針
-
-* 機能はディレクトリ毎に分かれているので、各ディレクトリの主担当者がディレクトリ内のファイルをいじる分にはmasterに直pushしてよい
-  * とにかくコードがないと何も進まないし、あとで変更もできるため
-  * PRを作ってもよいがレビューなしにmergeしてもよい
-  * もちろんレビューを求めてもよい
-* 主担当ではないものや他の人に影響を与える変更は必ずPRを作り、他の人に確認を取ること
-
 ## ディレクトリ構成
 
 ```
-├── bench        # ベンチマーカーのソースコード
+├── bench        # ベンチマーカーなどが依存するパッケージのソースコード
+├── cmd          # ベンチマーカーなどのソースコード
+├── docs         # 運営が用意した各種ドキュメント
 ├── initial-data # 初期データ作成
 ├── provisioning # セットアップ用ansible
 └── webapp       # 各言語の参考実装
 ```
 
-
-## ベンチマーカー実行方法
+## 前準備
 
 ```
 # 初期データ作成
@@ -55,20 +38,69 @@ $ make
 $ ./bin/benchmarker
 ```
 
-## 開発方法
+## ベンチマーカー
 
-tmuxで端末を複数立てるのがおすすめ。外部サービスを手元で立てるなら以下のようにする。
+Version: Go 1.13 or later
+
+### 実行オプション
 
 ```
-$ make
-$ ./bin/payment
-$ ./bin/shipment
+$ ./bin/benchmarker -help
+Usage of isucon9q:
+  -allowed-ips string
+        allowed ips (comma separated)
+  -data-dir string
+        data directory (default "initial-data")
+  -payment-port int
+        payment service port (default 5555)
+  -payment-url string
+        payment url (default "http://localhost:5555")
+  -shipment-port int
+        shipment service port (default 7000)
+  -shipment-url string
+        shipment url (default "http://localhost:7000")
+  -static-dir string
+        static file directory (default "webapp/public/static")
+  -target-host string
+        target host (default "isucon9.catatsuy.org")
+  -target-url string
+        target url (default "http://127.0.0.1:8000")
 ```
+
+  * HTTPとHTTPSに両対応
+    * 証明書を検証するのでHTTPSは面倒
+  * 外部サービス2つを自前で起動するので、いい感じにするならnginxを立てている必要がある
+  * nginxでいい感じにするなら以下の設定が必須
+    * `proxy_set_header Host $http_host;`
+      * shipmentのみ必須
+    * `proxy_set_header X-Forwarded-Proto "https";`
+      * HTTPSでないなら不要
+    * `proxy_set_header True-Client-IP $remote_addr;`
+
+
+## 外部サービス
+
+### 実行オプション
+
+```
+$ ./bin/shipment -help
+Usage of shipment:
+  -data-dir string
+        data directory (default "initial-data")
+```
+
+`payment`はオプションなし。
+
+### 注意点
+
+nginxでいい感じにするなら以下の設定が必須
+
+  * `proxy_set_header Host $http_host;`
+    * shipmentのみ必須
+  * `proxy_set_header X-Forwarded-Proto "https";`
+    * HTTPSでないなら不要
 
 ## webapp 起動方法
-
-
-### DB初期化
 
 ```shell-session
 cd webapp/sql
@@ -78,23 +110,11 @@ mysql -u root < 00_create_database.sql
 
 # データを流し込む
 ./init.sh
+
+cd webapp/go
+make
+./isucari
 ```
-
-## 参考実装移植について
-
-  * 実装は`webapp`ディレクトリ以下に各言語名でディレクトリを作って、その中で実装
-    * 基本はマージ方針に従って開発して欲しいですが、PRは作ってください
-  * GoがマスターなのでGoの実装に従って実装してください
-  * バージョンは基本的に実装開始時の最新版を使う
-  * 同じ挙動にするために無理な実装をする必要がある場合は相談してください
-    * Goは異常系を全部記述する必要がありますが、他の言語だとそもそも記述しないで曖昧にすることが多いと思います
-    * 他の言語への移植が厳しそうな実装は避けているつもりですが、完全に把握しているわけではないので相談してください
-  * 各言語で自然な実装にすることを心がけてください
-    * 今回パスワードのハッシュ化にbcryptを使用していますが、PHPではデフォルトのため `password_hash` `password_verify` に置き換えるだけで利用可能です
-    * `secureRandomStr`という関数をGoでは作っていますが、Rubyなら`SecureRandom.hex`を呼ぶだけでいいはずです
-    * ライブラリ選定は過去のISUCONの実装も参考にしつつ、各言語で一般的なものを極力選んでください
-  * 初期実装やベンチマーカーの挙動で気になることがあれば教えてください
-    * 例年実装移植中に問題が見つかります
 
 ## 使用データの取得元
 

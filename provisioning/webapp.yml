@@ -4,7 +4,6 @@
 
   roles:
     - user.isucon
-    - user.isucon_admin
     - bootstrap
     - aliyun
     - webapp.deploy
@@ -25,7 +24,6 @@
     - webapp.python
     - webapp.nodejs
     - webapp.nginx
-    - webapp.cleanup
 
   tasks:
     - name: Start default daemons
