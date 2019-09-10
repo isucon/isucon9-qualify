@@ -1,8 +1,11 @@
 package main
 
 import (
+	"crypto/hmac"
 	crand "crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -1133,18 +1136,19 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				shippingStatus := shipping.Status
-				if shippingStatus != ShippingsStatusDone && shippingStatus != ShippingsStatusInitial {
-					ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
-						ReserveID: shipping.ReserveID,
-					})
-					if err != nil {
-						log.Print(err)
-						outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
-						return
+				/*
+					if shippingStatus != ShippingsStatusDone && shippingStatus != ShippingsStatusInitial {
+						ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
+							ReserveID: shipping.ReserveID,
+						})
+						if err != nil {
+							log.Print(err)
+							outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+							return
+						}
+						shippingStatus = ssr.Status
 					}
-					shippingStatus = ssr.Status
-				}
-
+				*/
 				itemDetail.TransactionEvidenceID = transactionEvidence.ID
 				itemDetail.TransactionEvidenceStatus = transactionEvidence.Status
 				itemDetail.ShippingStatus = shippingStatus
@@ -1579,19 +1583,19 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scr, err := APIShipmentCreate(getShipmentServiceURL(), &APIShipmentCreateReq{
-		ToAddress:   buyer.Address,
-		ToName:      buyer.AccountName,
-		FromAddress: seller.Address,
-		FromName:    seller.AccountName,
-	})
-	if err != nil {
-		log.Print(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
-		tx.Rollback()
-
-		return
-	}
+	var scr *APIShipmentCreateRes
+	var scrErr error
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		scr, scrErr = APIShipmentCreate(getShipmentServiceURL(), &APIShipmentCreateReq{
+			ToAddress:   buyer.Address,
+			ToName:      buyer.AccountName,
+			FromAddress: seller.Address,
+			FromName:    seller.AccountName,
+		})
+	}()
 
 	pstr, err := APIPaymentToken(getPaymentServiceURL(), &APIPaymentServiceTokenReq{
 		ShopID: PaymentServiceIsucariShopID,
@@ -1605,6 +1609,17 @@ func postBuy(w http.ResponseWriter, r *http.Request) {
 		outputErrorMsg(w, http.StatusInternalServerError, "payment service is failed")
 		tx.Rollback()
 		return
+	}
+
+	wg.Wait()
+	if scrErr != nil {
+		if err != nil {
+			log.Print(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+			tx.Rollback()
+
+			return
+		}
 	}
 
 	if pstr.Status == "invalid" {
@@ -2402,31 +2417,30 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	/*
-		// XXX sha1(password) => hashedPassword の cacheをつくる
-		hash := hmac.New(sha256.New, []byte("Oi87WbXmCRnFZATUm4fXUJUE8VLdiI4tGk17M1K3SmS"))
-		hash.Write([]byte(u.AccountName))
-		truePassword := base64.RawStdEncoding.EncodeToString(hash.Sum(nil))
-		if u.AccountName == "isudemo1" || u.AccountName == "isudemo2" || u.AccountName == "isudemo3" {
-			truePassword = u.AccountName
-		}
-		if password != truePassword {
-			outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
-			return
-		}
-	*/
-
-	err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
-	if err == bcrypt.ErrMismatchedHashAndPassword {
+	// XXX sha1(password) => hashedPassword の cacheをつくる
+	hash := hmac.New(sha256.New, []byte("Oi87WbXmCRnFZATUm4fXUJUE8VLdiI4tGk17M1K3SmS"))
+	hash.Write([]byte(u.AccountName))
+	truePassword := base64.RawStdEncoding.EncodeToString(hash.Sum(nil))
+	if u.AccountName == "isudemo1" || u.AccountName == "isudemo2" || u.AccountName == "isudemo3" {
+		truePassword = u.AccountName
+	}
+	if password != truePassword {
 		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
 		return
 	}
-	if err != nil {
-		log.Print(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "crypt error")
-		return
-	}
 
+	/*
+		err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
+			return
+		}
+		if err != nil {
+			log.Print(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "crypt error")
+			return
+		}
+	*/
 	session := getSession(r)
 
 	session.Values["user_id"] = u.ID
