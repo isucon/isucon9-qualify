@@ -76,6 +76,7 @@ Usage of isucon9q:
     * `proxy_set_header X-Forwarded-Proto "https";`
       * HTTPSでないなら不要
     * `proxy_set_header True-Client-IP $remote_addr;`
+    * cf: https://github.com/isucon/isucon9-qualify/tree/master/provisioning/roles/external.nginx/files/etc/nginx
 
 
 ## 外部サービス
