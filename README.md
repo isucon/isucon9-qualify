@@ -11,6 +11,12 @@
 └── webapp       # 各言語の参考実装
 ```
 
+## アプリケーションおよびベンチマーカーの起動方法
+
+こちらのblogでも紹介しています。参考にしてください
+http://isucon.net/archives/53805209.html
+
+
 ## 前準備
 
 ```
@@ -116,6 +122,14 @@ cd webapp/go
 make
 ./isucari
 ```
+
+## サポートするMySQLのバージョン
+
+MySQL 5.7および8.0にて動作確認しています。
+
+ただし、nodejsでアプケーションを起動する場合、MySQL 8.0の認証方法によっては動作しないことがあります。
+詳しくは、 https://github.com/isucon/isucon9-qualify/pull/316 を参考にしてください
+
 
 ## 使用データの取得元
 
