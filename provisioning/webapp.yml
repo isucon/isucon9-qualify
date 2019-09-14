@@ -5,7 +5,6 @@
   roles:
     - user.isucon
     - bootstrap
-    - aliyun
     - webapp.deploy
 
     - nginx
