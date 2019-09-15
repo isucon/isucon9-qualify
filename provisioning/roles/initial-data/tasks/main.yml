@@ -1,0 +1,76 @@
+- name: Install required packages
+  package:
+    name:
+      - cpanminus
+      - unzip
+    state: present
+
+- name: Install dependency
+  cpanm:
+    name: "{{ item }}"
+  loop:
+    - Crypt::Eksblowfish::Bcrypt
+    - Crypt::OpenSSL::Random
+    - Digest::SHA
+    - JSON
+    - JSON::Types
+
+- name: Generate initial data
+  become: yes
+  become_user: isucon
+  shell: perl ./generator.pl
+  args:
+    chdir: /home/isucon/isucari/initial-data
+    creates: /home/isucon/isucari/initial-data/result/initial.sql
+
+- name: Install sql
+  become: yes
+  become_user: isucon
+  copy:
+    src: /home/isucon/isucari/initial-data/result/initial.sql
+    dest: /home/isucon/isucari/webapp/sql/
+    owner: isucon
+    group: isucon
+    remote_src: yes
+
+- name: Install images
+  become: yes
+  become_user: isucon
+  unarchive:
+    src: https://github.com/isucon/isucon9-qualify/releases/download/v2/initial.zip
+    dest: /home/isucon/isucari/webapp/public/
+    owner: isucon
+    group: isucon
+    remote_src: yes
+    creates: /home/isucon/isucari/webapp/public/v3_initial_data
+
+- name: rename image directory
+  become: yes
+  become_user: isucon
+  shell: |
+    mv v3_initial_data upload
+    touch v3_initial_data
+  args:
+    chdir: /home/isucon/isucari/webapp/public
+    creates: /home/isucon/isucari/webapp/public/upload
+
+- name: Install images for benchmark
+  become: yes
+  become_user: isucon
+  unarchive:
+    src: https://github.com/isucon/isucon9-qualify/releases/download/v2/bench1.zip
+    dest: /home/isucon/isucari/initial-data/
+    owner: isucon
+    group: isucon
+    remote_src: yes
+    creates: /home/isucon/isucari/initial-data/v3_bench1
+
+- name: rename image for benchmark directory
+  become: yes
+  become_user: isucon
+  shell: |
+    mv v3_bench1 images
+    touch v3_bench1
+  args:
+    chdir: /home/isucon/isucari/initial-data
+    creates: /home/isucon/isucari/initial-data/images
