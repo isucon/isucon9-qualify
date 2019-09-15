@@ -1,5 +1,5 @@
 - hosts: bench
-  user: root
+  become: yes
   gather_facts: yes
   vars:
     golang_version: 1.13
