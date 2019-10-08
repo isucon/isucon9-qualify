@@ -123,6 +123,14 @@ make
 ./isucari
 ```
 
+## 運営側のブログ
+
+技術情報などについても記載されているので参考にしてください。
+
+  * ISUCON9予選の出題と外部サービス・ベンチマーカーについて - catatsuy - Medium https://medium.com/@catatsuy/isucon9-qualify-969c3abdf011
+  * ISUCONのベンチマーカーとGo https://gist.github.com/catatsuy/74cd66e9ff69d7da0ff3311e9dcd81fa
+  * ISUCON9予選でフロントエンド周りの実装を担当した話 - はらへり日記 https://sota1235.hatenablog.com/entry/2019/10/07/110500
+
 ## サポートするMySQLのバージョン
 
 MySQL 5.7および8.0にて動作確認しています。
