@@ -10,7 +10,7 @@
 ### `POST /card`
 
 * 加盟店ID(`shop_id`)とカード番号(`card_number`)を送ると、その加盟店IDで5分間だけ使えるトークンを発行できる
-* 外部サービスからJavaScript経由でアクセスするので[Cross-Origin Resource Sharing (CORS)](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)に対応
+* JavaScript経由で決済サービスにアクセスするので[Cross-Origin Resource Sharing (CORS)](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)に対応
 * カード番号の形式は`[0-9A-F]{8}`
 
 #### API仕様
