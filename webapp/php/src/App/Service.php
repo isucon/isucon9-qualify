@@ -205,23 +205,6 @@ class Service
 
         exec($this->settings['app']['base_dir'] . '../sql/init.sh');
 
-        // try {
-        //     $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
-        //     $r = $sth->execute(["payment_service_url", $payload->payment_service_url]);
-        //     if ($r === false) {
-        //         throw new \PDOException($sth->errorInfo());
-        //     }
-        //
-        //     $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');
-        //     $r = $sth->execute(["shipment_service_url", $payload->shipment_service_url]);
-        //     if ($r === false) {
-        //         throw new \PDOException($sth->errorInfo());
-        //     }
-        // } catch (\PDOException $e) {
-        //     $this->logger->error($e->getMessage());
-        //     return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
-        // }
-
         return $response->withJson([
             // キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
             "campaign" => 0,
