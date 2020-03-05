@@ -1,1 +1,11 @@
 *~
+LICENSE/*
+README.md
+bench/*
+bin/*
+cmd/*
+docs/*
+go.mod
+go.sum
+initial-data/*
+provisioning/*
