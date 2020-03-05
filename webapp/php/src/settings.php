@@ -16,8 +16,8 @@ return [
         // Monolog settings
         'logger' => [
             'name' => 'isucari',
-//            'path' => __DIR__ . '/../logs/app.log',
-            'path' => 'php://stdout',
+            'path' => __DIR__ . '/../logs/app.log',
+            //'path' => 'php://stdout',
             'level' => \Monolog\Logger::INFO,
         ],
 
