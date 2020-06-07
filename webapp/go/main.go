@@ -157,13 +157,6 @@ type Shipping struct {
 	UpdatedAt             time.Time `json:"-" db:"updated_at"`
 }
 
-type Category struct {
-	ID                 int    `json:"id" db:"id"`
-	ParentID           int    `json:"parent_id" db:"parent_id"`
-	CategoryName       string `json:"category_name" db:"category_name"`
-	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
-}
-
 type reqInitialize struct {
 	PaymentServiceURL  string `json:"payment_service_url"`
 	ShipmentServiceURL string `json:"shipment_service_url"`
@@ -387,18 +380,6 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	}
 
 	return user, http.StatusOK, ""
-}
-
-func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
-	if category.ParentID != 0 {
-		parentCategory, err := getCategoryByID(q, category.ParentID)
-		if err != nil {
-			return category, err
-		}
-		category.ParentCategoryName = parentCategory.CategoryName
-	}
-	return category, err
 }
 
 func getConfigByName(name string) (string, error) {
