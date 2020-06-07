@@ -80,12 +80,6 @@ type User struct {
 	CreatedAt      time.Time `json:"-" db:"created_at"`
 }
 
-type UserSimple struct {
-	ID           int64  `json:"id"`
-	AccountName  string `json:"account_name"`
-	NumSellItems int    `json:"num_sell_items"`
-}
-
 type Item struct {
 	ID          int64     `json:"id" db:"id"`
 	SellerID    int64     `json:"seller_id" db:"seller_id"`
