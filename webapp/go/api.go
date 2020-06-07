@@ -119,6 +119,8 @@ func APIShipmentCreate(shipmentURL string, param *APIShipmentCreateReq) (*APIShi
 	return scr, nil
 }
 
+var shipmentStatusCache map[string]*APIShipmentStatusRes
+
 func APIShipmentRequest(shipmentURL string, param *APIShipmentRequestReq) ([]byte, error) {
 	b, _ := json.Marshal(param)
 
@@ -145,10 +147,16 @@ func APIShipmentRequest(shipmentURL string, param *APIShipmentRequestReq) ([]byt
 		return nil, fmt.Errorf("status code: %d; body: %s", res.StatusCode, b)
 	}
 
+	delete(shipmentStatusCache, shipmentURL)
 	return ioutil.ReadAll(res.Body)
 }
 
 func APIShipmentStatus(shipmentURL string, param *APIShipmentStatusReq) (*APIShipmentStatusRes, error) {
+	cache, ok := shipmentStatusCache[shipmentURL]
+	if ok {
+		return cache, nil
+	}
+
 	b, _ := json.Marshal(param)
 
 	req, err := http.NewRequest(http.MethodGet, shipmentURL+"/status", bytes.NewBuffer(b))
@@ -180,5 +188,6 @@ func APIShipmentStatus(shipmentURL string, param *APIShipmentStatusReq) (*APIShi
 		return nil, err
 	}
 
+	shipmentStatusCache[shipmentURL] = ssr
 	return ssr, nil
 }
