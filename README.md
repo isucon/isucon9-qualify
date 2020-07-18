@@ -40,6 +40,10 @@ $ unzip bench1.zip
 $ rm -rf images
 $ mv v3_bench1 images
 
+# データベースの作成と初期化
+$ cd webapp/sql
+# ./init.sh
+
 $ make
 $ ./bin/benchmarker
 ```
