@@ -11,4 +11,6 @@ export MYSQL_PWD=${MYSQL_PASS:-isucari}
 export LANG="C.UTF-8"
 cd $CURRENT_DIR
 
+cat 00_create_database.sql | mysql -h 127.0.0.1 -u root -ppassword
+
 cat 01_schema.sql 02_categories.sql initial.sql | mysql --defaults-file=/dev/null -h $MYSQL_HOST -P $MYSQL_PORT -u $MYSQL_USER $MYSQL_DBNAME
