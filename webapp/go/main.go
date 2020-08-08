@@ -600,7 +600,7 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 
 	res := resInitialize{
 		// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-		Campaign: 3,
+		Campaign: 4,
 		// 実装言語を返す
 		Language: "Go",
 	}
@@ -2331,28 +2331,28 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := User{}
-	// for _, val := range AllUserMap {
-	// 	if val.AccountName == accountName {
-	// 		u = val
-	// 		break
-	// 	}
-	// }
-
-	// if true {
-	err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
-		return
+	for _, val := range AllUserMap {
+		if val.AccountName == accountName {
+			u = val
+			break
+		}
 	}
-	if err != nil {
-		log.Print(err)
 
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		return
+	if u.ID == 0 {
+		err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
+		if err == sql.ErrNoRows {
+			outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
+			return
+		}
+		if err != nil {
+			log.Print(err)
+
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			return
+		}
+	} else {
+		log.Printf("use User Cache userID:%d", u.ID)
 	}
-	// } else {
-	// 	log.Printf("use User Cache userID:%d", u.ID)
-	// }
 
 	err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
