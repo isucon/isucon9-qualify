@@ -279,13 +279,6 @@ func init() {
 	templates = template.Must(template.ParseFiles(
 		"../public/index.html",
 	))
-
-	// categories select
-	dbx.Get(&categoryList, "SELECT * FROM `categories`")
-	for _, cat := range categoryList {
-		cat.ParentCategoryName = getParentName(cat.ID)
-		log.Print("%v\n", cat)
-	}
 }
 
 func main() {
@@ -510,6 +503,13 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(res)
+
+	// categories select
+	dbx.Get(&categoryList, "SELECT * FROM `categories`")
+	for _, cat := range categoryList {
+		cat.ParentCategoryName = getParentName(cat.ID)
+		log.Print("%v\n", cat)
+	}
 }
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
