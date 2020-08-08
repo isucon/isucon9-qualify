@@ -2373,13 +2373,6 @@ func postRegister(w http.ResponseWriter, r *http.Request) {
 		Address:     address,
 	}
 
-	// cache更新
-	var userSimple = UserSimple{}
-	userSimple.ID = u.ID
-	userSimple.AccountName = u.AccountName
-	userSimple.NumSellItems = u.NumSellItems
-	UserSimpleMap[userID] = userSimple
-
 	session := getSession(r)
 	session.Values["user_id"] = u.ID
 	session.Values["csrf_token"] = secureRandomStr(20)
