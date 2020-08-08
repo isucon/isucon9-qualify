@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -327,6 +328,23 @@ func init() {
 }
 
 func main() {
+
+	// ログ出力設定 start
+	logfile, logErr := os.OpenFile("./debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if logErr != nil {
+		panic("cannnot open test.log:" + logErr.Error())
+	}
+	defer logfile.Close()
+
+	// io.MultiWriteで、
+	// 標準出力とファイルの両方を束ねて、
+	// logの出力先に設定する
+	log.SetOutput(io.MultiWriter(logfile, os.Stdout))
+
+	log.SetFlags(log.Ldate | log.Ltime)
+	log.Println("Log Start")
+	// ログ出力設定 End
+
 	host := os.Getenv("MYSQL_HOST")
 	if host == "" {
 		host = "127.0.0.1"
