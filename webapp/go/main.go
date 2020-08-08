@@ -65,6 +65,8 @@ var (
 	templates *template.Template
 	dbx       *sqlx.DB
 	store     sessions.Store
+	// カテゴリメモ化
+	categoryList []Category
 )
 
 type Config struct {
@@ -417,15 +419,28 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
-	if category.ParentID != 0 {
-		parentCategory, err := getCategoryByID(q, category.ParentID)
-		if err != nil {
-			return category, err
+	for _, cat := range categoryList {
+		if cat.ID == categoryID {
+			return cat, nil
 		}
-		category.ParentCategoryName = parentCategory.CategoryName
 	}
-	return category, err
+	return categoryList[0], nil
+}
+
+func getParentName(id int) string {
+	var index int
+	for i, cat := range categoryList {
+		if cat.ID == id {
+			index = i
+			break
+		}
+	}
+
+	if pid := categoryList[index].ParentID; pid != 0 {
+		return getParentName(pid)
+	} else {
+		return categoryList[index].CategoryName
+	}
 }
 
 func getConfigByName(name string) (string, error) {
@@ -505,6 +520,17 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		Campaign: 0,
 		// 実装言語を返す
 		Language: "Go",
+	}
+
+	// categories select
+	dbx.Select(&categoryList, "SELECT * FROM `categories`")
+	if err != nil {
+		log.Print(err)
+	}
+	for i, cat := range categoryList {
+		if pname := getParentName(cat.ID); pname != cat.CategoryName {
+			categoryList[i].ParentCategoryName = pname
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
