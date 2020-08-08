@@ -360,20 +360,6 @@ func main() {
 	// Assets
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 	log.Fatal(http.ListenAndServe(":8000", mux))
-
-	// categories select
-	err = dbx.Get(&categoryList, "SELECT * FROM `categories`")
-	for _, cat := range categoryList {
-		cat.ParentCategoryName = getParentName(cat.ID)
-	}
-}
-
-func getParentName(id int) string {
-	if pid := categoryList[id].ParentID; pid != 0 {
-		return getParentName(pid)
-	} else {
-		return categoryList[id].CategoryName
-	}
 }
 
 func getSession(r *http.Request) *sessions.Session {
@@ -425,7 +411,28 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
+	if categoryList == nil {
+		getCategoriesFirst()
+	}
+	log.Print("%v\n", categoryList[categoryID])
 	return categoryList[categoryID], nil
+}
+
+func getCategoriesFirst() {
+	// categories select
+	err = dbx.Get(&categoryList, "SELECT * FROM `categories`")
+	for _, cat := range categoryList {
+		cat.ParentCategoryName = getParentName(cat.ID)
+		log.Print("%v\n", cat)
+	}
+}
+
+func getParentName(id int) string {
+	if pid := categoryList[id].ParentID; pid != 0 {
+		return getParentName(pid)
+	} else {
+		return categoryList[id].CategoryName
+	}
 }
 
 func getConfigByName(name string) (string, error) {
