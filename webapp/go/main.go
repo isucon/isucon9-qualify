@@ -279,6 +279,13 @@ func init() {
 	templates = template.Must(template.ParseFiles(
 		"../public/index.html",
 	))
+
+	// categories select
+	err = dbx.Get(&categoryList, "SELECT * FROM `categories`")
+	for _, cat := range categoryList {
+		cat.ParentCategoryName = getParentName(cat.ID)
+		log.Print("%v\n", cat)
+	}
 }
 
 func main() {
@@ -411,22 +418,9 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	if categoryList == nil {
-		getCategoriesFirst()
-	}
 	log.Print("%v\n", categoryList[categoryID])
 	return categoryList[categoryID], nil
 }
-
-func getCategoriesFirst() {
-	// categories select
-	err = dbx.Get(&categoryList, "SELECT * FROM `categories`")
-	for _, cat := range categoryList {
-		cat.ParentCategoryName = getParentName(cat.ID)
-		log.Print("%v\n", cat)
-	}
-}
-
 func getParentName(id int) string {
 	if pid := categoryList[id].ParentID; pid != 0 {
 		return getParentName(pid)
