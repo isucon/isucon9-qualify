@@ -21,6 +21,8 @@ import (
 	goji "goji.io"
 	"goji.io/pat"
 	"golang.org/x/crypto/bcrypt"
+
+	"net/http/pprof"
 )
 
 const (
@@ -354,6 +356,13 @@ func main() {
 	mux.HandleFunc(pat.Get("/transactions/:transaction_id"), getIndex)
 	mux.HandleFunc(pat.Get("/users/:user_id"), getIndex)
 	mux.HandleFunc(pat.Get("/users/setting"), getIndex)
+
+	// debug
+	mux.HandleFunc(pat.Get("/debug/pprof/"), http.HandlerFunc(pprof.Index))
+	mux.HandleFunc(pat.Get("/debug/pprof/cmdline"), http.HandlerFunc(pprof.Cmdline))
+	mux.HandleFunc(pat.Get("/debug/pprof/profile"), http.HandlerFunc(pprof.Profile))
+	mux.HandleFunc(pat.Get("/debug/pprof/symbol"), http.HandlerFunc(pprof.Symbol))
+
 	// Assets
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 	log.Fatal(http.ListenAndServe(":8000", mux))
