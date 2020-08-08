@@ -268,6 +268,52 @@ type resSetting struct {
 	Categories        []Category `json:"categories"`
 }
 
+var allCategoryMap map[int]Category = map[int]Category{
+	1:  Category{1, 0, "ソファー", ""},
+	2:  Category{2, 1, "一人掛けソファー", ""},
+	3:  Category{3, 1, "二人掛けソファー", ""},
+	4:  Category{4, 1, "コーナーソファー", ""},
+	5:  Category{5, 1, "二段ソファー", ""},
+	6:  Category{6, 1, "ソファーベッド", ""},
+	10: Category{10, 0, "家庭用チェア", ""},
+	11: Category{11, 10, "スツール", ""},
+	12: Category{12, 10, "クッションスツール", ""},
+	13: Category{13, 10, "ダイニングチェア", ""},
+	14: Category{14, 10, "リビングチェア", ""},
+	15: Category{15, 10, "カウンターチェア", ""},
+	20: Category{20, 0, "キッズチェア", ""},
+	21: Category{21, 20, "学習チェア", ""},
+	22: Category{22, 20, "ベビーソファ", ""},
+	23: Category{23, 20, "キッズハイチェア", ""},
+	24: Category{24, 20, "テーブルチェア", ""},
+	30: Category{30, 0, "オフィスチェア", ""},
+	31: Category{31, 30, "デスクチェア", ""},
+	32: Category{32, 30, "ビジネスチェア", ""},
+	33: Category{33, 30, "回転チェア", ""},
+	34: Category{34, 30, "リクライニングチェア", ""},
+	35: Category{35, 30, "投擲用椅子", ""},
+	40: Category{40, 0, "折りたたみ椅子", ""},
+	41: Category{41, 40, "パイプ椅子", ""},
+	42: Category{42, 40, "木製折りたたみ椅子", ""},
+	43: Category{43, 40, "キッチンチェア", ""},
+	44: Category{44, 40, "アウトドアチェア", ""},
+	45: Category{45, 40, "作業椅子", ""},
+	50: Category{50, 0, "ベンチ", ""},
+	51: Category{51, 50, "一人掛けベンチ", ""},
+	52: Category{52, 50, "二人掛けベンチ", ""},
+	53: Category{53, 50, "アウトドア用ベンチ", ""},
+	54: Category{54, 50, "収納付きベンチ", ""},
+	55: Category{55, 50, "背もたれ付きベンチ", ""},
+	56: Category{56, 50, "ベンチマーク", ""},
+	60: Category{60, 0, "座椅子", ""},
+	61: Category{61, 60, "和風座椅子", ""},
+	62: Category{62, 60, "高座椅子", ""},
+	63: Category{63, 60, "ゲーミング座椅子", ""},
+	64: Category{64, 60, "ロッキングチェア", ""},
+	65: Category{65, 60, "座布団", ""},
+	66: Category{66, 60, "空気椅子", ""},
+}
+
 func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
@@ -408,7 +454,16 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
+	// err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
+	// if category.ParentID != 0 {
+	// 	parentCategory, err := getCategoryByID(q, category.ParentID)
+	// 	if err != nil {
+	// 		return category, err
+	// 	}
+	// 	category.ParentCategoryName = parentCategory.CategoryName
+	// }
+	err = nil
+	category = allCategoryMap[categoryID]
 	if category.ParentID != 0 {
 		parentCategory, err := getCategoryByID(q, category.ParentID)
 		if err != nil {
@@ -417,6 +472,16 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 		category.ParentCategoryName = parentCategory.CategoryName
 	}
 	return category, err
+}
+
+func getCategoryByParentID(parentID int) (parents []Category) {
+	for _, value := range allCategoryMap {
+		if value.ParentID == parentID {
+			parents = append(parents, value)
+		}
+	}
+
+	return parents
 }
 
 func getConfigByName(name string) (string, error) {
@@ -493,7 +558,7 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 
 	res := resInitialize{
 		// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-		Campaign: 0,
+		Campaign: 3,
 		// 実装言語を返す
 		Language: "Go",
 	}
@@ -613,10 +678,18 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var categoryIDs []int
-	err = dbx.Select(&categoryIDs, "SELECT id FROM `categories` WHERE parent_id=?", rootCategory.ID)
-	if err != nil {
-		log.Print(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+	//err = dbx.Select(&categoryIDs, "SELECT id FROM `categories` WHERE parent_id=?", rootCategory.ID)
+	parentCategories := getCategoryByParentID(rootCategory.ID)
+	for _, v := range parentCategories {
+		categoryIDs = append(categoryIDs, v.ID)
+	}
+
+	// if err != nil {
+	if len(parentCategories) == 0 {
+		// log.Print(err)
+		// outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		log.Println("parentCategories == 0")
+		outputErrorMsg(w, http.StatusInternalServerError, "parentCategories == 0 error")
 		return
 	}
 
@@ -2153,12 +2226,14 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	ress.PaymentServiceURL = getPaymentServiceURL()
 
 	categories := []Category{}
-
-	err := dbx.Select(&categories, "SELECT * FROM `categories`")
-	if err != nil {
-		log.Print(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		return
+	// err := dbx.Select(&categories, "SELECT * FROM `categories`")
+	// if err != nil {
+	// 	log.Print(err)
+	// 	outputErrorMsg(w, http.StatusInternalServerError, "db error")
+	// 	return
+	// }
+	for _, v := range allCategoryMap {
+		categories = append(categories, v)
 	}
 	ress.Categories = categories
 
