@@ -518,13 +518,10 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 	}
-	log.Print("%v\n", categoryList)
-	for _, cat := range categoryList {
-		log.Print("%#v", cat)
+	for i, cat := range categoryList {
 		if pname := getParentName(cat.ID); pname != cat.CategoryName {
-			cat.ParentCategoryName = getParentName(cat.ID)
+			categoryList[i].ParentCategoryName = pname
 		}
-		log.Print("%#v", cat)
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
