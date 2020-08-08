@@ -268,7 +268,7 @@ type resSetting struct {
 	Categories        []Category `json:"categories"`
 }
 
-var UserSimpleMap map[int64]UserSimple = map[int64]UserSimple{}
+var AllUserMap map[int64]User = map[int64]User{}
 
 var AllCategoryMap map[int]Category = map[int]Category{
 	1:  Category{1, 0, "ソファー", ""},
@@ -431,6 +431,12 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 		return user, http.StatusNotFound, "no session"
 	}
 
+	if userIDInt, ok := userID.(int64); ok {
+		if user, ok := AllUserMap[userIDInt]; ok {
+			return user, http.StatusOK, ""
+		}
+	}
+
 	err := dbx.Get(&user, "SELECT * FROM `users` WHERE `id` = ?", userID)
 	if err == sql.ErrNoRows {
 		return user, http.StatusNotFound, "user not found"
@@ -444,19 +450,30 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 }
 
 func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err error) {
-	if _, ok := UserSimpleMap[userID]; ok {
-		return UserSimpleMap[userID], err
+	if _, ok := AllUserMap[userID]; ok {
+		user := AllUserMap[userID]
+		userSimple.ID = user.ID
+		userSimple.AccountName = user.AccountName
+		userSimple.NumSellItems = user.NumSellItems
+		return userSimple, err
 	}
 
 	user := User{}
-	err = sqlx.Get(q, &user, "SELECT * FROM `users` WHERE `id` = ?", userID)
-	if err != nil {
-		return userSimple, err
+
+	if userCache, ok := AllUserMap[userID]; ok {
+		user = userCache
+	} else {
+		err = sqlx.Get(q, &user, "SELECT * FROM `users` WHERE `id` = ?", userID)
+		if err != nil {
+			return userSimple, err
+		}
 	}
+
+	AllUserMap[userID] = user
 	userSimple.ID = user.ID
 	userSimple.AccountName = user.AccountName
 	userSimple.NumSellItems = user.NumSellItems
-	UserSimpleMap[userID] = userSimple
+
 	return userSimple, err
 }
 
@@ -2056,17 +2073,21 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	seller := User{}
 	//err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
-	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
-		tx.Rollback()
-		return
-	}
-	if err != nil {
-		log.Print(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
+	if userCache, ok := AllUserMap[user.ID]; ok {
+		seller = userCache
+	} else {
+		err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
+		if err == sql.ErrNoRows {
+			outputErrorMsg(w, http.StatusNotFound, "user not found")
+			tx.Rollback()
+			return
+		}
+		if err != nil {
+			log.Print(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			tx.Rollback()
+			return
+		}
 	}
 
 	result, err := tx.Exec("INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`,`image_name`,`category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -2099,12 +2120,6 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		now,
 		seller.ID,
 	)
-	// cache更新
-	if _, ok := UserSimpleMap[seller.ID]; ok {
-		userSimple := UserSimpleMap[seller.ID]
-		userSimple.NumSellItems = seller.NumSellItems + 1
-		UserSimpleMap[seller.ID] = userSimple
-	}
 
 	if err != nil {
 		log.Print(err)
@@ -2113,6 +2128,14 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tx.Commit()
+
+	// cache更新
+	if _, ok := AllUserMap[seller.ID]; ok {
+		user := AllUserMap[seller.ID]
+		user.NumSellItems = seller.NumSellItems + 1
+		user.LastBump = now
+		AllUserMap[seller.ID] = user
+	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(resSell{ID: itemID})
@@ -2173,17 +2196,21 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 
 	seller := User{}
 	//err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
-	err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
-	if err == sql.ErrNoRows {
-		outputErrorMsg(w, http.StatusNotFound, "user not found")
-		tx.Rollback()
-		return
-	}
-	if err != nil {
-		log.Print(err)
-		outputErrorMsg(w, http.StatusInternalServerError, "db error")
-		tx.Rollback()
-		return
+	if userCache, ok := AllUserMap[user.ID]; ok {
+		seller = userCache
+	} else {
+		err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
+		if err == sql.ErrNoRows {
+			outputErrorMsg(w, http.StatusNotFound, "user not found")
+			tx.Rollback()
+			return
+		}
+		if err != nil {
+			log.Print(err)
+			outputErrorMsg(w, http.StatusInternalServerError, "db error")
+			tx.Rollback()
+			return
+		}
 	}
 
 	now := time.Now()
@@ -2224,6 +2251,11 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.Commit()
+
+	if user, ok := AllUserMap[seller.ID]; ok {
+		user.LastBump = now
+		AllUserMap[seller.ID] = user
+	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	json.NewEncoder(w).Encode(&resItemEdit{
@@ -2281,6 +2313,14 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := User{}
+	// for _, val := range AllUserMap {
+	// 	if val.AccountName == accountName {
+	// 		u = val
+	// 		break
+	// 	}
+	// }
+
+	// if true {
 	err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
 	if err == sql.ErrNoRows {
 		outputErrorMsg(w, http.StatusUnauthorized, "アカウント名かパスワードが間違えています")
@@ -2292,6 +2332,9 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
+	// } else {
+	// 	log.Printf("use User Cache userID:%d", u.ID)
+	// }
 
 	err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
