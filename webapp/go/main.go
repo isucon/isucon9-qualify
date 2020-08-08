@@ -268,6 +268,9 @@ type resSetting struct {
 	Categories        []Category `json:"categories"`
 }
 
+// カテゴリメモ化
+var categoryList []Category
+
 func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
@@ -357,6 +360,20 @@ func main() {
 	// Assets
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
 	log.Fatal(http.ListenAndServe(":8000", mux))
+
+	// categories select
+	err = dbx.Get(&categoryList, "SELECT * FROM `categories`")
+	for _, cat := range categoryList {
+		cat.ParentCategoryName = getParentName(cat.ID)
+	}
+}
+
+func getParentName(id int) string {
+	if pid := categoryList[id].ParentID; pid != 0 {
+		return getParentName(pid)
+	} else {
+		return categoryList[id].CategoryName
+	}
 }
 
 func getSession(r *http.Request) *sessions.Session {
@@ -408,15 +425,7 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
-	if category.ParentID != 0 {
-		parentCategory, err := getCategoryByID(q, category.ParentID)
-		if err != nil {
-			return category, err
-		}
-		category.ParentCategoryName = parentCategory.CategoryName
-	}
-	return category, err
+	return categoryList[categoryID], nil
 }
 
 func getConfigByName(name string) (string, error) {
