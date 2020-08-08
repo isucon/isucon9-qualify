@@ -281,7 +281,7 @@ func init() {
 	))
 
 	// categories select
-	err = dbx.Get(&categoryList, "SELECT * FROM `categories`")
+	dbx.Get(&categoryList, "SELECT * FROM `categories`")
 	for _, cat := range categoryList {
 		cat.ParentCategoryName = getParentName(cat.ID)
 		log.Print("%v\n", cat)
