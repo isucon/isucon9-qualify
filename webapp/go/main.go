@@ -63,6 +63,8 @@ var (
 	templates *template.Template
 	dbx       *sqlx.DB
 	store     sessions.Store
+	// カテゴリメモ化
+	categoryList []Category
 )
 
 type Config struct {
@@ -268,9 +270,6 @@ type resSetting struct {
 	Categories        []Category `json:"categories"`
 }
 
-// カテゴリメモ化
-var categoryList []Category
-
 func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
 
@@ -411,14 +410,28 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	log.Print("%v\n", categoryList[categoryID])
-	return categoryList[categoryID], nil
+	for i, cat := range categoryList {
+		if cat.ID == categoryID {
+			log.Print("%v\n", cat)
+			return cat, nil
+		}
+	}
+	return nil, nil
 }
+
 func getParentName(id int) string {
-	if pid := categoryList[id].ParentID; pid != 0 {
+	var index := 0
+	for i, cat := range categoryList {
+		if cat.ID == id {
+			index = i
+			break
+		}
+	}
+
+	if pid := categoryList[index].ParentID; pid != 0 {
 		return getParentName(pid)
 	} else {
-		return categoryList[id].CategoryName
+		return categoryList[index].CategoryName
 	}
 }
 
@@ -501,15 +514,18 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		Language: "Go",
 	}
 
-	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-	json.NewEncoder(w).Encode(res)
-
 	// categories select
-	dbx.Get(&categoryList, "SELECT * FROM `categories`")
+	dbx.Select(&categoryList, "SELECT * FROM `categories`")
+	if err != nil {
+		log.Print(err)
+	}
+	log.Print("%v\n", categoryList)
 	for _, cat := range categoryList {
 		cat.ParentCategoryName = getParentName(cat.ID)
-		log.Print("%v\n", cat)
 	}
+
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	json.NewEncoder(w).Encode(res)
 }
 
 func getNewItems(w http.ResponseWriter, r *http.Request) {
