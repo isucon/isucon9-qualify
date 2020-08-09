@@ -270,53 +270,9 @@ type resSetting struct {
 	Categories        []Category `json:"categories"`
 }
 
-var AllUserMap sync.Map
+var UserCasheMap sync.Map
 
-var AllCategoryMap map[int]Category = map[int]Category{
-	1:  Category{1, 0, "ソファー", ""},
-	2:  Category{2, 1, "一人掛けソファー", ""},
-	3:  Category{3, 1, "二人掛けソファー", ""},
-	4:  Category{4, 1, "コーナーソファー", ""},
-	5:  Category{5, 1, "二段ソファー", ""},
-	6:  Category{6, 1, "ソファーベッド", ""},
-	10: Category{10, 0, "家庭用チェア", ""},
-	11: Category{11, 10, "スツール", ""},
-	12: Category{12, 10, "クッションスツール", ""},
-	13: Category{13, 10, "ダイニングチェア", ""},
-	14: Category{14, 10, "リビングチェア", ""},
-	15: Category{15, 10, "カウンターチェア", ""},
-	20: Category{20, 0, "キッズチェア", ""},
-	21: Category{21, 20, "学習チェア", ""},
-	22: Category{22, 20, "ベビーソファ", ""},
-	23: Category{23, 20, "キッズハイチェア", ""},
-	24: Category{24, 20, "テーブルチェア", ""},
-	30: Category{30, 0, "オフィスチェア", ""},
-	31: Category{31, 30, "デスクチェア", ""},
-	32: Category{32, 30, "ビジネスチェア", ""},
-	33: Category{33, 30, "回転チェア", ""},
-	34: Category{34, 30, "リクライニングチェア", ""},
-	35: Category{35, 30, "投擲用椅子", ""},
-	40: Category{40, 0, "折りたたみ椅子", ""},
-	41: Category{41, 40, "パイプ椅子", ""},
-	42: Category{42, 40, "木製折りたたみ椅子", ""},
-	43: Category{43, 40, "キッチンチェア", ""},
-	44: Category{44, 40, "アウトドアチェア", ""},
-	45: Category{45, 40, "作業椅子", ""},
-	50: Category{50, 0, "ベンチ", ""},
-	51: Category{51, 50, "一人掛けベンチ", ""},
-	52: Category{52, 50, "二人掛けベンチ", ""},
-	53: Category{53, 50, "アウトドア用ベンチ", ""},
-	54: Category{54, 50, "収納付きベンチ", ""},
-	55: Category{55, 50, "背もたれ付きベンチ", ""},
-	56: Category{56, 50, "ベンチマーク", ""},
-	60: Category{60, 0, "座椅子", ""},
-	61: Category{61, 60, "和風座椅子", ""},
-	62: Category{62, 60, "高座椅子", ""},
-	63: Category{63, 60, "ゲーミング座椅子", ""},
-	64: Category{64, 60, "ロッキングチェア", ""},
-	65: Category{65, 60, "座布団", ""},
-	66: Category{66, 60, "空気椅子", ""},
-}
+var AllCategoryMap sync.Map
 
 func init() {
 	store = sessions.NewCookieStore([]byte("abc"))
@@ -380,6 +336,9 @@ func main() {
 		dbname,
 	)
 
+	// カテゴリマップ初期化
+	setupAllCategoryMap()
+
 	dbx, err = sqlx.Open("mysql", dsn)
 	if err != nil {
 		log.Fatalf("failed to connect to DB: %s.", err.Error())
@@ -426,6 +385,52 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 
+func setupAllCategoryMap() {
+	AllCategoryMap.Store(1, Category{1, 0, "ソファー", ""})
+	AllCategoryMap.Store(2, Category{2, 1, "一人掛けソファー", ""})
+	AllCategoryMap.Store(3, Category{3, 1, "二人掛けソファー", ""})
+	AllCategoryMap.Store(4, Category{4, 1, "コーナーソファー", ""})
+	AllCategoryMap.Store(5, Category{5, 1, "二段ソファー", ""})
+	AllCategoryMap.Store(6, Category{6, 1, "ソファーベッド", ""})
+	AllCategoryMap.Store(10, Category{10, 0, "家庭用チェア", ""})
+	AllCategoryMap.Store(11, Category{11, 10, "スツール", ""})
+	AllCategoryMap.Store(12, Category{12, 10, "クッションスツール", ""})
+	AllCategoryMap.Store(13, Category{13, 10, "ダイニングチェア", ""})
+	AllCategoryMap.Store(14, Category{14, 10, "リビングチェア", ""})
+	AllCategoryMap.Store(15, Category{15, 10, "カウンターチェア", ""})
+	AllCategoryMap.Store(20, Category{20, 0, "キッズチェア", ""})
+	AllCategoryMap.Store(21, Category{21, 20, "学習チェア", ""})
+	AllCategoryMap.Store(22, Category{22, 20, "ベビーソファ", ""})
+	AllCategoryMap.Store(23, Category{23, 20, "キッズハイチェア", ""})
+	AllCategoryMap.Store(24, Category{24, 20, "テーブルチェア", ""})
+	AllCategoryMap.Store(30, Category{30, 0, "オフィスチェア", ""})
+	AllCategoryMap.Store(31, Category{31, 30, "デスクチェア", ""})
+	AllCategoryMap.Store(32, Category{32, 30, "ビジネスチェア", ""})
+	AllCategoryMap.Store(33, Category{33, 30, "回転チェア", ""})
+	AllCategoryMap.Store(34, Category{34, 30, "リクライニングチェア", ""})
+	AllCategoryMap.Store(35, Category{35, 30, "投擲用椅子", ""})
+	AllCategoryMap.Store(40, Category{40, 0, "折りたたみ椅子", ""})
+	AllCategoryMap.Store(41, Category{41, 40, "パイプ椅子", ""})
+	AllCategoryMap.Store(42, Category{42, 40, "木製折りたたみ椅子", ""})
+	AllCategoryMap.Store(43, Category{43, 40, "キッチンチェア", ""})
+	AllCategoryMap.Store(44, Category{44, 40, "アウトドアチェア", ""})
+	AllCategoryMap.Store(45, Category{45, 40, "作業椅子", ""})
+	AllCategoryMap.Store(50, Category{50, 0, "ベンチ", ""})
+	AllCategoryMap.Store(51, Category{51, 50, "一人掛けベンチ", ""})
+	AllCategoryMap.Store(52, Category{52, 50, "二人掛けベンチ", ""})
+	AllCategoryMap.Store(53, Category{53, 50, "アウトドア用ベンチ", ""})
+	AllCategoryMap.Store(54, Category{54, 50, "収納付きベンチ", ""})
+	AllCategoryMap.Store(55, Category{55, 50, "背もたれ付きベンチ", ""})
+	AllCategoryMap.Store(56, Category{56, 50, "ベンチマーク", ""})
+	AllCategoryMap.Store(60, Category{60, 0, "座椅子", ""})
+	AllCategoryMap.Store(61, Category{61, 60, "和風座椅子", ""})
+	AllCategoryMap.Store(62, Category{62, 60, "高座椅子", ""})
+	AllCategoryMap.Store(63, Category{63, 60, "ゲーミング座椅子", ""})
+	AllCategoryMap.Store(64, Category{64, 60, "ロッキングチェア", ""})
+	AllCategoryMap.Store(65, Category{65, 60, "座布団", ""})
+	AllCategoryMap.Store(66, Category{66, 60, "空気椅子", ""})
+}
+
 func getSession(r *http.Request) *sessions.Session {
 	session, _ := store.Get(r, sessionName)
 
@@ -451,7 +456,7 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	}
 
 	if userIDInt, ok := userID.(int64); ok {
-		if user, ok := AllUserMap.Load(userIDInt); ok {
+		if user, ok := UserCasheMap.Load(userIDInt); ok {
 			return user.(User), http.StatusOK, ""
 		}
 	}
@@ -469,7 +474,7 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 }
 
 func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err error) {
-	if userInterface, ok := AllUserMap.Load(userID); ok {
+	if userInterface, ok := UserCasheMap.Load(userID); ok {
 		user := userInterface.(User)
 		userSimple.ID = user.ID
 		userSimple.AccountName = user.AccountName
@@ -479,7 +484,7 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 
 	user := User{}
 
-	if userCache, ok := AllUserMap.Load(userID); ok {
+	if userCache, ok := UserCasheMap.Load(userID); ok {
 		user = userCache.(User)
 	} else {
 		err = sqlx.Get(q, &user, "SELECT * FROM `users` WHERE `id` = ?", userID)
@@ -488,7 +493,7 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 		}
 	}
 
-	AllUserMap.Store(userID, user)
+	UserCasheMap.Store(userID, user)
 	userSimple.ID = user.ID
 	userSimple.AccountName = user.AccountName
 	userSimple.NumSellItems = user.NumSellItems
@@ -497,16 +502,9 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	// err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
-	// if category.ParentID != 0 {
-	// 	parentCategory, err := getCategoryByID(q, category.ParentID)
-	// 	if err != nil {
-	// 		return category, err
-	// 	}
-	// 	category.ParentCategoryName = parentCategory.CategoryName
-	// }
 	err = nil
-	category = AllCategoryMap[categoryID]
+	categoryCache, _ := AllCategoryMap.Load(categoryID)
+	category = categoryCache.(Category)
 	if category.ParentID != 0 {
 		parentCategory, err := getCategoryByID(q, category.ParentID)
 		if err != nil {
@@ -518,11 +516,13 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 }
 
 func getCategoryByParentID(parentID int) (parents []Category) {
-	for _, value := range AllCategoryMap {
-		if value.ParentID == parentID {
-			parents = append(parents, value)
+	AllCategoryMap.Range(func(key, value interface{}) bool {
+		category := value.(Category)
+		if category.ParentID == parentID {
+			parents = append(parents, category)
 		}
-	}
+		return true
+	})
 
 	return parents
 }
@@ -2092,7 +2092,7 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	seller := User{}
 	//err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
-	if userCache, ok := AllUserMap.Load(user.ID); ok {
+	if userCache, ok := UserCasheMap.Load(user.ID); ok {
 		seller = userCache.(User)
 	} else {
 		err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
@@ -2149,11 +2149,11 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	// cache更新
-	if userCahce, ok := AllUserMap.Load(seller.ID); ok {
+	if userCahce, ok := UserCasheMap.Load(seller.ID); ok {
 		user := userCahce.(User)
 		user.NumSellItems = seller.NumSellItems + 1
 		user.LastBump = now
-		AllUserMap.Store(seller.ID, user)
+		UserCasheMap.Store(seller.ID, user)
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
@@ -2215,7 +2215,7 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 
 	seller := User{}
 	//err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
-	if userCache, ok := AllUserMap.Load(user.ID); ok {
+	if userCache, ok := UserCasheMap.Load(user.ID); ok {
 		seller = userCache.(User)
 	} else {
 		err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
@@ -2271,10 +2271,10 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 
 	tx.Commit()
 
-	if userCache, ok := AllUserMap.Load(seller.ID); ok {
+	if userCache, ok := UserCasheMap.Load(seller.ID); ok {
 		user := userCache.(User)
 		user.LastBump = now
-		AllUserMap.Store(seller.ID, user)
+		UserCasheMap.Store(seller.ID, user)
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
@@ -2300,15 +2300,11 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	ress.PaymentServiceURL = getPaymentServiceURL()
 
 	categories := []Category{}
-	// err := dbx.Select(&categories, "SELECT * FROM `categories`")
-	// if err != nil {
-	// 	log.Print(err)
-	// 	outputErrorMsg(w, http.StatusInternalServerError, "db error")
-	// 	return
-	// }
-	for _, v := range AllCategoryMap {
-		categories = append(categories, v)
-	}
+
+	AllCategoryMap.Range(func(key, value interface{}) bool {
+		categories = append(categories, value.(Category))
+		return true
+	})
 	ress.Categories = categories
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
@@ -2334,7 +2330,7 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 
 	u := User{}
 
-	AllUserMap.Range(func(key, value interface{}) bool {
+	UserCasheMap.Range(func(key, value interface{}) bool {
 		user := value.(User)
 		if user.AccountName == accountName {
 			u = user
