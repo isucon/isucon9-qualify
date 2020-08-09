@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -269,7 +270,7 @@ type resSetting struct {
 	Categories        []Category `json:"categories"`
 }
 
-var AllUserMap map[int64]User = map[int64]User{}
+var AllUserMap sync.Map
 
 var AllCategoryMap map[int]Category = map[int]Category{
 	1:  Category{1, 0, "ソファー", ""},
@@ -450,8 +451,8 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	}
 
 	if userIDInt, ok := userID.(int64); ok {
-		if user, ok := AllUserMap[userIDInt]; ok {
-			return user, http.StatusOK, ""
+		if user, ok := AllUserMap.Load(userIDInt); ok {
+			return user.(User), http.StatusOK, ""
 		}
 	}
 
@@ -468,8 +469,8 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 }
 
 func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err error) {
-	if _, ok := AllUserMap[userID]; ok {
-		user := AllUserMap[userID]
+	if userInterface, ok := AllUserMap.Load(userID); ok {
+		user := userInterface.(User)
 		userSimple.ID = user.ID
 		userSimple.AccountName = user.AccountName
 		userSimple.NumSellItems = user.NumSellItems
@@ -478,8 +479,8 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 
 	user := User{}
 
-	if userCache, ok := AllUserMap[userID]; ok {
-		user = userCache
+	if userCache, ok := AllUserMap.Load(userID); ok {
+		user = userCache.(User)
 	} else {
 		err = sqlx.Get(q, &user, "SELECT * FROM `users` WHERE `id` = ?", userID)
 		if err != nil {
@@ -487,7 +488,7 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 		}
 	}
 
-	AllUserMap[userID] = user
+	AllUserMap.Store(userID, user)
 	userSimple.ID = user.ID
 	userSimple.AccountName = user.AccountName
 	userSimple.NumSellItems = user.NumSellItems
@@ -2091,8 +2092,8 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 
 	seller := User{}
 	//err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
-	if userCache, ok := AllUserMap[user.ID]; ok {
-		seller = userCache
+	if userCache, ok := AllUserMap.Load(user.ID); ok {
+		seller = userCache.(User)
 	} else {
 		err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
 		if err == sql.ErrNoRows {
@@ -2148,11 +2149,11 @@ func postSell(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	// cache更新
-	if _, ok := AllUserMap[seller.ID]; ok {
-		user := AllUserMap[seller.ID]
+	if userCahce, ok := AllUserMap.Load(seller.ID); ok {
+		user := userCahce.(User)
 		user.NumSellItems = seller.NumSellItems + 1
 		user.LastBump = now
-		AllUserMap[seller.ID] = user
+		AllUserMap.Store(seller.ID, user)
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
@@ -2214,8 +2215,8 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 
 	seller := User{}
 	//err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ? FOR UPDATE", user.ID)
-	if userCache, ok := AllUserMap[user.ID]; ok {
-		seller = userCache
+	if userCache, ok := AllUserMap.Load(user.ID); ok {
+		seller = userCache.(User)
 	} else {
 		err = tx.Get(&seller, "SELECT * FROM `users` WHERE `id` = ?", user.ID)
 		if err == sql.ErrNoRows {
@@ -2270,9 +2271,10 @@ func postBump(w http.ResponseWriter, r *http.Request) {
 
 	tx.Commit()
 
-	if user, ok := AllUserMap[seller.ID]; ok {
+	if userCache, ok := AllUserMap.Load(seller.ID); ok {
+		user := userCache.(User)
 		user.LastBump = now
-		AllUserMap[seller.ID] = user
+		AllUserMap.Store(seller.ID, user)
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
@@ -2331,12 +2333,15 @@ func postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := User{}
-	for _, val := range AllUserMap {
-		if val.AccountName == accountName {
-			u = val
-			break
+
+	AllUserMap.Range(func(key, value interface{}) bool {
+		user := value.(User)
+		if user.AccountName == accountName {
+			u = user
+			return false
 		}
-	}
+		return true
+	})
 
 	if u.ID == 0 {
 		err = dbx.Get(&u, "SELECT * FROM `users` WHERE `account_name` = ?", accountName)
