@@ -281,7 +281,8 @@ func init() {
 }
 
 func main() {
-	tracer.Start(tracer.WithAnalytics(true))
+	s := tracer.NewRateSampler(1)
+	tracer.Start(tracer.WithAnalytics(true), tracer.WithSampler(s))
 	defer tracer.Stop()
 
 	host := os.Getenv("MYSQL_HOST")
