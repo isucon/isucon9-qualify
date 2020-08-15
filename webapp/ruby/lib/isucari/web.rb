@@ -40,6 +40,100 @@ module Isucari
 
     BCRYPT_COST = 10
 
+    CATEGORIES = {
+      0 => nil,
+      1 => "ソファー",
+      2  => "一人掛けソファー",
+      3  => "二人掛けソファー",
+      4  => "コーナーソファー",
+      5  => "二段ソファー",
+      6  => "ソファーベッド",
+      10 => "家庭用チェア",
+      11 => "スツール",
+      12 => "クッションスツール",
+      13 => "ダイニングチェア",
+      14 => "リビングチェア",
+      15 => "カウンターチェア",
+      20 => "キッズチェア",
+      21 => "学習チェア",
+      22 => "ベビーソファ",
+      23 => "キッズハイチェア",
+      24 => "テーブルチェア",
+     30 => "オフィスチェア",
+     31 => "デスクチェア",
+     32 => "ビジネスチェア",
+     33 => "回転チェア",
+     34 => "リクライニングチェア",
+     35 => "投擲用椅子",
+     40 => "折りたたみ椅子",
+     41 => "パイプ椅子",
+     42 => "木製折りたたみ椅子",
+     43 => "キッチンチェア",
+     44 => "アウトドアチェア",
+     45 => "作業椅子",
+     50 => "ベンチ",
+     51 => "一人掛けベンチ",
+     52 => "二人掛けベンチ",
+     53 => "アウトドア用ベンチ",
+     54 => "収納付きベンチ",
+     55 => "背もたれ付きベンチ",
+     56 => "ベンチマーク",
+     60 => "座椅子",
+     61 => "和風座椅子",
+     62 => "高座椅子",
+     63 => "ゲーミング座椅子",
+     64 => "ロッキングチェア",
+     65 => "座布団",
+     66 => "空気椅子"}
+
+    CATEGORY_PARENT = {
+                  1 => 0,
+                  2 => 1,
+                  3 => 1,
+                  4 => 1,
+                  5 => 1,
+                  6 => 1,
+                  10 => 0,
+                  11 => 10,
+                  12 => 10,
+                  13 => 10,
+                  14 => 10,
+                  15 => 10,
+                  20 => 0,
+                  21 => 20,
+                  22 => 20,
+                  23 => 20,
+                  24 => 20,
+                  30 => 0,
+                  31 => 30,
+                  32 => 30,
+                  33 => 30,
+                  34 => 30,
+                  35 => 30,
+                  40 => 0,
+                  41 => 40,
+                  42 => 40,
+                  43 => 40,
+                  44 => 40,
+                  45 => 40,
+                  50 => 0,
+                  51 => 50,
+                  52 => 50,
+                  53 => 50,
+                  54 => 50,
+                  55 => 50,
+                  56 => 50,
+                  60 => 0,
+                  61 => 60,
+                  62 => 60,
+                  63 => 60,
+                  64 => 60,
+                  65 => 60,
+                  66 => 60
+                }
+
+
+
     configure :development do
       require 'sinatra/reloader'
       register Sinatra::Reloader
@@ -91,23 +185,14 @@ module Isucari
       end
 
       def get_category_by_id(category_id)
-        category = db.xquery('SELECT * FROM `categories` WHERE `id` = ?', category_id).first
 
-        return if category.nil?
-
-        parent_category_name = if category['parent_id'] != 0
-          parent_category = get_category_by_id(category['parent_id'])
-
-          return if parent_category.nil?
-
-          parent_category['category_name']
-        end
+        return if CATEGORIES[category_id].nil?
 
         {
-          'id' => category['id'],
-          'parent_id' => category['parent_id'],
-          'category_name' => category['category_name'],
-          'parent_category_name' => parent_category_name
+          'id' => category_id,
+          'parent_id' => CATEGORY_PARENT[category_id],
+          'category_name' => CATEGORIES[category_id],
+          'parent_category_name' => CATEGORIES[CATEGORY_PARENT[category_id]]
         }
       end
 
