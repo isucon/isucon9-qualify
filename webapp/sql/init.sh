@@ -7,7 +7,7 @@ export MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
 export MYSQL_PORT=${MYSQL_PORT:-3306}
 export MYSQL_USER=${MYSQL_USER:-isucari}
 export MYSQL_DBNAME=${MYSQL_DBNAME:-isucari}
-export MYSQL_PWD=${MYSQL_PASS:-isucari}
+export MYSQL_PWD=${MYSQL_PASS:-dooffdesho}
 export LANG="C.UTF-8"
 cd $CURRENT_DIR
 
