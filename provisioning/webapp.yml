@@ -1,34 +1,22 @@
 - hosts: webapp
   user: root
+  become: yes
   gather_facts: yes
 
   roles:
     - user.isucon
     - bootstrap
-    - aliyun
     - webapp.deploy
-
     - nginx
     - mysql
     - golang
-    - perl
-    - php
-    - ruby
-    - python
-    - nodejs
     - webapp.mysql
     - webapp.golang
-    - webapp.perl
-    - webapp.php
-    - webapp.ruby
-    - webapp.python
-    - webapp.nodejs
     - webapp.nginx
 
   tasks:
     - name: Start default daemons
       become: yes
-      become_user: root
       systemd:
         name: "{{ item }}"
         state: restarted

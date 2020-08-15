@@ -1,5 +1,6 @@
 - hosts: bench
   user: root
+  become: yes
   gather_facts: yes
   vars:
     golang_version: 1.13
@@ -7,16 +8,11 @@
   roles:
     - user.isucon
     - bootstrap
-    - aliyun
     - external.deploy
 
     - kernel-tune
-    - nginx
-    - nginx.log-format
     - golang
-    - external.nginx
     - external.benchmarker
-    - external.benchmark-worker
 
   tasks:
     - name: Start default daemons

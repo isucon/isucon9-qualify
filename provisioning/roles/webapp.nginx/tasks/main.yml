@@ -1,22 +1,3 @@
-- name: Create Directory for TLS Certificate and Key
-  file:
-    path: /etc/nginx/ssl
-    state: directory
-    owner: root
-    group: root
-    mode: 0700
-
-- name: Copy TLS Certificate and Key
-  copy:
-    dest: "{{ item.dest }}"
-    src: "{{ item.src }}"
-    owner: root
-    group: root
-    mode: 0700
-  with_items:
-    - { dest: "/etc/nginx/ssl/fullchain.pem", src: "certs/isucon9.catatsuy.org/fullchain.pem" }
-    - { dest: "/etc/nginx/ssl/privkey.pem", src: "certs/isucon9.catatsuy.org/privkey.pem" }
-
 - name: Copy Nginx config
   copy:
     src: etc/nginx/nginx.conf
