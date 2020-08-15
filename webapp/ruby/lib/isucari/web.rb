@@ -149,7 +149,7 @@ module Isucari
       end
 
       ['payment_service_url', 'shipment_service_url'].each do |name|
-        value = body_params[name]
+        value = body_params[name].gsub('localhost', 'host.docker.internal')
 
         db.xquery('INSERT INTO `configs` (name, val) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)', name, value)
       end
@@ -1195,7 +1195,7 @@ module Isucari
     # getReports
     get '/reports.json' do
       transaction_evidences = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` > 15007')
-      
+
       response = transaction_evidences.map do |transaction_evidence|
         {
           'id' => transaction_evidence['id'],
