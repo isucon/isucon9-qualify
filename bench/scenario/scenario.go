@@ -18,7 +18,7 @@ const (
 
 func Initialize(ctx context.Context, paymentServiceURL, shipmentServiceURL string) (int, string) {
 	// initializeだけタイムアウトを別に設定
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 200*time.Second)
 	defer cancel()
 
 	campaign, language, err := initialize(ctx, paymentServiceURL, shipmentServiceURL)
