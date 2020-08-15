@@ -1,0 +1,36 @@
+version: '3.5'
+
+services:
+  app:
+    build: .
+    tty: true
+    stdin_open: true
+    volumes:
+      - .:/app:cached
+      - ./docker/app/bundle-data:/usr/local/bundle:cached
+      - ../sql:/sql
+      # docker 配下は DB データ等不要なものがあるのでマウントしないようにする（上書きする）
+      - /app/docker
+    command: rackup --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+    ports:
+      - 8000:8000
+
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: isucari
+      MYSQL_USER: isucari
+      MYSQL_PASSWORD: isucari
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      TZ: 'Asia/Tokyo'
+    volumes:
+      - ./docker/db/data:/var/lib/mysql
+      - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/db/sql:/docker-entrypoint-initdb.d
+      - ../sql:/sql
+    ports:
+      - 3306:3306
