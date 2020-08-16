@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 5555})
+	liPayment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 5556})
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -37,4 +37,6 @@ inventory/hostsのdevセクションに対象のホストを追加してansible-
 
 ```
 ansible-playbook dev.yml -i inventory/hosts
+
+ansible-playbook dev.yml -i inventory/hosts -e ansible_python_interpreter=/usr/bin/python3 -e ansible_ssh_host=**** -e ansible_ssh_user=ubuntu -e ansible_ssh_private_key_file=****
 ```

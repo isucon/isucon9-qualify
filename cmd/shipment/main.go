@@ -23,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 7000})
+	liShipment, err := net.ListenTCP("tcp", &net.TCPAddr{Port: 7001})
 	if err != nil {
 		log.Fatal(err)
 	}

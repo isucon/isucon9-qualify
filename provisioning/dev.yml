@@ -1,18 +1,15 @@
 - hosts: dev
   user: root
+  become: yes
   gather_facts: yes
 
   roles:
     - user.isucon
     - bootstrap
-    - aliyun
     - dev.deploy
 
     - kernel-tune
-    - nginx
-    - nginx.log-format
     - golang
-    - external.nginx
     - external.shipment
     - external.payment
 
@@ -26,6 +23,5 @@
         daemon_reload: yes
         enabled: yes
       with_items:
-        - nginx.service
         - shipment.service
         - payment.service
