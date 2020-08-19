@@ -46,6 +46,27 @@ $ make
 $ ./bin/benchmarker
 ```
 
+## データベースの作成と初期化
+http://isucon.net/archives/53805209.html に解説のとおりにやりましょう。
+
+### rootユーザーから始める場合
+
+前準備
+
+```
+$ sudo mysql_secure_installation
+
+# 5.7 password 強度を突破する 9e69c6bc-b265-4976-a8a4-c1b72959d6ba
+$ sudo mysql -u root -p
+mysql> set global validate_password_length=6;
+Query OK, 0 rows affected (0.00 sec)
+mysql> set global validate_password_policy=LOW;
+Query OK, 0 rows affected (0.00 sec)
+
+$ cd webapp/sql
+$ cat 00_create_database.sql | sudo mysql -u root -p 
+```
+
 ## ベンチマーカー
 
 Version: Go 1.13 or later
@@ -139,7 +160,6 @@ MySQL 5.7および8.0にて動作確認しています。
 
 ただし、nodejsでアプケーションを起動する場合、MySQL 8.0の認証方式によっては動作しないことがあります。
 詳しくは、 https://github.com/isucon/isucon9-qualify/pull/316 を参考にしてください
-
 
 ## 使用データの取得元
 
