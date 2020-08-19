@@ -28,6 +28,7 @@ $ make
 
 $ cd webapp/public
 # GitHub releases から initial.zip をダウンロード
+$ wget https://github.com/isucon/isucon9-qualify/releases/download/v2/initial.zip
 $ unzip initial.zip
 $ rm -rf upload
 $ mv v3_initial_data upload
@@ -36,6 +37,7 @@ $ mv v3_initial_data upload
 
 $ cd initial-data
 # GitHub releases から bench1.zip をダウンロード
+$ wget https://github.com/isucon/isucon9-qualify/releases/download/v2/bench1.zip
 $ unzip bench1.zip
 $ rm -rf images
 $ mv v3_bench1 images
