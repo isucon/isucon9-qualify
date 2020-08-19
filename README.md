@@ -46,6 +46,13 @@ $ make
 $ ./bin/benchmarker
 ```
 
+### 本サービスを稼働させることを忘れないようにね
+
+```
+$ cd webapp/go
+$ GO111MODULE=on go run api.go main.go
+```
+
 ## データベースの作成と初期化
 http://isucon.net/archives/53805209.html に解説のとおりにやりましょう。
 
