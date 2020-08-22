@@ -313,13 +313,36 @@ func main() {
 		dbname,
 	)
 
-	dbx, err = sqlx.Open("mysql", dsn)
-	if err != nil {
-		log.Fatalf("failed to connect to DB: %s.", err.Error())
+	enableTrace := os.Getenv("ENABLE_TRACE")
+	enableProfile := os.Getenv("ENABLE_PROFILE")
+
+	if enableTrace == "true" {
+		initTrace()
+
+		db, err := sql.Open(tracedDriver("mysql"), dsn)
+		if err != nil {
+			log.Fatalf("failed to connect to DB: %s.", err.Error())
+		}
+		dbx = sqlx.NewDb(db, "mysql")
+	} else {
+		dbx, err = sqlx.Open("mysql", dsn)
+		if err != nil {
+			log.Fatalf("failed to connect to DB: %s.", err.Error())
+		}
 	}
 	defer dbx.Close()
 
 	mux := goji.NewMux()
+	var handler http.Handler
+	if enableTrace == "true" {
+		handler = withTrace(mux)
+	} else {
+		handler = mux
+	}
+
+	if enableProfile == "true" {
+		initProfiler()
+	}
 
 	// API
 	mux.HandleFunc(pat.Post("/initialize"), postInitialize)
@@ -356,7 +379,7 @@ func main() {
 	mux.HandleFunc(pat.Get("/users/setting"), getIndex)
 	// Assets
 	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
-	log.Fatal(http.ListenAndServe(":8000", mux))
+	log.Fatal(http.ListenAndServe(":8000", handler))
 }
 
 func getSession(r *http.Request) *sessions.Session {
@@ -491,9 +514,15 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	campaign, err := strconv.Atoi(os.Getenv("CAMPAIGN"))
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "CAMPAIGN should be a number")
+		return
+	}
 	res := resInitialize{
 		// キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-		Campaign: 0,
+		Campaign: campaign,
 		// 実装言語を返す
 		Language: "Go",
 	}
