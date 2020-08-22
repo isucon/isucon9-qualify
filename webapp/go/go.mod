@@ -1,6 +1,6 @@
 module github.com/isucon/isucon9-qualify/webapp/go
 
-go 1.12
+go 1.14
 
 require (
 	cloud.google.com/go v0.64.0
