@@ -287,6 +287,7 @@ func main() {
 		newrelic.ConfigAppName("isucon9-qualify"),
 		newrelic.ConfigLicense("2a6c3f87b82e0b1d0d9c6f8277dd294b39a8NRAL"),
 		newrelic.ConfigDistributedTracerEnabled(true),
+		newrelic.ConfigDebugLogger(os.Stdout),
 	)
 
 	host := os.Getenv("MYSQL_HOST")
@@ -2328,12 +2329,16 @@ func getImageURL(imageName string) string {
 }
 
 // Middleware to create/end NewRelic transaction
-// https://gist.github.com/emsearcy/0f4533516643cfc3423d89f155fe03f4
 func nrt(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
 		txn := app.StartTransaction(r.URL.Path)
+		defer txn.End()
+
+		r = newrelic.RequestWithTransactionContext(r, txn)
+
+		txn.SetWebRequestHTTP(r)
+		w = txn.SetWebResponse(w)
 		inner.ServeHTTP(w, r)
-		txn.End()
 	}
 	return http.HandlerFunc(mw)
 }
