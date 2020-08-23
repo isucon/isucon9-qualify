@@ -72,3 +72,9 @@ CREATE TABLE `categories` (
   `parent_id` int unsigned NOT NULL,
   `category_name` varchar(191) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
+
+CREATE INDEX idx_created_at on items (created_at);
+CREATE INDEX idx_category_id_created_at on items (category_id, created_at);
+CREATE INDEX idx_seller_id_created_at on items (seller_id, created_at);
+CREATE INDEX idx_buyer_id_created_at on items (buyer_id, created_at);
+CREATE INDEX idx_parent_id on categories (parent_id);
