@@ -22,7 +22,7 @@ import (
 	"goji.io/pat"
 	"golang.org/x/crypto/bcrypt"
 
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 const (
@@ -280,10 +280,14 @@ func init() {
 	))
 }
 
+var app *newrelic.Application
+
 func main() {
-	s := tracer.NewRateSampler(1)
-	tracer.Start(tracer.WithAnalytics(true), tracer.WithSampler(s))
-	defer tracer.Stop()
+	app, _ = newrelic.NewApplication(
+		newrelic.ConfigAppName("isucon9-qualify"),
+		newrelic.ConfigLicense("2a6c3f87b82e0b1d0d9c6f8277dd294b39a8NRAL"),
+		newrelic.ConfigDistributedTracerEnabled(true),
+	)
 
 	host := os.Getenv("MYSQL_HOST")
 	if host == "" {
@@ -326,6 +330,7 @@ func main() {
 	defer dbx.Close()
 
 	mux := goji.NewMux()
+	mux.Use(nrt)
 
 	// API
 	mux.HandleFunc(pat.Post("/initialize"), postInitialize)
@@ -2320,4 +2325,15 @@ func outputErrorMsg(w http.ResponseWriter, status int, msg string) {
 
 func getImageURL(imageName string) string {
 	return fmt.Sprintf("/upload/%s", imageName)
+}
+
+// Middleware to create/end NewRelic transaction
+// https://gist.github.com/emsearcy/0f4533516643cfc3423d89f155fe03f4
+func nrt(inner http.Handler) http.Handler {
+	mw := func(w http.ResponseWriter, r *http.Request) {
+		txn := app.StartTransaction(r.URL.Path)
+		inner.ServeHTTP(w, r)
+		txn.End()
+	}
+	return http.HandlerFunc(mw)
 }
