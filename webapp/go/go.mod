@@ -9,6 +9,7 @@ require (
 	github.com/newrelic/go-agent v3.8.1+incompatible
 	github.com/newrelic/go-agent/v3 v3.8.1
 	github.com/newrelic/go-agent/v3/integrations/nrmysql v1.2.0
+	github.com/pkg/errors v0.9.1
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 )
