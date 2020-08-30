@@ -18,6 +18,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	goji "goji.io"
 	"goji.io/pat"
 	"golang.org/x/crypto/bcrypt"
@@ -413,6 +414,30 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 	return userSimple, err
 }
 
+func getUsersSimpleByIDs(q sqlx.Queryer, userIDs []int64) (userSimples map[int64]*UserSimple, err error) {
+	users := []User{}
+	inQuery, inArgs, err := sqlx.In("SELECT * FROM `users` WHERE `id` in (?)", userIDs)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	err = dbx.Select(&users, inQuery, inArgs...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	userSimples = make(map[int64]*UserSimple)
+	for _, user := range users {
+		userSimples[user.ID] = &UserSimple{
+			ID:           user.ID,
+			AccountName:  user.AccountName,
+			NumSellItems: user.NumSellItems,
+		}
+	}
+	return userSimples, nil
+}
+
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
 	err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
 	if category.ParentID != 0 {
@@ -423,6 +448,34 @@ func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err err
 		category.ParentCategoryName = parentCategory.CategoryName
 	}
 	return category, err
+}
+
+func getCategoriesByIDs(q sqlx.Queryer, categoryIDs []int) (categories map[int]*Category, err error) {
+	cats := []Category{}
+	inQuery, inArgs, err := sqlx.In("SELECT * FROM `categories` WHERE `id` IN (?)", categoryIDs)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	err = dbx.Select(&cats, inQuery, inArgs...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	categories = make(map[int]*Category, len(categoryIDs))
+	for _, category := range cats {
+		if category.ParentID != 0 {
+			parentCategory, err := getCategoryByID(q, category.ParentID)
+			if err != nil {
+				return nil, err
+			}
+			categories[category.ID] = &Category{
+				ID:                 category.ID,
+				ParentID:           category.ParentID,
+				CategoryName:       category.CategoryName,
+				ParentCategoryName: parentCategory.CategoryName,
+			}
+		}
+	}
+	return categories, err
 }
 
 func getConfigByName(name string) (string, error) {
@@ -564,27 +617,35 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	itemSimples := []ItemSimple{}
+	itemCategoryIDs := make([]int, len(items), len(items))
+	itemSellerIDs := make([]int64, len(items), len(items))
+	for i, item := range items {
+		itemCategoryIDs[i] = item.CategoryID
+		itemSellerIDs[i] = item.SellerID
+	}
+
+	sellers, err := getUsersSimpleByIDs(dbx, itemSellerIDs)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, errors.WithStack(err).Error())
+		return
+	}
+	categories, err := getCategoriesByIDs(dbx, itemCategoryIDs)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "category not found")
+		return
+	}
+
 	for _, item := range items {
-		seller, err := getUserSimpleByID(dbx, item.SellerID)
-		if err != nil {
-			outputErrorMsg(w, http.StatusNotFound, "seller not found")
-			return
-		}
-		category, err := getCategoryByID(dbx, item.CategoryID)
-		if err != nil {
-			outputErrorMsg(w, http.StatusNotFound, "category not found")
-			return
-		}
 		itemSimples = append(itemSimples, ItemSimple{
 			ID:         item.ID,
 			SellerID:   item.SellerID,
-			Seller:     &seller,
+			Seller:     sellers[item.SellerID],
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
 			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
-			Category:   &category,
+			Category:   categories[item.CategoryID],
 			CreatedAt:  item.CreatedAt.Unix(),
 		})
 	}
@@ -692,27 +753,34 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	itemSimples := []ItemSimple{}
+	itemCategoryIDs := make([]int, len(items), len(items))
+	itemSellerIDs := make([]int64, len(items), len(items))
+	for i, item := range items {
+		itemCategoryIDs[i] = item.CategoryID
+		itemSellerIDs[i] = item.SellerID
+	}
+
+	sellers, err := getUsersSimpleByIDs(dbx, itemSellerIDs)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, errors.WithStack(err).Error())
+		return
+	}
+	categories, err := getCategoriesByIDs(dbx, itemCategoryIDs)
+	if err != nil {
+		outputErrorMsg(w, http.StatusNotFound, "category not found")
+		return
+	}
 	for _, item := range items {
-		seller, err := getUserSimpleByID(dbx, item.SellerID)
-		if err != nil {
-			outputErrorMsg(w, http.StatusNotFound, "seller not found")
-			return
-		}
-		category, err := getCategoryByID(dbx, item.CategoryID)
-		if err != nil {
-			outputErrorMsg(w, http.StatusNotFound, "category not found")
-			return
-		}
 		itemSimples = append(itemSimples, ItemSimple{
 			ID:         item.ID,
 			SellerID:   item.SellerID,
-			Seller:     &seller,
+			Seller:     sellers[item.SellerID],
 			Status:     item.Status,
 			Name:       item.Name,
 			Price:      item.Price,
 			ImageURL:   getImageURL(item.ImageName),
 			CategoryID: item.CategoryID,
-			Category:   &category,
+			Category:   categories[item.CategoryID],
 			CreatedAt:  item.CreatedAt.Unix(),
 		})
 	}
