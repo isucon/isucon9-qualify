@@ -9,3 +9,6 @@ gem 'bcrypt'
 group :development do
   gem 'sinatra-contrib'
 end
+
+# TODO: 最終ベンチ前にコメント
+gem 'newrelic_rpm'

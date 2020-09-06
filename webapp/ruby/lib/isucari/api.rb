@@ -2,6 +2,9 @@ require 'json'
 require 'uri'
 require 'net/http'
 
+# TODO: 最終ベンチ前にコメント
+require 'newrelic_rpm'
+
 module Isucari
   class API
     class Error < StandardError; end

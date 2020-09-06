@@ -6,6 +6,10 @@ require 'mysql2-cs-bind'
 require 'bcrypt'
 require 'isucari/api'
 
+# TODO: 最終ベンチ前にコメント
+require 'newrelic_rpm'
+require_relative '../nr_mysql2_client'
+
 module Isucari
   class Web < Sinatra::Base
     DEFAULT_PAYMENT_SERVICE_URL = 'http://localhost:5555'
@@ -53,7 +57,9 @@ module Isucari
 
     helpers do
       def db
-        Thread.current[:db] ||= Mysql2::Client.new(
+        # TODO: 最終ベンチ前に切り替え
+        # Thread.current[:db] ||= Mysql2::Client.new(
+        Thread.current[:db] ||= NrMysql2Client.new(
           'host' => ENV['MYSQL_HOST'] || '127.0.0.1',
           'port' => ENV['MYSQL_PORT'] || '3306',
           'database' => ENV['MYSQL_DBNAME'] || 'isucari',
@@ -1195,7 +1201,7 @@ module Isucari
     # getReports
     get '/reports.json' do
       transaction_evidences = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` > 15007')
-      
+
       response = transaction_evidences.map do |transaction_evidence|
         {
           'id' => transaction_evidence['id'],
