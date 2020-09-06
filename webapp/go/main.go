@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	crand "crypto/rand"
 	"database/sql"
 	"encoding/json"
@@ -14,11 +15,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
-	"context"
 
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/newrelic/go-agent/v3/integrations/nrmysql"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	goji "goji.io"
 	"goji.io/pat"
@@ -67,6 +68,7 @@ var (
 	templates *template.Template
 	dbx       *sqlx.DB
 	store     sessions.Store
+	c         *cache.Cache
 )
 
 type Config struct {
@@ -284,6 +286,22 @@ func init() {
 
 var app *newrelic.Application
 
+func cacheCategories(c *cache.Cache) {
+	// cache item category
+	rows, err := dbx.Queryx("SELECT * FROM `categories`")
+	if err != nil {
+		panic(errors.WithStack(err))
+	}
+	for rows.Next() {
+		var category Category
+		err = rows.StructScan(&category)
+		if err != nil {
+			panic(errors.WithStack(err))
+		}
+		c.Set(string(category.ID), category, cache.NoExpiration)
+	}
+}
+
 func main() {
 	app, _ = newrelic.NewApplication(
 		newrelic.ConfigAppName("isucon9-qualify"),
@@ -331,6 +349,10 @@ func main() {
 		log.Fatalf("failed to connect to DB: %s.", err.Error())
 	}
 	defer dbx.Close()
+
+	//cacheCategories
+	c = cache.New(5*time.Minute, 10*time.Minute)
+	cacheCategories(c)
 
 	mux := goji.NewMux()
 	mux.Use(nrt)
@@ -448,7 +470,12 @@ func getUsersSimpleByIDs(q sqlx.Queryer, userIDs []int64) (userSimples map[int64
 }
 
 func getCategoryByID(q sqlx.Queryer, categoryID int) (category Category, err error) {
-	err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
+	if x, found := c.Get(string(categoryID)); found {
+		category = x.(Category)
+	} else {
+		err = sqlx.Get(q, &category, "SELECT * FROM `categories` WHERE `id` = ?", categoryID)
+	}
+
 	if category.ParentID != 0 {
 		parentCategory, err := getCategoryByID(q, category.ParentID)
 		if err != nil {
