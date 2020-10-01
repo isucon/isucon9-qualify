@@ -425,12 +425,12 @@ func loadIsRecommendNewItems(ctx context.Context, s *session.Session) (bool, err
 		return false, err
 	}
 	if len(items) != asset.ItemsPerPage {
-		return false, failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+		return false, failure.New(fails.ErrApplication, failure.Messagef("/new_items.json の商品数が正しくありません"))
 	}
 	isTarget := 0
 	for _, item := range items {
 		if item.Category == nil {
-			return false, failure.New(fails.ErrApplication, failure.Messagef("/new_item.json のカテゴリが正しくありません　(item_id: %d)", item.ID))
+			return false, failure.New(fails.ErrApplication, failure.Messagef("/new_items.json のカテゴリが正しくありません　(item_id: %d)", item.ID))
 		}
 		if item.Category.ParentID == targetCategoryID {
 			isTarget++
@@ -453,7 +453,7 @@ func loadNewItemsAndItems(ctx context.Context, s *session.Session, maxPage int64
 	// 全件はカウントできない。countUserItemsを何回か動かして確認している
 	// ここでは商品数はperpage*maxpage
 	if maxPage > 0 && int64(c) != maxPage*asset.ItemsPerPage {
-		return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品数が正しくありません"))
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.json の商品数が正しくありません"))
 	}
 
 	chkItemIDs := itemIDs.RandomIDs(checkItem)
@@ -480,20 +480,20 @@ func loadItemIDsFromNewItems(ctx context.Context, s *session.Session, itemIDs *I
 		return err
 	}
 	if loop < 50 && asset.ItemsPerPage != len(items) { // MEMO 50件よりはみないだろう
-		return failure.New(fails.ErrApplication, failure.Messagef("/users/transactions.json の商品数が正しくありません (user_id: %d)", s.UserID))
+		return failure.New(fails.ErrApplication, failure.Messagef("/new_items.json の商品数が正しくありません"))
 	}
 	for _, item := range items {
 		if nextCreatedAt > 0 && nextCreatedAt < item.CreatedAt {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonはcreated_at順である必要があります"))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonはcreated_at順である必要があります"))
 		}
 
 		if item.Status != asset.ItemStatusOnSale && item.Status != asset.ItemStatusSoldOut {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.json の商品のステータスが正しくありません (item_id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.json の商品のステータスが正しくありません (item_id: %d)", item.ID))
 		}
 
 		err = itemIDs.Add(item.ID)
 		if err != nil {
-			return failure.New(fails.ErrApplication, failure.Messagef("/new_item.jsonに同じ商品がありました (item_id: %d)", item.ID))
+			return failure.New(fails.ErrApplication, failure.Messagef("/new_items.jsonに同じ商品がありました (item_id: %d)", item.ID))
 		}
 		nextItemID = item.ID
 		nextCreatedAt = item.CreatedAt
