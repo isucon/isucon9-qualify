@@ -6,13 +6,16 @@ use utf8;
 use JSON::XS 3.00;
 use JSON::Types;
 use LWP::UserAgent;
+use LWP::ConnCache;
 
 our $ISUCARI_API_TOKEN = "Bearer 75ugk2m37a750fwir5xr-22l6h4wmue1bwrubzwd0";
 
 sub new {
     my $class = shift;
+    my $cache = LWP::ConnCache->new(total_capacity=>5);
     my $ua  = LWP::UserAgent->new(
         agent => "isucon9-qualify-webapp",
+        conn_cache => $cache,
     );
     bless {ua => $ua}, $class;
 }

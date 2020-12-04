@@ -11,4 +11,4 @@ export MYSQL_PWD=${MYSQL_PASS:-isucari}
 export LANG="C.UTF-8"
 cd $CURRENT_DIR
 
-cat 01_schema.sql 02_categories.sql initial.sql | mysql --defaults-file=/dev/null -h $MYSQL_HOST -P $MYSQL_PORT -u $MYSQL_USER $MYSQL_DBNAME
+cat 01_schema.sql 02_categories.sql initial.sql after.sql | mysql --defaults-file=/dev/null -h $MYSQL_HOST -P $MYSQL_PORT -u $MYSQL_USER $MYSQL_DBNAME
