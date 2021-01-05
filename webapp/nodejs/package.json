@@ -23,7 +23,7 @@
     "@types/axios": "^0.14.0",
     "@types/bcrypt": "^3.0.0",
     "@types/node": "^12",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "bcrypt": "^3.0.6",
     "fastify": "^2.7",
     "fastify-cookie": "^3.1",
