@@ -27,7 +27,7 @@
     "bcrypt": "^3.0.6",
     "fastify": "^2.7",
     "fastify-cookie": "^3.1",
-    "fastify-multipart": "^1.0.2",
+    "fastify-multipart": "^1.0.5",
     "fastify-mysql": "^0.3",
     "fastify-plugin": "^1.6",
     "fastify-static": "^2.5",
