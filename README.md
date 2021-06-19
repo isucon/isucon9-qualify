@@ -20,7 +20,7 @@ http://isucon.net/archives/53805209.html
 ## 前準備
 
 ```
-# 初期データ作成
+# 初期データ作成 (Docker が必要)
 $ cd initial-data
 $ make
 
