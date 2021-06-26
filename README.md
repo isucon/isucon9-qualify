@@ -111,6 +111,7 @@ nginxでいい感じにするなら以下の設定が必須
 ## webapp 起動方法
 
 ```shell-session
+service mysql start
 cd webapp/sql
 
 # databaseとuserを初期化する
@@ -118,6 +119,14 @@ mysql -u root < 00_create_database.sql
 
 # データを流し込む
 ./init.sh
+
+# Payment および Shipment サーバー立ち上げ (それぞれ別のウィンドウで実行)
+
+$ cd isucon9-qualify
+$ ./bin/payment
+
+$ cd isucon9-qualify
+$ ./bin/shipment
 
 # flask アプリを起動 (mysql が必要)
 
