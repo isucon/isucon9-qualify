@@ -119,10 +119,15 @@ mysql -u root < 00_create_database.sql
 # データを流し込む
 ./init.sh
 
-cd webapp/go
-make
-./isucari
+# flask アプリを起動 (mysql が必要)
+
+$ cd isucon9-qualify/webapp/python
+$ python3 -m venv venv
+$ pip install -r requirements.txt
+$ python app.py
 ```
+
+この状態で <http://localhost:8000> にアクセスすると動いている確認できる。
 
 ## 運営側のブログ
 
