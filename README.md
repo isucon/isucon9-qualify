@@ -1,5 +1,30 @@
 # isucon9-qualify
 
+## docker composeの動かし方
+参考: https://github.com/s2terminal/isucon9-qualify-docker
+```
+$ docker compose build
+$ wget https://github.com/isucon/isucon9-qualify/releases/download/v2/bench1.zip
+$ wget https://github.com/isucon/isucon9-qualify/releases/download/v2/initial.zip
+$ unzip bench1.zip
+$ unzip initial.zip
+$ mv v3_initial_data webapp/public/upload
+$ mv v3_bench1 initial-data/images
+
+$ docker compose up <- 何回かやる？？
+$ docker-compose exec golang make
+$ cd initial-data
+$ make
+```
+
+### 起動
+```
+$ docker compose up
+$ docker compose exec web /bin/bash -c './webapp/sql/init.sh'
+$ docker compose exec web /bin/bash -c 'cd webapp/go && make && ./isucari'
+$ docker compose exec web /bin/bash -c './bin/benchmarker'
+```
+
 ## ディレクトリ構成
 
 ```
