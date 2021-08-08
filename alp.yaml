@@ -1,0 +1,13 @@
+file: /var/log/nginx/access.log
+sort: count
+reverse: true
+output: count,1xx,2xx,3xx,4xx,5xx,method,uri,min,max,avg,sum,p99
+matching_groups:
+- '^/items/[0-9]+\.json$'
+- '^/users/[0-9]+\.json$'
+- '^/new_items/[0-9]+\.json$'
+- '^/transactions/[0-9]+\.png$'
+- '^/upload/[0-9a-f]+\.jpg$'
+ltsv: {}
+json: {}
+regexp: {}
