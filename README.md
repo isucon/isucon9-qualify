@@ -40,7 +40,7 @@ $ unzip bench1.zip
 $ rm -rf images
 $ mv v3_bench1 images
 
-$ make
+$ docker compose exec golang make
 $ ./bin/benchmarker
 ```
 

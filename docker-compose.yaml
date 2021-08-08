@@ -1,0 +1,33 @@
+version: '3'
+services:
+  web:
+    build: ./webapp/go
+    volumes:
+      - .:/app
+    ports:
+      - 127.0.0.1:5555:5555
+      - 127.0.0.1:7000:7000
+      - 127.0.0.1:8000:8000
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=root
+      - MYSQL_PASS=secret
+  db:
+    image: mysql:5.7
+    volumes:
+      - ./webapp/sql:/docker-entrypoint-initdb.d
+      - ./webapp/sql/conf:/etc/mysql/conf.d
+      - ./datadir:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_HOST=127.0.0.1
+    #   - MYSQL_USER=root
+      - MYSQL_PASS=secret
+    ports:
+      - 127.0.0.1:3306:3306
+  golang:
+    image: golang:1.12.7
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: /bin/sh -c "while sleep 1000; do :; done"
