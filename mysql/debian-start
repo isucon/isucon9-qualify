@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Change to no-op as detailed in
+# https://bugs.launchpad.net/ubuntu/+source/mysql-5.7/+bug/1577712
+exit 0
