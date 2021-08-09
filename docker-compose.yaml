@@ -17,6 +17,7 @@ services:
     volumes:
       - ./webapp/sql:/docker-entrypoint-initdb.d
       - ./webapp/sql/conf:/etc/mysql/conf.d
+      - ./webapp/sql/log:/var/log/mysql
       - ./datadir:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=secret
