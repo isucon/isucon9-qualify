@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -21,6 +22,8 @@ import (
 	goji "goji.io"
 	"goji.io/pat"
 	"golang.org/x/crypto/bcrypt"
+
+	_ "net/http/pprof"
 )
 
 const (
@@ -279,6 +282,15 @@ func init() {
 }
 
 func main() {
+
+	// pprof
+	runtime.SetBlockProfileRate(1)
+	runtime.SetMutexProfileFraction(1)
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	host := os.Getenv("MYSQL_HOST")
 	if host == "" {
 		host = "127.0.0.1"
@@ -645,6 +657,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	var inArgs []interface{}
 	if itemID > 0 && createdAt > 0 {
 		// paging
+		// TODO: ここ改善
 		inQuery, inArgs, err = sqlx.In(
 			"SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT ?",
 			ItemStatusOnSale,
@@ -913,13 +926,39 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	itemDetails := []ItemDetail{}
+
+	// 売り手のユーザーを検索する, N+1を解決するために, userをInで検索する
+	var userIDs []int64
 	for _, item := range items {
-		seller, err := getUserSimpleByID(tx, item.SellerID)
+		userIDs = append(userIDs, item.SellerID)
+	}
+	// {id: user}
+	userIDMap := make(map[int64]UserSimple, len(userIDs))
+	if len(userIDs) > 0 {
+		query, params, err := sqlx.In("SELECT * FROM `users` WHERE `id` IN (?)", userIDs)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "seller not found")
 			tx.Rollback()
 			return
 		}
+		var users []User
+		if err := tx.Select(&users, query, params...); err != nil {
+			outputErrorMsg(w, http.StatusNotFound, "seller not found")
+			tx.Rollback()
+			return
+		}
+		for _, user := range users {
+			userIDMap[user.ID] = UserSimple{
+				ID:           user.ID,
+				AccountName:  user.AccountName,
+				NumSellItems: user.NumSellItems,
+			}
+		}
+	}
+
+	for _, item := range items {
+		// 売り手のユーザーを検索する
+		seller := userIDMap[item.SellerID]
 		category, err := getCategoryByID(tx, item.CategoryID)
 		if err != nil {
 			outputErrorMsg(w, http.StatusNotFound, "category not found")
