@@ -30,7 +30,7 @@
     "fastify-multipart": "^1.0.2",
     "fastify-mysql": "^0.3",
     "fastify-plugin": "^1.6",
-    "fastify-static": "^2.5",
+    "fastify-static": "^4.2",
     "mysql2": "^1.6",
     "trace-error": "^1.0.3"
   }
