@@ -8,8 +8,8 @@ GEM
     mysql2 (0.5.2)
     mysql2-cs-bind (0.0.7)
       mysql2
-    nio4r (2.5.1)
-    puma (4.1.0)
+    nio4r (2.5.8)
+    puma (4.3.12)
       nio4r (~> 2.0)
     rack (2.0.7)
     rack-protection (2.0.7)
