@@ -168,7 +168,7 @@ type Category struct {
 	ID                 int    `json:"id" db:"id"`
 	ParentID           int    `json:"parent_id" db:"parent_id"`
 	CategoryName       string `json:"category_name" db:"category_name"`
-	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
+	ParentCategoryName string `json:"parent_category_name,omitempty" db:"parent_category_name"`
 }
 
 type reqInitialize struct {
@@ -396,7 +396,7 @@ func getUser(r *http.Request) (user User, errCode int, errMsg string) {
 	return user, http.StatusOK, ""
 }
 
-func getUserSimplesByIdSet(q sqlx.Queryer, userIDSet []int64) (user_simples []UserSimple, err error) {
+func getUserSimplesByIdSet(q sqlx.Queryer, userIDSet []int64) (user_simples map[int64]UserSimple, err error) {
 	users := []User{}
 
 	sql, params, err := sqlx.In("SELECT * FROM `users` WHERE `id` IN (?)", userIDSet)
@@ -414,11 +414,11 @@ func getUserSimplesByIdSet(q sqlx.Queryer, userIDSet []int64) (user_simples []Us
 	}
 
 	for _, user := range users {
-		user_simples = append(user_simples, UserSimple{
+		user_simples[user.ID] = UserSimple{
 			ID:           user.ID,
 			AccountName:  user.AccountName,
 			NumSellItems: user.NumSellItems,
-		})
+		}
 	}
 
 	return user_simples, nil
@@ -436,18 +436,25 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 	return userSimple, err
 }
 
-func getCategoriesByIDSet(q sqlx.Queryer, categoryIDSet []int) (categories []Category, err error) {
-	sql, params, err := sqlx.In("SELECT * FROM `categories` WHERE `id` IN (?)", categoryIDSet)
+func getCategoriesByIDSet(q sqlx.Queryer, categoryIDSet []int) (categories map[int]Category, err error) {
+	sql, params, err := sqlx.In("SELECT categories.*, perents.category_name as parent_category_name FROM `categories` WHERE `id` IN (?) LEFT JOIN categories as parents ON categories.parent_id = parents.id", categoryIDSet)
 	if err != nil {
 		return categories, err
 	}
-	err = sqlx.Select(q, &categories, sql, params...)
+
+	temp_categories := []Category{}
+	err = sqlx.Select(q, &temp_categories, sql, params...)
 	if err != nil {
 		return categories, err
 	}
 	if len(categories) != len(categoryIDSet) {
 		return categories, errors.New("category not found")
 	}
+
+	for _, category := range temp_categories {
+		categories[category.ID] = category
+	}
+
 	return categories, nil
 }
 
@@ -755,9 +762,9 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	itemSimples := []ItemSimple{}
-	for i, item := range items {
-		seller := sellers[i]
-		category := categories[i]
+	for _, item := range items {
+		seller := sellers[item.SellerID]
+		category := categories[item.CategoryID]
 
 		itemSimples = append(itemSimples, ItemSimple{
 			ID:         item.ID,
