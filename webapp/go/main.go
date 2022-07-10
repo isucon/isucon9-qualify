@@ -168,6 +168,13 @@ type Category struct {
 	ID                 int    `json:"id" db:"id"`
 	ParentID           int    `json:"parent_id" db:"parent_id"`
 	CategoryName       string `json:"category_name" db:"category_name"`
+	ParentCategoryName string `json:"parent_category_name,omitempty" db:"-"`
+}
+
+type CategoryWithParent struct {
+	ID                 int    `json:"id" db:"id"`
+	ParentID           int    `json:"parent_id" db:"parent_id"`
+	CategoryName       string `json:"category_name" db:"category_name"`
 	ParentCategoryName string `json:"parent_category_name,omitempty" db:"parent_category_name"`
 }
 
@@ -410,7 +417,7 @@ func getUserSimplesByIdSet(q sqlx.Queryer, userIDSet []int64) (user_simples map[
 		return user_simples, err
 	}
 	if len(users) != len(userIDSet) {
-		return user_simples, fmt.Errorf("user len mismatch: %d != %d", len(users), len(userIDSet))
+		return user_simples, errors.New("seller not found")
 	}
 
 	for _, user := range users {
@@ -442,17 +449,22 @@ func getCategoriesByIDSet(q sqlx.Queryer, categoryIDSet []int) (categories map[i
 		return categories, err
 	}
 
-	temp_categories := []Category{}
+	temp_categories := []CategoryWithParent{}
 	err = sqlx.Select(q, &temp_categories, sql, params...)
 	if err != nil {
 		return categories, err
 	}
-	if len(categories) != len(categoryIDSet) {
-		return categories, errors.New("category not found")
-	}
+	//if len(categories) != len(categoryIDSet) {
+	//	return categories, errors.New("category not found")
+	//}
 
 	for _, category := range temp_categories {
-		categories[category.ID] = category
+		categories[category.ID] = Category{
+			ID:                 category.ID,
+			ParentID:           category.ParentID,
+			CategoryName:       category.CategoryName,
+			ParentCategoryName: category.ParentCategoryName,
+		}
 	}
 
 	return categories, nil
@@ -738,10 +750,14 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var sellerIDSet []int64
+	m := make(map[int64]bool)
 	var categoryIDSet []int
 
 	for _, item := range items {
-		sellerIDSet = append(sellerIDSet, item.SellerID)
+		if !m[item.SellerID] {
+			m[item.SellerID] = true
+			sellerIDSet = append(sellerIDSet, item.SellerID)
+		}
 		categoryIDSet = append(categoryIDSet, item.CategoryID)
 	}
 
@@ -749,6 +765,11 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Print(err)
+		log.Print(sellerIDSet)
+		if err.Error() == "seller not found" {
+			outputErrorMsg(w, http.StatusNotFound, "seller not found")
+			return
+		}
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
@@ -757,6 +778,10 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Print(err)
+		if err.Error() == "category not found" {
+			outputErrorMsg(w, http.StatusNotFound, "category not found")
+			return
+		}
 		outputErrorMsg(w, http.StatusInternalServerError, "db error")
 		return
 	}
