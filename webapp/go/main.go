@@ -924,13 +924,32 @@ func getUserItems(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var categoryIDSet []int
+	var categories map[int]Category
+
+	if len(items) > 0 {
+		for _, item := range items {
+			categoryIDSet = append(categoryIDSet, item.CategoryID)
+		}
+
+		categories, err = getCategoriesByIDSet(dbx, categoryIDSet)
+	}
+
+	if err != nil {
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "db error")
+		return
+	}
+
 	itemSimples := []ItemSimple{}
 	for _, item := range items {
-		category, err := getCategoryByID(dbx, item.CategoryID)
-		if err != nil {
-			outputErrorMsg(w, http.StatusNotFound, "category not found")
-			return
-		}
+		category := categories[item.CategoryID]
+
+		//category, err := getCategoryByID(dbx, item.CategoryID)
+		//if err != nil {
+		//	outputErrorMsg(w, http.StatusNotFound, "category not found")
+		//	return
+		//}
 		itemSimples = append(itemSimples, ItemSimple{
 			ID:         item.ID,
 			SellerID:   item.SellerID,
