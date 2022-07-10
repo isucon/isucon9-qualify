@@ -1072,7 +1072,12 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	itemDetails := []ItemDetail{}
-	for _, item := range items {
+	itemApiReturn := make(map[int]string)
+
+	countchan := make(chan int, len(items))
+	errchan := make(chan error, 1)
+	finishchan := make(chan bool, 1)
+	for i, item := range items {
 		seller := simple_users[item.SellerID]
 		category := categories[item.CategoryID]
 
@@ -1143,33 +1148,59 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 				tx.Rollback()
 				return
 			}
-			ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
-				ReserveID: shipping.ReserveID,
-			})
-			if err != nil {
-				log.Print(err)
-				outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
-				tx.Rollback()
-				return
-			}
+			go func() {
+				ssr, err := APIShipmentStatus(getShipmentServiceURL(), &APIShipmentStatusReq{
+					ReserveID: shipping.ReserveID,
+				})
+				if err != nil {
+					errchan <- err
+				}
+				itemApiReturn[i] = ssr.Status
+				countchan <- 1
+			}()
 
 			itemDetail.TransactionEvidenceID = transactionEvidence.ID
 			itemDetail.TransactionEvidenceStatus = transactionEvidence.Status
-			itemDetail.ShippingStatus = ssr.Status
 		}
 
 		itemDetails = append(itemDetails, itemDetail)
+	}
+	count := 0
+	select {
+	case <-countchan:
+		count++
+		if count >= len(items) {
+			finishchan <- true
+		}
+
+	case err := <-errchan:
+		log.Print(err)
+		outputErrorMsg(w, http.StatusInternalServerError, "failed to request to shipment service")
+		tx.Rollback()
+		finishchan <- true
+
+	case <-finishchan:
+		log.Print("count: %d", count)
+		return
+	}
+
+	newItemDetails := []ItemDetail{}
+
+	for i, itemDetail := range itemDetails {
+		newItemDetail := itemDetail
+		newItemDetail.ShippingStatus = itemApiReturn[i]
+		newItemDetails = append(newItemDetails, newItemDetail)
 	}
 	tx.Commit()
 
 	hasNext := false
 	if len(itemDetails) > TransactionsPerPage {
 		hasNext = true
-		itemDetails = itemDetails[0:TransactionsPerPage]
+		itemDetails = newItemDetails[0:TransactionsPerPage]
 	}
 
 	rts := resTransactions{
-		Items:   itemDetails,
+		Items:   newItemDetails,
 		HasNext: hasNext,
 	}
 
