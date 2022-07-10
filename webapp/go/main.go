@@ -420,6 +420,8 @@ func getUserSimplesByIdSet(q sqlx.Queryer, userIDSet []int64) (user_simples map[
 		return user_simples, errors.New("seller not found")
 	}
 
+	user_simples = make(map[int64]UserSimple)
+
 	for _, user := range users {
 		user_simples[user.ID] = UserSimple{
 			ID:           user.ID,
@@ -444,7 +446,7 @@ func getUserSimpleByID(q sqlx.Queryer, userID int64) (userSimple UserSimple, err
 }
 
 func getCategoriesByIDSet(q sqlx.Queryer, categoryIDSet []int) (categories map[int]Category, err error) {
-	sql, params, err := sqlx.In("SELECT categories.*, perents.category_name as parent_category_name FROM `categories` WHERE `id` IN (?) LEFT JOIN categories as parents ON categories.parent_id = parents.id", categoryIDSet)
+	sql, params, err := sqlx.In("SELECT children.*, perents.category_name as parent_category_name FROM `categories` as children LEFT JOIN `categories` as parents ON children.parent_id = parents.id WHERE `children.id` IN (?)", categoryIDSet)
 	if err != nil {
 		return categories, err
 	}
@@ -457,6 +459,8 @@ func getCategoriesByIDSet(q sqlx.Queryer, categoryIDSet []int) (categories map[i
 	//if len(categories) != len(categoryIDSet) {
 	//	return categories, errors.New("category not found")
 	//}
+
+	categories = make(map[int]Category)
 
 	for _, category := range temp_categories {
 		categories[category.ID] = Category{
