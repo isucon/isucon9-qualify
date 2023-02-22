@@ -1,0 +1,28 @@
+version: '3.7'
+
+services:
+        app:
+                container_name: app
+                image: golang:1.12.0
+                volumes:
+                        - .:/home/isucon9
+                ports:
+                        - '80:8000'
+                command: sh -c "cd /home/isucon9/webapp/go && GO111MODULE=on go run api.go main.go"
+        db:
+                container_name: db
+                image: mysql:8.0
+                volumes:
+                        - dbvol:/var/lib/mysql
+                        - ./webapp/sql_init:/docker-entrypoint-initdb.d
+                environment:
+                        MYSQL_ROOT_PASSWORD: root
+                        MYSQL_USER: isucari
+                        MYSQL_DATABASE: isucari
+                        MYSQL_PASSWORD: isucari 
+                        LANG: "C.UTF-8"
+                ports:
+                  - '3306:3306'
+volumes:
+        dbvol:
+
