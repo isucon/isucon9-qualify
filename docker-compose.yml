@@ -17,6 +17,8 @@ services:
                 volumes:
                         - dbvol:/var/lib/mysql
                         - ./webapp/sql_init:/docker-entrypoint-initdb.d
+                        - ./mysql-conf:/etc/mysql/conf.d
+                        - ./mysql-log:/var/log/mysql
                 environment:
                         MYSQL_ROOT_PASSWORD: root
                         MYSQL_USER: isucari
