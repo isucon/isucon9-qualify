@@ -10,7 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
+//	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -461,14 +461,14 @@ func postInitialize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := exec.Command("../sql/init.sh")
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stderr
-	cmd.Run()
-	if err != nil {
-		outputErrorMsg(w, http.StatusInternalServerError, "exec init.sh error")
-		return
-	}
+	//cmd := exec.Command("../sql/init.sh")
+	//cmd.Stderr = os.Stderr
+	//cmd.Stdout = os.Stderr
+	//cmd.Run()
+	//if err != nil {
+	//	outputErrorMsg(w, http.StatusInternalServerError, "exec init.sh error")
+	//	return
+	//}
 
 	_, err = dbx.Exec(
 		"INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)",
