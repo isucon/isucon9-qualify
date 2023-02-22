@@ -11,6 +11,8 @@ services:
                         - '6060:6060'
                         - '1080:1080'
                 command: sh -c "apt update && apt install -y graphviz && cd /home/isucon9/webapp/go && GO111MODULE=on go run api.go main.go"
+                depends_on:
+                        - db
         db:
                 container_name: db
                 image: mysql:8.0
