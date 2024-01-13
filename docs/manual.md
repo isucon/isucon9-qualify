@@ -148,7 +148,7 @@ $ sudo systemctl restart nginx.service
 DB(isucari)を初期状態にもどすには、次のコマンドを実行します。
 
 ```sh
-$ /home/isucon/isucari/webapp/sql/init.sh
+$ /home/isucon/isucari/webapp/init.sh
 ```
 
 ## ［開発用］shipmentおよびpayment serviceの利用について

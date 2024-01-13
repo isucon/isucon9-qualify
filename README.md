@@ -116,6 +116,7 @@ cd webapp/sql
 mysql -u root < 00_create_database.sql
 
 # データを流し込む
+cd ..
 ./init.sh
 
 cd webapp/go
