@@ -1,0 +1,22 @@
+name: isucari
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      #- "TZ=Asia/Tokyo"
+      - "MYSQL_ROOT_HOST=%"
+      - "MYSQL_ROOT_PASSWORD=root"
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+      - ./etc/conf.d:/etc/mysql/conf.d
+    ports:
+      - "3306:3306"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1g
+
+volumes:
+  mysql:

@@ -9,6 +9,6 @@ export MYSQL_USER=${MYSQL_USER:-isucari}
 export MYSQL_DBNAME=${MYSQL_DBNAME:-isucari}
 export MYSQL_PWD=${MYSQL_PASS:-isucari}
 export LANG="C.UTF-8"
-cd $CURRENT_DIR
+cd $CURRENT_DIR/sql
 
-cat 01_schema.sql 02_categories.sql initial.sql | mysql --defaults-file=/dev/null -h $MYSQL_HOST -P $MYSQL_PORT -u $MYSQL_USER $MYSQL_DBNAME
+cat 01_schema.sql 02_categories.sql 90_initial.sql | mysql --defaults-file=/dev/null -h $MYSQL_HOST -P $MYSQL_PORT -u $MYSQL_USER $MYSQL_DBNAME
