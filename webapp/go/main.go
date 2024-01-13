@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,7 +16,7 @@ import (
 	"strconv"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	goji "goji.io"
@@ -304,16 +305,15 @@ func main() {
 		password = "isucari"
 	}
 
-	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true&loc=Local",
-		user,
-		password,
-		host,
-		port,
-		dbname,
-	)
+	conf := mysql.NewConfig()
+	conf.Net = "tcp"
+	conf.Addr = net.JoinHostPort(host, port)
+	conf.User = user
+	conf.Passwd = password
+	conf.DBName = dbname
+	conf.ParseTime = true
 
-	dbx, err = sqlx.Open("mysql", dsn)
+	dbx, err = sqlx.Open("mysql", conf.FormatDSN())
 	if err != nil {
 		log.Fatalf("failed to connect to DB: %s.", err.Error())
 	}
