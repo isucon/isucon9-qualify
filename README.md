@@ -124,6 +124,27 @@ make
 ./isucari
 ```
 
+## Dockerを利用する
+
+前準備を行った上で実行
+
+### webapp
+
+```bash
+cd webapp
+docker compose up
+```
+
+### benchmarker
+
+```bash
+# benchmarkerのbuild
+docker build -t isucari-benchmarker -f bench/Dockerfile .
+
+# benchmarkerの実行（Linuxは --add-host host.docker.internal:host-gateway を追加）
+docker run -p 5678:5678 -p 7890:7890 -i isucari-benchmarker /opt/go/benchmarker -target-url http://host.docker.internal -data-dir /initial-data -static-dir /static -payment-url http://host.docker.internal:5678 -payment-port 5678 -shipment-url http://host.docker.internal:7890 -shipment-port 7890
+```
+
 ## 運営側のブログ
 
 技術情報などについても記載されているので参考にしてください。

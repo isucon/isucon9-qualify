@@ -1,4 +1,4 @@
-github.com/morikuni/failure v0.11.0 h1:fLQwvKbFhGYmHankExnKlsKGYbath50lBAujCd4lE7A=
-github.com/morikuni/failure v0.11.0/go.mod h1:+IjvKCz9B/D4BQrTzYLwERdWyMkGJdu+q5gri9dWecg=
-github.com/skip2/go-qrcode v0.0.0-20190110000554-dc11ecdae0a9 h1:lpEzuenPuO1XNTeikEmvqYFcU37GVLl8SRNblzyvGBE=
-github.com/skip2/go-qrcode v0.0.0-20190110000554-dc11ecdae0a9/go.mod h1:PLPIyL7ikehBD1OAjmKKiOEhbvWyHGaNDjquXMcYABo=
+github.com/morikuni/failure v1.1.2 h1:sD7RTQglZDw0r/z4Vl/bqEMQsq/lFCjD6siaeQCtxM8=
+github.com/morikuni/failure v1.1.2/go.mod h1:L0J9wqj1oMinkEy0raB974kGFVDH2sEKZFafjB10O+8=
+github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e h1:MRM5ITcdelLK2j1vwZ3Je0FKVCfqOLp5zO6trqMLYs0=
+github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e/go.mod h1:XV66xRDqSt+GTGFMVlhk3ULuV0y9ZmzeVGR4mloJI3M=
