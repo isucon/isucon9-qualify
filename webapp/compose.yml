@@ -1,5 +1,29 @@
 name: isucari
 services:
+  nginx:
+    image: nginx:1.24
+    volumes:
+      - ./etc/nginx/conf.d:/etc/nginx/conf.d
+      - ./public:/public
+    ports:
+      - "80:80"
+    networks:
+      - my_network
+
+  app:
+    build: go/
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASS: root
+      MYSQL_NAME: isucari
+    networks:
+      - my_network
+    volumes:
+      - ./public:/home/public
+    init: true
+
   mysql:
     image: mysql:8.0
     environment:
@@ -12,6 +36,8 @@ services:
       - ./etc/conf.d:/etc/mysql/conf.d
     ports:
       - "3306:3306"
+    networks:
+      - my_network
     deploy:
       resources:
         limits:
@@ -20,3 +46,6 @@ services:
 
 volumes:
   mysql:
+
+networks:
+  my_network:
