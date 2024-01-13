@@ -144,7 +144,7 @@ module Isucari
 
     # postInitialize
     post '/initialize' do
-      unless system "#{settings.root}/../sql/init.sh"
+      unless system "#{settings.root}/../init.sh"
         halt_with_error 500, 'exec init.sh error'
       end
 

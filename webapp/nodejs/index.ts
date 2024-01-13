@@ -293,7 +293,7 @@ async function getIndex(_req: any, reply: FastifyReply<ServerResponse>) {
 async function postInitialize(req: FastifyRequest, reply: FastifyReply<ServerResponse>) {
     const ri: ReqInitialize = req.body;
 
-    await execFile("../sql/init.sh");
+    await execFile("../init.sh");
 
     const db = await getDBConnection();
 

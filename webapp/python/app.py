@@ -239,7 +239,7 @@ def get_image_url(image_name):
 def post_initialize():
     conn = dbh()
 
-    subprocess.call(["../sql/init.sh"])
+    subprocess.call(["../init.sh"])
 
     payment_service_url = flask.request.json.get('payment_service_url', Constants.DEFAULT_PAYMENT_SERVICE_URL)
     shipment_service_url = flask.request.json.get('shipment_service_url', Constants.DEFAULT_SHIPMENT_SERVICE_URL)
