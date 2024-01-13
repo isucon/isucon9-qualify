@@ -1,12 +1,18 @@
 FROM golang:1.21-bookworm
 
+RUN apt-get update && apt-get install -y \
+  default-mysql-client \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN mkdir -p /home/webapp
 WORKDIR /home/webapp
 
-COPY go.mod /home/webapp/go.mod
-COPY go.sum /home/webapp/go.sum
+COPY init.sh /home/init.sh
+
+COPY go/go.mod /home/webapp/go.mod
+COPY go/go.sum /home/webapp/go.sum
 RUN go mod download
 
-COPY . /home/webapp
+COPY go /home/webapp
 RUN go build -o app
 CMD ./app

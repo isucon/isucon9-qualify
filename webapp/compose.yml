@@ -11,7 +11,9 @@ services:
       - my_network
 
   app:
-    build: go/
+    build:
+      context: .
+      dockerfile: go/Dockerfile
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
@@ -22,6 +24,7 @@ services:
       - my_network
     volumes:
       - ./public:/home/public
+      - ./sql:/home/sql
     init: true
 
   mysql:
