@@ -219,7 +219,7 @@ post '/initialize' => [qw/allow_json_request/] => sub {
     my ($self, $c) = @_;
 
     # TODO initialize data
-    my $ret = system+File::Spec->catfile($self->root_dir, "../sql/init.sh");
+    my $ret = system+File::Spec->catfile($self->root_dir, "../init.sh");
     if ( $ret != 0 ) {
         return $self->error_with_msg($c, HTTP_INTERNAL_SERVER_ERROR, "exec init.sh error");
     }

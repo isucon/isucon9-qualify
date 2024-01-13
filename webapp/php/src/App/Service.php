@@ -211,7 +211,7 @@ class Service
             return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
         }
 
-        exec($this->settings['app']['base_dir'] . '../sql/init.sh');
+        exec($this->settings['app']['base_dir'] . '../init.sh');
 
         try {
             $sth = $this->dbh->prepare('INSERT INTO `configs` (`name`, `val`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `val` = VALUES(`val`)');

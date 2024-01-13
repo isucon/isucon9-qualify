@@ -17,7 +17,7 @@
   become: yes
 
 - name: Init data
-  shell: mysql < initial.sql
+  shell: mysql < 90_initial.sql
   args:
     chdir: /home/isucon/isucari/webapp/sql
   become: yes
