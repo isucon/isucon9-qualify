@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"sort"
@@ -39,8 +38,6 @@ type Config struct {
 }
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
-
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
