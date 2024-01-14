@@ -119,7 +119,7 @@ http://isucon.net/archives/53805209.html
 
 ## 前準備
 
-```
+```bash
 # 初期データ作成
 $ cd initial-data
 $ make
@@ -149,7 +149,7 @@ Version: Go 1.21 or later
 
 ### 実行オプション
 
-```
+```bash
 $ ./bin/benchmarker -help
 Usage of isucon9q:
   -allowed-ips string
@@ -188,7 +188,7 @@ Usage of isucon9q:
 
 ### 実行オプション
 
-```
+```bash
 $ ./bin/shipment -help
 Usage of shipment:
   -data-dir string
@@ -213,7 +213,7 @@ nginxでいい感じにするなら以下の設定が必須
 
 ## webapp 起動方法
 
-```shell-session
+```bash
 cd webapp/sql
 
 # databaseとuserを初期化する
@@ -281,6 +281,8 @@ $ curl -XPOST http://127.0.0.1:8000/initialize \
 -H 'Content-Type: application/json' \
 -d @initialize.json
 ```
+
+なお外部サービス（の決済サービスAPI）はアプリケーションとブラウザ両方から同じURLでアクセスできる必要があります。
 
 ## 運営側のブログ
 
