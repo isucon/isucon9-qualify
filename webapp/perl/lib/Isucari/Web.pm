@@ -21,7 +21,7 @@ use File::Copy;
 use Isucari::API;
 
 our $DEFAULT_PAYMENT_SERVICE_URL  = "http://localhost:5555";
-our $DEFAULT_SHIPMENT_SERVICE_URL = "http://localhost:7000";
+our $DEFAULT_SHIPMENT_SERVICE_URL = "http://localhost:7001";
 
 our $ITEM_MIN_PRICE    = 100;
 our $ITEM_MAX_PRICE    = 1000000;

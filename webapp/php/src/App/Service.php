@@ -197,7 +197,7 @@ class Service
     {
         $config = $this->getConfigByName('shipment_service_url');
         if (empty($config['val'])) {
-            return "http://localhost:7000";
+            return "http://localhost:7001";
         }
         return $config['val'];
     }
