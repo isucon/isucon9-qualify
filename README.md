@@ -62,9 +62,9 @@ Usage of isucon9q:
   -payment-url string
         payment url (default "http://localhost:5555")
   -shipment-port int
-        shipment service port (default 7000)
+        shipment service port (default 7001)
   -shipment-url string
-        shipment url (default "http://localhost:7000")
+        shipment url (default "http://localhost:7001")
   -static-dir string
         static file directory (default "webapp/public/static")
   -target-host string

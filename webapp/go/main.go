@@ -27,7 +27,7 @@ const (
 	sessionName = "session_isucari"
 
 	DefaultPaymentServiceURL  = "http://localhost:5555"
-	DefaultShipmentServiceURL = "http://localhost:7000"
+	DefaultShipmentServiceURL = "http://localhost:7001"
 
 	ItemMinPrice    = 100
 	ItemMaxPrice    = 1000000

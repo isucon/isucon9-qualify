@@ -24,7 +24,7 @@ app.config['UPLOAD_FOLDER'] = '../public/upload'
 
 class Constants(object):
     DEFAULT_PAYMENT_SERVICE_URL = "http://127.0.0.1:5555"
-    DEFAULT_SHIPMENT_SERVICE_URL = "http://127.0.0.1:7000"
+    DEFAULT_SHIPMENT_SERVICE_URL = "http://127.0.0.1:7001"
 
     ITEM_STATUS_ON_SALE = "on_sale"
     ITEM_STATUS_TRADING = 'trading'

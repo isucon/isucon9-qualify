@@ -55,7 +55,7 @@ declare module "fastify" {
 // =============================================
 
 const DefaultPaymentServiceURL = "http://localhost:5555";
-const DefaultShipmentServiceURL = "http://localhost:7000";
+const DefaultShipmentServiceURL = "http://localhost:7001";
 const ItemMinPrice = 100;
 const ItemMaxPrice = 1000000;
 const ItemPriceErrMsg =
