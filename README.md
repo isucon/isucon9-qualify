@@ -151,6 +151,28 @@ docker build -t isucari-benchmarker -f bench/Dockerfile .
 docker run -p 5678:5678 -p 7890:7890 -i isucari-benchmarker /opt/go/benchmarker -target-url http://host.docker.internal -data-dir /initial-data -static-dir /static -payment-url http://host.docker.internal:5678 -payment-port 5678 -shipment-url http://host.docker.internal:7890 -shipment-port 7890
 ```
 
+### external service
+
+以上だけでもベンチマークを実行することはできるが、外部サービスを起動しないと購入などのアクションを行えないため、外部サービスは別途起動する必要がある。
+
+```bash
+docker compose up
+```
+
+手元のマシンのIPアドレスが192.0.2.2の場合は以下のコマンドを実行する。ベンチマーク走行時にこの値は書き換わるので、ベンチマーク走行後に確認したい場合も都度実行する必要がある。
+
+```
+$ cat initialize.json
+{
+  "payment_service_url": "http://192.0.2.2:5556",
+  "shipment_service_url": "http://192.0.2.2:7002"
+}
+
+$ curl -XPOST http://127.0.0.1:8000/initialize \
+-H 'Content-Type: application/json' \
+-d @initialize.json
+```
+
 ## 運営側のブログ
 
 技術情報などについても記載されているので参考にしてください。
