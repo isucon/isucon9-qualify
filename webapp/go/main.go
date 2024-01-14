@@ -16,11 +16,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
-	goji "goji.io"
-	"goji.io/pat"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -319,44 +318,47 @@ func main() {
 	}
 	defer dbx.Close()
 
-	mux := goji.NewMux()
+	r := chi.NewRouter()
 
 	// API
-	mux.HandleFunc(pat.Post("/initialize"), postInitialize)
-	mux.HandleFunc(pat.Get("/new_items.json"), getNewItems)
-	mux.HandleFunc(pat.Get("/new_items/:root_category_id.json"), getNewCategoryItems)
-	mux.HandleFunc(pat.Get("/users/transactions.json"), getTransactions)
-	mux.HandleFunc(pat.Get("/users/:user_id.json"), getUserItems)
-	mux.HandleFunc(pat.Get("/items/:item_id.json"), getItem)
-	mux.HandleFunc(pat.Post("/items/edit"), postItemEdit)
-	mux.HandleFunc(pat.Post("/buy"), postBuy)
-	mux.HandleFunc(pat.Post("/sell"), postSell)
-	mux.HandleFunc(pat.Post("/ship"), postShip)
-	mux.HandleFunc(pat.Post("/ship_done"), postShipDone)
-	mux.HandleFunc(pat.Post("/complete"), postComplete)
-	mux.HandleFunc(pat.Get("/transactions/:transaction_evidence_id.png"), getQRCode)
-	mux.HandleFunc(pat.Post("/bump"), postBump)
-	mux.HandleFunc(pat.Get("/settings"), getSettings)
-	mux.HandleFunc(pat.Post("/login"), postLogin)
-	mux.HandleFunc(pat.Post("/register"), postRegister)
-	mux.HandleFunc(pat.Get("/reports.json"), getReports)
+	r.Post("/initialize", postInitialize)
+	r.Get("/new_items.json", getNewItems)
+	r.Get("/new_items/{root_category_id}.json", getNewCategoryItems)
+	r.Get("/users/transactions.json", getTransactions)
+	r.Get("/users/{user_id}.json", getUserItems)
+	r.Get("/items/{item_id}.json", getItem)
+	r.Post("/items/edit", postItemEdit)
+	r.Post("/buy", postBuy)
+	r.Post("/sell", postSell)
+	r.Post("/ship", postShip)
+	r.Post("/ship_done", postShipDone)
+	r.Post("/complete", postComplete)
+	r.Get("/transactions/{transaction_evidence_id}.png", getQRCode)
+	r.Post("/bump", postBump)
+	r.Get("/settings", getSettings)
+	r.Post("/login", postLogin)
+	r.Post("/register", postRegister)
+	r.Get("/reports.json", getReports)
 	// Frontend
-	mux.HandleFunc(pat.Get("/"), getIndex)
-	mux.HandleFunc(pat.Get("/login"), getIndex)
-	mux.HandleFunc(pat.Get("/register"), getIndex)
-	mux.HandleFunc(pat.Get("/timeline"), getIndex)
-	mux.HandleFunc(pat.Get("/categories/:category_id/items"), getIndex)
-	mux.HandleFunc(pat.Get("/sell"), getIndex)
-	mux.HandleFunc(pat.Get("/items/:item_id"), getIndex)
-	mux.HandleFunc(pat.Get("/items/:item_id/edit"), getIndex)
-	mux.HandleFunc(pat.Get("/items/:item_id/buy"), getIndex)
-	mux.HandleFunc(pat.Get("/buy/complete"), getIndex)
-	mux.HandleFunc(pat.Get("/transactions/:transaction_id"), getIndex)
-	mux.HandleFunc(pat.Get("/users/:user_id"), getIndex)
-	mux.HandleFunc(pat.Get("/users/setting"), getIndex)
+	r.Get("/", getIndex)
+	r.Get("/login", getIndex)
+	r.Get("/register", getIndex)
+	r.Get("/timeline", getIndex)
+	r.Get("/categories/{category_id}/items", getIndex)
+	r.Get("/sell", getIndex)
+	r.Get("/items/{item_id}", getIndex)
+	r.Get("/items/{item_id}/edit", getIndex)
+	r.Get("/items/{item_id}/buy", getIndex)
+	r.Get("/buy/complete", getIndex)
+	r.Get("/transactions/{transaction_id}", getIndex)
+	r.Get("/users/{user_id}", getIndex)
+	r.Get("/users/setting", getIndex)
 	// Assets
-	mux.Handle(pat.Get("/*"), http.FileServer(http.Dir("../public")))
-	log.Fatal(http.ListenAndServe(":8000", mux))
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		http.FileServer(http.Dir("../public")).ServeHTTP(w, r)
+	})
+
+	log.Fatal(http.ListenAndServe(":8000", r))
 }
 
 func getSession(r *http.Request) *sessions.Session {
@@ -599,7 +601,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
-	rootCategoryIDStr := pat.Param(r, "root_category_id")
+	rootCategoryIDStr := chi.URLParam(r, "root_category_id")
 	rootCategoryID, err := strconv.Atoi(rootCategoryIDStr)
 	if err != nil || rootCategoryID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect category id")
@@ -730,7 +732,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserItems(w http.ResponseWriter, r *http.Request) {
-	userIDStr := pat.Param(r, "user_id")
+	userIDStr := chi.URLParam(r, "user_id")
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil || userID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect user id")
@@ -1017,7 +1019,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
-	itemIDStr := pat.Param(r, "item_id")
+	itemIDStr := chi.URLParam(r, "item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil || itemID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect item id")
@@ -1210,7 +1212,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func getQRCode(w http.ResponseWriter, r *http.Request) {
-	transactionEvidenceIDStr := pat.Param(r, "transaction_evidence_id")
+	transactionEvidenceIDStr := chi.URLParam(r, "transaction_evidence_id")
 	transactionEvidenceID, err := strconv.ParseInt(transactionEvidenceIDStr, 10, 64)
 	if err != nil || transactionEvidenceID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect transaction_evidence id")
