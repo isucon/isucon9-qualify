@@ -1,0 +1,17 @@
+name: isucari
+services:
+  payment:
+    build:
+      context: .
+      dockerfile: bench/Dockerfile-external
+    command: ["/opt/go/bin/payment", "-port", "5556"]
+    ports:
+      - "5556:5556"
+
+  shipment:
+    build:
+      context: .
+      dockerfile: bench/Dockerfile-external
+    command: ["/opt/go/bin/shipment", "-data-dir", "/initial-data", "-port", "7002"]
+    ports:
+      - "7002:7002"
