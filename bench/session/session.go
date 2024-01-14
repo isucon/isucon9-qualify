@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -150,7 +149,7 @@ func checkStatusCode(res *http.Response, expectedStatusCode int) error {
 	prefixMsg := fmt.Sprintf("%s %s", res.Request.Method, res.Request.URL.Path)
 
 	if res.StatusCode != expectedStatusCode {
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		if err != nil {
 			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました"))
 		}
@@ -166,7 +165,7 @@ func checkStatusCodeWithMsg(res *http.Response, expectedStatusCode int, msg stri
 	prefixMsg := fmt.Sprintf("%s %s", res.Request.Method, res.Request.URL.Path)
 
 	if res.StatusCode != expectedStatusCode {
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		if err != nil {
 			return failure.Wrap(err, failure.Message(prefixMsg+": bodyの読み込みに失敗しました "+msg))
 		}
@@ -184,8 +183,6 @@ func (s *Session) Do(req *http.Request) (*http.Response, error) {
 		if nerr, ok := err.(net.Error); ok {
 			if nerr.Timeout() {
 				return nil, failure.Translate(err, fails.ErrTimeout)
-			} else if nerr.Temporary() {
-				return nil, failure.Translate(err, fails.ErrTemporary)
 			}
 		}
 

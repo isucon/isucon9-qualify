@@ -14,8 +14,6 @@ const (
 	ErrApplication failure.StringCode = "error application"
 	// ErrTimeout はタイムアウトエラー。基本は大目に見る。
 	ErrTimeout failure.StringCode = "error timeout"
-	// ErrTemporary は一時的なエラー。基本は大目に見る。
-	ErrTemporary failure.StringCode = "error temporary"
 )
 
 var (
@@ -81,9 +79,6 @@ func (e *Errors) Add(err error) {
 			e.critical++
 		case ErrTimeout:
 			msg += "（タイムアウトしました）"
-			e.trivial++
-		case ErrTemporary:
-			msg += "（一時的なエラー）"
 			e.trivial++
 		case ErrApplication:
 			e.application++

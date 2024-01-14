@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -509,7 +508,7 @@ func (s *Session) ShipDone(ctx context.Context, itemID int64) error {
 		return err
 	}
 
-	_, err = ioutil.ReadAll(res.Body)
+	_, err = io.ReadAll(res.Body)
 	if err != nil {
 		return failure.Wrap(err, failure.Messagef("POST /ship_done: bodyの読み込みに失敗しました (item_id: %d)", itemID))
 	}
@@ -540,7 +539,7 @@ func (s *Session) Complete(ctx context.Context, itemID int64) error {
 		return err
 	}
 
-	_, err = ioutil.ReadAll(res.Body)
+	_, err = io.ReadAll(res.Body)
 	if err != nil {
 		return failure.Wrap(err, failure.Messagef("POST /complete: bodyの読み込みに失敗しました (item_id: %d)", itemID))
 	}

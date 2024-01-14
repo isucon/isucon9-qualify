@@ -158,8 +158,6 @@ func (c *shipmentStore) Get(key string) (shipment, bool) {
 }
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
-
 	shipmentHash = sha1.New()
 	shipmentHash.Write(SecretSeed)
 }
