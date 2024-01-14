@@ -94,9 +94,14 @@ $ ./bin/shipment -help
 Usage of shipment:
   -data-dir string
         data directory (default "initial-data")
-```
+  -port int
+        shipment service port (default 7001)
 
-`payment`はオプションなし。
+$ ./bin/payment -help
+Usage of payment:
+  -port int
+        payment service port (default 5555)
+```
 
 ### 注意点
 
