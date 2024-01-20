@@ -34,13 +34,13 @@
   become: yes
   command: timedatectl set-timezone UTC
 
-- name: Setup xbuild
-  git:
-    repo: https://github.com/tagomoris/xbuild.git
-    dest: /home/isucon/xbuild
-    version: master
-  become: yes
-  become_user: isucon
+# - name: Setup xbuild
+#   become_user: isucon
+#   git:
+#     repo: https://github.com/tagomoris/xbuild.git
+#     dest: /home/isucon/xbuild
+#     version: master
+#     force: no
 
 - name: Copy env.sh
   copy:
