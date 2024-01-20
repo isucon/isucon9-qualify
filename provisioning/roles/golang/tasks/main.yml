@@ -1,35 +1,19 @@
 ---
-- name: Check Installed Go
-  become: yes
-  become_user: isucon
-  args:
-    chdir: /home/isucon
-  command: /home/isucon/local/go/bin/go version
-  register: go_version_output
-  changed_when: go_version_output is failed
-  ignore_errors: true
+- name: mkdir /usr/local/go
+  file: path=/usr/local/go state=directory
 
-- name: Debug go_version_output
-  debug:
-    var: go_version_output
+- name: check uname
+  shell: uname -s | tr [A-Z] [a-z]
+  register: uname_res
+  check_mode: no
 
-- name: Install Go
-  become: yes
-  become_user: isucon
-  when:
-    go_version_output is failed or (go_version_output.stdout != "go version go1.12.9 linux/amd64" and go_version_output.stdout != "go version go1.13 linux/amd64")
-  args:
-    chdir: /home/isucon
-  command: |
-    /home/isucon/xbuild/go-install "{{ golang_version | default('1.12.9') }}" /home/isucon/local/go
+- name: check arch
+  command: dpkg --print-architecture
+  register: arch_res
+  check_mode: no
 
-- name: Add PATH for Go
-  become: yes
-  become_user: isucon
-  blockinfile:
-    marker: "# {mark} ANSIBLE MANAGED BLOCK go"
-    create: yes
-    dest: /home/isucon/.bash_profile
-    content: |
-      export PATH=/home/isucon/local/go/bin:/home/isucon/go/bin:$PATH
-      export GOROOT=/home/isucon/local/go
+- name: download go binary
+  unarchive:
+    src="https://golang.org/dl/go1.21.6.{{ uname_res.stdout }}-{{ arch_res.stdout }}.tar.gz"
+    dest=/usr/local/
+    remote_src=yes

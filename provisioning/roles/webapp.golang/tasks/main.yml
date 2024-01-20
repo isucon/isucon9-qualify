@@ -1,9 +1,7 @@
 - name: Install isucari.golang
-  command: /home/isucon/local/go/bin/go build -o isucari
+  command: /usr/local/go/bin/go build -o isucari
   args:
     chdir: /home/isucon/isucari/webapp/go/
-  environment:
-    GO111MODULE: "on"
   become: yes
   become_user: isucon
 
