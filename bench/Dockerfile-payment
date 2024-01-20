@@ -1,0 +1,15 @@
+FROM golang:1.21
+
+RUN mkdir -p /opt/go
+WORKDIR /opt/go
+
+COPY go.mod /opt/go/go.mod
+COPY go.sum /opt/go/go.sum
+RUN go mod download
+
+COPY cmd/ /opt/go/cmd
+COPY bench/ /opt/go/bench
+
+RUN go build -o bin/payment cmd/payment/main.go
+
+CMD [ "/opt/go/bin/payment", "-port", "5556" ]

@@ -13,4 +13,5 @@ COPY cmd/ /opt/go/cmd
 COPY bench/ /opt/go/bench
 
 RUN go build -o bin/shipment cmd/shipment/main.go
-RUN go build -o bin/payment cmd/payment/main.go
+
+CMD [ "/opt/go/bin/shipment", "-data-dir", "/initial-data", "-port", "7002" ]
