@@ -166,6 +166,8 @@ Usage of isucon9q:
 
   * HTTPとHTTPSに両対応
     * 証明書を検証するのでHTTPSは面倒
+  * `-allowed-ips`オプションは他チームからの嫌がらせを防ぐために作られたオプションで、基本的に利用する必要はない
+    * 利用する場合はisucariアプリケーションのIPアドレスを指定する
   * 外部サービス2つを自前で起動するので、いい感じにするならnginxを立てている必要がある
   * nginxでいい感じにするなら以下の設定が必須
     * `proxy_set_header Host $http_host;`
