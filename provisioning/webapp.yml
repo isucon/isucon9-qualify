@@ -21,6 +21,7 @@
     # - webapp.ruby
     # - webapp.python
     # - webapp.nodejs
+    - nginx.certs
     - webapp.nginx
 
   tasks:
