@@ -1,0 +1,37 @@
+- name: Create Directory for TLS Certificate and Key
+  file:
+    path: /etc/nginx/ssl
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+
+- name: Get latest release information from GitHub
+  uri:
+    url: "https://api.github.com/repos/KOBA789/t.isucon.pw/releases/latest"
+    method: GET
+    return_content: yes
+    headers:
+      User-Agent: "Ansible GitHub"
+  register: github_response
+
+- name: Download and place the files
+  get_url:
+    url: "{{ item.browser_download_url }}"
+    dest: "/etc/nginx/ssl/{{ item.name }}"
+    mode: '0600'
+  loop: "{{ github_response.json.assets }}"
+  when: item.name in ['fullchain.pem', 'cert.pem', 'key.pem']
+
+- name: Install a list of packages
+  apt:
+    pkg:
+    - jq
+
+- name: Copy Nginx script
+  copy:
+    src: etc/nginx/update_cert.sh
+    dest: /etc/nginx/update_cert.sh
+    owner: root
+    group: root
+    mode: 0755
