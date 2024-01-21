@@ -21,6 +21,8 @@ ansible-playbook webapp.yml -i inventory/hosts
 
 ## ベンチマーカーサーバのセットアップ
 
+一緒に開発用の外部サービスもセットアップされるので、個人用の練習であれば、競技者用サーバとベンチマーカーサーバのセットアップをすれば十分です。
+
 inventory/hostsのbenchセクションに対象のホストを追加してansible-playbookコマンドを実行してください。
 
 ```

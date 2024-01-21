@@ -2,8 +2,11 @@
   become: yes
   become_user: isucon
   file:
-    path=/home/isucon/isucari
-    state=directory
+    owner: isucon
+    group: isucon
+    mode: 0755
+    path: /home/isucon/isucari
+    state: directory
 
 - name: Deploy isucari
   become: yes

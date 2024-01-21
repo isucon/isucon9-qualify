@@ -23,3 +23,9 @@
     owner: root
     group: root
     mode: 0440
+
+- name: change the permission for home directory
+  file:
+    path: /home/isucon
+    state: directory
+    mode: '0755'

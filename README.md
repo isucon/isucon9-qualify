@@ -226,7 +226,7 @@ make
 画面の「新規会員登録」から、ユーザを作成あるいは以下のテスト用ユーザが利用できます
 
 | id       | password |
-|----------|----------|
+| -------- | -------- |
 | isudemo1 | isudemo1 |
 | isudemo2 | isudemo2 |
 | isudemo3 | isudemo3 |
@@ -275,6 +275,83 @@ $ curl -XPOST http://127.0.0.1:8000/initialize \
 ```
 
 なお外部サービス（の決済サービスAPI）はアプリケーションとブラウザ両方から同じURLでアクセスできる必要があります。
+
+## Ansibleを利用する場合
+
+provisioningを参照
+
+### TLS証明書について
+
+以下のrepoを利用して `*.t.isucon.pw` の証明書を利用している。
+
+https://github.com/KOBA789/t.isucon.pw
+
+証明書が古い場合、更新するスクリプトを用意している。
+
+```bash
+sudo /etc/nginx/update_cert.sh
+```
+
+### ホスト名
+
+それぞれのアプリケーションのホスト名のprefixは以下になっている。
+
+| host prefix | 用途                            |
+| ----------- | ------------------------------- |
+| isucari.    | isucariアプリケーション         |
+| payment     | payment service                 |
+| shipment    | shipment service                |
+| bp          | benchmarker用のpayment service  |
+| bs          | benchmarker用のshipment service |
+
+以下の点に気をつけること。
+
+* payment-serviceはブラウザとisucariアプリケーション両方からアクセスするため、ローカルとisucariアプリケーションの両方から同じホスト名でアクセスできる必要がある
+  * shipment serviceはisucariアプリケーションだけでもよいが、今回は全部同じ設定をする方法を紹介する
+* shipment serviceはAnsibleではHTTPSで提供されているが、HTTPに変更したい場合はnginx上の`proxy_set_header X-Forwarded-Proto "https";`を削除する必要がある
+
+なのでisucariアプリケーションを203.0.113.1、ベンチマーカーのIPアドレスが192.0.2.1だった場合、以下のように `/etc/hosts` を指定する。
+
+共通
+
+```
+192.0.2.1 bp.t.isucon.pw
+192.0.2.1 bs.t.isucon.pw
+192.0.2.1 payment.t.isucon.pw
+192.0.2.1 shipment.t.isucon.pw
+```
+
+ローカル
+
+```
+203.0.113.1 isucari.t.isucon.pw
+```
+
+もちろんDNSの設定をすれば問題ない。その場合は証明書を自分で用意するか、HTTPで提供すること。ISUCON9予選本番では外部サービスはDNSを設定、競技者が利用するisucariアプリケーションはDNSを通さずに利用した。これは競技者は同じ証明書・host名を使い回していたためである。
+
+### initialize
+
+```
+$ cat initialize.json
+{
+  "payment_service_url": "https://payment.t.isucon.pw",
+  "shipment_service_url": "https://shipment.t.isucon.pw"
+}
+
+$ curl -XPOST https://isucari.t.isucon.pw/initialize \
+-H 'Content-Type: application/json' \
+-d @initialize.json
+```
+
+### ベンチマーカー
+
+isucariアプリケーションのIPアドレスが203.0.113.1なら以下のように実行する。
+
+```bash
+/home/isucon/isucari/bin/benchmarker -target-url https://203.0.113.1 -target-host isucari.t.isucon.pw -data-dir /home/isucon/isucari/initial-data/ -static-dir /home/isucon/isucari/webapp/public/static/ -payment-url https://bp.t.isucon.pw -shipment-url https://bs.t.isucon.pw
+```
+
+なお、hostsを指定しているか、DNSが設定されているなら`-target-host`は指定する必要はなく、`-target-url https://isucari.t.isucon.pw`という指定でよい。
 
 ## 運営側のブログ
 

@@ -4,7 +4,7 @@ Description = isucon9 qualifier external shipment application
 [Service]
 WorkingDirectory=/home/isucon/isucari
 
-ExecStart = /home/isucon/isucari/bin/shipment -port 7891
+ExecStart = /home/isucon/isucari/bin/shipment -data-dir /home/isucon/isucari/initial-data/ -port 7891
 
 Restart   = always
 Type      = simple
