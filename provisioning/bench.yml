@@ -1,22 +1,22 @@
 - hosts: bench
   user: root
   gather_facts: yes
-  vars:
-    golang_version: 1.13
 
   roles:
     - user.isucon
     - bootstrap
-    - aliyun
     - external.deploy
 
     - kernel-tune
     - nginx
     - nginx.log-format
     - golang
+    - nginx.certs
     - external.nginx
+    - external.shipment
+    - external.payment
     - external.benchmarker
-    - external.benchmark-worker
+    # - external.benchmark-worker
 
   tasks:
     - name: Start default daemons
@@ -29,3 +29,5 @@
         enabled: yes
       with_items:
         - nginx.service
+        - shipment.service
+        - payment.service

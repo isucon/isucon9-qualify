@@ -5,13 +5,13 @@
   roles:
     - user.isucon
     - bootstrap
-    - aliyun
     - dev.deploy
 
     - kernel-tune
     - nginx
     - nginx.log-format
     - golang
+    - nginx.certs
     - external.nginx
     - external.shipment
     - external.payment
