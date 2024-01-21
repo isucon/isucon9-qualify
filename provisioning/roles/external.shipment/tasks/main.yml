@@ -1,5 +1,5 @@
 - name: Install shipment
-  command: /home/isucon/local/go/bin/go build -o bin/shipment cmd/shipment/main.go
+  command: /usr/local/go/bin/go build -o bin/shipment cmd/shipment/main.go
   args:
     chdir: /home/isucon/isucari
   environment:

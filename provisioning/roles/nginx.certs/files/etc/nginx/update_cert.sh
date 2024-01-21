@@ -13,8 +13,8 @@ echo "Downloading and placing files..."
 echo $response | jq -r '.assets[] | select(.name=="fullchain.pem" or .name=="cert.pem" or .name=="key.pem") | .browser_download_url' | while read -r url; do
   file_name=$(basename "$url")
   echo "Downloading $file_name..."
-  curl -s -o "${DEST_DIR}/${file_name}" "$url"
+  curl -L -s -o "${DEST_DIR}/${file_name}" "$url"
   chmod 0600 "${DEST_DIR}/${file_name}"
 done
 
-sudo systemctl restart nginx
+sudo systemctl reload nginx

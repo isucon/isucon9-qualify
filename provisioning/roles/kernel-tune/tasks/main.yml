@@ -10,3 +10,11 @@
     dest: /etc/sysctl.d/92-net.conf
     content: |
       net.core.somaxconn=65535
+
+- name: Increase file limits
+  become: yes
+  copy:
+    dest: /etc/security/limits.d/50-nofile.conf
+    content: |
+      isucon hard nofile 10000
+      isucon soft nofile 10000

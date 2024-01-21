@@ -1,5 +1,5 @@
 - name: Install benchmark-worker
-  command: /home/isucon/local/go/bin/go build -o bin/benchmark-worker cmd/bench-worker/main.go
+  command: /usr/local/go/bin/go build -o bin/benchmark-worker cmd/bench-worker/main.go
   args:
     chdir: /home/isucon/isucari
   environment:
