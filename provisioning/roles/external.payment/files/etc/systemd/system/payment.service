@@ -4,7 +4,7 @@ Description = isucon9 qualifier external payment application
 [Service]
 WorkingDirectory=/home/isucon/isucari
 
-ExecStart = /home/isucon/isucari/bin/payment
+ExecStart = /home/isucon/isucari/bin/payment -port 5679
 
 Restart   = always
 Type      = simple

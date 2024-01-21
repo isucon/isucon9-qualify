@@ -25,6 +25,8 @@
     - default.conf
     - external-shipment.conf
     - external-payment.conf
+    - external-bench-shipment.conf
+    - external-bench-payment.conf
 
 - name: Enable external config
   file:
@@ -35,5 +37,7 @@
     - default.conf
     - external-shipment.conf
     - external-payment.conf
+    - external-bench-shipment.conf
+    - external-bench-payment.conf
   notify:
     - reload nginx
