@@ -6,27 +6,16 @@
     group: root
     mode: 0700
 
-- name: Get latest release information from GitHub
-  uri:
-    url: "https://api.github.com/repos/KOBA789/t.isucon.pw/releases/latest"
-    method: GET
-    return_content: yes
-    headers:
-      User-Agent: "Ansible GitHub"
-  register: github_response
-
-- name: Download and place the files
+- name: Download SSL certificates from GitHub
   get_url:
-    url: "{{ item.browser_download_url }}"
-    dest: "/etc/nginx/ssl/{{ item.name }}"
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
     mode: '0600'
-  loop: "{{ github_response.json.assets }}"
-  when: item.name in ['fullchain.pem', 'cert.pem', 'key.pem']
-
-- name: Install a list of packages
-  apt:
-    pkg:
-    - jq
+  loop:
+    - { url: 'https://github.com/KOBA789/t.isucon.pw/releases/latest/download/fullchain.pem', dest: '/etc/nginx/ssl/fullchain.pe' }
+    - { url: 'https://github.com/KOBA789/t.isucon.pw/releases/latest/download/key.pem', dest: '/etc/nginx/ssl/key.pe' }
 
 - name: Copy Nginx script
   copy:
