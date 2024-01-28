@@ -18,7 +18,7 @@
     - webapp.golang
     # - webapp.perl
     # - webapp.php
-    # - webapp.ruby
+    - webapp.ruby
     # - webapp.python
     # - webapp.nodejs
     - nginx.certs

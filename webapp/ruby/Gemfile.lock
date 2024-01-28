@@ -1,32 +1,41 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    backports (3.15.0)
-    bcrypt (3.1.13)
-    multi_json (1.13.1)
-    mustermann (1.0.3)
-    mysql2 (0.5.2)
-    mysql2-cs-bind (0.0.7)
+    base64 (0.2.0)
+    bcrypt (3.1.20)
+    multi_json (1.15.0)
+    mustermann (3.0.0)
+      ruby2_keywords (~> 0.0.1)
+    mysql2 (0.5.5)
+    mysql2-cs-bind (0.1.1)
       mysql2
-    nio4r (2.5.1)
-    puma (4.1.0)
+    nio4r (2.7.0)
+    puma (6.4.2)
       nio4r (~> 2.0)
-    rack (2.0.7)
-    rack-protection (2.0.7)
-      rack
-    sinatra (2.0.7)
-      mustermann (~> 1.0)
-      rack (~> 2.0)
-      rack-protection (= 2.0.7)
+    rack (3.0.8)
+    rack-protection (4.0.0)
+      base64 (>= 0.1.0)
+      rack (>= 3.0.0, < 4)
+    rack-session (2.0.0)
+      rack (>= 3.0.0)
+    rackup (2.1.0)
+      rack (>= 3)
+      webrick (~> 1.8)
+    ruby2_keywords (0.0.5)
+    sinatra (4.0.0)
+      mustermann (~> 3.0)
+      rack (>= 3.0.0, < 4)
+      rack-protection (= 4.0.0)
+      rack-session (>= 2.0.0, < 3)
       tilt (~> 2.0)
-    sinatra-contrib (2.0.7)
-      backports (>= 2.8.2)
-      multi_json
-      mustermann (~> 1.0)
-      rack-protection (= 2.0.7)
-      sinatra (= 2.0.7)
+    sinatra-contrib (4.0.0)
+      multi_json (>= 0.0.2)
+      mustermann (~> 3.0)
+      rack-protection (= 4.0.0)
+      sinatra (= 4.0.0)
       tilt (~> 2.0)
-    tilt (2.0.9)
+    tilt (2.3.0)
+    webrick (1.8.1)
 
 PLATFORMS
   ruby
@@ -36,8 +45,9 @@ DEPENDENCIES
   mysql2
   mysql2-cs-bind
   puma
+  rackup
   sinatra
   sinatra-contrib
 
 BUNDLED WITH
-   2.0.1
+   2.5.5
