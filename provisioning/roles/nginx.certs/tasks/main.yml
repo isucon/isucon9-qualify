@@ -14,8 +14,8 @@
     group: root
     mode: '0600'
   loop:
-    - { url: 'https://github.com/KOBA789/t.isucon.pw/releases/latest/download/fullchain.pem', dest: '/etc/nginx/ssl/fullchain.pe' }
-    - { url: 'https://github.com/KOBA789/t.isucon.pw/releases/latest/download/key.pem', dest: '/etc/nginx/ssl/key.pe' }
+    - { url: 'https://github.com/KOBA789/t.isucon.pw/releases/latest/download/fullchain.pem', dest: '/etc/nginx/ssl/fullchain.pem' }
+    - { url: 'https://github.com/KOBA789/t.isucon.pw/releases/latest/download/key.pem', dest: '/etc/nginx/ssl/key.pem' }
 
 - name: Copy Nginx script
   copy:
