@@ -48,7 +48,7 @@ module Isucari
     set :add_charset, ['application/json']
     set :public_folder, File.join(__dir__, '..', '..', 'public')
     set :root, File.join(__dir__, '..', '..')
-    set :session_secret, 'tagomoris'
+    set :session_secret, 'tagomoris' * 8
     set :sessions, 'key' => 'isucari_session', 'expire_after' => 3600
 
     helpers do
