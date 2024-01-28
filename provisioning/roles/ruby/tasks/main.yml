@@ -1,3 +1,20 @@
+- name: install packages for ruby install
+  become: yes
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - autoconf
+    - bison
+    - libssl-dev
+    - libyaml-dev
+    - libreadline6-dev
+    - zlib1g-dev
+    - libncurses5-dev
+    - libffi-dev
+    - libgdbm6
+    - libgdbm-dev
+
 - name: Check Installed Ruby
   become: yes
   become_user: isucon
@@ -12,20 +29,20 @@
   debug:
     var: ruby_version_output
 
-- name: Install Ruby 2.6.4
+- name: Install Ruby
   become: yes
   become_user: isucon
-  when: ruby_version_output is failed or ruby_version_output.stdout != "2.6.4"
+  when: ruby_version_output is failed or ruby_version_output.stdout != "3.3.0"
   args:
     chdir: /home/isucon
   command: |
-    /home/isucon/xbuild/ruby-install 2.6.4 /home/isucon/local/ruby
+    /home/isucon/xbuild/ruby-install 3.3.0 /home/isucon/local/ruby
 
 - name: Add PATH for ruby
   become: yes
   become_user: isucon
   blockinfile:
     marker: "# {mark} ANSIBLE MANAGED BLOCK ruby"
-    dest: /home/isucon/.bash_profile
+    dest: /home/isucon/.bashrc
     content: |
       export PATH=/home/isucon/local/ruby/bin:$PATH

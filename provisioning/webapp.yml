@@ -11,7 +11,7 @@
     - golang
     # - perl
     # - php
-    # - ruby
+    - ruby
     # - python
     # - nodejs
     - webapp.mysql
