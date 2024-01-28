@@ -13,6 +13,7 @@ services:
   app:
     build:
       context: .
+      # rubyを使うならruby/Dockerfile
       dockerfile: go/Dockerfile
     environment:
       MYSQL_HOST: mysql
