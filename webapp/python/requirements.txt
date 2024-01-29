@@ -1,4 +1,4 @@
-gunicorn==19.9.0
+gunicorn==19.10.0
 mysqlclient==1.4.6
 bcrypt==3.1.7
 certifi==2023.11.17
