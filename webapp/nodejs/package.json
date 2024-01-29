@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@types/axios": "^0.14.0",
-    "@types/bcrypt": "^3.0.0",
+    "@types/bcrypt": "^5.0.0",
     "@types/node": "^12",
     "axios": "^1.0.0",
     "bcrypt": "^5.0.0",
