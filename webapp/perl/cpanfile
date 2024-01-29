@@ -1,7 +1,7 @@
 requires 'Kossy', '0.40';
 requires 'DBD::mysql', '4.052';
 requires 'DBIx::Sunny', '0.9993';
-requires 'JSON::XS', '4.02';
+requires 'JSON::XS', '4.03';
 requires 'JSON::Types';
 requires 'Plack::Middleware::Session';
 requires 'HTTP::Date';
