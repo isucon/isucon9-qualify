@@ -28,7 +28,7 @@
     "fastify": "^2.7",
     "fastify-cookie": "^3.1",
     "fastify-multipart": "^5.0.0",
-    "fastify-mysql": "^0.3",
+    "fastify-mysql": "^2.0.0",
     "fastify-plugin": "^1.6",
     "fastify-static": "^4.0.0",
     "mysql2": "^1.6",
