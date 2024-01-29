@@ -2,7 +2,7 @@ gunicorn==19.10.0
 mysqlclient==1.4.6
 bcrypt==3.1.7
 certifi==2023.11.17
-cffi==1.12.3
+cffi==1.16.0
 chardet==3.0.4
 Click==8.1.7
 Flask==1.1.4
