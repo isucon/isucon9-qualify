@@ -8,7 +8,7 @@ Click==7.0
 Flask==1.1.1
 idna==2.8
 itsdangerous==1.1.0
-Jinja2==2.10.1
+Jinja2==2.11.3
 MarkupSafe==1.1.1
 pycparser==2.19
 PyMySQL==0.9.3
