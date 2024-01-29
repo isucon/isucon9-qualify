@@ -7,7 +7,7 @@
     "require": {
         "php": "~7.2",
         "ext-pdo": "*",
-        "bryanjhv/slim-session": "^3.6",
+        "bryanjhv/slim-session": "^4.0",
         "guzzlehttp/guzzle": "~6.0",
         "monolog/monolog": "^1.17",
         "slim/php-view": "^2.0",
