@@ -1,6 +1,6 @@
 gunicorn==19.10.0
 mysqlclient==2.2.1
-bcrypt==3.1.7
+bcrypt==4.1.2
 certifi==2023.11.17
 cffi==1.12.3
 chardet==3.0.4
