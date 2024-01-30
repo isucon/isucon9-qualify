@@ -13,6 +13,6 @@ MarkupSafe==1.1.1
 pycparser==2.19
 PyMySQL==0.10.1
 requests==2.31.0
-six==1.12.0
+six==1.16.0
 urllib3==2.1.0
 Werkzeug==2.3.8
