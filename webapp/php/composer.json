@@ -10,7 +10,7 @@
         "bryanjhv/slim-session": "^3.6",
         "guzzlehttp/guzzle": "~6.0",
         "monolog/monolog": "^1.17",
-        "slim/php-view": "^2.0",
+        "slim/php-view": "^3.0",
         "slim/slim": "^3.1"
     },
     "require-dev": {
