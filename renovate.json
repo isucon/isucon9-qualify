@@ -3,6 +3,38 @@
   "extends": [
     "config:recommended"
   ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "provisioning/roles/ruby/tasks/main.yml"
+      ],
+      "datasourceTemplate": "ruby-version",
+      "depNameTemplate": "ruby",
+      "matchStrings": [
+        "ruby-install (?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
+      ]
+    },
+    {
+      "fileMatch": [
+        "provisioning/roles/ruby/tasks/main.yml"
+      ],
+      "datasourceTemplate": "ruby-version",
+      "depNameTemplate": "ruby",
+      "matchStrings": [
+        "ruby_version_output.stdout != \"(?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
+      ]
+    },
+    {
+      "fileMatch": [
+        "provisioning/roles/golang/tasks/main.yml"
+      ],
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "golang",
+      "matchStrings": [
+        "go(?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
+      ]
+    }
+  ],
   "postUpdateOptions": [
     "gomodTidy",
     "gomodUpdateImportPaths"
