@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
     paths:
-      - 'webapp/golang/**'
+      - 'webapp/go/**'
       - 'webapp/ruby/**'
       - 'bench/**'
       - 'cmd/**'
