@@ -42,7 +42,7 @@ initial-data/result/initial.sql: initial-data/Dockerfile initial-data/*.tsv init
 setup-initial-image:
 	cd webapp/public && \
 	curl -L -O https://github.com/isucon/isucon9-qualify/releases/download/v2/initial.zip && \
-	unzip initial.zip && \
+	unzip -qq initial.zip && \
 	rm -rf upload && \
 	mv v3_initial_data upload
 
@@ -50,7 +50,7 @@ setup-initial-image:
 setup-bench-image:
 	cd initial-data && \
 	curl -L -O https://github.com/isucon/isucon9-qualify/releases/download/v2/bench1.zip && \
-	unzip bench1.zip && \
+	unzip -qq bench1.zip && \
 	rm -rf images && \
 	mv v3_bench1 images
 
