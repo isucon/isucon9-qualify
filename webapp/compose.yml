@@ -26,6 +26,8 @@ services:
     volumes:
       - ./public:/home/public
       - ./sql:/home/sql
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     init: true
 
   mysql:
