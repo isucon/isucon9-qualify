@@ -3,89 +3,89 @@ name: CI
 on:
   pull_request:
     paths:
-      - 'webapp/go/**'
-      - 'webapp/ruby/**'
-      - 'bench/**'
-      - 'cmd/**'
-      - 'initial-data/**'
-      - '.github/workflows/ci.yml'
-      - 'Makefile'
-      - 'go.mod'
-      - 'go.sum'
+      - "webapp/go/**"
+      - "webapp/ruby/**"
+      - "bench/**"
+      - "cmd/**"
+      - "initial-data/**"
+      - ".github/workflows/ci.yml"
+      - "Makefile"
+      - "go.mod"
+      - "go.sum"
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Initialize the project
-      run: make init
+      - name: Initialize the project
+        run: make init
 
-    - name: Check for changes in ruby directory
-      id: check-changes
-      run: |
-        git fetch origin
-        if git diff --name-only origin/master...${{ github.sha }} | grep 'ruby/'; then
-          echo "Changes detected in ruby directory"
-          echo "ruby_changes_detected=true" >> $GITHUB_OUTPUT
-        fi
+      - name: Check for changes in ruby directory
+        id: check-changes
+        run: |
+          git fetch origin
+          if git diff --name-only origin/master...${{ github.sha }} | grep 'ruby/'; then
+            echo "Changes detected in ruby directory"
+            echo "ruby_changes_detected=true" >> $GITHUB_OUTPUT
+          fi
 
-    - name: Update compose.yml if changes are detected
-      if: steps.check-changes.outputs.ruby_changes_detected == 'true'
-      run: |
-        perl -i -pe 's@dockerfile: go/@dockerfile: ruby/@g' ./webapp/compose.yml
+      - name: Update compose.yml if changes are detected
+        if: steps.check-changes.outputs.ruby_changes_detected == 'true'
+        run: |
+          perl -i -pe 's@dockerfile: go/@dockerfile: ruby/@g' ./webapp/compose.yml
 
-    - name: Start the server
-      run: |
-        cd webapp
-        docker compose up --build -d
+      - name: Start the server
+        run: |
+          cd webapp
+          docker compose up --build -d
 
-    - name: Build the benchmark
-      run: |
-        docker build -t isucari-benchmarker -f bench/Dockerfile .
+      - name: Build the benchmark
+        run: |
+          docker build -t isucari-benchmarker -f bench/Dockerfile .
 
-    - name: Wait for data initialization to complete
-      run: |
-        cd webapp
-        until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM users LIMIT 1;" isucari; do
-          echo "Waiting for database initialization..."
+      - name: Wait for data initialization to complete
+        run: |
+          cd webapp
+          until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM users LIMIT 1;" isucari; do
+            echo "Waiting for database initialization..."
+            sleep 10
+          done
+          until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM items LIMIT 1;" isucari; do
+            echo "Waiting for database initialization..."
+            sleep 10
+          done
+          until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM transaction_evidences LIMIT 1;" isucari; do
+            echo "Waiting for database initialization..."
+            sleep 10
+          done
+          until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM shippings LIMIT 1;" isucari; do
+            echo "Waiting for database initialization..."
+            sleep 10
+          done
+          until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM categories LIMIT 1;" isucari; do
+            echo "Waiting for database initialization..."
+            sleep 10
+          done
+
           sleep 10
-        done
-        until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM items LIMIT 1;" isucari; do
-          echo "Waiting for database initialization..."
-          sleep 10
-        done
-        until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM transaction_evidences LIMIT 1;" isucari; do
-          echo "Waiting for database initialization..."
-          sleep 10
-        done
-        until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM shippings LIMIT 1;" isucari; do
-          echo "Waiting for database initialization..."
-          sleep 10
-        done
-        until docker compose exec -T mysql mysql -uroot -proot -e "SELECT 1 FROM categories LIMIT 1;" isucari; do
-          echo "Waiting for database initialization..."
-          sleep 10
-        done
 
-        sleep 10
+      - name: Run the benchmark
+        continue-on-error: true
+        run: |
+          docker run --add-host host.docker.internal:host-gateway -p 5678:5678 -p 7890:7890 -i isucari-benchmarker /opt/go/benchmarker -target-url http://host.docker.internal -data-dir /initial-data -static-dir /static -payment-url http://host.docker.internal:5678 -payment-port 5678 -shipment-url http://host.docker.internal:7890 -shipment-port 7890 || echo "BENCHMARK_FAILED=true" >> $GITHUB_ENV
 
-    - name: Run the benchmark
-      continue-on-error: true
-      run: |
-        docker run --add-host host.docker.internal:host-gateway -p 5678:5678 -p 7890:7890 -i isucari-benchmarker /opt/go/benchmarker -target-url http://host.docker.internal -data-dir /initial-data -static-dir /static -payment-url http://host.docker.internal:5678 -payment-port 5678 -shipment-url http://host.docker.internal:7890 -shipment-port 7890 || echo "BENCHMARK_FAILED=true" >> $GITHUB_ENV
+      - name: Show logs
+        run: |
+          cd webapp
+          docker compose logs
 
-    - name: Show logs
-      run: |
-        cd webapp
-        docker compose logs
-
-    - name: Fail if benchmark failed
-      if: env.BENCHMARK_FAILED == 'true'
-      run: |
-        echo "Benchmark failed"
-        exit 1
+      - name: Fail if benchmark failed
+        if: env.BENCHMARK_FAILED == 'true'
+        run: |
+          echo "Benchmark failed"
+          exit 1
