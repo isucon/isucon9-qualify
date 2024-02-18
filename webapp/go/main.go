@@ -601,7 +601,7 @@ func getNewItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
-	rootCategoryIDStr := chi.URLParam(r, "root_category_id")
+	rootCategoryIDStr := r.PathValue("root_category_id")
 	rootCategoryID, err := strconv.Atoi(rootCategoryIDStr)
 	if err != nil || rootCategoryID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect category id")
@@ -732,7 +732,7 @@ func getNewCategoryItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserItems(w http.ResponseWriter, r *http.Request) {
-	userIDStr := chi.URLParam(r, "user_id")
+	userIDStr := r.PathValue("user_id")
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil || userID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect user id")
@@ -1019,7 +1019,7 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) {
-	itemIDStr := chi.URLParam(r, "item_id")
+	itemIDStr := r.PathValue("item_id")
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil || itemID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect item id")
@@ -1212,7 +1212,7 @@ func postItemEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func getQRCode(w http.ResponseWriter, r *http.Request) {
-	transactionEvidenceIDStr := chi.URLParam(r, "transaction_evidence_id")
+	transactionEvidenceIDStr := r.PathValue("transaction_evidence_id")
 	transactionEvidenceID, err := strconv.ParseInt(transactionEvidenceIDStr, 10, 64)
 	if err != nil || transactionEvidenceID <= 0 {
 		outputErrorMsg(w, http.StatusBadRequest, "incorrect transaction_evidence id")
