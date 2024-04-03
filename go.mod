@@ -1,6 +1,6 @@
 module github.com/isucon/isucon9-qualify
 
-go 1.21.6
+go 1.22.2
 
 require (
 	github.com/morikuni/failure v1.1.2
