@@ -38,10 +38,18 @@ jobs:
             echo "ruby_changes_detected=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Download purl
+        run: |
+          curl -sL https://github.com/catatsuy/purl/releases/latest/download/purl-linux-amd64.tar.gz | tar xz -C /tmp
+
+      - name: Move files to /usr/local/bin for purl
+        run: |
+          sudo mv /tmp/purl /usr/local/bin/
+
       - name: Update compose.yml if changes are detected
         if: steps.check-changes.outputs.ruby_changes_detected == 'true'
         run: |
-          perl -i -pe 's@dockerfile: go/@dockerfile: ruby/@g' ./webapp/compose.yml
+          purl -overwrite -replace '@dockerfile: go/@dockerfile: ruby/@' ./webapp/compose.yml
 
       - name: Start the server
         run: |
