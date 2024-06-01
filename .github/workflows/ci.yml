@@ -12,6 +12,8 @@ on:
       - "Makefile"
       - "go.mod"
       - "go.sum"
+      - "compose.yml"
+      - "webapp/compose.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
