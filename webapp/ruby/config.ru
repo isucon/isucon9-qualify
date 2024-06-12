@@ -5,3 +5,4 @@ require 'isucari/web'
 
 use Rack::RewindableInput::Middleware
 run Isucari::Web
+
