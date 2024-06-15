@@ -32,11 +32,11 @@
 - name: Install Ruby
   become: yes
   become_user: isucon
-  when: ruby_version_output is failed or ruby_version_output.stdout != "3.3.2"
+  when: ruby_version_output is failed or ruby_version_output.stdout != "3.3.3"
   args:
     chdir: /home/isucon
   command: |
-    /home/isucon/xbuild/ruby-install 3.3.2 /home/isucon/local/ruby
+    /home/isucon/xbuild/ruby-install 3.3.3 /home/isucon/local/ruby
 
 - name: Add PATH for ruby
   become: yes
