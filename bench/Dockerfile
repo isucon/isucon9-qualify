@@ -1,4 +1,4 @@
-FROM golang:1.22
+FROM golang:1.19
 
 RUN mkdir -p /opt/go
 WORKDIR /opt/go
