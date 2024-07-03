@@ -1,4 +1,4 @@
-FROM perl:5.40
+FROM perl:5.41
 RUN mkdir -p /opt/initial-data/result
 RUN cpanm -n Crypt::Eksblowfish::Bcrypt Crypt::OpenSSL::Random Digest::SHA JSON JSON::Types;
 COPY generator.pl /opt/initial-data
