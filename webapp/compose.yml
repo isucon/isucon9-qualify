@@ -15,6 +15,9 @@ services:
       context: .
       # rubyを使うならruby/Dockerfile
       dockerfile: go/Dockerfile
+    depends_on:
+      mysql:
+        condition: service_started
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
