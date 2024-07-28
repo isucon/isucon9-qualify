@@ -1,18 +1,49 @@
-FROM golang:1.22
+# syntax=docker/dockerfile:1
 
-RUN mkdir -p /opt/go
-WORKDIR /opt/go
+FROM --platform=$BUILDPLATFORM golang:1.22 AS build
+WORKDIR /src
+
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+  --mount=type=bind,source=go.sum,target=go.sum \
+  --mount=type=bind,source=go.mod,target=go.mod \
+  go mod download -x
+
+COPY cmd/ /src/cmd
+COPY bench/ /src/bench
+
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+  --mount=type=bind,target=. \
+  CGO_ENABLED=0 go build -o /bin/benchmarker cmd/bench/main.go
+
+
+FROM alpine:latest AS final
+
+RUN --mount=type=cache,target=/var/cache/apk \
+  apk --update add \
+  ca-certificates \
+  tzdata \
+  && \
+  update-ca-certificates
+
+# Create a non-privileged user that the app will run under.
+# See https://docs.docker.com/go/dockerfile-user-best-practices/
+ARG UID=10001
+RUN adduser \
+  --disabled-password \
+  --gecos "" \
+  --home "/nonexistent" \
+  --shell "/sbin/nologin" \
+  --no-create-home \
+  --uid "${UID}" \
+  appuser
+USER appuser
 
 COPY initial-data /initial-data
 COPY webapp/public/static /static
 
-COPY go.mod /opt/go/go.mod
-COPY go.sum /opt/go/go.sum
-RUN go mod download
+COPY bench/run.sh /run.sh
 
-COPY cmd/ /opt/go/cmd
-COPY bench/ /opt/go/bench
+# Copy the executable from the "build" stage.
+COPY --from=build /bin/benchmarker /bin/
 
-RUN go build -o benchmarker cmd/bench/main.go
-
-ENTRYPOINT ["/opt/go/bench/run.sh"]
+ENTRYPOINT ["/run.sh"]
