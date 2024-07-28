@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: bench/Dockerfile-payment
+      target: final
     ports:
       - "5556:5556"
 
@@ -11,5 +12,6 @@ services:
     build:
       context: .
       dockerfile: bench/Dockerfile-shipment
+      target: final
     ports:
       - "7002:7002"
