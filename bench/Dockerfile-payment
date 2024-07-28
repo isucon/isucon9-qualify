@@ -8,9 +8,6 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
   --mount=type=bind,source=go.mod,target=go.mod \
   go mod download -x
 
-COPY cmd/ /src/cmd
-COPY bench/ /src/bench
-
 RUN --mount=type=cache,target=/go/pkg/mod/ \
   --mount=type=bind,target=. \
   CGO_ENABLED=0 go build -o /bin/server cmd/payment/main.go
