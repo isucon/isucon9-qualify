@@ -36,7 +36,8 @@ webapp/sql/90_initial.sql: initial-data/result/initial.sql
 initial-data/result/initial.sql: initial-data/Dockerfile initial-data/*.tsv initial-data/*.pl
 	cd initial-data && \
 	docker build -t isucon9-qualify/initial-data . && \
-	docker run -v $(shell pwd)/initial-data/result:/opt/initial-data/result -v $(shell pwd)/initial-data/pwcache:/opt/initial-data/pwcache isucon9-qualify/initial-data
+	docker run --rm -v $(shell pwd)/initial-data/result:/opt/initial-data/result -v $(shell pwd)/initial-data/pwcache:/opt/initial-data/pwcache isucon9-qualify/initial-data && \
+	docker rmi isucon9-qualify/initial-data
 
 .PHONY: setup-initial-image
 setup-initial-image:
