@@ -26,12 +26,10 @@ staticcheck:
 clean:
 	rm -rf bin/*
 
-init: webapp/sql/90_initial.sql
+init:
 	$(MAKE) setup-initial-image
 	$(MAKE) setup-bench-image
-
-webapp/sql/90_initial.sql: initial-data/result/initial.sql
-	install -m 0644 initial-data/result/initial.sql webapp/sql/90_initial.sql
+	$(MAKE) setup-initial-sql
 
 initial-data/result/initial.sql: initial-data/Dockerfile initial-data/*.tsv initial-data/*.pl
 	cd initial-data && \
@@ -54,5 +52,12 @@ setup-bench-image:
 	unzip -qq bench1.zip && \
 	rm -rf images && \
 	mv v3_bench1 images
+
+.PHONY: setup-initial-sql
+setup-initial-sql:
+	cd webapp/sql/ && \
+	curl -L -O https://github.com/isucon/isucon9-qualify/releases/download/v2/initial.sql.zip && \
+	unzip -qq initial.sql.zip && \
+	mv initial.sql 90_initial.sql
 
 .PHONY: all init vet errcheck staticcheck clean
