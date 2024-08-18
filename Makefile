@@ -30,6 +30,7 @@ init:
 	$(MAKE) setup-initial-image
 	$(MAKE) setup-bench-image
 	$(MAKE) setup-initial-sql
+	$(MAKE) clean-zip
 
 initial-data/result/initial.sql: initial-data/Dockerfile initial-data/*.tsv initial-data/*.pl
 	cd initial-data && \
@@ -59,5 +60,11 @@ setup-initial-sql:
 	curl -L -O https://github.com/isucon/isucon9-qualify/releases/download/v2/initial.sql.zip && \
 	unzip -qq initial.sql.zip && \
 	mv initial.sql 90_initial.sql
+
+.PHONY: clean-zip
+clean-zip:
+	rm -f initial-data/bench1.zip
+	rm -f webapp/public/initial.zip
+	rm -f webapp/sql/initial.sql.zip
 
 .PHONY: all init vet errcheck staticcheck clean
