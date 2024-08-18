@@ -363,7 +363,6 @@ func main() {
 
 func getSession(r *http.Request) *sessions.Session {
 	session, _ := store.Get(r, sessionName)
-	session.Options.Secure = false
 
 	return session
 }
