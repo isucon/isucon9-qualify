@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -361,7 +361,7 @@ func GetRandomActiveSellerIDs(num int) []int64 {
 		num = len
 	}
 	newIDs := make([]int64, 0, num)
-	s := rand.Intn(len)
+	s := rand.IntN(len)
 	for i := 0; i < num; i++ {
 		newIDs = append(newIDs, activeSellerIDs[s])
 		s++
@@ -385,7 +385,7 @@ func GetRandomBuyerIDs(num int) []int64 {
 		num = len
 	}
 	newIDs := make([]int64, 0, num)
-	s := rand.Intn(len)
+	s := rand.IntN(len)
 	for i := 0; i < num; i++ {
 		newIDs = append(newIDs, buyerIDs[s])
 		s++
@@ -509,7 +509,7 @@ func GetRandomImageFileName() string {
 }
 
 func GetRandomRootCategory() AppCategory {
-	return rootCategories[rand.Intn(len(rootCategories))]
+	return rootCategories[rand.IntN(len(rootCategories))]
 }
 
 func GetRootCategories() []AppCategory {
@@ -517,12 +517,12 @@ func GetRootCategories() []AppCategory {
 }
 
 func GetRandomChildCategory() AppCategory {
-	return childCategories[rand.Intn(len(childCategories))]
+	return childCategories[rand.IntN(len(childCategories))]
 }
 
 func GetRandomChildCategoryByParentID(targetCategory int) AppCategory {
 	categories := rootCategoriesMap[targetCategory]
-	return categories[rand.Intn(len(categories))]
+	return categories[rand.IntN(len(categories))]
 }
 
 func GetCategory(categoryID int) (AppCategory, bool) {
@@ -545,7 +545,7 @@ func GenText(length int, isLine bool) string {
 	texts := make([]string, 0, length)
 
 	for i := 0; i < length; i++ {
-		t := keywords[rand.Intn(len(keywords))]
+		t := keywords[rand.IntN(len(keywords))]
 
 		if t == "#" {
 			if isLine {

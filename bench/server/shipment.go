@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"hash"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"net/http"
 	"net/url"
@@ -84,7 +84,7 @@ func (c *shipmentStore) Set(value shipment) string {
 
 	c.Lock()
 	for ok := true; ok; {
-		key = fmt.Sprintf("%010d", rand.Intn(10000000000))
+		key = fmt.Sprintf("%010d", rand.IntN(10000000000))
 		_, ok = c.items[key]
 	}
 	c.items[key] = value
