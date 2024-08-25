@@ -3,7 +3,7 @@ package scenario
 import (
 	"context"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -158,7 +158,7 @@ func popularListing(ctx context.Context, num int, price int) (isIncrease bool) {
 			// 成功するかどうか分からなくしておけば、何人かはロックを取っておく必要が出る
 			cardNumber := ""
 			failed := false
-			if rand.Intn(10) == 0 {
+			if rand.IntN(10) == 0 {
 				failed = true
 				cardNumber = FailedCardNumber
 			} else {

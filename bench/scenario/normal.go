@@ -3,7 +3,7 @@ package scenario
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 
 	"github.com/isucon/isucon9-qualify/bench/asset"
