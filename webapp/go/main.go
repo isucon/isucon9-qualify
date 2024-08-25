@@ -18,6 +18,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-sql-driver/mysql"
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
@@ -269,7 +270,17 @@ type resSetting struct {
 }
 
 func init() {
-	store = sessions.NewCookieStore([]byte("abc"))
+	keyPairs := []byte("abc")
+	cs := &sessions.CookieStore{
+		Codecs: securecookie.CodecsFromPairs(keyPairs),
+		Options: &sessions.Options{
+			Path:     "/",
+			MaxAge:   86400 * 30,
+			SameSite: http.SameSiteNoneMode,
+		},
+	}
+	cs.MaxAge(cs.Options.MaxAge)
+	store = cs
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
@@ -363,7 +374,6 @@ func main() {
 
 func getSession(r *http.Request) *sessions.Session {
 	session, _ := store.Get(r, sessionName)
-	session.Options.Secure = false
 
 	return session
 }
