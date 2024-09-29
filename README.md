@@ -329,6 +329,12 @@ sudo /etc/nginx/update_cert.sh
 203.0.113.1 isucari.t.isucon.pw
 ```
 
+`/home/isucon/add_hosts.sh`にシェルスクリプトを用意しているので、そちらを使っても良い。
+
+```bash
+$ /home/isucon/add_hosts.sh 192.0.2.1
+```
+
 もちろんDNSの設定をすれば問題ない。その場合は証明書を自分で用意するか、HTTPで提供すること。ISUCON9予選本番では外部サービスはDNSを設定、競技者が利用するisucariアプリケーションはDNSを通さずに利用した。これは競技者は同じ証明書・host名を使い回していたためである。
 
 ### initialize
