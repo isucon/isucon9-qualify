@@ -11,6 +11,39 @@
 └── webapp       # 各言語の参考実装
 ```
 
+## AMI
+
+競技者用・ベンチマーカー (Ubuntu 24.04):
+
+| arch   |        AMI ID         |       AMI name        | 推奨インスタンスタイプ |
+| ------ | :-------------------: | :-------------------: | ---------------------- |
+| x86_64 | ami-037f147dae25cca0b |  isucon9-qualify-app  | c7a.large              |
+| x86_64 | ami-02cd0768ce7639d01 | isucon9-qualify-bench | c7a.xlarge             |
+
+ベンチマーカーのIPアドレスが192.0.2.1なら、以下のコマンドを実行して`/etc/hosts`を変更する。
+
+```bash
+$ /home/isucon/add_hosts.sh 192.0.2.1
+```
+
+TLS証明書が古い場合は以下のコマンドを実行する。
+
+```bash
+$ sudo /etc/nginx/update_cert.sh
+```
+
+isucariアプリケーションが203.0.113.1なら以下のコマンドを実行すればベンチマーカーを実行できる。
+
+```bash
+$ /home/isucon/isucari/bin/benchmarker -target-url https://203.0.113.1 -target-host isucari.t.isucon.pw -data-dir /home/isucon/isucari/initial-data/ -static-dir /home/isucon/isucari/webapp/public/static/ -payment-url https://bp.t.isucon.pw -shipment-url https://bs.t.isucon.pw
+```
+
+手元のマシンに以下の`/etc/hosts`を追加すると証明書のエラーが出なくなる。
+
+```
+203.0.113.1 isucari.t.isucon.pw
+```
+
 ## ISUCARIについて
 
 ISUCARIの使い方、紹介は[ISUCARI アプリケーション仕様書](/webapp/docs/APPLICATION_SPEC.md)を、決済と配送のために利用している外部サービスAPIの詳細は[外部サービスAPIの仕様](/webapp/docs/EXTERNAL_SERVICE_SPEC.md)を参照してください。
