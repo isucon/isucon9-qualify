@@ -4,7 +4,9 @@
   args:
     chdir: /home/isucon/isucari/webapp/ruby
   shell: |
-    bash -lc "bundle install --path=.bundle"
+    bash -lc "bundle install"
+  environment:
+    PATH: "/home/isucon/local/ruby/bin:{{ ansible_env.PATH }}"
 
 - name: Copy isucari.ruby unit file
   copy:

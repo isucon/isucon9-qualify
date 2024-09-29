@@ -48,3 +48,11 @@
     owner: isucon
     group: isucon
     mode: 0755
+
+- name: Copy add_hosts.sh
+  copy:
+    src: home/isucon/add_hosts.sh
+    dest: /home/isucon/add_hosts.sh
+    owner: isucon
+    group: isucon
+    mode: 0755
