@@ -35,7 +35,7 @@ GEM
       sinatra (= 4.0.0)
       tilt (~> 2.0)
     tilt (2.3.0)
-    webrick (1.8.1)
+    webrick (1.8.2)
 
 PLATFORMS
   ruby
