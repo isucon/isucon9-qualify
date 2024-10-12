@@ -276,7 +276,7 @@ func init() {
 		Options: &sessions.Options{
 			Path:     "/",
 			MaxAge:   86400 * 30,
-			SameSite: http.SameSiteNoneMode,
+			HttpOnly: true,
 		},
 	}
 	cs.MaxAge(cs.Options.MaxAge)
