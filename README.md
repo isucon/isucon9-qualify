@@ -15,10 +15,10 @@
 
 競技者用・ベンチマーカー (Ubuntu 24.04):
 
-| arch   |        AMI ID         |       AMI name        | 推奨インスタンスタイプ |
-| ------ | :-------------------: | :-------------------: | ---------------------- |
-| x86_64 | ami-037f147dae25cca0b |  isucon9-qualify-app  | c7a.large              |
-| x86_64 | ami-02cd0768ce7639d01 | isucon9-qualify-bench | c7a.xlarge             |
+| arch   |        AMI ID         |           AMI name           | 推奨インスタンスタイプ |
+| ------ | :-------------------: | :--------------------------: | ---------------------- |
+| x86_64 | ami-01e5d6ed3030d5df4 | isucon9-qualify-app-20241013 | c7a.large              |
+| x86_64 | ami-02cd0768ce7639d01 |    isucon9-qualify-bench     | c7a.xlarge             |
 
 ベンチマーカーのIPアドレスが192.0.2.1なら、以下のコマンドを実行して`/etc/hosts`を変更する。
 
