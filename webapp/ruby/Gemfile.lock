@@ -12,15 +12,14 @@ GEM
     nio4r (2.7.3)
     puma (6.4.3)
       nio4r (~> 2.0)
-    rack (3.0.9.1)
+    rack (3.1.8)
     rack-protection (4.0.0)
       base64 (>= 0.1.0)
       rack (>= 3.0.0, < 4)
     rack-session (2.0.0)
       rack (>= 3.0.0)
-    rackup (2.1.0)
+    rackup (2.2.0)
       rack (>= 3)
-      webrick (~> 1.8)
     ruby2_keywords (0.0.5)
     sinatra (4.0.0)
       mustermann (~> 3.0)
@@ -35,7 +34,6 @@ GEM
       sinatra (= 4.0.0)
       tilt (~> 2.0)
     tilt (2.3.0)
-    webrick (1.8.2)
 
 PLATFORMS
   ruby
