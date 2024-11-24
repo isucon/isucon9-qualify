@@ -51,6 +51,9 @@ module Isucari
     set :session_secret, 'tagomoris' * 8
     set :sessions, 'key' => 'isucari_session', 'expire_after' => 3600
 
+    # refs: https://github.com/advisories/GHSA-hxx2-7vcw-mqr3
+    set :host_authorization, { permitted_hosts: [] }
+
     helpers do
       def db
         Thread.current[:db] ||= Mysql2::Client.new(
