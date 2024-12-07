@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
   CGO_ENABLED=0 go build -o /bin/benchmarker cmd/bench/main.go
 
 
-FROM alpine:3.20 AS final
+FROM alpine:3.21 AS final
 
 RUN --mount=type=cache,target=/var/cache/apk \
   apk --update add \
