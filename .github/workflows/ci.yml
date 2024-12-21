@@ -93,6 +93,11 @@ jobs:
         run: |
           docker container run --add-host host.docker.internal:host-gateway -p 5678:5678 -p 7890:7890 -i isucari-benchmarker /bin/benchmarker -target-url http://host.docker.internal -data-dir /initial-data -static-dir /static -payment-url http://host.docker.internal:5678 -payment-port 5678 -shipment-url http://host.docker.internal:7890 -shipment-port 7890 | tee benchmark_output.json || echo "BENCHMARK_FAILED=true" >> $GITHUB_ENV
 
+      - name: Show logs
+        run: |
+          cd webapp
+          docker compose logs
+
       - name: Check benchmark result
         run: |
           if [ ! -f benchmark_output.json ]; then
@@ -103,11 +108,6 @@ jobs:
             echo "BENCHMARK_FAILED=true" >> $GITHUB_ENV
             exit 1
           fi
-
-      - name: Show logs
-        run: |
-          cd webapp
-          docker compose logs
 
       - name: Fail if benchmark failed
         if: env.BENCHMARK_FAILED == 'true'
