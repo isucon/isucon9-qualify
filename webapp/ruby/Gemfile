@@ -4,6 +4,7 @@ gem 'puma'
 gem 'sinatra'
 gem 'mysql2'
 gem 'mysql2-cs-bind'
+gem 'bigdecimal'
 gem 'bcrypt'
 gem 'rackup'
 
