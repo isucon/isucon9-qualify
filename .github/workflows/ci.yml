@@ -35,9 +35,11 @@ jobs:
         id: check-changes
         run: |
           git fetch origin
-          if git diff --name-only origin/master...${{ github.sha }} | grep 'ruby/'; then
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
+          if echo "$CHANGED_FILES" | grep 'ruby/'; then
             echo "Changes detected in ruby directory"
             echo "ruby_changes_detected=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
       - name: Download purl
@@ -51,7 +53,7 @@ jobs:
       - name: Update compose.yml if changes are detected
         if: steps.check-changes.outputs.ruby_changes_detected == 'true'
         run: |
-          purl -overwrite -replace '@dockerfile: go/@dockerfile: ruby/@' ./webapp/compose.yml
+          purl -fail -overwrite -replace '@dockerfile: go/@dockerfile: ruby/@' ./webapp/compose.yml
 
       - name: Start the server
         run: |
