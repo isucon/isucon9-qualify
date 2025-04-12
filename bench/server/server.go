@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 )
@@ -61,13 +62,7 @@ func (s *Server) withIPRestriction() Adapter {
 					return
 				}
 
-				passed := false
-				for _, aIP := range s.allowedIPs {
-					if ip.Equal(aIP) {
-						passed = true
-						break
-					}
-				}
+				passed := slices.ContainsFunc(s.allowedIPs, ip.Equal)
 
 				if !passed {
 					b, _ := json.Marshal(errorRes{Error: "IP address is not allowed"})

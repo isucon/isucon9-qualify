@@ -65,7 +65,7 @@ func Validation(ctx context.Context, campaign int) {
 
 	if campaign > 0 {
 		log.Printf("=== enable campaign rate setting => %d ===", campaign)
-		for i := 0; i < campaign; i++ {
+		for i := range campaign {
 			wg.Add(1)
 			go func(i int) {
 				defer wg.Done()

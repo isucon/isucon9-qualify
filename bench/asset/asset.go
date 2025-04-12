@@ -362,7 +362,7 @@ func GetRandomActiveSellerIDs(num int) []int64 {
 	}
 	newIDs := make([]int64, 0, num)
 	s := rand.IntN(len)
-	for i := 0; i < num; i++ {
+	for range num {
 		newIDs = append(newIDs, activeSellerIDs[s])
 		s++
 		if s == len {
@@ -386,7 +386,7 @@ func GetRandomBuyerIDs(num int) []int64 {
 	}
 	newIDs := make([]int64, 0, num)
 	s := rand.IntN(len)
-	for i := 0; i < num; i++ {
+	for range num {
 		newIDs = append(newIDs, buyerIDs[s])
 		s++
 		if s == len {
@@ -544,7 +544,7 @@ func GetStaticFiles() ([]StaticMD5, []StaticMD5) {
 func GenText(length int, isLine bool) string {
 	texts := make([]string, 0, length)
 
-	for i := 0; i < length; i++ {
+	for range length {
 		t := keywords[rand.IntN(len(keywords))]
 
 		if t == "#" {
