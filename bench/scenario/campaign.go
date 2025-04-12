@@ -21,13 +21,13 @@ func Campaign(ctx context.Context) {
 
 	// buyer用のセッションを増やしておく
 	// 500ユーザーを追加したら止まる
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
 		L:
-			for j := 0; j < 50; j++ {
+			for range 50 {
 				ch := time.After(100 * time.Millisecond)
 
 				user1 := asset.GetRandomBuyer()
@@ -58,7 +58,7 @@ func Campaign(ctx context.Context) {
 		<-time.After(13 * time.Second)
 
 	L:
-		for j := 0; j < (ExecutionSeconds-13)/8; j++ {
+		for j := range (ExecutionSeconds - 13) / 8 {
 			ch := time.After(8 * time.Second)
 
 			isIncrease := popularListing(ctx, 80+j*20, 1000+j*100)
@@ -70,13 +70,13 @@ func Campaign(ctx context.Context) {
 				priceStoreCache.Add(20)
 
 				// 次の人気者出品に備えてログインユーザーのpoolを増やしておく
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
 
 					L:
-						for j := 0; j < 20; j++ {
+						for range 20 {
 							ch := time.After(100 * time.Millisecond)
 
 							user1 := asset.GetRandomBuyer()
@@ -148,7 +148,7 @@ func popularListing(ctx context.Context, num int, price int) (isIncrease bool) {
 	var wg sync.WaitGroup
 	var errCnt int32
 
-	for i := 0; i < num; i++ {
+	for range num {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

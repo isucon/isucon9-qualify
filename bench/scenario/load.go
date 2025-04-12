@@ -39,7 +39,7 @@ func Load(ctx context.Context) {
 	// カテゴリをみて 7カテゴリ x (10ページ + 20item) = 210
 	// recommendであれば、Newだけみて、購入し、再度出品・購入がある
 	// buy without check
-	for i := 0; i < NumLoadScenario1; i++ {
+	for range NumLoadScenario1 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -53,7 +53,7 @@ func Load(ctx context.Context) {
 			var targetParentCategoryID int
 
 		L:
-			for j := 0; j < ExecutionSeconds/3; j++ {
+			for range ExecutionSeconds / 3 {
 				ch := time.After(3 * time.Second)
 
 				s1, err = activeSellerSession(ctx)
@@ -155,7 +155,7 @@ func Load(ctx context.Context) {
 	// そのカテゴリ 30ページ 30商品
 	// getTransactions　(10ページ 20商品) x 2
 	// buyはwithout check
-	for i := 0; i < NumLoadScenario2; i++ {
+	for range NumLoadScenario2 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -168,7 +168,7 @@ func Load(ctx context.Context) {
 			var targetParentCategoryID int
 
 		L:
-			for j := 0; j < ExecutionSeconds/3; j++ {
+			for range ExecutionSeconds / 3 {
 				ch := time.After(3 * time.Second)
 
 				s1, err = activeSellerSession(ctx)
@@ -251,7 +251,7 @@ func Load(ctx context.Context) {
 	// 出品
 	// アクティブユーザ 3人 * (3ページ + 20件)
 	// buy with check
-	for i := 0; i < NumLoadScenario3; i++ {
+	for range NumLoadScenario3 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -263,7 +263,7 @@ func Load(ctx context.Context) {
 			var targetParentCategoryID int
 
 		L:
-			for j := 0; j < ExecutionSeconds/3; j++ {
+			for range ExecutionSeconds / 3 {
 				ch := time.After(3 * time.Second)
 
 				s1, err = activeSellerSession(ctx)
@@ -306,7 +306,7 @@ func Load(ctx context.Context) {
 
 				// 商品数がすくないところもみにいく
 				// indexつけるだけで速くなる
-				for l := 0; l < 4; l++ {
+				for range 4 {
 					err = loadUserItemsAndItems(ctx, s1, s3.UserID, 0)
 					if err != nil {
 						fails.ErrorsForCheck.Add(err)
@@ -344,7 +344,7 @@ func Load(ctx context.Context) {
 	// 出品
 	// 新着 30ページ 50商品
 	// buy with check
-	for i := 0; i < NumLoadScenario4; i++ {
+	for range NumLoadScenario4 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -355,7 +355,7 @@ func Load(ctx context.Context) {
 			var targetParentCategoryID int
 
 		L:
-			for j := 0; j < ExecutionSeconds/3; j++ {
+			for range ExecutionSeconds / 3 {
 				ch := time.After(3 * time.Second)
 
 				s1, err = activeSellerSession(ctx)

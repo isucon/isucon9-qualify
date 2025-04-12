@@ -26,7 +26,7 @@ func Check(ctx context.Context) {
 		defer wg.Done()
 
 	L:
-		for j := 0; j < ExecutionSeconds/8; j++ {
+		for range ExecutionSeconds / 8 {
 			ch := time.After(8 * time.Second)
 
 			err := irregularLoginWrongPassword(ctx, user3)
@@ -57,7 +57,7 @@ func Check(ctx context.Context) {
 		var userID int64
 
 	L:
-		for j := 0; j < ExecutionSeconds/10; j++ {
+		for range ExecutionSeconds / 10 {
 			ch := time.After(10 * time.Second)
 
 			s1, err = buyerSession(ctx)
@@ -128,7 +128,7 @@ func Check(ctx context.Context) {
 		var err error
 
 	L:
-		for j := 0; j < ExecutionSeconds/5; j++ {
+		for range ExecutionSeconds / 5 {
 			ch := time.After(5 * time.Second)
 
 			// bumpは投稿した直後だとできないので必ず新しいユーザーでやる
@@ -180,7 +180,7 @@ func Check(ctx context.Context) {
 		var targetParentCategoryID int
 
 	L:
-		for j := 0; j < ExecutionSeconds/10; j++ {
+		for range ExecutionSeconds / 10 {
 			ch := time.After(10 * time.Second)
 
 			s1, err = activeSellerSession(ctx)
