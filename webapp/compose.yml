@@ -2,6 +2,9 @@ name: isucari
 services:
   nginx:
     image: nginx:1.28
+    depends_on:
+      app:
+        condition: service_started
     volumes:
       - ./etc/nginx/conf.d:/etc/nginx/conf.d
       - ./public:/public
