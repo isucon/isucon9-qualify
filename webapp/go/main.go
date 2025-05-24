@@ -329,6 +329,12 @@ func main() {
 	}
 	defer dbx.Close()
 
+	root, err := os.OpenRoot("../public")
+	if err != nil {
+		log.Fatalf("failed to open root: %v", err)
+	}
+	defer root.Close()
+
 	r := chi.NewRouter()
 
 	// API
@@ -366,7 +372,7 @@ func main() {
 	r.Get("/users/setting", getIndex)
 	// Assets
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		http.FileServer(http.Dir("../public")).ServeHTTP(w, r)
+		http.FileServerFS(root.FS()).ServeHTTP(w, r)
 	})
 
 	log.Fatal(http.ListenAndServe(":8000", r))
