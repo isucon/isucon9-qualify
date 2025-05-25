@@ -6,8 +6,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "provisioning/roles/ruby/tasks/main.yml"
+      "managerFilePatterns": [
+        "/provisioning/roles/ruby/tasks/main.yml/"
       ],
       "datasourceTemplate": "ruby-version",
       "depNameTemplate": "ruby",
@@ -17,8 +17,8 @@
     },
     {
       "customType": "regex",
-      "fileMatch": [
-        "provisioning/roles/ruby/tasks/main.yml"
+      "managerFilePatterns": [
+        "/provisioning/roles/ruby/tasks/main.yml/"
       ],
       "datasourceTemplate": "ruby-version",
       "depNameTemplate": "ruby",
@@ -28,8 +28,8 @@
     },
     {
       "customType": "regex",
-      "fileMatch": [
-        "provisioning/roles/golang/tasks/main.yml"
+      "managerFilePatterns": [
+        "/provisioning/roles/golang/tasks/main.yml/"
       ],
       "datasourceTemplate": "golang-version",
       "depNameTemplate": "golang",
