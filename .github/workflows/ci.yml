@@ -74,19 +74,14 @@ jobs:
           purl -fail -overwrite -replace "@dockerfile: go/@dockerfile: php/@" ./webapp/compose.yml
 
  
-      - name: Set up PHP
+      - name: PHP Composer validate
         if: steps.php-changes.outputs.php_changes_detected == 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y php8.3-cli composer
-      - name: Install PHP dependencies
-        if: steps.php-changes.outputs.php_changes_detected == "true"
-        run: composer install --no-interaction --no-progress --no-suggest
-        working-directory: webapp/php
+        run: docker compose run --rm --build --entrypoint composer app validate --no-check-all
+        working-directory: webapp
       - name: PHP Lint
-        if: steps.php-changes.outputs.php_changes_detected == "true"
-        run: find src public -name '*.php' -print0 | xargs -0 -n1 php -l
-        working-directory: webapp/php
+        if: steps.php-changes.outputs.php_changes_detected == 'true'
+        run: docker compose run --rm --build --entrypoint sh app -c "find src public -name '*.php' -print0 | xargs -0 -n1 php -l"
+        working-directory: webapp
 
 
       - name: Start the server
