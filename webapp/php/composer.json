@@ -5,7 +5,7 @@
     "homepage": "http://isucon.net/",
     "license": "MIT",
     "require": {
-        "php": "~7.2",
+        "php": "^8.3",
         "ext-pdo": "*",
         "bryanjhv/slim-session": "^3.6",
         "guzzlehttp/guzzle": "~6.0",
