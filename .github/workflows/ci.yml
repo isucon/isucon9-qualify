@@ -74,10 +74,11 @@ jobs:
           purl -fail -overwrite -replace "@dockerfile: go/@dockerfile: php/@" ./webapp/compose.yml
 
  
-      - uses: shivammathur/setup-php@v2
-        if: steps.php-changes.outputs.php_changes_detected == "true"
-        with:
-          php-version: "8.3"
+      - name: Set up PHP
+        if: steps.php-changes.outputs.php_changes_detected == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y php8.3-cli composer
       - name: Install PHP dependencies
         if: steps.php-changes.outputs.php_changes_detected == "true"
         run: composer install --no-interaction --no-progress --no-suggest
