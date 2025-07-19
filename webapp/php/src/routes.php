@@ -1,12 +1,11 @@
 <?php
 
 use Slim\App;
-use Slim\Http\Request;
-use Slim\Http\Response;
-use Slim\Http\StatusCode;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Psr7\Response as SlimResponse;
 
 return function (App $app) {
-    $container = $app->getContainer();
 
     // API
     $app->post('/initialize', \App\Service::class . ':initialize');
@@ -45,13 +44,14 @@ return function (App $app) {
 
 
     // to serve as a static file, for anything else
-    $app->get('/{name:.+}', function (Request $request, Response $response, array $args) use ($container) {
+    $app->get('/{name:.+}', function (Request $request, Response $response, array $args) {
         // static
-        $template = $container->get('renderer')->getTemplatePath();
+        $renderer = $this->get('renderer');
+        $template = $renderer->getTemplatePath();
         $path = $template . $args['name'];
 
         if (! is_readable($path)) {
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND);
+            return $response->withStatus(404);
         }
 
         // find webapp/public -type d -name '.git' -prune -o -type f -exec basename {} \; | grep -o '\.[^.]*$' | sort | uniq | grep -v git

@@ -5,6 +5,7 @@ on:
     paths:
       - "webapp/go/**"
       - "webapp/ruby/**"
+      - "webapp/php/**"
       - "bench/**"
       - "cmd/**"
       - "initial-data/**"
@@ -31,15 +32,18 @@ jobs:
       - name: Initialize the project
         run: make init
 
-      - name: Check for changes in ruby directory
+      - name: Check for changes in webapp directories
         id: check-changes
         run: |
           git fetch origin
           CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
-          if echo "$CHANGED_FILES" | grep 'ruby/'; then
+          if echo "$CHANGED_FILES" | grep 'webapp/ruby/'; then
             echo "Changes detected in ruby directory"
             echo "ruby_changes_detected=true" >> $GITHUB_OUTPUT
-            exit 0
+          fi
+          if echo "$CHANGED_FILES" | grep 'webapp/php/'; then
+            echo "Changes detected in php directory"
+            echo "php_changes_detected=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Download purl
@@ -50,10 +54,23 @@ jobs:
         run: |
           sudo mv /tmp/purl /usr/local/bin/
 
-      - name: Update compose.yml if changes are detected
+      - name: Update compose.yml for Ruby if changes are detected
         if: steps.check-changes.outputs.ruby_changes_detected == 'true'
         run: |
           purl -fail -overwrite -replace '@dockerfile: go/@dockerfile: ruby/@' ./webapp/compose.yml
+
+      - name: Update compose.yml for PHP if changes are detected
+        if: steps.check-changes.outputs.php_changes_detected == 'true'
+        run: |
+          purl -fail -overwrite -replace '@dockerfile: go/@dockerfile: php/@' ./webapp/compose.yml
+
+      - name: Update nginx config for PHP if changes are detected
+        if: steps.check-changes.outputs.php_changes_detected == 'true'
+        run: |
+          cd webapp
+          rm etc/nginx/conf.d/default.conf
+          mv etc/nginx/conf.d/php.conf etc/nginx/conf.d/default.conf
+          sudo chmod -R 777 public
 
       - name: Start the server
         run: |

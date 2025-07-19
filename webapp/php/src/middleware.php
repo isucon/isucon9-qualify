@@ -1,24 +1,16 @@
 <?php
 
 use Slim\App;
-use Slim\Http\Request;
-use Slim\Http\Response;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
+use Slim\Middleware\Session;
 
 return function (App $app) {
-    // session
-    $app->add(
-        new \Slim\Middleware\Session([
-            'name' => 'session-isucari',
-        ])
-    );
-
-    // logging
-//  $app->add(function (Request $request, Response $response, callable $next) {
-//      $route = $request->getAttribute('route');
-//      $this->logger->info($request->getMethod() . ' ' . $route->getPattern(), [$route->getArguments()]);
-//      $response = $next($request, $response);
-//      $this->logger->info($response->getStatusCode() . ' ' . $response->getReasonPhrase(), [(string)$response->getBody()]);
-
-//      return $response;
-//  });
+    // Session middleware
+    $app->add(new Session([
+        'name' => 'session-isucari',
+        'autorefresh' => true,
+        'lifetime' => '1 hour',
+    ]));
 };
