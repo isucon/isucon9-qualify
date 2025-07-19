@@ -1,5 +1,8 @@
 <?php
 
+use DI\Container;
+use Slim\Factory\AppFactory;
+
 require __DIR__ . '/../vendor/autoload.php';
 
 // for the PHP build-in http server to serve static file
@@ -10,7 +13,6 @@ if (PHP_SAPI == 'cli-server') {
     }
 }
 
-// http://www.slimframework.com/docs/v3/handlers/php-error.html
 error_reporting(E_ALL);
 set_error_handler(function ($severity, $message, $file, $line) {
     if (error_reporting() & $severity) {
@@ -18,13 +20,22 @@ set_error_handler(function ($severity, $message, $file, $line) {
     }
 });
 
-// Instantiate the app
+// Load settings
 $settings = require __DIR__ . '/../src/settings.php';
-$app = new \Slim\App($settings);
+
+// Create Container
+$container = new Container();
 
 // Set up dependencies
 $dependencies = require __DIR__ . '/../src/dependencies.php';
-$dependencies($app);
+$dependencies($container, $settings['settings']);
+
+// Create App
+AppFactory::setContainer($container);
+$app = AppFactory::create();
+
+// Add error middleware
+$app->addErrorMiddleware(true, true, true);
 
 // Register middleware
 $middleware = require __DIR__ . '/../src/middleware.php';
