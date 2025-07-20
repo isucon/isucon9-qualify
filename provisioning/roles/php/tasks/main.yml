@@ -16,17 +16,16 @@
 - name: Install PHP
   become: yes
   become_user: isucon
-  when: php_version_output is failed or php_version_output.stdout != "7.2.21"
+  when: php_version_output is failed or php_version_output.stdout != "8.4.2"
   args:
     chdir: /home/isucon
   command: >
-    /home/isucon/xbuild/php-install 7.2.21 /home/isucon/local/php --
-    --with-pcre-regex --with-zlib --enable-fpm --enable-pdo --with-pear
-    --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl
-    --with-pcre-regex --with-pcre-dir --with-libxml-dir --enable-opcache
-    --enable-bcmath --with-bz2 --enable-calendar --enable-cli --enable-shmop
-    --enable-sysvsem --enable-sysvshm --enable-sysvmsg --enable-mbregex
-    --enable-mbstring --enable-pcntl --enable-sockets --with-curl --enable-zip
+    /home/isucon/xbuild/php-install 8.4.2 /home/isucon/local/php --
+    --enable-fpm --enable-pdo --with-pear --with-mysqli=mysqlnd 
+    --with-pdo-mysql=mysqlnd --with-openssl --enable-opcache --enable-bcmath 
+    --with-bz2 --enable-calendar --enable-cli --enable-shmop --enable-sysvsem 
+    --enable-sysvshm --enable-sysvmsg --enable-mbstring --enable-pcntl 
+    --enable-sockets --with-curl --enable-zip --with-zlib
   environment:
     PHP_BUILD_EXTRA_MAKE_ARGUMENTS: "-j {{ nproc | default('1') }}"
 
@@ -77,8 +76,7 @@
   become: yes
   become_user: isucon
   get_url:
-    url: https://getcomposer.org/download/1.9.0/composer.phar
+    url: https://getcomposer.org/download/latest-stable/composer.phar
     dest: /home/isucon/local/php/bin/composer
-    sha256sum: c9dff69d092bdec14dee64df6677e7430163509798895fbd54891c166c5c0875
     mode: 0755
   when: composer_version_output is failed
