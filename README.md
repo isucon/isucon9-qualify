@@ -272,9 +272,18 @@ make
 
 ### webapp
 
+Go実装以外はcompose.ymlを書き換える。
+
 ```bash
 cd webapp
 docker compose up
+```
+
+PHP実装の場合はnginxの設定も変更。
+
+```bash
+rm etc/nginx/conf.d/default.conf
+mv etc/nginx/conf.d/php.conf.org etc/nginx/conf.d/default.conf
 ```
 
 ### benchmarker
