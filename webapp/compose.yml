@@ -16,7 +16,7 @@ services:
   app:
     build:
       context: .
-      # rubyを使うならruby/Dockerfile
+      # rubyを使うならruby/Dockerfile PHP実装の場合はphp/Dockerfile
       dockerfile: go/Dockerfile
     depends_on:
       mysql:
