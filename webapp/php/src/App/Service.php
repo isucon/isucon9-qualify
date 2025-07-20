@@ -8,10 +8,10 @@ use GuzzleHttp\Exception\RequestException;
 use PDO;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\UploadedFileInterface;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Log\LoggerInterface;
-use Slim\Http\Request;
-use Slim\Http\Response;
-use Slim\Http\StatusCode;
+use Slim\Psr7\Response as SlimResponse;
 
 class Service
 {
@@ -208,7 +208,9 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         exec($this->settings['app']['base_dir'] . '../init.sh');
@@ -227,15 +229,18 @@ class Service
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withJson([
+        $response->getBody()->write(json_encode([
             // キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
             "campaign" => 0,
             // 実装言語を返す
             "language" => "php"
-        ]);
+        ]));
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function index(Request $request, Response $response, array $args)
@@ -245,8 +250,8 @@ class Service
 
     public function new_items(Request $request, Response $response, array $args)
     {
-        $itemId = $request->getParam('item_id', "");
-        $createdAt = (int) $request->getParam('created_at', 0);
+        $itemId = $request->getQueryParams()['item_id'] ?? "";
+        $createdAt = (int) ($request->getQueryParams()['created_at'] ?? 0);
 
         try {
             if ($itemId !== "" && $createdAt > 0) {
@@ -282,12 +287,16 @@ class Service
             foreach ($items as $item) {
                 $seller = $this->getUserSimpleByID($item['seller_id']);
                 if ($seller === false) {
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
+                    $response->getBody()->write(json_encode(['error' => 'seller not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
 
                 $category = $this->getCategoryByID($item['category_id']);
                 if ($category === false) {
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'category not found']);
+                    $response->getBody()->write(json_encode(['error' => 'category not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
                 $itemSimples[] = [
                   'id' => (int) $item['id'],
@@ -310,26 +319,34 @@ class Service
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(
+        $response->getBody()->write(json_encode(
             [
                 'items' => $itemSimples,
                 'has_next' => $hasNext
             ]
-        );
+        ));
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function new_category_items(Request $request, Response $response, array $args)
     {
         $rootCategoryId = $args['id'] ?? 0;
         if ((int) $rootCategoryId === 0) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'incorrect category id']);
+            $response->getBody()->write(json_encode(['error' => 'incorrect category id']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         $rootCategory = $this->getCategoryByID($rootCategoryId);
         if ($rootCategory === false || (int) $rootCategory['parent_id'] !== 0) {
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson('category not found');
+            $response->getBody()->write(json_encode('category not found'));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -344,13 +361,13 @@ class Service
                 $categoryIds[] = $r['id'];
             }
 
-            $itemId = $request->getParam('item_id');
-            $createdAt = (int) $request->getParam('created_at', 0);
+            $itemId = $request->getQueryParams()['item_id'] ?? null;
+            $createdAt = (int) ($request->getQueryParams()['created_at'] ?? 0);
 
             if (!empty($itemId) && $createdAt > 0) {
                 // paging
                 $in = str_repeat('?,', count($categoryIds) - 1) . '?';
-                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ".
+                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN ({$in}) AND (`created_at` < ? OR (`created_at` <= ? AND `id` < ?)) ".
                     "ORDER BY `created_at` DESC, `id` DESC LIMIT ?");
                 $r = $sth->execute(array_merge(
                     [self::ITEM_STATUS_ON_SALE, self::ITEM_STATUS_SOLD_OUT],
@@ -368,7 +385,7 @@ class Service
             } else {
                 // 1st page
                 $in = str_repeat('?,', count($categoryIds) - 1) . '?';
-                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (${in}) ORDER BY created_at DESC, id DESC LIMIT ?");
+                $sth = $this->dbh->prepare("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN ({$in}) ORDER BY created_at DESC, id DESC LIMIT ?");
                 $r = $sth->execute(array_merge(
                     [self::ITEM_STATUS_ON_SALE, self::ITEM_STATUS_SOLD_OUT],
                     $categoryIds,
@@ -384,12 +401,16 @@ class Service
             foreach ($items as $item) {
                 $seller = $this->getUserSimpleByID($item['seller_id']);
                 if ($seller === false) {
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
+                    $response->getBody()->write(json_encode(['error' => 'seller not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
 
                 $category = $this->getCategoryByID($item['category_id']);
                 if ($category === false) {
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'category not found']);
+                    $response->getBody()->write(json_encode(['error' => 'category not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
                 $itemSimples[] = [
                     'id' => $item['id'],
@@ -412,17 +433,18 @@ class Service
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(
-            [
-                'root_category_id' => (int) $rootCategory['id'],
-                'root_category_name' => $rootCategory['category_name'],
-                'items' => $itemSimples,
-                'has_next' => $hasNext
-            ]
-        );
+        $response->getBody()->write(json_encode([
+            'root_category_id' => (int) $rootCategory['id'],
+            'root_category_name' => $rootCategory['category_name'],
+            'items' => $itemSimples,
+            'has_next' => $hasNext
+        ]));
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function user_items(Request $request, Response $response, array $args)
@@ -431,11 +453,13 @@ class Service
 
         $user = $this->getUserSimpleByID($userId);
         if ($user === false) {
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         }
 
-        $itemId = $request->getParam('item_id');
-        $createdAt = (int) $request->getParam('created_at', 0);
+        $itemId = $request->getQueryParams()['item_id'] ?? null;
+        $createdAt = (int) ($request->getQueryParams()['created_at'] ?? 0);
         try {
             if ($itemId !== "" && $createdAt > 0) {
                 // paging
@@ -474,12 +498,16 @@ class Service
             foreach ($items as $item) {
                 $seller = $this->getUserSimpleByID($item['seller_id']);
                 if ($seller === false) {
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
+                    $response->getBody()->write(json_encode(['error' => 'seller not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
 
                 $category = $this->getCategoryByID($item['category_id']);
                 if ($category === false) {
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'category not found']);
+                    $response->getBody()->write(json_encode(['error' => 'category not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
                 $itemSimples[] = [
                     'id' => $item['id'],
@@ -502,15 +530,19 @@ class Service
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(
+        $response->getBody()->write(json_encode(
             [
                 'user' => $user,
                 'items' => $itemSimples,
                 'has_next' => $hasNext
             ]
-        );
+        ));
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function transactions(Request $request, Response $response, array $args)
@@ -519,13 +551,17 @@ class Service
             $user = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        $itemId = (int) $request->getParam('item_id', 0);
-        $createdAt = (int) $request->getParam('created_at', 0);
+        $itemId = (int) ($request->getQueryParams()['item_id'] ?? 0);
+        $createdAt = (int) ($request->getQueryParams()['created_at'] ?? 0);
 
         try {
             $this->dbh->beginTransaction();
@@ -576,13 +612,17 @@ class Service
                 $seller = $this->getUserSimpleByID($item['seller_id']);
                 if ($seller === false) {
                     $this->dbh->rollBack();
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
+                    $response->getBody()->write(json_encode(['error' => 'seller not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
 
                 $category = $this->getCategoryByID($item['category_id']);
                 if ($category === false) {
                     $this->dbh->rollBack();
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
+                    $response->getBody()->write(json_encode(['error' => 'seller not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
                 $detail = [
                         'id' => (int) $item['id'],
@@ -602,7 +642,9 @@ class Service
                     $buyer = $this->getUserSimpleByID($item['buyer_id']);
                     if ($buyer === false) {
                         $this->dbh->rollBack();
-                        return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'buyer not found']);
+                        $response->getBody()->write(json_encode(['error' => 'buyer not found']));
+
+                        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                     }
                     $detail['buyer_id'] = (int) $item['buyer_id'];
                     $detail['buyer'] = $buyer;
@@ -625,7 +667,9 @@ class Service
                         $shipping = $sth->fetch(PDO::FETCH_ASSOC);
                         if ($shipping === false) {
                             $this->dbh->rollBack();
-                            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shipping not found']);
+                            $response->getBody()->write(json_encode(['error' => 'shipping not found']));
+
+                            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                         }
 
                         $client = new Client();
@@ -640,12 +684,16 @@ class Service
                             if ($e->hasResponse()) {
                                 $this->logger->error($e->getResponse()->getReasonPhrase());
                             }
-                            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                            $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
                         }
-                        if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
+                        if ($r->getStatusCode() !== 200) {
                             $this->logger->error(($r->getReasonPhrase()));
                             $this->dbh->rollBack();
-                            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                            $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
                         }
                         $shippingResponse = json_decode($r->getBody());
 
@@ -668,13 +716,16 @@ class Service
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson([
+        $response->getBody()->write(json_encode([
             'items' => $itemDetails,
             'has_next' => $hasNext,
-        ]);
+        ]));
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function register(Request $request, Response $response, array $args)
@@ -683,16 +734,22 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if (empty($payload->account_name) || empty($payload->address) || empty($payload->password)) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'all parameters are required']);
+            $response->getBody()->write(json_encode(['error' => 'all parameters are required']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         $hashedPassword = password_hash($payload->password, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]);
         if ($hashedPassword === false) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'error']);
+            $response->getBody()->write(json_encode(['error' => 'error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -704,14 +761,17 @@ class Service
             $userId = $this->dbh->lastInsertId();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         $this->session->set('user_id', $userId);
         $bytes = random_bytes(20);
         $this->session->set('csrf_token', bin2hex($bytes));
 
-        return $response->withJson(['id' => $userId, 'account_name' => $payload->account_name, 'address' => $payload->address]);
+        $response->getBody()->write(json_encode(['id' => $userId, 'account_name' => $payload->account_name, 'address' => $payload->address]));
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function login(Request $request, Response $response, array $args)
@@ -720,11 +780,15 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if (empty($payload->account_name) || empty($payload->password)) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'all parameters are required']);
+            $response->getBody()->write(json_encode(['error' => 'all parameters are required']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -736,29 +800,38 @@ class Service
             $user = $sth->fetch(PDO::FETCH_ASSOC);
 
             if ($user === false) {
-                return $response->withStatus(StatusCode::HTTP_UNAUTHORIZED)->withJson(['error' => 'アカウント名かパスワードが間違えています']);
+                $response->getBody()->write(json_encode(['error' => 'アカウント名かパスワードが間違えています']));
+
+                return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         if (! password_verify($payload->password, $user['hashed_password'])) {
-            return $response->withStatus(StatusCode::HTTP_UNAUTHORIZED)->withJson(['error' => 'アカウント名かパスワードが間違えています']);
+            $response->getBody()->write(json_encode(['error' => 'アカウント名かパスワードが間違えています']));
+
+            return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
         }
 
         $this->session->set('user_id', $user['id']);
         $bytes = random_bytes(20);
         $this->session->set('csrf_token', bin2hex($bytes));
 
-        return $response->withJson(
+        $response->getBody()->write(json_encode(
             [
                 'id' => $user['id'],
                 'account_name' => $user['account_name'],
                 'address' => $user['address'],
                 'num_sell_items' => $user['num_sell_items'],
             ]
-        );
+        ));
+
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function settings(Request $request, Response $response, array $args)
@@ -778,12 +851,17 @@ class Service
         $sth->execute();
         $categories = $sth->fetchAll();
         if ($categories === false) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
         $output['categories'] = $categories;
         $output['payment_service_url'] = $this->getPaymentServiceURL();
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson($output);
+        $response->getBody()->write(json_encode($output));
+
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function item(Request $request, Response $response, array $args)
@@ -794,9 +872,13 @@ class Service
             $user = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -807,7 +889,9 @@ class Service
             }
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
+                $response->getBody()->write(json_encode(['error' => 'item not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
             $item['image_url'] = $this->getImageUrl($item['image_name']);
             $category = $this->getCategoryByID($item['category_id']);
@@ -820,7 +904,9 @@ class Service
             }
             $seller = $sth->fetch(PDO::FETCH_ASSOC);
             if ($seller === false) {
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
+                $response->getBody()->write(json_encode(['error' => 'seller not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             $item['seller'] = $this->simplifyUser($seller);
@@ -833,7 +919,9 @@ class Service
                 }
                 $buyer = $sth->fetch(PDO::FETCH_ASSOC);
                 if ($buyer === false) {
-                    return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'buyer not found']);
+                    $response->getBody()->write(json_encode(['error' => 'buyer not found']));
+
+                    return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                 }
                 $item['buyer'] = $this->simplifyUser($buyer);
 
@@ -851,7 +939,9 @@ class Service
                     }
                     $shipping = $sth->fetch();
                     if ($shipping === false) {
-                        return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shipping not found']);
+                        $response->getBody()->write(json_encode(['error' => 'shipping not found']));
+
+                        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
                     }
                     $item['transaction_evidence_id'] = $transactionEvidence["id"];
                     $item['transaction_evidence_status'] = $transactionEvidence["status"];
@@ -861,48 +951,63 @@ class Service
                 unset($item['buyer_id']);
             }
         } catch (\PDOException $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
         unset($item['updated_at']);
         $item['created_at'] = (new \DateTime($item['created_at']))->getTimestamp();
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson($item);
+        $response->getBody()->write(json_encode($item));
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
 
     public function sell(Request $request, Response $response, array $args)
     {
-        $csrf_token = $request->getParam('csrf_token', '');
-        $name = $request->getParam('name', '');
-        $description = $request->getParam('description', '');
-        $price = (int) $request->getParam('price', 0);
-        $category_id = (int) $request->getParam('category_id', 0);
+        $csrf_token = $request->getParsedBody()['csrf_token'] ?? '';
+        $name = $request->getParsedBody()['name'] ?? '';
+        $description = $request->getParsedBody()['description'] ?? '';
+        $price = (int) ($request->getParsedBody()['price'] ?? 0);
+        $category_id = (int) ($request->getParsedBody()['category_id'] ?? 0);
         /** @var UploadedFileInterface[] $files */
         $files = $request->getUploadedFiles();
 
         if ($csrf_token !== $this->session->get('csrf_token')) {
-            return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
+            $response->getBody()->write(json_encode(['error' => 'csrf token error']));
+
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
         }
 
         if (empty($name) || empty($description) || empty($price) || $price === 0 || empty($category_id)) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'all parameters are required']);
+            $response->getBody()->write(json_encode(['error' => 'all parameters are required']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if ($price < self::MIN_ITEM_PRICE || $price > self::MAX_ITEM_PRICE) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']);
+            $response->getBody()->write(json_encode(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         $category = $this->getCategoryByID($category_id);
         if ($category === false) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'Incorrect category ID']);
+            $response->getBody()->write(json_encode(['error' => 'Incorrect category ID']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if (! array_key_exists('image', $files)) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'image error']);
+            $response->getBody()->write(json_encode(['error' => 'image error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
         $image = $files['image'];
         $ext = pathinfo($image->getClientFilename(), PATHINFO_EXTENSION);
         if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'unsupported image format error']);
+            $response->getBody()->write(json_encode(['error' => 'unsupported image format error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
         if ($ext === 'jpeg') {
             $ext = 'jpg';
@@ -914,16 +1019,22 @@ class Service
             $image->moveTo(sprintf('%s/%s', $this->settings['app']['upload_path'], $imageName));
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'Saving image failed']);
+            $response->getBody()->write(json_encode(['error' => 'Saving image failed']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
             $user = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -937,7 +1048,9 @@ class Service
             if ($seller === false) {
                 $this->dbh->rollBack();
                 $this->logger->warning('seller not found');
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+                $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('INSERT INTO `items` (`seller_id`, `status`, `name`, `price`, `description`, `image_name`, `category_id`) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -967,12 +1080,17 @@ class Service
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         $this->dbh->commit();
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(['id' => (int) $itemId]);
+        $response->getBody()->write(json_encode(['id' => (int) $itemId]));
+
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function edit(Request $request, Response $response, array $args)
@@ -981,24 +1099,33 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if ($payload->csrf_token !== $this->session->get('csrf_token')) {
-            return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
+            $response->getBody()->write(json_encode(['error' => 'csrf token error']));
+
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
         }
 
         if ($payload->item_price < self::MIN_ITEM_PRICE || $payload->item_price > self::MAX_ITEM_PRICE) {
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']);
+            $response->getBody()->write(json_encode(['error' => '商品価格は100ｲｽｺｲﾝ以上、1,000,000ｲｽｺｲﾝ以下にしてください']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         try {
             $user = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -1010,11 +1137,15 @@ class Service
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->logger->warning('item not found', ['id' => $payload->item_id]);
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
+                $response->getBody()->write(json_encode(['error' => 'item not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($item['seller_id'] !== $user['id']) {
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '自分の商品以外は編集できません']);
+                $response->getBody()->write(json_encode(['error' => '自分の商品以外は編集できません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $this->dbh->beginTransaction();
@@ -1027,7 +1158,9 @@ class Service
 
             if ($item['status'] !== self::ITEM_STATUS_ON_SALE) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '販売中の商品以外編集できません']);
+                $response->getBody()->write(json_encode(['error' => '販売中の商品以外編集できません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `price` = ?, `updated_at` = ? WHERE `id` = ?');
@@ -1047,15 +1180,18 @@ class Service
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson([
+        $response->getBody()->write(json_encode([
             'item_id' => (int) $item['id'],
             'item_price' => (int) $item['price'],
             'item_created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
-            'item_updated_at' => (new \DateTime($item['updated_at']))->getTImestamp(),
-        ]);
+            'item_updated_at' => (new \DateTime($item['updated_at']))->getTimestamp(),
+        ]));
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function qrcode(Request $request, Response $response, array $args)
@@ -1065,9 +1201,13 @@ class Service
             $seller = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -1078,11 +1218,15 @@ class Service
             }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidences not found']);
+                $response->getBody()->write(json_encode(['error' => 'transaction_evidences not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($transactionEvidence['seller_id'] !== $seller['id']) {
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '権限がありません']);
+                $response->getBody()->write(json_encode(['error' => '権限がありません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?');
@@ -1092,19 +1236,27 @@ class Service
             }
             $shipping = $sth->fetch(PDO::FETCH_ASSOC);
             if ($shipping === false) {
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shippings not found']);
+                $response->getBody()->write(json_encode(['error' => 'shippings not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($shipping['status'] !== self::SHIPPING_STATUS_WAIT_PICKUP && $shipping['status'] !== self::SHIPPING_STATUS_SHIPPING) {
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => 'qrcode not available']);
+                $response->getBody()->write(json_encode(['error' => 'qrcode not available']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             if (empty($shipping['img_binary'])) {
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'empty qrcode image']);
+                $response->getBody()->write(json_encode(['error' => 'empty qrcode image']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         $response->getBody()->write($shipping['img_binary']);
@@ -1117,20 +1269,28 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if ($payload->csrf_token !== $this->session->get('csrf_token')) {
-            return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
+            $response->getBody()->write(json_encode(['error' => 'csrf token error']));
+
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
         }
 
         try {
             $buyer = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -1144,17 +1304,23 @@ class Service
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
+                $response->getBody()->write(json_encode(['error' => 'item not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($item['status'] !== self::ITEM_STATUS_ON_SALE) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => 'item is not for sale']);
+                $response->getBody()->write(json_encode(['error' => 'item is not for sale']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             if ($item['seller_id'] === $buyer['id']) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '自分の商品は買えません']);
+                $response->getBody()->write(json_encode(['error' => '自分の商品は買えません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE');
@@ -1165,12 +1331,16 @@ class Service
             $seller = $sth->fetch(PDO::FETCH_ASSOC);
             if ($seller === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'seller not found']);
+                $response->getBody()->write(json_encode(['error' => 'seller not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             $category = $this->getCategoryByID($item['category_id']);
             if ($category === false) {
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'category id error']);
+                $response->getBody()->write(json_encode(['error' => 'category id error']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('INSERT INTO `transaction_evidences` '.
@@ -1225,12 +1395,16 @@ class Service
                 if ($e->hasResponse()) {
                     $this->logger->error($e->getResponse()->getReasonPhrase());
                 }
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
-            if ($res->getStatusCode() != StatusCode::HTTP_OK) {
+            if ($res->getStatusCode() != 200) {
                 $this->dbh->rollBack();
                 $this->logger->error($res->getReasonPhrase());
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
             $shippingResponse = json_decode($res->getBody());
 
@@ -1252,35 +1426,47 @@ class Service
                 if ($e->hasResponse()) {
                     $this->logger->error($e->getResponse()->getReasonPhrase());
                 }
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'payment service is failed']);
+                $response->getBody()->write(json_encode(['error' => 'payment service is failed']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
 
-            if ($pres->getStatusCode() != StatusCode::HTTP_OK) {
+            if ($pres->getStatusCode() != 200) {
                 $this->dbh->rollBack();
                 $this->logger->error($res->getReasonPhrase());
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'payment service is failed']);
+                $response->getBody()->write(json_encode(['error' => 'payment service is failed']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
 
             $paymentResponse = json_decode($pres->getBody());
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $this->dbh->rollBack();
                 $this->logger->error(json_last_error_msg());
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'payment service is failed']);
+                $response->getBody()->write(json_encode(['error' => 'payment service is failed']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
 
             if ($paymentResponse->status === 'invalid') {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'カード情報に誤りがあります']);
+                $response->getBody()->write(json_encode(['error' => 'カード情報に誤りがあります']));
+
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
             }
 
             if ($paymentResponse->status === 'fail') {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'カードの残高が足りません']);
+                $response->getBody()->write(json_encode(['error' => 'カードの残高が足りません']));
+
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
             }
 
             if ($paymentResponse->status !== 'ok') {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => '想定外のエラー']);
+                $response->getBody()->write(json_encode(['error' => '想定外のエラー']));
+
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('INSERT INTO `shippings` '.
@@ -1308,10 +1494,15 @@ class Service
         } catch (\PDOException $e) {
             $this->dbh->rollBack();
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(['transaction_evidence_id' => (int) $transactionEvidenceId]);
+        $response->getBody()->write(json_encode(['transaction_evidence_id' => (int) $transactionEvidenceId]));
+
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function ship(Request $request, Response $response, array $args)
@@ -1320,20 +1511,28 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if ($payload->csrf_token !== $this->session->get('csrf_token')) {
-            return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
+            $response->getBody()->write(json_encode(['error' => 'csrf token error']));
+
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
         }
 
         try {
             $seller = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -1344,11 +1543,15 @@ class Service
             }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidences not found']);
+                $response->getBody()->write(json_encode(['error' => 'transaction_evidences not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($transactionEvidence['seller_id'] !== $seller['id']) {
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '権限がありません']);
+                $response->getBody()->write(json_encode(['error' => '権限がありません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $this->dbh->beginTransaction();
@@ -1360,12 +1563,16 @@ class Service
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
+                $response->getBody()->write(json_encode(['error' => 'item not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($item['status'] !== self::ITEM_STATUS_TRADING) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => '商品が取引中ではありません']);
+                $response->getBody()->write(json_encode(['error' => '商品が取引中ではありません']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE');
@@ -1376,12 +1583,16 @@ class Service
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidences not found']);
+                $response->getBody()->write(json_encode(['error' => 'transaction_evidences not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($transactionEvidence['status'] !== self::TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '準備ができていません']);
+                $response->getBody()->write(json_encode(['error' => '準備ができていません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE');
@@ -1392,7 +1603,9 @@ class Service
             $shipping = $sth->fetch(PDO::FETCH_ASSOC);
             if ($shipping === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shippings not found']);
+                $response->getBody()->write(json_encode(['error' => 'shippings not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             $client = new Client();
@@ -1411,12 +1624,16 @@ class Service
                 if ($e->hasResponse()) {
                     $this->logger->error($e->getResponse()->getReasonPhrase());
                 }
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
-            if ($res->getStatusCode() !== StatusCode::HTTP_OK) {
+            if ($res->getStatusCode() !== 200) {
                 $this->logger->error($res->getReasonPhrase());
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `img_binary` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
@@ -1433,13 +1650,16 @@ class Service
             $this->dbh->commit();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson([
+        $response->getBody()->write(json_encode([
             'path' => sprintf("/transactions/%d.png", (int) $transactionEvidence['id']),
             'reserve_id' => (string) $shipping['reserve_id'],
-        ]);
+        ]));
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function ship_done(Request $request, Response $response, array $args)
@@ -1448,20 +1668,28 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if ($payload->csrf_token !== $this->session->get('csrf_token')) {
-            return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
+            $response->getBody()->write(json_encode(['error' => 'csrf token error']));
+
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
         }
 
         try {
             $seller = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -1472,11 +1700,15 @@ class Service
             }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidence not found']);
+                $response->getBody()->write(json_encode(['error' => 'transaction_evidence not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($transactionEvidence['seller_id'] !== $seller['id']) {
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '権限がありません']);
+                $response->getBody()->write(json_encode(['error' => '権限がありません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $this->dbh->beginTransaction();
@@ -1489,12 +1721,16 @@ class Service
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
+                $response->getBody()->write(json_encode(['error' => 'item not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($item['status'] != self::ITEM_STATUS_TRADING) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '商品が取引中ではありません']);
+                $response->getBody()->write(json_encode(['error' => '商品が取引中ではありません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE');
@@ -1505,12 +1741,16 @@ class Service
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidences not found']);
+                $response->getBody()->write(json_encode(['error' => 'transaction_evidences not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($transactionEvidence['status'] !== self::TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '準備ができていません']);
+                $response->getBody()->write(json_encode(['error' => '準備ができていません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE');
@@ -1521,7 +1761,9 @@ class Service
             $shipping = $sth->fetch(PDO::FETCH_ASSOC);
             if ($shipping === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shippings not found']);
+                $response->getBody()->write(json_encode(['error' => 'shippings not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             $client = new Client();
@@ -1536,17 +1778,23 @@ class Service
                 if ($e->hasResponse()) {
                     $this->logger->error($e->getResponse()->getReasonPhrase());
                 }
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
-            if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
+            if ($r->getStatusCode() !== 200) {
                 $this->logger->error($r->getReasonPhrase());
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
             $shippingResponse = json_decode($r->getBody());
             if (! ($shippingResponse->status === self::SHIPPING_STATUS_DONE || $shippingResponse->status === self::SHIPPING_STATUS_SHIPPING)) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => 'shipment service側で配送中か配送完了になっていません']);
+                $response->getBody()->write(json_encode(['error' => 'shipment service側で配送中か配送完了になっていません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
@@ -1572,10 +1820,15 @@ class Service
             $this->dbh->commit();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(['transaction_evidence_id' => (int) $transactionEvidence['id']]);
+        $response->getBody()->write(json_encode(['transaction_evidence_id' => (int) $transactionEvidence['id']]));
+
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function complete(Request $request, Response $response, array $args)
@@ -1584,20 +1837,28 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if ($payload->csrf_token !== $this->session->get('csrf_token')) {
-            return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
+            $response->getBody()->write(json_encode(['error' => 'csrf token error']));
+
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
         }
 
         try {
             $buyer = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -1608,11 +1869,15 @@ class Service
             }
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidence not found']);
+                $response->getBody()->write(json_encode(['error' => 'transaction_evidence not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($transactionEvidence['buyer_id'] !== $buyer['id']) {
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '権限がありません']);
+                $response->getBody()->write(json_encode(['error' => '権限がありません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $this->dbh->beginTransaction();
@@ -1625,12 +1890,16 @@ class Service
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
+                $response->getBody()->write(json_encode(['error' => 'item not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($item['status'] != self::ITEM_STATUS_TRADING) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '商品が取引中ではありません']);
+                $response->getBody()->write(json_encode(['error' => '商品が取引中ではありません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE');
@@ -1641,12 +1910,16 @@ class Service
             $transactionEvidence = $sth->fetch(PDO::FETCH_ASSOC);
             if ($transactionEvidence === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'transaction_evidences not found']);
+                $response->getBody()->write(json_encode(['error' => 'transaction_evidences not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($transactionEvidence['status'] !== self::TRANSACTION_EVIDENCE_STATUS_WAIT_DONE) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '準備ができていません']);
+                $response->getBody()->write(json_encode(['error' => '準備ができていません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE');
@@ -1657,7 +1930,9 @@ class Service
             $shipping = $sth->fetch(PDO::FETCH_ASSOC);
             if ($shipping === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'shippings not found']);
+                $response->getBody()->write(json_encode(['error' => 'shippings not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             $client = new Client();
@@ -1672,17 +1947,23 @@ class Service
                 if ($e->hasResponse()) {
                     $this->logger->error($e->getResponse()->getReasonPhrase());
                 }
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
-            if ($r->getStatusCode() !== StatusCode::HTTP_OK) {
+            if ($r->getStatusCode() !== 200) {
                 $this->logger->error($r->getReasonPhrase());
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'failed to request to shipment service']);
+                $response->getBody()->write(json_encode(['error' => 'failed to request to shipment service']));
+
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
             }
             $shippingResponse = json_decode($r->getBody());
             if ($shippingResponse->status !== self::SHIPPING_STATUS_DONE) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'shipment service側で配送完了になっていません']);
+                $response->getBody()->write(json_encode(['error' => 'shipment service側で配送完了になっていません']));
+
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('UPDATE `shippings` SET `status` = ?, `updated_at` = ? WHERE `transaction_evidence_id` = ?');
@@ -1718,10 +1999,15 @@ class Service
             $this->dbh->commit();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson(['transaction_evidence_id' => (int) $transactionEvidence['id']]);
+        $response->getBody()->write(json_encode(['transaction_evidence_id' => (int) $transactionEvidence['id']]));
+
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function bump(Request $request, Response $response, array $args)
@@ -1730,20 +2016,28 @@ class Service
             $payload = $this->jsonPayload($request);
         } catch (\InvalidArgumentException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_BAD_REQUEST)->withJson(['error' => 'json decode error']);
+            $response->getBody()->write(json_encode(['error' => 'json decode error']));
+
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         if ($payload->csrf_token !== $this->session->get('csrf_token')) {
-            return $response->withStatus(StatusCode::HTTP_UNPROCESSABLE_ENTITY)->withJson(['error' => 'csrf token error']);
+            $response->getBody()->write(json_encode(['error' => 'csrf token error']));
+
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
         }
 
         try {
             $user = $this->getCurrentUser();
         } catch (\DomainException $e) {
             $this->logger->warning('user not found');
-            return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+            $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
         } catch (\Exception $e) {
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         try {
@@ -1757,12 +2051,16 @@ class Service
             $item = $sth->fetch(PDO::FETCH_ASSOC);
             if ($item === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'item not found']);
+                $response->getBody()->write(json_encode(['error' => 'item not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             if ($item['seller_id'] !== $user['id']) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => '自分の商品以外は編集できません']);
+                $response->getBody()->write(json_encode(['error' => '自分の商品以外は編集できません']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE');
@@ -1773,14 +2071,18 @@ class Service
             $seller = $sth->fetch(PDO::FETCH_ASSOC);
             if ($seller === false) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_NOT_FOUND)->withJson(['error' => 'user not found']);
+                $response->getBody()->write(json_encode(['error' => 'user not found']));
+
+                return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
             }
 
             // last_bump + 3s > now
             $now = new \DateTime();
             if ((new \DateTime($seller['last_bump']))->getTimestamp() + self::BUMP_CHARGE_SECONDS > $now->getTimestamp()) {
                 $this->dbh->rollBack();
-                return $response->withStatus(StatusCode::HTTP_FORBIDDEN)->withJson(['error' => 'Bump not allowed']);
+                $response->getBody()->write(json_encode(['error' => 'Bump not allowed']));
+
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
             }
 
             $sth = $this->dbh->prepare('UPDATE `items` SET `created_at`=?, `updated_at`=? WHERE id=?');
@@ -1812,15 +2114,18 @@ class Service
             $this->dbh->commit();
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
-        return $response->withStatus(StatusCode::HTTP_OK)->withJson([
+        $response->getBody()->write(json_encode([
             'item_id' => (int) $item['id'],
             'item_price' => (int) $item['price'],
             'item_created_at' => (new \DateTime($item['created_at']))->getTimestamp(),
             'item_updated_at' => (new \DateTime($item['updated_at']))->getTimestamp(),
-        ]);
+        ]));
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 
     public function reports(Request $request, Response $response, array $args)
@@ -1831,7 +2136,9 @@ class Service
             $transactionEvidences = $sth->fetchAll(PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
             $this->logger->error($e->getMessage());
-            return $response->withStatus(StatusCode::HTTP_INTERNAL_SERVER_ERROR)->withJson(['error' => 'db error']);
+            $response->getBody()->write(json_encode(['error' => 'db error']));
+
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
 
         $t = array_map(function ($e) {
@@ -1840,6 +2147,9 @@ class Service
             return $e;
         }, $transactionEvidences);
 
-        return $response->withJson($t, StatusCode::HTTP_OK);
+        $response->getBody()->write(json_encode($t));
+
+
+        return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     }
 }
