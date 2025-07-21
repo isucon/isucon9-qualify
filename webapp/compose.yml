@@ -16,7 +16,7 @@ services:
   app:
     build:
       context: .
-      # Use ruby/Dockerfile for Ruby, php/Dockerfile for PHP implementation
+      # Use ruby/Dockerfile for Ruby, php/Dockerfile for PHP, python/Dockerfile for Python implementation
       dockerfile: go/Dockerfile
     depends_on:
       mysql:
