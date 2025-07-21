@@ -6,6 +6,7 @@ on:
       - "webapp/go/**"
       - "webapp/ruby/**"
       - "webapp/php/**"
+      - "webapp/python/**"
       - "bench/**"
       - "cmd/**"
       - "initial-data/**"
