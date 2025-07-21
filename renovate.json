@@ -36,6 +36,28 @@
       "matchStrings": [
         "go(?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
       ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/provisioning/roles/python/tasks/main.yml/"
+      ],
+      "datasourceTemplate": "python-version",
+      "depNameTemplate": "python",
+      "matchStrings": [
+        "python-install (?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/provisioning/roles/python/tasks/main.yml/"
+      ],
+      "datasourceTemplate": "python-version",
+      "depNameTemplate": "python",
+      "matchStrings": [
+        "python_version_output.stdout != \"Python (?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
+      ]
     }
   ],
   "packageRules": [
