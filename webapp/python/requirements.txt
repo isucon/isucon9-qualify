@@ -1,4 +1,4 @@
-Flask==3.1.0
+Flask==3.1.1
 gunicorn==23.0.0
 mysqlclient==2.2.6
 bcrypt==4.2.1
