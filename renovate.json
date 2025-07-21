@@ -64,9 +64,9 @@
       "managerFilePatterns": [
         "/provisioning/roles/php/tasks/main.yml/"
       ],
-      "datasourceTemplate": "php-version",
-      "depNameTemplate": "php",
-      "extractVersionTemplate": "^php-(?<version>.*)$",
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "php/php-src",
+      "extractVersionTemplate": "^php-(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)$",
       "matchStrings": [
         "php-install (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
       ]
@@ -76,9 +76,9 @@
       "managerFilePatterns": [
         "/provisioning/roles/php/tasks/main.yml/"
       ],
-      "datasourceTemplate": "php-version",
-      "depNameTemplate": "php",
-      "extractVersionTemplate": "^php-(?<version>.*)$",
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "php/php-src",
+      "extractVersionTemplate": "^php-(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)$",
       "matchStrings": [
         "php_version_output\\.stdout != \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
       ]
