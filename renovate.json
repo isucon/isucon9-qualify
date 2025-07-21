@@ -58,6 +58,30 @@
       "matchStrings": [
         "python_version_output.stdout != \"Python (?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
       ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/provisioning/roles/php/tasks/main.yml/"
+      ],
+      "datasourceTemplate": "php-version",
+      "depNameTemplate": "php",
+      "extractVersionTemplate": "^php-(?<version>.*)$",
+      "matchStrings": [
+        "php-install (?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/provisioning/roles/php/tasks/main.yml/"
+      ],
+      "datasourceTemplate": "php-version",
+      "depNameTemplate": "php",
+      "extractVersionTemplate": "^php-(?<version>.*)$",
+      "matchStrings": [
+        "php_version_output\\.stdout != \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ]
     }
   ],
   "packageRules": [
