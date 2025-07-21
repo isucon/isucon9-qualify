@@ -1,6 +1,6 @@
 Flask==3.1.1
 gunicorn==23.0.0
 mysqlclient==2.2.7
-bcrypt==4.2.1
+bcrypt==4.3.0
 requests==2.32.4
 python-dotenv==1.0.1
