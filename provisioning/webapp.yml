@@ -10,14 +10,14 @@
     - mysql
     - golang
     # - perl
-    # - php
+    - php
     - ruby
     # - python
     # - nodejs
     - webapp.mysql
     - webapp.golang
     # - webapp.perl
-    # - webapp.php
+    - webapp.php
     - webapp.ruby
     # - webapp.python
     # - webapp.nodejs
@@ -37,3 +37,4 @@
         - nginx.service
         - mysql.service
         - isucari.golang.service
+        - isucari.php.service
