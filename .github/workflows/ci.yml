@@ -7,6 +7,7 @@ on:
       - "webapp/ruby/**"
       - "webapp/php/**"
       - "webapp/python/**"
+      - "webapp/nodejs/**"
       - "bench/**"
       - "cmd/**"
       - "initial-data/**"
@@ -50,6 +51,10 @@ jobs:
             echo "Changes detected in python directory"
             echo "python_changes_detected=true" >> $GITHUB_OUTPUT
           fi
+          if echo "$CHANGED_FILES" | grep 'webapp/nodejs/'; then
+            echo "Changes detected in nodejs directory"
+            echo "nodejs_changes_detected=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Download purl
         run: |
@@ -73,6 +78,11 @@ jobs:
         if: steps.check-changes.outputs.python_changes_detected == 'true'
         run: |
           purl -fail -overwrite -replace '@dockerfile: go/@dockerfile: python/@' ./webapp/compose.yml
+
+      - name: Update compose.yml for Node.js if changes are detected
+        if: steps.check-changes.outputs.nodejs_changes_detected == 'true'
+        run: |
+          purl -fail -overwrite -replace '@dockerfile: go/@dockerfile: nodejs/@' ./webapp/compose.yml
 
       - name: Update nginx config for PHP if changes are detected
         if: steps.check-changes.outputs.php_changes_detected == 'true'
