@@ -793,7 +793,7 @@ def post_buy():
             except (socket.gaierror, requests.HTTPError) as err:
                 conn.rollback()
                 app.logger.exception(err)
-                http_json_error(requests.codes['internal_server_error'])
+                http_json_error(requests.codes['internal_server_error'], "api cannot be reached")
 
             shipping_res = res.json()
 
@@ -810,7 +810,7 @@ def post_buy():
             except (socket.gaierror, requests.HTTPError) as err:
                 conn.rollback()
                 app.logger.exception(err)
-                http_json_error(requests.codes['internal_server_error'])
+                http_json_error(requests.codes['internal_server_error'], "api cannot be reached")
 
             payment_res = res.json()
             if payment_res['status'] == "invalid":
