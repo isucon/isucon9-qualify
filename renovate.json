@@ -82,6 +82,28 @@
       "matchStrings": [
         "php_version_output\\.stdout != \"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
       ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/provisioning/roles/nodejs/tasks/main.yml/"
+      ],
+      "datasourceTemplate": "node-version",
+      "depNameTemplate": "node",
+      "matchStrings": [
+        "node-install v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/provisioning/roles/nodejs/tasks/main.yml/"
+      ],
+      "datasourceTemplate": "node-version",
+      "depNameTemplate": "node",
+      "matchStrings": [
+        "nodejs_version_output\\.stdout != \"v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ]
     }
   ],
   "packageRules": [
