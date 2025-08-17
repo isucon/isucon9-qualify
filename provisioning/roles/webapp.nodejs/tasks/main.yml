@@ -1,10 +1,18 @@
-- name: Install isucari.nodejs
+- name: Install isucari.nodejs dependencies
   become: yes
   become_user: isucon
   args:
     chdir: /home/isucon/isucari/webapp/nodejs
   shell: |
     bash -lc "/home/isucon/local/node/bin/npm install"
+
+- name: Build isucari.nodejs
+  become: yes
+  become_user: isucon
+  args:
+    chdir: /home/isucon/isucari/webapp/nodejs
+  shell: |
+    bash -lc "/home/isucon/local/node/bin/npm run build"
 
 - name: Copy isucari.nodejs unit file
   copy:
