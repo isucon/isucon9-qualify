@@ -1036,7 +1036,7 @@ app.get('/transactions/:transaction_evidence_id.png', async (c) => {
     }
 
     c.header('Content-Type', 'image/png');
-    return c.body(shipping.img_binary);
+    return c.body(new Uint8Array(shipping.img_binary));
   } finally {
     conn.release();
   }
