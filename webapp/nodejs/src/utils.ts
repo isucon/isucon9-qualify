@@ -1,14 +1,13 @@
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
 import bcrypt from 'bcrypt';
 import { BCRYPT_COST } from './constants.js';
 
 export function secureRandomStr(length: number): string {
   const k = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-';
-  const bytes = randomBytes(length);
   let result = '';
 
   for (let i = 0; i < length; i++) {
-    result += k[bytes[i]! % k.length];
+    result += k[randomInt(k.length)];
   }
 
   return result;
