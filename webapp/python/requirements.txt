@@ -1,6 +1,0 @@
-Flask==3.1.2
-gunicorn==23.0.0
-mysqlclient==2.2.7
-bcrypt==5.0.0
-requests==2.32.5
-python-dotenv==1.1.1
