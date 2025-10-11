@@ -1,3 +1,12 @@
+- name: Install uv for isucon
+  become: yes
+  become_user: isucon
+  pip:
+    name: uv
+    extra_args: --user --no-cache-dir
+    executable: python3
+    state: latest
+
 - name: Install for isucari.python
   become: yes
   become_user: isucon
@@ -6,8 +15,9 @@
   shell: |
     bash -lc "
     set -eu
-    python3 -m venv venv
-    ./venv/bin/pip install -r requirements.txt
+    export PATH=\"${HOME}/.local/bin:${PATH}\"
+    rm -rf .venv
+    UV_PROJECT_ENVIRONMENT=.venv uv sync --no-dev --compile-bytecode
     "
 
 - name: Copy isucari.python unit file

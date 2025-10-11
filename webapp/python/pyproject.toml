@@ -1,0 +1,16 @@
+[project]
+name = "isucari-python"
+version = "0.1.0"
+description = "ISUCON9 qualifier python implementation"
+requires-python = ">=3.13"
+dependencies = [
+    "Flask==3.1.2",
+    "gunicorn==23.0.0",
+    "mysqlclient==2.2.7",
+    "bcrypt==5.0.0",
+    "requests==2.32.5",
+    "python-dotenv==1.1.1",
+]
+
+[tool.uv]
+package = false
