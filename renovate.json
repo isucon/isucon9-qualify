@@ -118,7 +118,7 @@
     },
     {
       "matchManagers": ["npm"],
-      "rangeStrategy": "update-lockfile"
+      "rangeStrategy": "bump"
     }
   ],
   "postUpdateOptions": [
