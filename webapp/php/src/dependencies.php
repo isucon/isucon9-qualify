@@ -32,12 +32,9 @@ return function (Container $container, array $settings) {
     // Database
     $container->set('dbh', function (ContainerInterface $c) {
         $settings = $c->get('settings')['database'];
-        
+
         $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s', $settings['host'], $settings['port'], $settings['dbname']);
-        $options = [
-            PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
-        ];
-        $pdo = new PDO($dsn, $settings['username'], $settings['password'], $options);
+        $pdo = new PDO($dsn, $settings['username'], $settings['password']);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         return $pdo;
