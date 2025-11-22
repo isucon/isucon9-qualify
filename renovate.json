@@ -115,6 +115,10 @@
         "nginx"
       ],
       "versioning": "regex:^(?<major>[0-9]+)\\.(?<minor>[0-9]*[02468])(?<patch>\\d*)$"
+    },
+    {
+      "matchManagers": ["npm"],
+      "rangeStrategy": "update-lockfile"
     }
   ],
   "postUpdateOptions": [
