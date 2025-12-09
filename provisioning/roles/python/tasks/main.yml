@@ -16,11 +16,11 @@
 - name: Install Python
   become: yes
   become_user: isucon
-  when: python_version_output is failed or python_version_output.stdout != "Python 3.14.1"
+  when: python_version_output is failed or python_version_output.stdout != "Python 3.14.2"
   args:
     chdir: /home/isucon
   command: |
-    /home/isucon/xbuild/python-install 3.14.1 /home/isucon/local/python
+    /home/isucon/xbuild/python-install 3.14.2 /home/isucon/local/python
 
 - name: Add PATH for Python
   become: yes
