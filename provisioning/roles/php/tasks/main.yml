@@ -16,11 +16,11 @@
 - name: Install PHP
   become: yes
   become_user: isucon
-  when: php_version_output is failed or php_version_output.stdout != "8.4.14"
+  when: php_version_output is failed or php_version_output.stdout != "8.5.1"
   args:
     chdir: /home/isucon
   command: >
-    /home/isucon/xbuild/php-install 8.4.14 /home/isucon/local/php --
+    /home/isucon/xbuild/php-install 8.5.1 /home/isucon/local/php --
     --enable-fpm --enable-pdo --with-pear --with-mysqli=mysqlnd 
     --with-pdo-mysql=mysqlnd --with-openssl --enable-opcache --enable-bcmath 
     --with-bz2 --enable-calendar --enable-cli --enable-shmop --enable-sysvsem 
