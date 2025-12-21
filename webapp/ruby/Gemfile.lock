@@ -3,7 +3,7 @@ GEM
   specs:
     base64 (0.3.0)
     bcrypt (3.1.20)
-    bigdecimal (3.3.1)
+    bigdecimal (4.0.1)
     logger (1.7.0)
     multi_json (1.17.0)
     mustermann (3.0.4)
