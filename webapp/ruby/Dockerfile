@@ -18,8 +18,7 @@ WORKDIR /home/webapp
 
 COPY ruby/Gemfile ./
 COPY ruby/Gemfile.lock ./
-RUN bundle config set --local path 'vendor/bundle'
-RUN bundle install
+RUN bundle config set --local path 'vendor/bundle' && bundle install
 
 COPY ruby /home/webapp
 
