@@ -40,6 +40,28 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
+        "/.github/workflows/codeql.yml/"
+      ],
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "golang",
+      "matchStrings": [
+        "go-version: (?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/osv-scanner.toml/"
+      ],
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "golang",
+      "matchStrings": [
+        "GoVersionOverride = \"(?<currentValue>[0-9]*.[0-9]*.[0-9]*)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
         "/provisioning/roles/python/tasks/main.yml/"
       ],
       "datasourceTemplate": "python-version",
@@ -118,6 +140,12 @@
     },
     {
       "matchManagers": ["npm"],
+      "rangeStrategy": "bump"
+    },
+    {
+      "matchManagers": [
+        "pep621"
+      ],
       "rangeStrategy": "bump"
     }
   ],
