@@ -32,7 +32,7 @@
         "/provisioning/roles/golang/tasks/main.yml/"
       ],
       "datasourceTemplate": "golang-version",
-      "depNameTemplate": "golang",
+      "depNameTemplate": "go",
       "matchStrings": [
         "go(?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
       ]
@@ -43,9 +43,9 @@
         "/.github/workflows/codeql.yml/"
       ],
       "datasourceTemplate": "golang-version",
-      "depNameTemplate": "golang",
+      "depNameTemplate": "go",
       "matchStrings": [
-        "go-version: (?<currentValue>[0-9]*.[0-9]*.[0-9]*)"
+        "go-version: \"?(?<currentValue>[0-9]*.[0-9]*.[0-9]*)\"?"
       ]
     },
     {
@@ -54,9 +54,9 @@
         "/osv-scanner.toml/"
       ],
       "datasourceTemplate": "golang-version",
-      "depNameTemplate": "golang",
+      "depNameTemplate": "go",
       "matchStrings": [
-        "GoVersionOverride = \"(?<currentValue>[0-9]*.[0-9]*.[0-9]*)\""
+        "GoVersionOverride = \"?(?<currentValue>[0-9]*.[0-9]*.[0-9]*)\"?"
       ]
     },
     {
