@@ -16,11 +16,11 @@
 - name: Install Node.js
   become: yes
   become_user: isucon
-  when: nodejs_version_output is failed or nodejs_version_output.stdout != "v24.13.1"
+  when: nodejs_version_output is failed or nodejs_version_output.stdout != "v24.14.0"
   args:
     chdir: /home/isucon
   command: |
-    /home/isucon/xbuild/node-install v24.13.1 /home/isucon/local/node
+    /home/isucon/xbuild/node-install v24.14.0 /home/isucon/local/node
 
 - name: Add PATH for Node.js
   become: yes
