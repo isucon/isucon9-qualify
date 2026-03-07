@@ -14,7 +14,7 @@
 
 - name: download go binary
   unarchive:
-    src="https://go.dev/dl/go1.25.7.{{ uname_res.stdout }}-{{ arch_res.stdout }}.tar.gz"
+    src="https://go.dev/dl/go1.26.0.{{ uname_res.stdout }}-{{ arch_res.stdout }}.tar.gz"
     dest=/usr/local/
     remote_src=yes
 
