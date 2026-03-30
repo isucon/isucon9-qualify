@@ -8,7 +8,7 @@ dependencies = [
     "gunicorn==25.3.0",
     "mysqlclient==2.2.8",
     "bcrypt==5.0.0",
-    "requests==2.33.0",
+    "requests==2.33.1",
     "python-dotenv==1.2.2",
 ]
 
