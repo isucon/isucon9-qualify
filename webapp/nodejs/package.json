@@ -19,7 +19,7 @@
     "@hono/node-server": "^1.19.14",
     "bcrypt": "^6.0.0",
     "hono": "^4.12.14",
-    "mysql2": "^3.22.1",
+    "mysql2": "^3.22.2",
     "iron-session": "^8.0.4",
     "qrcode": "^1.5.4"
   },
