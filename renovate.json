@@ -147,6 +147,76 @@
         "pep621"
       ],
       "rangeStrategy": "bump"
+    },
+    {
+      "description": [
+        "Keep lock file maintenance PRs split by application."
+      ],
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchFileNames": [
+        "webapp/go/go.mod",
+        "webapp/go/go.sum"
+      ],
+      "branchTopic": "go-lock-file-maintenance",
+      "commitMessageTopic": "Go lock file"
+    },
+    {
+      "description": [
+        "Keep lock file maintenance PRs split by application."
+      ],
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchFileNames": [
+        "webapp/ruby/Gemfile",
+        "webapp/ruby/Gemfile.lock"
+      ],
+      "branchTopic": "ruby-lock-file-maintenance",
+      "commitMessageTopic": "Ruby lock file"
+    },
+    {
+      "description": [
+        "Keep lock file maintenance PRs split by application."
+      ],
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchFileNames": [
+        "webapp/php/composer.json",
+        "webapp/php/composer.lock"
+      ],
+      "branchTopic": "php-lock-file-maintenance",
+      "commitMessageTopic": "PHP lock file"
+    },
+    {
+      "description": [
+        "Keep lock file maintenance PRs split by application."
+      ],
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchFileNames": [
+        "webapp/nodejs/package.json",
+        "webapp/nodejs/package-lock.json"
+      ],
+      "branchTopic": "nodejs-lock-file-maintenance",
+      "commitMessageTopic": "Node.js lock file"
+    },
+    {
+      "description": [
+        "Keep lock file maintenance PRs split by application."
+      ],
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchFileNames": [
+        "webapp/python/pyproject.toml",
+        "webapp/python/uv.lock"
+      ],
+      "branchTopic": "python-lock-file-maintenance",
+      "commitMessageTopic": "Python lock file"
     }
   ],
   "postUpdateOptions": [
