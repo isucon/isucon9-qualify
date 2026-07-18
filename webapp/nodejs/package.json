@@ -16,7 +16,7 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@hono/node-server": "^2.0.8",
+    "@hono/node-server": "^2.0.10",
     "bcrypt": "^6.0.0",
     "hono": "^4.12.30",
     "mysql2": "^3.22.6",
