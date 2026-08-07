@@ -8,7 +8,7 @@
         "php": "^8.4 || ^8.5",
         "ext-pdo": "*",
         "bryanjhv/slim-session": "^4.0",
-        "guzzlehttp/guzzle": "^7.0",
+        "guzzlehttp/guzzle": "^8.0",
         "monolog/monolog": "^3.0",
         "slim/php-view": "^3.0",
         "slim/slim": "^4.0",
