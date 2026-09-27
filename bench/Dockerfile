@@ -33,7 +33,7 @@ RUN adduser \
   --no-create-home \
   --uid "${UID}" \
   appuser
-USER appuser
+USER ${UID}
 
 COPY initial-data /initial-data
 COPY webapp/public/static /static
