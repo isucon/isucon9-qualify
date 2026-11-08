@@ -3,11 +3,7 @@ name: CI
 on:
   pull_request:
     paths:
-      - "webapp/go/**"
-      - "webapp/ruby/**"
-      - "webapp/php/**"
-      - "webapp/python/**"
-      - "webapp/nodejs/**"
+      - "webapp/**"
       - "bench/**"
       - "cmd/**"
       - "initial-data/**"
@@ -16,7 +12,6 @@ on:
       - "go.mod"
       - "go.sum"
       - "compose.yml"
-      - "webapp/compose.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
