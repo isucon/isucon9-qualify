@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended"
   ],
+  "minimumReleaseAge": "2 days",
   "customDatasources": {
     "mysql-lts": {
       "defaultRegistryUrlTemplate": "https://raw.githubusercontent.com/docker-library/official-images/master/library/mysql",
@@ -271,10 +272,23 @@
       ],
       "branchTopic": "python-lock-file-maintenance",
       "commitMessageTopic": "Python lock file"
+    },
+    {
+      "description": "Auto-merge webapp and root Go dependencies after CI passes.",
+      "matchFileNames": [
+        "webapp/**",
+        "go.mod",
+        "go.sum"
+      ],
+      "automerge": true
     }
   ],
   "postUpdateOptions": [
     "gomodTidy",
     "gomodUpdateImportPaths"
-  ]
+  ],
+  "automerge": false,
+  "automergeType": "pr",
+  "platformAutomerge": false,
+  "ignoreTests": false
 }
