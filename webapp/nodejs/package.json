@@ -18,7 +18,7 @@
   "dependencies": {
     "@hono/node-server": "^2.1.7",
     "bcrypt": "^6.0.0",
-    "hono": "^4.13.17",
+    "hono": "^4.13.18",
     "mysql2": "^3.24.6",
     "iron-session": "^8.0.4",
     "qrcode": "^1.5.4"
