@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-bookworm AS builder
+FROM node:26-bookworm AS builder
 
 WORKDIR /home/webapp
 
@@ -13,7 +13,7 @@ COPY nodejs /home/webapp
 RUN npm run build
 
 # Production stage
-FROM node:24-bookworm-slim
+FROM node:26-bookworm-slim
 
 RUN \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
