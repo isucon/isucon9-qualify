@@ -20,7 +20,7 @@
     "bcrypt": "^6.0.0",
     "hono": "^4.13.22",
     "mysql2": "^3.24.6",
-    "iron-session": "^8.0.4",
+    "iron-session": "^9.1.1",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
