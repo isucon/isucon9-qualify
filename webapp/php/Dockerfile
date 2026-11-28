@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1
 
-FROM php:8.5-fpm-trixie
+FROM php:8.6-fpm-trixie
 
 RUN apt-get update && apt-get install -y \
     libzip-dev \
